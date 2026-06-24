@@ -1,228 +1,75 @@
-# greenroot-mobile
-greenroot-mobile
-
 # GreenRoot Mobile
 
-GreenRoot Mobile is the official mobile application for nursery owners, gumastas, and drivers to manage plant dispatches, deliveries, and transportation activities.
+Flutter mobile app for the GreenRoot nursery platform — serves nursery owners, managers, drivers, and buyers.
 
----
+## Run Locally
 
-## Overview
+```bash
+flutter pub get
+flutter run -d <device-id>
+```
 
-GreenRoot helps plant businesses:
+For a physical Android device with local API:
 
-* Create dispatches
-* Manage plant loading
-* Assign drivers
-* Track trips
-* Verify deliveries
-* Maintain dispatch history
-* Monitor transportation operations
+```bash
+adb reverse tcp:8080 tcp:8080
+flutter run --release -d <device-id>
+```
 
----
+API runs at `http://127.0.0.1:8080` (ADB tunnel from Mac).
 
-## User Roles
+## Dev Login
 
-### Owner
+| Mobile | OTP | Role |
+|---|---|---|
+| `9000000777` | `123456` | Admin |
+| `9111111111` | `123456` | Buyer |
+| `9222222222` | `123456` | Nursery Owner |
+| `9333333333` | `123456` | Driver |
+| `9555555555` | `123456` | Manager |
 
-Features:
+## Stack
 
-* View all dispatches
-* Approve dispatches
-* Track active trips
-* View reports
-* Manage users
-* Monitor deliveries
+Flutter · Dart · Riverpod (StateNotifierProvider) · GoRouter · Dio · flutter_secure_storage
 
----
+## Architecture
 
-### Gumasta
+Feature-first layout under `lib/features/`. Each feature owns its models, repository, providers, and screens in one place.
 
-Features:
-
-* Create dispatches
-* Add plant items
-* Start loading
-* Complete loading
-* Upload loading photos
-* Assign drivers
-
----
-
-### Driver
-
-Features:
-
-* View assigned trips
-* Start trip
-* Share GPS location
-* Upload delivery photos
-* Complete deliveries
-
----
-
-## Key Features
-
-### Authentication
-
-* Mobile OTP Login
-* Device Registration
-* Role-Based Access
-
-### Dispatch Management
-
-* Create Dispatch
-* Plant Manifest
-* Loading Workflow
-* Approval Workflow
-
-### GPS Tracking
-
-* Real-Time Location Updates
-* Trip Monitoring
-* Route Visibility
-
-### Delivery Verification
-
-* Delivery Photos
-* GPS Validation
-* Timestamp Verification
-
-### Notifications
-
-* Dispatch Created
-* Dispatch Approved
-* Trip Started
-* Trip Delivered
-* Trip Cancelled
-
----
-
-## Technology Stack
-
-### Framework
-
-Flutter
-
-### Language
-
-Dart
-
-### Architecture
-
-Feature First Architecture
-
-### State Management
-
-Riverpod
-
-### Networking
-
-Dio
-
-### Local Storage
-
-Hive
-
-### Maps
-
-OpenStreetMap
-
-### Notifications
-
-Firebase Cloud Messaging (FCM)
-
-### Authentication
-
-Firebase Authentication
-
----
-
-## Project Structure
-
-```text
+```
 lib/
-
-├── app/
-├── core/
-├── features/
-│
-├── auth/
-├── dashboard/
-├── dispatch/
-├── plants/
-├── trips/
-├── tracking/
-├── notifications/
-├── profile/
-│
-├── shared/
-├── widgets/
-├── services/
-└── main.dart
+├── app/            # Router, theme, app entry
+├── core/           # ApiClient, errors, constants, widgets, theme
+└── features/
+    ├── auth/       # OTP login, session, RBAC
+    ├── dashboard/  # Per-role shell + home tabs
+    ├── plants/     # Plant catalog + detail
+    ├── nurseries/  # Nursery list + detail
+    ├── inventory/  # Inventory list + add
+    ├── orders/     # Order list + detail + create (manager)
+    ├── requests/   # Plant requests (nursery B2B)
+    ├── dispatches/ # Dispatch list + detail + tracking
+    └── ...
 ```
 
----
+## Role Navigation
 
-## Build Environments
+| Role | Tabs |
+|---|---|
+| Nursery Owner | Home · Requests · Orders · Inventory · Profile |
+| Manager | Home · Orders · Inventory · Dispatches · Profile |
+| Buyer | Home · My Orders · Profile |
+| Driver | Home · Dispatches · Profile |
 
-### Development
+## Business Flow
 
-```text
-DEV
-```
+- **Buyers** call the nursery and order over the phone.
+- **Managers** enter the order into the app (buyer mobile + items + price).
+- **Manager** loads the truck in the morning, creates a dispatch.
+- **Driver** dispatches and the lorry is tracked.
+- **Buyer** logs in to see their order and track delivery (read-only).
+- Payments are direct between nursery and buyer — the platform only collects subscription fees.
 
-Used for local development and testing.
+## Full Project Context
 
-### Production
-
-```text
-PROD
-```
-
-Used for real customers.
-
----
-
-## Minimum Supported Version
-
-Android 10+
-
----
-
-## Security
-
-* OTP Authentication
-* Secure API Tokens
-* Device Registration
-* Audit Logging
-* Role-Based Authorization
-
----
-
-## Future Roadmap
-
-### V1
-
-* Dispatch Management
-* Driver Tracking
-* Delivery Verification
-
-### V2
-
-* Nursery Analytics
-* Customer Management
-* Advanced Reports
-
-### V3
-
-* Plant Marketplace
-* Customer Ordering
-* AI Recommendations
-
----
-
-## Product Vision
-
-GreenRoot aims to become the digital operating platform for nursery businesses by providing visibility from plant loading to final delivery.
-
+See [`../AI_CONTEXT.md`](../AI_CONTEXT.md) for cross-repo context.
