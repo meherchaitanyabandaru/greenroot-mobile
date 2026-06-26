@@ -37,13 +37,11 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
   }
 
   String _roleSlug(AppRole role) => switch (role) {
-    AppRole.buyer              => 'buyer',
-    AppRole.nurseryOwner       => 'nursery-owner',
-    AppRole.manager            => 'manager',
-    AppRole.driver             => 'driver',
-    AppRole.transportProvider  => 'transport-provider',
-    AppRole.admin              => 'admin',
-    AppRole.superAdmin         => 'super-admin',
+    AppRole.nurseryOwner => 'nursery-owner',
+    AppRole.manager      => 'manager',
+    AppRole.driver       => 'driver',
+    AppRole.admin        => 'admin',
+    _                    => 'buyer',
   };
 
   @override
@@ -183,22 +181,18 @@ class _RoleCard extends StatelessWidget {
   }
 
   IconData get _icon => switch (role) {
-    AppRole.buyer              => Icons.shopping_bag_outlined,
-    AppRole.nurseryOwner       => Icons.local_florist_outlined,
-    AppRole.manager            => Icons.manage_accounts_outlined,
-    AppRole.driver             => Icons.local_shipping_outlined,
-    AppRole.transportProvider  => Icons.directions_car_outlined,
-    AppRole.admin              => Icons.admin_panel_settings_outlined,
-    AppRole.superAdmin         => Icons.security_outlined,
+    AppRole.nurseryOwner => Icons.local_florist_outlined,
+    AppRole.manager      => Icons.manage_accounts_outlined,
+    AppRole.driver       => Icons.local_shipping_outlined,
+    AppRole.admin        => Icons.admin_panel_settings_outlined,
+    _                    => Icons.shopping_bag_outlined,
   };
 
   String get _subtitle => switch (role) {
-    AppRole.buyer              => 'Browse plants and place orders',
-    AppRole.nurseryOwner       => 'Manage your nursery & inventory',
-    AppRole.manager            => 'Manage nursery operations',
-    AppRole.driver             => 'View and manage deliveries',
-    AppRole.transportProvider  => 'Manage transport & dispatch',
-    AppRole.admin              => 'Platform administration',
-    AppRole.superAdmin         => 'Full platform access',
+    AppRole.nurseryOwner => 'Manage your nursery & operations',
+    AppRole.manager      => 'View assigned orders & loading',
+    AppRole.driver       => 'View and manage deliveries',
+    AppRole.admin        => 'Platform administration',
+    _                    => 'View orders and track deliveries',
   };
 }

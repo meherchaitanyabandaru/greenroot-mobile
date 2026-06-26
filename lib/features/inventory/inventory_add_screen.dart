@@ -295,8 +295,13 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
       final repo = ref.read(plantRepositoryProvider);
       final (results, _) = await repo.listPlants(search: query, page: 1, perPage: 10);
       if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; });
-    } catch (_) {
-      if (mounted) setState(() { _results = []; _showDropdown = false; });
+    } catch (e) {
+      if (mounted) {
+        setState(() { _results = []; _showDropdown = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Plant search error: $e'), backgroundColor: AppColors.red600),
+        );
+      }
     } finally {
       if (mounted) setState(() => _searching = false);
     }

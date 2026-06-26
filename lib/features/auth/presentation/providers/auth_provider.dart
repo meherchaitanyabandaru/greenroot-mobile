@@ -62,18 +62,26 @@ final otpSendProvider =
 class OtpVerifyState {
   final bool isLoading;
   final bool verified;
+  final bool isNewUser;
   final AppError? error;
 
   const OtpVerifyState({
     this.isLoading = false,
     this.verified = false,
+    this.isNewUser = false,
     this.error,
   });
 
-  OtpVerifyState copyWith({bool? isLoading, bool? verified, AppError? error}) =>
+  OtpVerifyState copyWith({
+    bool? isLoading,
+    bool? verified,
+    bool? isNewUser,
+    AppError? error,
+  }) =>
       OtpVerifyState(
         isLoading: isLoading ?? this.isLoading,
         verified:  verified  ?? this.verified,
+        isNewUser: isNewUser ?? this.isNewUser,
         error:     error,
       );
 }
@@ -86,8 +94,8 @@ class OtpVerifyNotifier extends StateNotifier<OtpVerifyState> {
   Future<void> verify(String mobile, String otp) async {
     state = const OtpVerifyState(isLoading: true);
     try {
-      await _repo.verifyOtp(mobile, otp);
-      state = const OtpVerifyState(verified: true);
+      final response = await _repo.verifyOtp(mobile, otp);
+      state = OtpVerifyState(verified: true, isNewUser: response.isNewUser);
     } on AppError catch (e) {
       state = OtpVerifyState(error: e);
     }

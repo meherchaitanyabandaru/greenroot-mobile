@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
+import '../../quotations/quotation_list_screen.dart';
 import '../shared/dashboard_card.dart';
 import '../shared/profile_tab.dart';
 import '../shared/role_shell.dart';
@@ -43,6 +44,12 @@ class AdminDashboard extends StatelessWidget {
             icon: Icons.bar_chart_outlined,
             subtitle: 'Platform analytics and reports.',
           ),
+        ),
+        const RoleNavItem(
+          icon: Icons.description_outlined,
+          activeIcon: Icons.description_rounded,
+          label: 'Quotations',
+          screen: QuotationListScreen(),
         ),
         RoleNavItem(
           icon: Icons.person_outline_rounded,
@@ -87,7 +94,7 @@ class _AdminHomeTab extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.15,
+            childAspectRatio: 1.0,
             children: const [
               DashboardCard(
                 title: 'Active Users',

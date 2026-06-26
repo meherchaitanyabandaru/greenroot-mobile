@@ -36,6 +36,7 @@ class Dispatch {
   final String status;
   final String? vehicleNumber;
   final String? driverName;
+  final int? driverUserId;
   final String? dispatchDate;
   final String? deliveryDate;
   final String? destinationAddress;
@@ -52,6 +53,7 @@ class Dispatch {
     required this.status,
     this.vehicleNumber,
     this.driverName,
+    this.driverUserId,
     this.dispatchDate,
     this.deliveryDate,
     this.destinationAddress,
@@ -69,6 +71,7 @@ class Dispatch {
         status: j['dispatch_status'] as String,
         vehicleNumber: j['vehicle_number'] as String?,
         driverName: j['driver_name'] as String?,
+        driverUserId: j['driver_user_id'] != null ? (j['driver_user_id'] as num).toInt() : null,
         dispatchDate: j['dispatch_date'] as String?,
         deliveryDate: j['delivery_date'] as String?,
         destinationAddress: j['destination_address'] as String?,
@@ -126,8 +129,48 @@ class DispatchRepository {
 
   Future<Dispatch> updateStatus(int id, String status) async {
     return _client.put(
-      ApiConstants.dispatchById(id),
+      ApiConstants.dispatchStatus(id),
       data: {'dispatch_status': status},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Dispatch> findByCode(String code) async {
+    return _client.get(
+      ApiConstants.dispatchByCode(code.trim().toUpperCase()),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Dispatch> acceptDispatch(int id) async {
+    return _client.post(
+      ApiConstants.acceptDispatch(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Dispatch> createDispatch(
+    int orderId, {
+    String? destinationAddress,
+    String? notes,
+  }) async {
+    return _client.post(
+      ApiConstants.dispatches,
+      data: {
+        'order_id': orderId,
+        if (destinationAddress?.isNotEmpty == true)
+          'destination_address': destinationAddress,
+        if (notes?.isNotEmpty == true) 'notes': notes,
+      },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);

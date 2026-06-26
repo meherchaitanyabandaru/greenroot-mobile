@@ -11,7 +11,6 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/models/user_models.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
@@ -57,34 +56,14 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
 
       if (!mounted) return;
 
-      final roles = ref.read(sessionProvider).roles.where((r) => r.isMobileRole).toList();
-      if (roles.length > 1) {
-        context.go('/role-select');
-      } else {
-        final role = ref.read(activeRoleProvider) ?? roles.firstOrNull;
-        if (role != null) {
-          context.go(_dashboardRoute(role));
-        } else {
-          context.go('/role-select');
-        }
-      }
+      // New user — show activity selection screen once before home.
+      context.go('/select-activity');
     } on AppError catch (e) {
       setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  String _dashboardRoute(role) => switch (role.value) {
-    'BUYER'              => '/home/buyer',
-    'NURSERY_OWNER'      => '/home/nursery-owner',
-    'MANAGER'            => '/home/manager',
-    'DRIVER'             => '/home/driver',
-    'TRANSPORT_PROVIDER' => '/home/transport-provider',
-    'ADMIN'              => '/home/admin',
-    'SUPER_ADMIN'        => '/home/super-admin',
-    _                    => '/home/buyer',
-  };
 
   @override
   Widget build(BuildContext context) {

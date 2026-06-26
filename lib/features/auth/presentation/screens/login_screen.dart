@@ -82,10 +82,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: AppSpacing.x2l),
 
-                const Text('Welcome back', style: AppTypography.h1),
+                const Text('Welcome to GreenRoot', style: AppTypography.h1),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Enter your mobile number to receive a one-time passcode.',
+                  'Enter your mobile number to sign in or create an account.',
                   style: AppTypography.body.copyWith(
                     color: AppColors.textSecondary,
                   ),

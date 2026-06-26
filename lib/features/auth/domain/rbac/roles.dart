@@ -16,16 +16,21 @@ enum AppRole {
   }
 
   String get displayName => switch (this) {
-    AppRole.admin            => 'Admin',
-    AppRole.superAdmin       => 'Super Admin',
-    AppRole.nurseryOwner     => 'Nursery Owner',
-    AppRole.manager          => 'Manager',
-    AppRole.driver           => 'Driver',
-    AppRole.buyer            => 'Buyer',
+    AppRole.admin             => 'Admin',
+    AppRole.superAdmin        => 'Super Admin',
+    AppRole.nurseryOwner      => 'Nursery Owner',
+    AppRole.manager           => 'Manager / Gumastha',
+    AppRole.driver            => 'Driver',
+    AppRole.buyer             => 'Customer',
     AppRole.transportProvider => 'Transport Provider',
   };
 
-  bool get isMobileRole => true; // all roles have mobile access (admin gets limited view)
+  // V1: Super Admin and Transport Provider are web-only; excluded from mobile.
+  bool get isMobileRole => switch (this) {
+    AppRole.superAdmin        => false,
+    AppRole.transportProvider => false,
+    _                         => true,
+  };
 }
 
 extension AppRoleListX on List<AppRole> {
@@ -38,10 +43,8 @@ extension AppRoleListX on List<AppRole> {
       AppRole.nurseryOwner,
       AppRole.manager,
       AppRole.driver,
-      AppRole.transportProvider,
       AppRole.buyer,
       AppRole.admin,
-      AppRole.superAdmin,
     ];
     for (final role in priority) {
       if (contains(role)) return role;

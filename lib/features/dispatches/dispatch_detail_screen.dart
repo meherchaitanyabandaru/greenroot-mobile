@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'dispatches.dart';
 
 class DispatchDetailScreen extends ConsumerWidget {
@@ -15,11 +19,12 @@ class DispatchDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(dispatchDetailProvider(dispatchId));
+    final caps = ref.watch(sessionProvider).capabilities;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dispatch Details'),
+        title: const Text('Trip Details'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -35,21 +40,95 @@ class DispatchDetailScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               Text(err.toString(), style: AppTypography.body),
               TextButton(
-                onPressed: () => ref.refresh(dispatchDetailProvider(dispatchId)),
+                onPressed: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
                 child: const Text('Retry'),
               ),
             ],
           ),
         ),
-        data: (dispatch) => _DetailView(dispatch: dispatch),
+        data: (dispatch) => _DetailView(
+          dispatch: dispatch,
+          dispatchId: dispatchId,
+          isDriver: caps.hasDriverProfile && !caps.isNurseryOwner && !caps.isManager,
+        ),
       ),
     );
   }
 }
 
-class _DetailView extends StatelessWidget {
+class _DetailView extends ConsumerStatefulWidget {
   final Dispatch dispatch;
-  const _DetailView({required this.dispatch});
+  final int dispatchId;
+  final bool isDriver;
+  const _DetailView({
+    required this.dispatch,
+    required this.dispatchId,
+    required this.isDriver,
+  });
+
+  @override
+  ConsumerState<_DetailView> createState() => _DetailViewState();
+}
+
+class _DetailViewState extends ConsumerState<_DetailView> {
+  bool _busy = false;
+
+  Future<void> _updateStatus(String newStatus) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(dispatchRepositoryProvider).updateStatus(widget.dispatchId, newStatus);
+      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus == 'IN_TRANSIT'
+                ? 'Trip started! Share your location.'
+                : 'Status updated.'),
+            backgroundColor: AppColors.primaryMain,
+          ),
+        );
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailContent(
+      dispatch: widget.dispatch,
+      isDriver: widget.isDriver,
+      busy: _busy,
+      onUpdateStatus: _updateStatus,
+    );
+  }
+}
+
+// Keep the old class name for internal use
+class _DetailContent extends StatelessWidget {
+  final Dispatch dispatch;
+  final bool isDriver;
+  final bool busy;
+  final void Function(String) onUpdateStatus;
+
+  const _DetailContent({
+    required this.dispatch,
+    required this.isDriver,
+    required this.busy,
+    required this.onUpdateStatus,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -217,10 +296,260 @@ class _DetailView extends StatelessWidget {
           ),
         ],
 
-        const SizedBox(height: AppSpacing.x3l),
+        const SizedBox(height: AppSpacing.x2l),
+
+        // ── Driver: Trip Progress + Actions ───────────────────────────────────
+        if (isDriver) ...[
+          _DriverTripProgress(status: dispatch.status),
+          const SizedBox(height: AppSpacing.md),
+          if (dispatch.status == 'PENDING')
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('IN_TRANSIT'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.play_arrow_rounded),
+                label: const Text('Start Trip'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          if (dispatch.status == 'IN_TRANSIT')
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('DELIVERED'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_circle_rounded),
+                label: const Text('Mark Delivered'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          if (dispatch.status == 'DELIVERED')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: AppRadius.buttonRadius,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle_rounded, color: AppColors.primaryMain),
+                  SizedBox(width: AppSpacing.sm),
+                  Text('Trip Completed',
+                      style: TextStyle(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
+        // ── Owner: Share QR ────────────────────────────────────────────────────
+        if (!isDriver) ...[
+        // Share dispatch code as QR
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: () => QrShareSheet.show(
+              context,
+              code: dispatch.dispatchCode,
+              title: 'Dispatch Code',
+              subtitle: 'Share with your driver or team',
+              shareMessage:
+                  'GreenRoot Dispatch: ${dispatch.dispatchCode}\n\nUse this code to track or confirm your dispatch.\nOrder: ${dispatch.orderNumber ?? '-'}',
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primaryMain),
+              foregroundColor: AppColors.primaryMain,
+              shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.buttonRadius),
+            ),
+            icon: const Icon(Icons.qr_code_rounded, size: 20),
+            label: Text('Share Dispatch QR', style: AppTypography.label),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: () => context.push(
+              '/dispatches/${dispatch.id}/track',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.blue600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.buttonRadius),
+            ),
+            icon: const Icon(Icons.location_on_rounded, size: 20),
+            label: Text('Track Shipment', style: AppTypography.label),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.x2l),
+        ], // end if (!isDriver)
       ],
     );
   }
+}
+
+// ── Driver Trip Progress ────────────────────────────────────────────────────────
+
+class _DriverTripProgress extends StatelessWidget {
+  final String status;
+  const _DriverTripProgress({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = [
+      _TripStep(
+        label: 'Loading',
+        icon: Icons.inventory_2_outlined,
+        done: true,
+        current: status == 'PENDING',
+      ),
+      _TripStep(
+        label: 'Loaded',
+        icon: Icons.done_all_rounded,
+        done: status != 'PENDING',
+        current: false,
+      ),
+      _TripStep(
+        label: 'In Transit',
+        icon: Icons.local_shipping_rounded,
+        done: status == 'IN_TRANSIT' || status == 'DELIVERED',
+        current: status == 'PENDING',
+      ),
+      _TripStep(
+        label: 'Delivered',
+        icon: Icons.check_circle_rounded,
+        done: status == 'DELIVERED',
+        current: status == 'IN_TRANSIT',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Trip Progress', style: AppTypography.h4),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: steps.asMap().entries.map((entry) {
+              final step = entry.value;
+              final isLast = entry.key == steps.length - 1;
+              return Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: step.done
+                                  ? AppColors.primaryMain
+                                  : (step.current
+                                      ? AppColors.primaryMain
+                                      : AppColors.border),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              step.done
+                                  ? Icons.check_rounded
+                                  : step.icon,
+                              color: step.done || step.current
+                                  ? Colors.white
+                                  : AppColors.textMuted,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            step.label,
+                            style: AppTypography.caption.copyWith(
+                              color: step.done
+                                  ? AppColors.primaryMain
+                                  : (step.current
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted),
+                              fontWeight: step.current
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isLast)
+                      Container(
+                        width: 20,
+                        height: 2,
+                        color: step.done
+                            ? AppColors.primaryMain.withValues(alpha: 0.4)
+                            : AppColors.border,
+                      ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TripStep {
+  final String label;
+  final IconData icon;
+  final bool done;
+  final bool current;
+
+  const _TripStep({
+    required this.label,
+    required this.icon,
+    required this.done,
+    required this.current,
+  });
 }
 
 class _Row extends StatelessWidget {

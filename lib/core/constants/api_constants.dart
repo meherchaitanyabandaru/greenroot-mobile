@@ -7,6 +7,7 @@ abstract class ApiConstants {
   static const String refreshToken = '$v1/auth/refresh-token';
   static const String logout       = '$v1/auth/logout';
   static const String me           = '$v1/auth/me';
+  static const String myWorkspaces = '$v1/me/workspaces';
 
   // Users
   static const String usersMe       = '$v1/users/me';
@@ -20,6 +21,8 @@ abstract class ApiConstants {
   static const String plantSizes       = '$v1/plants/sizes';
   static String plantById(int id)      => '$v1/plants/$id';
   static String plantCareGuide(int id) => '$v1/plants/$id/care-guide';
+  static String plantNamesByLang({required String ids, required String lang}) =>
+      '$v1/plants/names?ids=$ids&lang=$lang';
 
   // Nurseries
   static const String nurseries             = '$v1/nurseries';
@@ -38,9 +41,14 @@ abstract class ApiConstants {
   static String plantRequestRespond(int id) => '$v1/plant-requests/$id/responses';
 
   // Orders
-  static const String orders          = '$v1/orders';
-  static String orderById(int id)     => '$v1/orders/$id';
-  static String orderItems(int id)    => '$v1/orders/$id/items';
+  static const String orders                  = '$v1/orders';
+  static String orderById(int id)             => '$v1/orders/$id';
+  static String orderItems(int id)            => '$v1/orders/$id/items';
+  static String orderStatus(int id)           => '$v1/orders/$id/status';
+  static String orderStartLoading(int id)     => '$v1/orders/$id/start-loading';
+  static String orderCompleteLoading(int id)  => '$v1/orders/$id/complete-loading';
+  static String orderCancel(int id)           => '$v1/orders/$id/cancel';
+  static String orderAssignManager(int id)    => '$v1/orders/$id/assign-manager';
 
   // Payments
   static const String payments        = '$v1/payments';
@@ -54,18 +62,36 @@ abstract class ApiConstants {
   static String subscriptionCancel(int id)        => '$v1/subscriptions/$id/cancel';
 
   // Dispatches
-  static const String dispatches        = '$v1/dispatches';
-  static String dispatchById(int id)    => '$v1/dispatches/$id';
+  static const String dispatches               = '$v1/dispatches';
+  static String dispatchById(int id)           => '$v1/dispatches/$id';
+  static String dispatchStatus(int id)         => '$v1/dispatches/$id/status';
+  static String dispatchByCode(String code)    => '$v1/dispatches/code/$code';
+  static String acceptDispatch(int id)         => '$v1/dispatches/$id/accept';
+  static String dispatchTracking(int id)       => '$v1/dispatches/$id/tracking';
+  static String dispatchTrackingLatest(int id) => '$v1/dispatches/$id/tracking/latest';
+
+  // Vehicles
+  static const String vehicles           = '$v1/vehicles';
+  static String vehicleById(int id)      => '$v1/vehicles/$id';
+  static String vehicleTracking(int id)       => '$v1/vehicles/$id/tracking';
+  static String vehicleTrackingLatest(int id) => '$v1/vehicles/$id/tracking/latest';
 
   // Drivers
   static const String drivers           = '$v1/drivers';
   static String driverById(int id)      => '$v1/drivers/$id';
   static String driverLocation(int id)  => '$v1/drivers/$id/location';
+  static String driverTracking(int id)       => '$v1/drivers/$id/tracking';
+  static String driverTrackingLatest(int id) => '$v1/drivers/$id/tracking/latest';
 
-  // Tracking
-  static String trackingVehicle(int id)  => '$v1/tracking/vehicle/$id';
-  static String trackingDriver(int id)   => '$v1/tracking/driver/$id';
-  static String trackingDispatch(int id) => '$v1/tracking/dispatch/$id';
+  // Tracking (post location)
+  static const String postTracking = '$v1/tracking';
+
+  // Me / Dashboard
+  static const String ownerDashboard        = '$v1/me/owner-dashboard';
+
+  // Quotations
+  static const String quotations            = '$v1/quotations';
+  static String quotationById(int id)       => '$v1/quotations/$id';
 
   // Notifications
   static const String notifications            = '$v1/notifications';
@@ -73,4 +99,14 @@ abstract class ApiConstants {
   static String markNotificationRead(int id)   => '$v1/notifications/$id/read';
   static const String markAllNotificationsRead = '$v1/notifications/read-all';
   static const String notificationDevices      = '$v1/notifications/devices';
+
+  // Invites
+  static const String invites                       = '$v1/invites';
+  static String inviteByUUID(String uuid)           => '$v1/invites/$uuid';
+  static String acceptInvite(String uuid)           => '$v1/invites/$uuid/accept';
+  static String cancelInvite(String uuid)           => '$v1/invites/$uuid/cancel';
+  static String nurseryInvites(int nurseryId)       => '$v1/nurseries/$nurseryId/invites';
+  static String nurseryManagers(int nurseryId)      => '$v1/nurseries/$nurseryId/managers';
+  static String removeNurseryManager(int nurseryId, int userId) =>
+      '$v1/nurseries/$nurseryId/managers/$userId';
 }

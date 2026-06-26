@@ -25,17 +25,20 @@ class AuthResponse {
   final String accessToken;
   final String refreshToken;
   final UserSummary user;
+  final bool isNewUser;
 
   const AuthResponse({
     required this.accessToken,
     required this.refreshToken,
     required this.user,
+    this.isNewUser = false,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
         accessToken:  json['access_token']  as String,
         refreshToken: json['refresh_token'] as String,
         user: UserSummary.fromJson(json['user'] as Map<String, dynamic>),
+        isNewUser: json['is_new_user'] as bool? ?? false,
       );
 }
 

@@ -42,17 +42,42 @@ class OrderItem {
       commonName?.isNotEmpty == true ? commonName! : scientificName;
 }
 
+class NurseryManager {
+  final int userId;
+  final String name;
+  final String mobile;
+
+  const NurseryManager({required this.userId, required this.name, required this.mobile});
+
+  factory NurseryManager.fromJson(Map<String, dynamic> j) => NurseryManager(
+        userId: (j['user_id'] as num).toInt(),
+        name: j['first_name'] as String? ?? 'Manager',
+        mobile: j['mobile'] as String? ?? '',
+      );
+}
+
 class Order {
   final int id;
   final String orderCode;
   final String orderNumber;
   final String? buyerName;
   final String? sellerNursery;
+  final int? sellerNurseryId;
   final String status;
   final double totalAmount;
   final String? notes;
   final String orderDate;
+  final String? createdAt;
   final List<OrderItem> items;
+  // Timestamps
+  final String? loadingStartedAt;
+  final String? loadingCompletedAt;
+  final String? cancelledAt;
+  final String? cancelReason;
+  // People
+  final int? assignedManagerUserId;
+  final String? assignedManagerName;
+  final String? customerName;
 
   const Order({
     required this.id,
@@ -60,11 +85,20 @@ class Order {
     required this.orderNumber,
     this.buyerName,
     this.sellerNursery,
+    this.sellerNurseryId,
     required this.status,
     required this.totalAmount,
     this.notes,
     required this.orderDate,
+    this.createdAt,
     required this.items,
+    this.loadingStartedAt,
+    this.loadingCompletedAt,
+    this.cancelledAt,
+    this.cancelReason,
+    this.assignedManagerUserId,
+    this.assignedManagerName,
+    this.customerName,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -73,14 +107,24 @@ class Order {
         orderNumber: j['order_number'] as String,
         buyerName: j['buyer_name'] as String?,
         sellerNursery: j['seller_nursery'] as String?,
+        sellerNurseryId: (j['seller_nursery_id'] as num?)?.toInt(),
         status: j['order_status'] as String,
         totalAmount: (j['total_amount'] as num).toDouble(),
         notes: j['notes'] as String?,
         orderDate: j['order_date'] as String,
+        createdAt: j['created_at'] as String?,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        loadingStartedAt: j['loading_started_at'] as String?,
+        loadingCompletedAt: j['loading_completed_at'] as String?,
+        cancelledAt: j['cancelled_at'] as String?,
+        cancelReason: j['cancel_reason'] as String?,
+        assignedManagerUserId:
+            (j['assigned_manager_user_id'] as num?)?.toInt(),
+        assignedManagerName: j['assigned_manager_name'] as String?,
+        customerName: j['customer_name'] as String?,
       );
 }
 
@@ -152,6 +196,91 @@ class OrderRepository {
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> updateStatus(int id, String status) async {
+    return _client.put(
+      ApiConstants.orderStatus(id),
+      data: {'order_status': status},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> startLoading(int id) async {
+    return _client.post(
+      ApiConstants.orderStartLoading(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> completeLoading(int id) async {
+    return _client.post(
+      ApiConstants.orderCompleteLoading(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> cancelOrder(int id, {String? reason}) async {
+    return _client.post(
+      ApiConstants.orderCancel(id),
+      data: {if (reason?.isNotEmpty == true) 'reason': reason},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> assignManager(int orderId, int managerUserId) async {
+    return _client.post(
+      ApiConstants.orderAssignManager(orderId),
+      data: {'manager_user_id': managerUserId},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<List<NurseryManager>> getNurseryManagers(int nurseryId) async {
+    return _client.get(
+      ApiConstants.nurseryManagers(nurseryId),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        final users = d['users'] as List<dynamic>? ?? [];
+        return users
+            .map((e) => NurseryManager.fromJson(e as Map<String, dynamic>))
+            .toList();
+      },
+    );
+  }
+
+  Future<(List<Order>, ApiPagination)> listBuyingOrders({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    return _client.get(
+      ApiConstants.orders,
+      queryParameters: {'page': page, 'per_page': perPage, 'buying': 'true'},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        final items = (d['orders'] as List<dynamic>)
+            .map((e) => Order.fromJson(e as Map<String, dynamic>))
+            .toList();
+        final pagination =
+            ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
+        return (items, pagination);
       },
     );
   }
@@ -267,4 +396,58 @@ final orderListProvider =
 final orderDetailProvider =
     FutureProvider.family<Order, int>((ref, id) async {
   return ref.watch(orderRepositoryProvider).getOrder(id);
+});
+
+// ── Buying perspective providers ───────────────────────────────────────────────
+
+class BuyingOrderListNotifier extends StateNotifier<OrderListState> {
+  final OrderRepository _repo;
+  int _page = 0;
+
+  BuyingOrderListNotifier(this._repo)
+      : super(OrderListState(paged: PagedState.initial()));
+
+  Future<void> load() async {
+    state = state.copyWith(
+      paged: state.paged.copyWith(isLoading: true, clearError: true),
+    );
+    try {
+      final (items, pagination) = await _repo.listBuyingOrders(page: 1);
+      _page = 1;
+      state = state.copyWith(
+        paged: PagedState(
+          items: items,
+          isLoading: false,
+          isLoadingMore: false,
+          hasMore: pagination.hasMore,
+        ),
+      );
+    } on AppError catch (e) {
+      state = state.copyWith(
+          paged: state.paged.copyWith(isLoading: false, error: e));
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.paged.isLoadingMore || !state.paged.hasMore) return;
+    state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
+    try {
+      final (items, pagination) = await _repo.listBuyingOrders(page: _page + 1);
+      _page++;
+      state = state.copyWith(
+        paged: state.paged.copyWith(
+          items: [...state.paged.items, ...items],
+          isLoadingMore: false,
+          hasMore: pagination.hasMore,
+        ),
+      );
+    } on AppError {
+      state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
+    }
+  }
+}
+
+final buyingOrderListProvider =
+    StateNotifierProvider<BuyingOrderListNotifier, OrderListState>((ref) {
+  return BuyingOrderListNotifier(ref.watch(orderRepositoryProvider));
 });

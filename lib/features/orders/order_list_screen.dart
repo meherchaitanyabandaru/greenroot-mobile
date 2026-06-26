@@ -7,11 +7,13 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'orders.dart';
 
 class OrderListScreen extends ConsumerStatefulWidget {
   final int? nurseryId;
-  const OrderListScreen({super.key, this.nurseryId});
+  final String? statusFilter;
+  const OrderListScreen({super.key, this.nurseryId, this.statusFilter});
 
   @override
   ConsumerState<OrderListScreen> createState() => _OrderListScreenState();
@@ -23,8 +25,9 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(orderListProvider.notifier).load(nurseryId: widget.nurseryId));
+    WidgetsBinding.instance.addPostFrameCallback((_) => ref
+        .read(orderListProvider.notifier)
+        .load(nurseryId: widget.nurseryId, statusFilter: widget.statusFilter));
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >=
           _scrollCtrl.position.maxScrollExtent - 200) {
@@ -45,8 +48,38 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
     final paged = listState.paged;
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
+    final caps = ref.watch(sessionProvider).capabilities;
+    final canCreate = caps.isNurseryOwner || caps.isManager;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Orders'),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      floatingActionButton: canCreate
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final created = await context.push<bool>('/orders/create');
+                if (created == true && mounted) {
+                  ref.read(orderListProvider.notifier).load(
+                      nurseryId: widget.nurseryId,
+                      statusFilter: widget.statusFilter);
+                }
+              },
+              backgroundColor: AppColors.primaryMain,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'New Order',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter'),
+              ),
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: () => ref.read(orderListProvider.notifier).load(nurseryId: widget.nurseryId),
         color: AppColors.primaryMain,

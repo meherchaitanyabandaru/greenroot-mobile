@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -39,47 +38,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     await ref.read(sessionProvider.notifier).bootstrap();
-    await ref.read(activeRoleProvider.notifier).loadSavedRole();
-
     if (!mounted) return;
     _navigate();
   }
 
   void _navigate() {
-    final session    = ref.read(sessionProvider);
-    final activeRole = ref.read(activeRoleProvider);
-
+    final session = ref.read(sessionProvider);
     if (!session.isAuthenticated) {
       context.go('/login');
       return;
     }
-
-    final mobileRoles = session.roles.where((r) => r.isMobileRole).toList();
-
-    if (activeRole != null && mobileRoles.contains(activeRole)) {
-      context.go(_dashboardRoute(activeRole));
-      return;
-    }
-
-    if (mobileRoles.length == 1) {
-      context.go(_dashboardRoute(mobileRoles.first));
-      return;
-    }
-
-    context.go('/role-select');
+    _routeByCapabilities(context, session);
   }
 
-  String _dashboardRoute(role) {
-    return switch (role.value) {
-      'BUYER'              => '/home/buyer',
-      'NURSERY_OWNER'      => '/home/nursery-owner',
-      'MANAGER'            => '/home/manager',
-      'DRIVER'             => '/home/driver',
-      'TRANSPORT_PROVIDER' => '/home/transport-provider',
-      'ADMIN'              => '/home/admin',
-      'SUPER_ADMIN'        => '/home/super-admin',
-      _                    => '/home/buyer',
-    };
+  static void routeAfterLogin(BuildContext context, dynamic session) =>
+      _routeByCapabilities(context, session);
+
+  static void _routeByCapabilities(BuildContext context, dynamic session) {
+    final caps = session.capabilities;
+    if (caps.hasPendingNursery) { context.go('/nursery/pending'); return; }
+    if (caps.hasRejectedNursery) { context.go('/nursery/rejected'); return; }
+    context.go('/home');
   }
 
   @override

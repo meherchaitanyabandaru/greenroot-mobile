@@ -6,6 +6,9 @@ import '../../../core/theme/app_typography.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
 import '../../dispatches/dispatch_list_screen.dart';
+import '../../quotations/quotation_list_screen.dart';
+import '../../vehicles/vehicle_list_screen.dart';
+import '../../tracking/fleet_map_screen.dart';
 import '../shared/dashboard_card.dart';
 import '../shared/profile_tab.dart';
 import '../shared/role_shell.dart';
@@ -28,27 +31,26 @@ class TransportDashboard extends StatelessWidget {
           icon: Icons.directions_bus_outlined,
           activeIcon: Icons.directions_bus_rounded,
           label: 'Vehicles',
-          screen: PlaceholderFeatureScreen(
-            title: 'Vehicles',
-            icon: Icons.directions_bus_outlined,
-            subtitle: 'Manage your fleet of vehicles.',
-          ),
+          screen: VehicleListScreen(),
         ),
         RoleNavItem(
-          icon: Icons.person_pin_outlined,
-          activeIcon: Icons.person_pin_rounded,
-          label: 'Drivers',
-          screen: PlaceholderFeatureScreen(
-            title: 'Drivers',
-            icon: Icons.person_pin_outlined,
-            subtitle: 'Manage drivers and assignments.',
-          ),
+          icon: Icons.map_outlined,
+          activeIcon: Icons.map_rounded,
+          label: 'Live Map',
+          screen: FleetMapScreen(),
         ),
         RoleNavItem(
           icon: Icons.local_shipping_outlined,
           activeIcon: Icons.local_shipping_rounded,
           label: 'Dispatches',
           screen: DispatchListScreen(),
+        ),
+        RoleNavItem(
+          icon: Icons.description_outlined,
+          activeIcon: Icons.description_rounded,
+          label: 'Quotations',
+          screen: QuotationListScreen(),
+          inBottomNav: false,
         ),
         RoleNavItem(
           icon: Icons.person_outline_rounded,
@@ -90,7 +92,7 @@ class _TransportHomeTab extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.15,
+            childAspectRatio: 1.0,
             children: const [
               DashboardCard(
                 title: 'Active Vehicles',

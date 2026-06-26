@@ -35,10 +35,45 @@ class AuthRemoteDataSource {
         fromJson: (json) => UserRolesResponse.fromJson(json as Map<String, dynamic>),
       );
 
+  Future<List<Map<String, dynamic>>> getWorkspaces() => _client.get(
+        ApiConstants.myWorkspaces,
+        fromJson: (json) {
+          // API returns a bare JSON array, not {"workspaces": [...]}
+          if (json is List) return json.cast<Map<String, dynamic>>();
+          final list = (json as Map<String, dynamic>)['workspaces'] as List<dynamic>? ?? [];
+          return list.cast<Map<String, dynamic>>();
+        },
+      );
+
   Future<UserProfile> updateProfile(int userId, UpdateProfileRequest req) =>
       _client.put(
         ApiConstants.usersMe,
         data: req.toJson(),
         fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
       );
+
+  Future<String?> getOwnedNurseryStatus() async {
+    try {
+      final data = await _client.get<Map<String, dynamic>>(
+        '${ApiConstants.nurseries}/owned',
+        fromJson: (json) => json as Map<String, dynamic>,
+      );
+      final nursery = data['nursery'] as Map<String, dynamic>?;
+      return nursery?['status'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getOwnedNursery() async {
+    try {
+      final data = await _client.get<Map<String, dynamic>>(
+        '${ApiConstants.nurseries}/owned',
+        fromJson: (json) => json as Map<String, dynamic>,
+      );
+      return data['nursery'] as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
 }

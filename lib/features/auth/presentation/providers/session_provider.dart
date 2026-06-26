@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../data/models/capabilities_model.dart';
 import '../../data/models/user_models.dart';
+import '../../data/models/workspace_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/rbac/permission_service.dart';
 import '../../domain/rbac/roles.dart';
@@ -12,14 +14,18 @@ class SessionState {
   final SessionStatus status;
   final UserProfile? user;
   final List<AppRole> roles;
+  final List<Workspace> workspaces;
   final int? nurseryId;
+  final String? ownedNurseryStatus;
   final AppError? error;
 
   const SessionState({
     this.status = SessionStatus.unknown,
     this.user,
     this.roles = const [],
+    this.workspaces = const [],
     this.nurseryId,
+    this.ownedNurseryStatus,
     this.error,
   });
 
@@ -27,19 +33,33 @@ class SessionState {
     SessionStatus? status,
     UserProfile? user,
     List<AppRole>? roles,
+    List<Workspace>? workspaces,
     int? nurseryId,
+    String? ownedNurseryStatus,
     AppError? error,
   }) =>
       SessionState(
         status: status ?? this.status,
         user: user ?? this.user,
         roles: roles ?? this.roles,
+        workspaces: workspaces ?? this.workspaces,
         nurseryId: nurseryId ?? this.nurseryId,
+        ownedNurseryStatus: ownedNurseryStatus ?? this.ownedNurseryStatus,
         error: error,
       );
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
   bool get isLoading => status == SessionStatus.loading;
+
+  // V1 workspace helpers — PERSONAL is the default customer context, not a
+  // selectable workspace. Only OWNED_NURSERY, MANAGER_NURSERY, DRIVER show.
+  List<Workspace> get mobileWorkspaces =>
+      workspaces.where((w) => w.isBusinessWorkspace).toList();
+
+  bool get hasMultipleWorkspaces => mobileWorkspaces.length > 1;
+
+  UserCapabilities get capabilities =>
+      UserCapabilities.fromWorkspaces(workspaces, ownedNurseryStatus: ownedNurseryStatus);
 }
 
 class SessionNotifier extends StateNotifier<SessionState> {
@@ -56,15 +76,25 @@ class SessionNotifier extends StateNotifier<SessionState> {
         return;
       }
 
-      final user = await _repo.getCurrentUser();
-      final roles = await _repo.getUserRoles();
-      final nurseryId = await _repo.getNurseryId();
+      final user       = await _repo.getCurrentUser();
+      final workspaces = await _repo.getWorkspaces();
+      final roles      = await _repo.getUserRoles();
+      final nurseryId  = await _repo.getNurseryId();
+
+      // Fetch nursery status separately for pending/rejected routing
+      String? ownedNurseryStatus;
+      final hasOwnedNursery = workspaces.any((w) => w.type == 'OWNED_NURSERY');
+      if (hasOwnedNursery) {
+        ownedNurseryStatus = await _repo.getOwnedNurseryStatus();
+      }
 
       state = SessionState(
-        status: SessionStatus.authenticated,
-        user: user,
-        roles: roles,
-        nurseryId: nurseryId,
+        status:             SessionStatus.authenticated,
+        user:               user,
+        roles:              roles,
+        workspaces:         workspaces,
+        nurseryId:          nurseryId,
+        ownedNurseryStatus: ownedNurseryStatus,
       );
     } on UnauthorizedError {
       await _repo.logout();
@@ -90,7 +120,7 @@ final sessionProvider =
 });
 
 final permissionServiceProvider = Provider<PermissionService>((ref) {
-  final session = ref.watch(sessionProvider);
+  final session    = ref.watch(sessionProvider);
   final activeRole = ref.watch(activeRoleProvider);
   return PermissionService(roles: session.roles, activeRole: activeRole);
 });

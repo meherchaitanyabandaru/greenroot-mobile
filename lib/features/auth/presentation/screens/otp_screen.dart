@@ -68,23 +68,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     await ref.read(activeRoleProvider.notifier).loadSavedRole();
     if (!mounted) return;
 
-    final session    = ref.read(sessionProvider);
-    final activeRole = ref.read(activeRoleProvider);
-    final mobileRoles = session.roles.where((r) => r.isMobileRole).toList();
-
-    if (session.user?.name == null || session.user!.name!.isEmpty) {
+    // First-time user → complete profile before entering the app
+    if (verifyState.isNewUser) {
       context.go('/create-profile');
       return;
     }
 
-    if (mobileRoles.length <= 1) {
-      final role = activeRole ?? mobileRoles.firstOrNull;
-      if (role != null) {
-        context.go(_dashboardRoute(role));
-        return;
-      }
-    }
-    context.go('/role-select');
+    final session = ref.read(sessionProvider);
+    final caps = session.capabilities;
+    if (caps.hasPendingNursery) { context.go('/nursery/pending'); return; }
+    if (caps.hasRejectedNursery) { context.go('/nursery/rejected'); return; }
+
+    context.go('/home');
   }
 
   void _clearOtp() {
@@ -101,17 +96,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     _startTimer();
     await ref.read(otpSendProvider.notifier).sendOtp(widget.mobile);
   }
-
-  String _dashboardRoute(role) => switch (role.value) {
-    'BUYER'              => '/home/buyer',
-    'NURSERY_OWNER'      => '/home/nursery-owner',
-    'MANAGER'            => '/home/manager',
-    'DRIVER'             => '/home/driver',
-    'TRANSPORT_PROVIDER' => '/home/transport-provider',
-    'ADMIN'              => '/home/admin',
-    'SUPER_ADMIN'        => '/home/super-admin',
-    _                    => '/home/buyer',
-  };
 
   @override
   void dispose() {
@@ -142,10 +126,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: AppSpacing.lg),
-              const Text('Verify your number', style: AppTypography.h1),
+              const Text('Enter verification code', style: AppTypography.h1),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Enter the 6-digit code sent to +91 ${widget.mobile}',
+                'We sent a 6-digit code to +91 ${widget.mobile}',
                 style: AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.x3l),
