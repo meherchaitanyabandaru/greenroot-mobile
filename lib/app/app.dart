@@ -15,6 +15,15 @@ class GreenRootApp extends ConsumerWidget {
       themeMode: ThemeMode.light,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final scale = media.textScaler.scale(1);
+        final cappedScale = scale > 1 ? 1.0 : scale;
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(cappedScale)),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

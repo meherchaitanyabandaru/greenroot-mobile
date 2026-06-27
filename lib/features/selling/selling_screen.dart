@@ -164,8 +164,9 @@ class _OwnerSellingScreen extends StatelessWidget {
                 icon: Icons.shopping_cart_outlined,
                 label: 'Orders',
                 subtitle: 'All confirmed orders for this nursery',
-                onTap: () => context.push(
-                    nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders'),
+                onTap: () => context.push(nurseryId != null
+                    ? '/orders?nursery=$nurseryId'
+                    : '/orders'),
               ),
               _MenuItem(
                 icon: Icons.local_shipping_outlined,
@@ -192,6 +193,12 @@ class _OwnerSellingScreen extends StatelessWidget {
                 subtitle: 'Review incoming plant requests',
                 onTap: () => context.push('/requests/create'),
               ),
+              _MenuItem(
+                icon: Icons.travel_explore_outlined,
+                label: 'Plant Sourcing Network',
+                subtitle: 'Find nearby nurseries and open sourcing posts',
+                onTap: () => context.push('/sourcing'),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -204,8 +211,9 @@ class _OwnerSellingScreen extends StatelessWidget {
                 label: 'Managers',
                 subtitle: 'Invite and manage Gumastha',
                 onTap: () {
-                  final id   = nurseryId ?? 0;
-                  final name = Uri.encodeComponent(caps.ownedNurseryName ?? 'My Nursery');
+                  final id = nurseryId ?? 0;
+                  final name = Uri.encodeComponent(
+                      caps.ownedNurseryName ?? 'My Nursery');
                   context.push('/nursery/members?id=$id&name=$name&tab=0');
                 },
               ),
@@ -214,8 +222,9 @@ class _OwnerSellingScreen extends StatelessWidget {
                 label: 'Customers',
                 subtitle: 'Invite and manage customers',
                 onTap: () {
-                  final id   = nurseryId ?? 0;
-                  final name = Uri.encodeComponent(caps.ownedNurseryName ?? 'My Nursery');
+                  final id = nurseryId ?? 0;
+                  final name = Uri.encodeComponent(
+                      caps.ownedNurseryName ?? 'My Nursery');
                   context.push('/nursery/members?id=$id&name=$name&tab=1');
                 },
               ),
@@ -234,7 +243,8 @@ class _OwnerSellingScreen extends StatelessWidget {
             return;
           }
 
-          final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
+          final type =
+              choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
           context.push('/quotations/create?type=$type');
         },
         backgroundColor: AppColors.primaryMain,
@@ -323,7 +333,7 @@ class _ManagerSellingScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Orders waiting for loading assignment',
+                        'Start, complete, and hand over loaded orders',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 12,
@@ -334,10 +344,9 @@ class _ManagerSellingScreen extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => context.push(
-                      nurseryId != null
-                          ? '/orders?nursery=$nurseryId&status=LOADING'
-                          : '/orders'),
+                  onPressed: () => context.push(nurseryId != null
+                      ? '/orders/loading?nursery=$nurseryId'
+                      : '/orders/loading'),
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   child: const Text('Open'),
                 ),
@@ -359,8 +368,9 @@ class _ManagerSellingScreen extends StatelessWidget {
                 icon: Icons.shopping_cart_outlined,
                 label: 'My Orders',
                 subtitle: 'Active and pending orders',
-                onTap: () => context.push(
-                    nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders'),
+                onTap: () => context.push(nurseryId != null
+                    ? '/orders?nursery=$nurseryId'
+                    : '/orders'),
               ),
               _MenuItem(
                 icon: Icons.local_shipping_outlined,
@@ -380,6 +390,12 @@ class _ManagerSellingScreen extends StatelessWidget {
                 label: 'Plant Requests',
                 subtitle: 'View and respond to plant requests',
                 onTap: () => context.push('/requests/create'),
+              ),
+              _MenuItem(
+                icon: Icons.travel_explore_outlined,
+                label: 'Plant Sourcing Network',
+                subtitle: 'Find nearby nurseries and open sourcing posts',
+                onTap: () => context.push('/sourcing'),
               ),
             ],
           ),

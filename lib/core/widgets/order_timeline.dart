@@ -37,7 +37,8 @@ class OrderTimeline extends StatelessWidget {
     final s = order.status;
     final cancelled = s == 'CANCELLED';
     final pastLoading = !['PENDING', 'CONFIRMED', 'LOADING'].contains(s);
-    final pastLoaded = !['PENDING', 'CONFIRMED', 'LOADING', 'LOADED'].contains(s);
+    final pastLoaded =
+        !['PENDING', 'CONFIRMED', 'LOADING', 'COMPLETED'].contains(s);
 
     final steps = <_Step>[
       // 1. Order Created
@@ -82,7 +83,7 @@ class OrderTimeline extends StatelessWidget {
         subtitle: order.loadingCompletedAt != null
             ? _fmt(order.loadingCompletedAt)
             : (s == 'LOADING' ? 'In progress' : null),
-        state: s == 'LOADED'
+        state: s == 'COMPLETED'
             ? _StepState.current
             : (pastLoading && !cancelled
                 ? _StepState.completed
@@ -93,9 +94,7 @@ class OrderTimeline extends StatelessWidget {
       // 5. Dispatched
       _Step(
         title: 'Dispatched',
-        subtitle: s == 'LOADED'
-            ? 'Create dispatch from Actions'
-            : null,
+        subtitle: s == 'COMPLETED' ? 'Create dispatch from Actions' : null,
         state: pastLoaded && !cancelled
             ? _StepState.completed
             : _StepState.pending,
@@ -198,8 +197,8 @@ class _TimelineRow extends StatelessWidget {
       return AppTypography.label.copyWith(color: AppColors.red600);
     }
     if (step.state == _StepState.current) {
-      return AppTypography.label.copyWith(
-          color: AppColors.primaryMain, fontWeight: FontWeight.w700);
+      return AppTypography.label
+          .copyWith(color: AppColors.primaryMain, fontWeight: FontWeight.w700);
     }
     return AppTypography.label.copyWith(color: AppColors.textPrimary);
   }

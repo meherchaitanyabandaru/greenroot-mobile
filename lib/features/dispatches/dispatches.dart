@@ -6,6 +6,27 @@ import '../../core/network/api_client.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
+class TripEvent {
+  final int id;
+  final String eventType;
+  final String? note;
+  final String createdAt;
+
+  const TripEvent({
+    required this.id,
+    required this.eventType,
+    this.note,
+    required this.createdAt,
+  });
+
+  factory TripEvent.fromJson(Map<String, dynamic> j) => TripEvent(
+        id: (j['id'] as num).toInt(),
+        eventType: j['event_type'] as String,
+        note: j['note'] as String?,
+        createdAt: j['created_at'] as String,
+      );
+}
+
 class DispatchItem {
   final int id;
   final String? plantName;
@@ -34,6 +55,7 @@ class Dispatch {
   final String? orderNumber;
   final String? dispatchNumber;
   final String status;
+  final int? sellerNurseryId;
   final String? vehicleNumber;
   final String? driverName;
   final int? driverUserId;
@@ -42,6 +64,7 @@ class Dispatch {
   final String? destinationAddress;
   final String? notes;
   final String createdAt;
+  final String? updatedAt;
   final List<DispatchItem> items;
 
   const Dispatch({
@@ -51,6 +74,7 @@ class Dispatch {
     this.orderNumber,
     this.dispatchNumber,
     required this.status,
+    this.sellerNurseryId,
     this.vehicleNumber,
     this.driverName,
     this.driverUserId,
@@ -59,6 +83,7 @@ class Dispatch {
     this.destinationAddress,
     this.notes,
     required this.createdAt,
+    this.updatedAt,
     required this.items,
   });
 
@@ -69,6 +94,9 @@ class Dispatch {
         orderNumber: j['order_number'] as String?,
         dispatchNumber: j['dispatch_number'] as String?,
         status: j['dispatch_status'] as String,
+        sellerNurseryId: j['seller_nursery_id'] != null
+            ? (j['seller_nursery_id'] as num).toInt()
+            : null,
         vehicleNumber: j['vehicle_number'] as String?,
         driverName: j['driver_name'] as String?,
         driverUserId: j['driver_user_id'] != null ? (j['driver_user_id'] as num).toInt() : null,
@@ -77,6 +105,7 @@ class Dispatch {
         destinationAddress: j['destination_address'] as String?,
         notes: j['notes'] as String?,
         createdAt: j['created_at'] as String,
+        updatedAt: j['updated_at'] as String?,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
@@ -156,6 +185,67 @@ class DispatchRepository {
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
       },
     );
+  }
+
+  // ── Driver-specific ──────────────────────────────────────────────────────────
+
+  // RBAC §8: no explicit reject endpoint in current API. Returns null to signal gap.
+  // The backend must reject second active trip acceptance via 409.
+  Future<Dispatch?> rejectDispatch(int id) => Future.value(null);
+
+  Future<TripEvent> addTripEvent(
+    int dispatchId,
+    String eventType, {
+    String? note,
+  }) async {
+    return _client.post(
+      ApiConstants.tripEvents(dispatchId),
+      data: {
+        'event_type': eventType,
+        if (note?.isNotEmpty == true) 'note': note,
+      },
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return TripEvent.fromJson(
+            (d['trip_event'] ?? d) as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<void> postGpsLocation({
+    required int driverId,
+    required double latitude,
+    required double longitude,
+    int? dispatchId,
+  }) async {
+    await _client.post<dynamic>(
+      ApiConstants.postTracking,
+      data: {
+        'driver_id': driverId,
+        'latitude': latitude,
+        'longitude': longitude,
+        if (dispatchId != null) 'dispatch_id': dispatchId,
+      },
+    );
+  }
+
+  // Returns the driver's single active trip (ACCEPTED|DISPATCHED|IN_TRANSIT),
+  // or null if none. If multiple active trips exist (data integrity error) it
+  // returns null and the caller should surface a safe error.
+  Future<Dispatch?> getActiveTrip() async {
+    try {
+      final (dispatches, _) = await listDispatches(page: 1, perPage: 50);
+      const activeStatuses = {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'};
+      final active =
+          dispatches.where((d) => activeStatuses.contains(d.status)).toList();
+      if (active.length > 1) {
+        // Data-integrity violation — do not silently pick one.
+        return null;
+      }
+      return active.firstOrNull;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<Dispatch> createDispatch(
@@ -266,4 +356,35 @@ final dispatchListProvider =
 final dispatchDetailProvider =
     FutureProvider.family<Dispatch, int>((ref, id) async {
   return ref.watch(dispatchRepositoryProvider).getDispatch(id);
+});
+
+// ── Driver active trip ─────────────────────────────────────────────────────────
+
+enum ActiveTripResult { none, found, integrityError }
+
+class ActiveTripState {
+  final Dispatch? trip;
+  final ActiveTripResult result;
+  const ActiveTripState({required this.trip, required this.result});
+}
+
+final activeDriverTripProvider =
+    FutureProvider.autoDispose<ActiveTripState>((ref) async {
+  final repo = ref.watch(dispatchRepositoryProvider);
+  try {
+    final (dispatches, _) = await repo.listDispatches(page: 1, perPage: 50);
+    const activeStatuses = {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'};
+    final active =
+        dispatches.where((d) => activeStatuses.contains(d.status)).toList();
+    if (active.length > 1) {
+      return const ActiveTripState(
+          trip: null, result: ActiveTripResult.integrityError);
+    }
+    return ActiveTripState(
+      trip: active.firstOrNull,
+      result: active.isEmpty ? ActiveTripResult.none : ActiveTripResult.found,
+    );
+  } catch (_) {
+    return const ActiveTripState(trip: null, result: ActiveTripResult.none);
+  }
 });

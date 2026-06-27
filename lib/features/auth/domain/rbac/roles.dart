@@ -12,25 +12,28 @@ enum AppRole {
 
   static AppRole? fromString(String? value) {
     if (value == null) return null;
-    return AppRole.values.where((r) => r.value == value.toUpperCase()).firstOrNull;
+    return AppRole.values
+        .where((r) => r.value == value.toUpperCase())
+        .firstOrNull;
   }
 
   String get displayName => switch (this) {
-    AppRole.admin             => 'Admin',
-    AppRole.superAdmin        => 'Super Admin',
-    AppRole.nurseryOwner      => 'Nursery Owner',
-    AppRole.manager           => 'Manager / Gumastha',
-    AppRole.driver            => 'Driver',
-    AppRole.buyer             => 'Customer',
-    AppRole.transportProvider => 'Transport Provider',
-  };
+        AppRole.admin => 'Admin',
+        AppRole.superAdmin => 'Super Admin',
+        AppRole.nurseryOwner => 'Nursery Owner',
+        AppRole.manager => 'Manager / Gumastha',
+        AppRole.driver => 'Driver',
+        AppRole.buyer => 'Customer',
+        AppRole.transportProvider => 'Transport Provider',
+      };
 
-  // V1: Super Admin and Transport Provider are web-only; excluded from mobile.
+  // V1: Admin, Super Admin, and Transport Provider are web-only.
   bool get isMobileRole => switch (this) {
-    AppRole.superAdmin        => false,
-    AppRole.transportProvider => false,
-    _                         => true,
-  };
+        AppRole.admin => false,
+        AppRole.superAdmin => false,
+        AppRole.transportProvider => false,
+        _ => true,
+      };
 }
 
 extension AppRoleListX on List<AppRole> {

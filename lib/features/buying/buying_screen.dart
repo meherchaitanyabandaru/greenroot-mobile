@@ -123,7 +123,8 @@ class _BuyingQuotationsTab extends ConsumerWidget {
               style: AppTypography.body.copyWith(color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Text('Quotations sent to you by other nurseries will appear here.',
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+              style:
+                  AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
               textAlign: TextAlign.center),
         ]),
       );
@@ -133,8 +134,8 @@ class _BuyingQuotationsTab extends ConsumerWidget {
       color: AppColors.primaryMain,
       onRefresh: () => ref.read(buyingQuotationListProvider.notifier).load(),
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 80),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+            AppSpacing.sm, AppSpacing.screenPadding, 80),
         itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
         itemBuilder: (context, i) {
           if (i >= paged.items.length) {
@@ -199,8 +200,7 @@ class _BuyingQuotationCard extends ConsumerWidget {
           title: const Text('Reject Quotation'),
           content: TextField(
             controller: ctrl,
-            decoration:
-                const InputDecoration(hintText: 'Reason (optional)'),
+            decoration: const InputDecoration(hintText: 'Reason (optional)'),
             onChanged: (v) => reason = v,
           ),
           actions: [
@@ -209,8 +209,7 @@ class _BuyingQuotationCard extends ConsumerWidget {
                 child: const Text('Cancel')),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Reject',
-                  style: TextStyle(color: AppColors.red600)),
+              child: Text('Reject', style: TextStyle(color: AppColors.red600)),
             ),
           ],
         );
@@ -318,8 +317,8 @@ class _BuyingQuotationCard extends ConsumerWidget {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text('Reject',
-                          style: TextStyle(fontSize: 12)),
+                      child:
+                          const Text('Reject', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -336,8 +335,8 @@ class _BuyingQuotationCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
                       ),
-                      child: const Text('Accept',
-                          style: TextStyle(fontSize: 12)),
+                      child:
+                          const Text('Accept', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ]),
@@ -387,7 +386,8 @@ class _BuyingOrdersTab extends ConsumerWidget {
               style: AppTypography.body.copyWith(color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Text('Orders from other nurseries will appear here.',
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+              style:
+                  AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
               textAlign: TextAlign.center),
         ]),
       );
@@ -397,8 +397,8 @@ class _BuyingOrdersTab extends ConsumerWidget {
       color: AppColors.primaryMain,
       onRefresh: () => ref.read(buyingOrderListProvider.notifier).load(),
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 80),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+            AppSpacing.sm, AppSpacing.screenPadding, 80),
         itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
         itemBuilder: (context, i) {
           if (i >= paged.items.length) {
@@ -491,7 +491,8 @@ class _BuyingOrderCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
+            const Icon(Icons.chevron_right,
+                color: AppColors.textMuted, size: 18),
           ]),
         ),
       ),
@@ -614,7 +615,7 @@ class _OrderStatusChip extends StatelessWidget {
         fg = AppColors.blue600;
         break;
       case 'LOADING':
-      case 'LOADED':
+      case 'COMPLETED':
         bg = const Color(0xFFE8F5E9);
         fg = AppColors.primaryMain;
         break;

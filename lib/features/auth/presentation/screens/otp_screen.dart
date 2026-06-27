@@ -11,6 +11,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
+import 'splash_screen.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String mobile;
@@ -75,11 +76,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     }
 
     final session = ref.read(sessionProvider);
-    final caps = session.capabilities;
-    if (caps.hasPendingNursery) { context.go('/nursery/pending'); return; }
-    if (caps.hasRejectedNursery) { context.go('/nursery/rejected'); return; }
-
-    context.go('/home');
+    SplashScreen.routeAfterLogin(context, session);
   }
 
   void _clearOtp() {
@@ -100,15 +97,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) { c.dispose(); }
-    for (final f in _focusNodes) { f.dispose(); }
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final verifyState = ref.watch(otpVerifyProvider);
-    final sendState   = ref.watch(otpSendProvider);
+    final sendState = ref.watch(otpSendProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -130,36 +131,43 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'We sent a 6-digit code to +91 ${widget.mobile}',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.x3l),
 
               // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(AppConstants.otpLength, (i) => _OtpBox(
-                  controller: _controllers[i],
-                  focusNode: _focusNodes[i],
-                  hasError: verifyState.error != null,
-                  onChanged: (val) {
-                    if (val.isNotEmpty && i < AppConstants.otpLength - 1) {
-                      _focusNodes[i + 1].requestFocus();
-                    }
-                    if (val.isNotEmpty && i == AppConstants.otpLength - 1) {
-                      _verify();
-                    }
-                  },
-                  onBackspace: () {
-                    if (i > 0) { _focusNodes[i - 1].requestFocus(); }
-                  },
-                ),),
+                children: List.generate(
+                  AppConstants.otpLength,
+                  (i) => _OtpBox(
+                    controller: _controllers[i],
+                    focusNode: _focusNodes[i],
+                    hasError: verifyState.error != null,
+                    onChanged: (val) {
+                      if (val.isNotEmpty && i < AppConstants.otpLength - 1) {
+                        _focusNodes[i + 1].requestFocus();
+                      }
+                      if (val.isNotEmpty && i == AppConstants.otpLength - 1) {
+                        _verify();
+                      }
+                    },
+                    onBackspace: () {
+                      if (i > 0) {
+                        _focusNodes[i - 1].requestFocus();
+                      }
+                    },
+                  ),
+                ),
               ),
 
               if (verifyState.error != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   verifyState.error!.message,
-                  style: AppTypography.caption.copyWith(color: AppColors.errorText),
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.errorText),
                 ),
               ],
 
@@ -167,7 +175,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
               AppButton(
                 label: 'Verify OTP',
-                onPressed: _otp.length == AppConstants.otpLength ? _verify : null,
+                onPressed:
+                    _otp.length == AppConstants.otpLength ? _verify : null,
                 isLoading: verifyState.isLoading,
               ),
 

@@ -17,6 +17,7 @@ class SessionState {
   final List<Workspace> workspaces;
   final int? nurseryId;
   final String? ownedNurseryStatus;
+  final AppRole? activeRole;
   final AppError? error;
 
   const SessionState({
@@ -26,6 +27,7 @@ class SessionState {
     this.workspaces = const [],
     this.nurseryId,
     this.ownedNurseryStatus,
+    this.activeRole,
     this.error,
   });
 
@@ -36,6 +38,8 @@ class SessionState {
     List<Workspace>? workspaces,
     int? nurseryId,
     String? ownedNurseryStatus,
+    AppRole? activeRole,
+    bool clearActiveRole = false,
     AppError? error,
   }) =>
       SessionState(
@@ -45,6 +49,7 @@ class SessionState {
         workspaces: workspaces ?? this.workspaces,
         nurseryId: nurseryId ?? this.nurseryId,
         ownedNurseryStatus: ownedNurseryStatus ?? this.ownedNurseryStatus,
+        activeRole: clearActiveRole ? null : (activeRole ?? this.activeRole),
         error: error,
       );
 
@@ -58,8 +63,11 @@ class SessionState {
 
   bool get hasMultipleWorkspaces => mobileWorkspaces.length > 1;
 
-  UserCapabilities get capabilities =>
-      UserCapabilities.fromWorkspaces(workspaces, ownedNurseryStatus: ownedNurseryStatus);
+  UserCapabilities get capabilities => UserCapabilities.fromWorkspaces(
+        workspaces,
+        ownedNurseryStatus: ownedNurseryStatus,
+        activeRole: activeRole,
+      );
 }
 
 class SessionNotifier extends StateNotifier<SessionState> {
@@ -76,10 +84,11 @@ class SessionNotifier extends StateNotifier<SessionState> {
         return;
       }
 
-      final user       = await _repo.getCurrentUser();
+      final user = await _repo.getCurrentUser();
       final workspaces = await _repo.getWorkspaces();
-      final roles      = await _repo.getUserRoles();
-      final nurseryId  = await _repo.getNurseryId();
+      final roles = await _repo.getUserRoles();
+      final nurseryId = await _repo.getNurseryId();
+      final activeRole = await _repo.getStoredActiveRole();
 
       // Fetch nursery status separately for pending/rejected routing
       String? ownedNurseryStatus;
@@ -89,12 +98,13 @@ class SessionNotifier extends StateNotifier<SessionState> {
       }
 
       state = SessionState(
-        status:             SessionStatus.authenticated,
-        user:               user,
-        roles:              roles,
-        workspaces:         workspaces,
-        nurseryId:          nurseryId,
+        status: SessionStatus.authenticated,
+        user: user,
+        roles: roles,
+        workspaces: workspaces,
+        nurseryId: nurseryId,
         ownedNurseryStatus: ownedNurseryStatus,
+        activeRole: activeRole,
       );
     } on UnauthorizedError {
       await _repo.logout();
@@ -112,6 +122,10 @@ class SessionNotifier extends StateNotifier<SessionState> {
   void updateUser(UserProfile user) {
     state = state.copyWith(user: user);
   }
+
+  void setActiveRole(AppRole? role) {
+    state = state.copyWith(activeRole: role, clearActiveRole: role == null);
+  }
 }
 
 final sessionProvider =
@@ -120,7 +134,7 @@ final sessionProvider =
 });
 
 final permissionServiceProvider = Provider<PermissionService>((ref) {
-  final session    = ref.watch(sessionProvider);
+  final session = ref.watch(sessionProvider);
   final activeRole = ref.watch(activeRoleProvider);
   return PermissionService(roles: session.roles, activeRole: activeRole);
 });

@@ -3,10 +3,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../domain/rbac/roles.dart';
 import '../providers/session_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
+
+  static void routeAfterLogin(BuildContext context, SessionState session) =>
+      _routeByCapabilities(context, session);
+
+  static void _routeByCapabilities(BuildContext context, SessionState session) {
+    final caps = session.capabilities;
+    if (caps.hasPendingNursery) {
+      context.go('/nursery/pending');
+      return;
+    }
+    if (caps.hasRejectedNursery) {
+      context.go('/nursery/rejected');
+      return;
+    }
+    if (session.hasMultipleWorkspaces && session.activeRole == null) {
+      context.go('/workspace-select');
+      return;
+    }
+    if (session.roles.hasAnyRole([AppRole.admin, AppRole.superAdmin]) &&
+        session.mobileWorkspaces.isEmpty) {
+      context.go('/home/admin');
+      return;
+    }
+    context.go('/home');
+  }
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -25,9 +51,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _fade  = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.85, end: 1.0)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutBack));
+    _fade = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),);
 
     _animController.forward();
     _bootstrap();
@@ -48,17 +74,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       context.go('/login');
       return;
     }
-    _routeByCapabilities(context, session);
-  }
-
-  static void routeAfterLogin(BuildContext context, dynamic session) =>
-      _routeByCapabilities(context, session);
-
-  static void _routeByCapabilities(BuildContext context, dynamic session) {
-    final caps = session.capabilities;
-    if (caps.hasPendingNursery) { context.go('/nursery/pending'); return; }
-    if (caps.hasRejectedNursery) { context.go('/nursery/rejected'); return; }
-    context.go('/home');
+    SplashScreen.routeAfterLogin(context, session);
   }
 
   @override

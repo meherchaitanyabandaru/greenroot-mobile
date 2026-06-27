@@ -4,22 +4,23 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
-import '../core/widgets/app_button.dart';
 import '../core/widgets/qr_scanner_screen.dart';
 import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
-import '../features/activity/activity_screen.dart';
 import '../features/buying/buying_screen.dart';
-import '../features/dispatches/dispatch_list_screen.dart';
-import '../features/driver_section/driver_screen.dart';
+import '../features/dispatches/dispatches.dart';
+import '../features/driver/driver_home_screen.dart';
+import '../features/driver/driver_trips_screen.dart';
 import '../features/driver/trip_preview_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/notifications/notification_list_screen.dart';
+import '../features/notifications/notifications.dart';
+import '../features/plants/plant_list_screen.dart';
 import '../features/profile/profile_screen.dart';
-import '../features/quotations/quotation_list_screen.dart';
-import '../features/orders/order_list_screen.dart';
 import '../features/selling/selling_screen.dart';
+import '../features/sourcing/sourcing_screen.dart';
 
-// ── Tab index provider — reset to 0 when role changes ─────────────────────────
+// ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
 
 class MainShell extends ConsumerWidget {
@@ -31,7 +32,6 @@ class MainShell extends ConsumerWidget {
     final caps = session.capabilities;
     final tabs = _buildTabs(caps);
 
-    // Clamp stored index when tab count changes (e.g. role changed)
     final rawIndex = ref.watch(mainTabIndexProvider);
     final index = rawIndex.clamp(0, tabs.length - 1);
 
@@ -40,21 +40,22 @@ class MainShell extends ConsumerWidget {
         index: index,
         children: tabs.map((t) => t.screen).toList(),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) =>
-            ref.read(mainTabIndexProvider.notifier).state = i,
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primaryLight,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: tabs
-            .map((t) => NavigationDestination(
-                  icon: Icon(t.icon),
-                  selectedIcon: Icon(t.activeIcon, color: AppColors.primaryMain),
-                  label: t.label,
-                ))
-            .toList(),
-      ),
+      bottomNavigationBar: caps.isDriverOnly
+          ? _DriverBottomNav(
+              tabs: tabs,
+              selectedIndex: index,
+              onSelected: (i) =>
+                  ref.read(mainTabIndexProvider.notifier).state = i,
+            )
+          : _GreenRootBottomNav(
+              tabs: tabs,
+              selectedIndex: index,
+              onSelected: (i) =>
+                  ref.read(mainTabIndexProvider.notifier).state = i,
+            ),
+      floatingActionButton:
+          caps.isDriverOnly ? null : _buildFab(context, ref, caps),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -74,42 +75,48 @@ class _Tab {
   });
 }
 
-// ── BRD role → tabs mapping ───────────────────────────────────────────────────
+// ── Role → tab mapping ────────────────────────────────────────────────────────
 //
-// Owner (APPROVED) : Home | Sell | Buy | Activity | Profile
-// Manager          : Home | My Work | Dispatches | Profile
-// Customer         : Home | Quotations | Orders | Profile
-// Driver only      : Home | My Trips | Join Trip | Profile
+// Owner   : Home | Business | Sourcing | Profile
+// Manager : Home | My Work  | Sourcing | Profile
+// Driver  : Home | Trips    | Profile
+// Customer: Home | Plants   | My Activity | Profile
 
 List<_Tab> _buildTabs(UserCapabilities caps) {
-  final home = _Tab(
-    screen: const HomeScreen(),
+  const home = _Tab(
+    screen: HomeScreen(),
     icon: Icons.home_outlined,
     activeIcon: Icons.home_rounded,
     label: 'Home',
   );
-  final profile = _Tab(
-    screen: const ProfileScreen(),
+  const profile = _Tab(
+    screen: ProfileScreen(),
     icon: Icons.person_outline_rounded,
     activeIcon: Icons.person_rounded,
     label: 'Profile',
   );
 
-  // ── Driver-only (no nursery ownership or manager role)
+  // ── Driver only (no nursery / manager role)
+  // Navigation: Home | Trips | Notifications | Profile  (§ Driver Bottom Navigation)
   if (caps.isDriverOnly) {
     return [
-      home,
-      _Tab(
-        screen: const DispatchListScreen(),
+      const _Tab(
+        screen: DriverHomeScreen(),
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home',
+      ),
+      const _Tab(
+        screen: DriverTripsScreen(),
         icon: Icons.route_outlined,
         activeIcon: Icons.route_rounded,
-        label: 'My Trips',
+        label: 'Trips',
       ),
-      _Tab(
-        screen: const _JoinTripTab(),
-        icon: Icons.qr_code_scanner_outlined,
-        activeIcon: Icons.qr_code_scanner_rounded,
-        label: 'Join Trip',
+      const _Tab(
+        screen: NotificationListScreen(),
+        icon: Icons.notifications_none_rounded,
+        activeIcon: Icons.notifications_rounded,
+        label: 'Notifications',
       ),
       profile,
     ];
@@ -119,209 +126,633 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
   if (caps.isManager && !caps.isNurseryOwner) {
     return [
       home,
-      _Tab(
-        screen: const SellingScreen(),
+      const _Tab(
+        screen: SellingScreen(),
         icon: Icons.work_outline_rounded,
         activeIcon: Icons.work_rounded,
         label: 'My Work',
       ),
-      _Tab(
-        screen: const DispatchListScreen(),
-        icon: Icons.local_shipping_outlined,
-        activeIcon: Icons.local_shipping_rounded,
-        label: 'Dispatches',
+      const _Tab(
+        screen: SourcingScreen(),
+        icon: Icons.travel_explore_outlined,
+        activeIcon: Icons.travel_explore_rounded,
+        label: 'Sourcing',
       ),
       profile,
     ];
   }
 
-  // ── Nursery Owner (APPROVED)
+  // ── Nursery Owner
   if (caps.isNurseryOwner) {
     return [
       home,
-      _Tab(
-        screen: const SellingScreen(),
+      const _Tab(
+        screen: SellingScreen(),
         icon: Icons.storefront_outlined,
         activeIcon: Icons.storefront_rounded,
-        label: 'Sell',
+        label: 'Business',
       ),
-      _Tab(
-        screen: const BuyingScreen(),
-        icon: Icons.shopping_bag_outlined,
-        activeIcon: Icons.shopping_bag_rounded,
-        label: 'Buy',
-      ),
-      _Tab(
-        screen: const ActivityScreen(),
-        icon: Icons.timeline_outlined,
-        activeIcon: Icons.timeline_rounded,
-        label: 'Activity',
+      const _Tab(
+        screen: SourcingScreen(),
+        icon: Icons.travel_explore_outlined,
+        activeIcon: Icons.travel_explore_rounded,
+        label: 'Sourcing',
       ),
       profile,
     ];
   }
 
-  // ── Default: Customer / Buyer
+  // ── Customer / Buyer (default)
   return [
     home,
-    _Tab(
-      screen: const QuotationListScreen(),
-      icon: Icons.request_quote_outlined,
-      activeIcon: Icons.request_quote_rounded,
-      label: 'Quotations',
+    const _Tab(
+      screen: PlantListScreen(),
+      icon: Icons.eco_outlined,
+      activeIcon: Icons.eco_rounded,
+      label: 'Plants',
     ),
-    _Tab(
-      screen: const OrderListScreen(),
+    const _Tab(
+      screen: BuyingScreen(),
       icon: Icons.receipt_long_outlined,
       activeIcon: Icons.receipt_long_rounded,
-      label: 'Orders',
+      label: 'My Activity',
     ),
     profile,
   ];
 }
 
-// ── Join Trip tab — shown as a tab for drivers ─────────────────────────────────
+// ── FAB per role ──────────────────────────────────────────────────────────────
 
-class _JoinTripTab extends ConsumerStatefulWidget {
-  const _JoinTripTab();
+Widget? _buildFab(
+  BuildContext context,
+  WidgetRef ref,
+  UserCapabilities caps,
+) {
+  // Driver: contextual FAB — depends on active trip state
+  if (caps.isDriverOnly) {
+    Widget scanFab() => FloatingActionButton(
+          heroTag: 'fab_driver_scan',
+          backgroundColor: AppColors.primaryMain,
+          foregroundColor: Colors.white,
+          tooltip: 'Scan Trip QR',
+          onPressed: () async {
+            final code = await Navigator.of(context).push<String>(
+              MaterialPageRoute(
+                builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+                fullscreenDialog: true,
+              ),
+            );
+            if (code != null && code.isNotEmpty && context.mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TripPreviewScreen(code: code),
+                ),
+              );
+            }
+          },
+          child: const Icon(Icons.qr_code_scanner_rounded),
+        );
 
-  @override
-  ConsumerState<_JoinTripTab> createState() => _JoinTripTabState();
-}
-
-class _JoinTripTabState extends ConsumerState<_JoinTripTab> {
-  final _codeCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _codeCtrl.dispose();
-    super.dispose();
-  }
-
-  void _openTripPreview(BuildContext context, String code) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TripPreviewScreen(code: code),
-      ),
+    final activeTripAsync = ref.watch(activeDriverTripProvider);
+    return activeTripAsync.when(
+      loading: () => null,
+      error: (_, __) => scanFab(),
+      data: (activeTripState) {
+        final trip = activeTripState.trip;
+        if (trip == null) return scanFab();
+        final status = trip.status;
+        if (status == 'ACCEPTED' || status == 'DISPATCHED') {
+          return FloatingActionButton.extended(
+            heroTag: 'fab_driver_view',
+            backgroundColor: AppColors.primaryMain,
+            foregroundColor: Colors.white,
+            onPressed: () => context.push('/driver/trip/${trip.id}'),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('View Trip'),
+          );
+        }
+        if (status == 'IN_TRANSIT') {
+          return FloatingActionButton.extended(
+            heroTag: 'fab_driver_event',
+            backgroundColor: AppColors.primaryMain,
+            foregroundColor: Colors.white,
+            onPressed: () => context.push('/driver/trips/${trip.id}/event'),
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            label: const Text('Add Event'),
+          );
+        }
+        return null;
+      },
     );
   }
 
+  // Owner FAB
+  if (caps.isNurseryOwner) {
+    return FloatingActionButton(
+      heroTag: 'fab_owner',
+      backgroundColor: AppColors.primaryMain,
+      foregroundColor: Colors.white,
+      tooltip: 'Create',
+      onPressed: () => _showOwnerFabSheet(context, ref),
+      child: const Icon(Icons.add_rounded),
+    );
+  }
+
+  // Manager FAB
+  if (caps.isManager) {
+    return FloatingActionButton(
+      heroTag: 'fab_manager',
+      backgroundColor: AppColors.primaryMain,
+      foregroundColor: Colors.white,
+      tooltip: 'Create',
+      onPressed: () => _showManagerFabSheet(context, ref),
+      child: const Icon(Icons.add_rounded),
+    );
+  }
+
+  // Customer FAB
+  return FloatingActionButton(
+    heroTag: 'fab_customer',
+    backgroundColor: AppColors.primaryMain,
+    foregroundColor: Colors.white,
+    tooltip: 'More actions',
+    onPressed: () => _showCustomerFabSheet(context, ref),
+    child: const Icon(Icons.add_rounded),
+  );
+}
+
+// ── FAB action sheets ─────────────────────────────────────────────────────────
+
+void _showOwnerFabSheet(BuildContext context, WidgetRef ref) {
+  _showFabSheet(
+    context,
+    title: 'Create',
+    actions: [
+      _FabAction(
+        icon: Icons.add_shopping_cart_rounded,
+        title: 'Create Order',
+        subtitle: 'New selling order for a customer',
+        onTap: () => context.push('/orders/create'),
+      ),
+      _FabAction(
+        icon: Icons.request_quote_outlined,
+        title: 'Create Quotation',
+        subtitle: 'Send a price quote to a customer',
+        onTap: () => context.push('/quotations/create'),
+      ),
+      _FabAction(
+        icon: Icons.search_rounded,
+        title: 'Need Plants',
+        subtitle: 'Post a plant requirement on sourcing network',
+        onTap: () => context.push('/sourcing'),
+      ),
+    ],
+  );
+}
+
+void _showManagerFabSheet(BuildContext context, WidgetRef ref) {
+  _showFabSheet(
+    context,
+    title: 'Create',
+    actions: [
+      _FabAction(
+        icon: Icons.request_quote_outlined,
+        title: 'Create Quotation',
+        subtitle: 'Send a price quote to a customer',
+        onTap: () => context.push('/quotations/create'),
+      ),
+      _FabAction(
+        icon: Icons.search_rounded,
+        title: 'Need Plants',
+        subtitle: 'Post a plant requirement on sourcing network',
+        onTap: () => context.push('/sourcing'),
+      ),
+      _FabAction(
+        icon: Icons.sell_outlined,
+        title: 'Available Plants',
+        subtitle: 'Post plant availability on sourcing network',
+        onTap: () => context.push('/sourcing'),
+      ),
+    ],
+  );
+}
+
+void _showCustomerFabSheet(BuildContext context, WidgetRef ref) {
+  _showFabSheet(
+    context,
+    title: 'Actions',
+    actions: [
+      _FabAction(
+        icon: Icons.qr_code_scanner_rounded,
+        title: 'Scan Customer Invite',
+        subtitle: 'Accept an invitation from a nursery',
+        onTap: () => context.push('/invite/accept'),
+      ),
+      _FabAction(
+        icon: Icons.storefront_outlined,
+        title: 'Register My Nursery',
+        subtitle: 'Start a nursery and become an owner',
+        onTap: () => context.push('/register/nursery'),
+      ),
+    ],
+  );
+}
+
+void _showFabSheet(
+  BuildContext context, {
+  required String title,
+  required List<_FabAction> actions,
+}) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _FabBottomSheet(title: title, actions: actions),
+  );
+}
+
+// ── FAB bottom sheet ──────────────────────────────────────────────────────────
+
+class _FabAction {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _FabAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+}
+
+class _FabBottomSheet extends StatelessWidget {
+  final String title;
+  final List<_FabAction> actions;
+
+  const _FabBottomSheet({required this.title, required this.actions});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text('Join Trip', style: AppTypography.h3),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.slate900.withValues(alpha: 0.12),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(title, style: AppTypography.h3),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...actions.map(
+            (a) => _FabActionTile(
+              action: a,
+              onTap: () {
+                Navigator.of(context).pop();
+                a.onTap();
+              },
+            ),
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _FabActionTile extends StatelessWidget {
+  final _FabAction action;
+  final VoidCallback onTap;
+
+  const _FabActionTile({required this.action, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+          vertical: 14,
+        ),
+        child: Row(
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
-                borderRadius: BorderRadius.circular(24),
+                color: AppColors.forest100,
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
-                Icons.qr_code_scanner_rounded,
-                size: 44,
-                color: Color(0xFF1565C0),
-              ),
+              child: Icon(action.icon, color: AppColors.primaryMain),
             ),
-            const SizedBox(height: AppSpacing.x2l),
-            const Text('Join a Delivery Trip',
-                style: AppTypography.h2, textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Scan the QR code or enter the trip code shared by the nursery owner or manager.',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.x3l),
-
-            // Scan QR
-            AppButton(
-              label: 'Scan Trip QR Code',
-              onPressed: () async {
-                final result = await Navigator.of(context).push<String>(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        const QrScannerScreen(title: 'Scan Trip QR'),
-                    fullscreenDialog: true,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(action.title, style: AppTypography.h4),
+                  const SizedBox(height: 2),
+                  Text(
+                    action.subtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                );
-                if (result != null && result.isNotEmpty && context.mounted) {
-                  _openTripPreview(context, result);
-                }
-              },
-              leadingIcon: Icons.qr_code_scanner_rounded,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Or enter code manually
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Text('or',
-                      style: AppTypography.caption
-                          .copyWith(color: AppColors.textMuted)),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            TextField(
-              controller: _codeCtrl,
-              decoration: InputDecoration(
-                hintText: 'Enter trip code / UUID',
-                hintStyle:
-                    AppTypography.body.copyWith(color: AppColors.textMuted),
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                      color: AppColors.primaryMain, width: 1.5),
-                ),
-                prefixIcon: const Icon(Icons.tag_rounded,
-                    color: AppColors.textMuted),
+                ],
               ),
-              textCapitalization: TextCapitalization.characters,
             ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton(
-              onPressed: () {
-                final code = _codeCtrl.text.trim();
-                if (code.isNotEmpty) {
-                  _openTripPreview(context, code);
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize:
-                    const Size(double.infinity, AppSpacing.buttonHeight),
-                side: const BorderSide(color: AppColors.primaryMain),
-                foregroundColor: AppColors.primaryMain,
-              ),
-              child: const Text('Join with Code'),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Bottom navigation bar ─────────────────────────────────────────────────────
+
+// ── Driver bottom nav — 5 slots with center scan button ───────────────────────
+// Layout: Home | Trips | [●Scan] | Notifications | Profile
+// Tab index mapping: pos0→0, pos1→1, pos2=action, pos3→2, pos4→3
+
+class _DriverBottomNav extends ConsumerWidget {
+  final List<_Tab> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _DriverBottomNav({
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationListProvider).unreadCount;
+
+    // tabs[0]=Home  tabs[1]=Trips  tabs[2]=Notifications  tabs[3]=Profile
+    Future<void> scanQr() async {
+      final code = await Navigator.of(context).push<String>(
+        MaterialPageRoute(
+          builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+          fullscreenDialog: true,
+        ),
+      );
+      if (code != null && code.isNotEmpty && context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => TripPreviewScreen(code: code)),
+        );
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: const Border(top: BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.slate900.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 72,
+          child: Row(
+            children: [
+              // Home
+              Expanded(
+                child: _BottomNavItem(
+                  tab: tabs[0],
+                  selected: selectedIndex == 0,
+                  unreadCount: 0,
+                  onTap: () => onSelected(0),
+                  showLabel: false,
+                ),
+              ),
+              // Trips
+              Expanded(
+                child: _BottomNavItem(
+                  tab: tabs[1],
+                  selected: selectedIndex == 1,
+                  unreadCount: 0,
+                  onTap: () => onSelected(1),
+                  showLabel: false,
+                ),
+              ),
+              // Center scan button
+              Expanded(
+                child: _CenterScanButton(onTap: scanQr),
+              ),
+              // Notifications
+              Expanded(
+                child: _BottomNavItem(
+                  tab: tabs[2],
+                  selected: selectedIndex == 2,
+                  unreadCount: unread,
+                  onTap: () => onSelected(2),
+                  showLabel: false,
+                ),
+              ),
+              // Profile
+              Expanded(
+                child: _BottomNavItem(
+                  tab: tabs[3],
+                  selected: selectedIndex == 3,
+                  unreadCount: 0,
+                  onTap: () => onSelected(3),
+                  showLabel: false,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CenterScanButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CenterScanButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.primaryMain,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryMain.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.qr_code_scanner_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Standard bottom nav (non-driver roles) ────────────────────────────────────
+
+class _GreenRootBottomNav extends ConsumerWidget {
+  final List<_Tab> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _GreenRootBottomNav({
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationListProvider).unreadCount;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: const Border(top: BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.slate900.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 72,
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: _BottomNavItem(
+                    tab: tabs[i],
+                    selected: selectedIndex == i,
+                    unreadCount: tabs[i].label == 'Alerts' ||
+                            tabs[i].label == 'Notifications'
+                        ? unread
+                        : 0,
+                    onTap: () => onSelected(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  final _Tab tab;
+  final bool selected;
+  final int unreadCount;
+  final VoidCallback onTap;
+  final bool showLabel;
+
+  const _BottomNavItem({
+    required this.tab,
+    required this.selected,
+    required this.unreadCount,
+    required this.onTap,
+    this.showLabel = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primaryMain : AppColors.textSecondary;
+
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Badge.count(
+            count: unreadCount,
+            isLabelVisible: unreadCount > 0,
+            child: Icon(
+              selected ? tab.activeIcon : tab.icon,
+              color: color,
+              size: 26,
+            ),
+          ),
+          if (showLabel) ...[
+            const SizedBox(height: 5),
+            Text(
+              tab.label,
+              style: AppTypography.caption.copyWith(
+                color: color,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 6),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: selected ? 28 : 0,
+            height: 2,
+            decoration: BoxDecoration(
+              color: AppColors.primaryMain,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+        ],
       ),
     );
   }

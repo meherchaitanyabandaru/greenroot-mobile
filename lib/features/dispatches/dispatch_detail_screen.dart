@@ -381,10 +381,9 @@ class _DetailContent extends StatelessWidget {
             onPressed: () => QrShareSheet.show(
               context,
               code: dispatch.dispatchCode,
-              title: 'Dispatch Code',
-              subtitle: 'Share with your driver or team',
+              qrType: QrCodeType.tripQr,
               shareMessage:
-                  'GreenRoot Dispatch: ${dispatch.dispatchCode}\n\nUse this code to track or confirm your dispatch.\nOrder: ${dispatch.orderNumber ?? '-'}',
+                  'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${dispatch.orderNumber ?? '-'}',
             ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.primaryMain),

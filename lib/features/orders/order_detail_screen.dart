@@ -212,8 +212,7 @@ class _InfoCard extends StatelessWidget {
     final dateStr =
         date != null ? DateFormat('dd MMM yyyy').format(date.toLocal()) : '';
 
-    final buyerLabel =
-        order.buyerName ?? order.customerName ?? 'Unknown Buyer';
+    final buyerLabel = order.buyerName ?? order.customerName ?? 'Unknown Buyer';
     final responsibleLabel = order.assignedManagerName != null
         ? order.assignedManagerName!
         : (order.assignedManagerUserId != null
@@ -315,8 +314,8 @@ class _InfoRow extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: AppColors.textSecondary)),
                 Text(value,
-                    style: AppTypography.body.copyWith(
-                        color: valueColor ?? AppColors.textPrimary)),
+                    style: AppTypography.body
+                        .copyWith(color: valueColor ?? AppColors.textPrimary)),
               ],
             ),
           ),
@@ -356,8 +355,8 @@ class _ItemsCardState extends State<_ItemsCard> {
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.amber100,
                     borderRadius: BorderRadius.circular(12),
@@ -373,7 +372,8 @@ class _ItemsCardState extends State<_ItemsCard> {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Items can be added, removed, or updated until Loading Completed.',
-            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+            style:
+                AppTypography.caption.copyWith(color: AppColors.textSecondary),
           ),
         ],
         const SizedBox(height: AppSpacing.md),
@@ -389,8 +389,7 @@ class _ItemsCardState extends State<_ItemsCard> {
                     children: [
                       if (entry.key > 0) const Divider(height: 1, indent: 16),
                       Padding(
-                        padding:
-                            const EdgeInsets.all(AppSpacing.cardPadding),
+                        padding: const EdgeInsets.all(AppSpacing.cardPadding),
                         child: Row(
                           children: [
                             Expanded(
@@ -402,8 +401,7 @@ class _ItemsCardState extends State<_ItemsCard> {
                                   if (entry.value.sizeName != null)
                                     Text(entry.value.sizeName!,
                                         style: AppTypography.caption.copyWith(
-                                            color:
-                                                AppColors.textSecondary)),
+                                            color: AppColors.textSecondary)),
                                 ],
                               ),
                             ),
@@ -412,8 +410,7 @@ class _ItemsCardState extends State<_ItemsCard> {
                               children: [
                                 Text(widget.fmt.format(entry.value.totalPrice),
                                     style: AppTypography.label),
-                                Text(
-                                    'Qty: ${entry.value.quantity.toInt()}',
+                                Text('Qty: ${entry.value.quantity.toInt()}',
                                     style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary)),
                               ],
@@ -502,8 +499,7 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.message), backgroundColor: AppColors.red600),
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
         );
       }
     } catch (e) {
@@ -576,15 +572,15 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
     try {
       final dispatch = await ref
           .read(dispatchRepositoryProvider)
-          .createDispatch(widget.orderId, destinationAddress: dest, notes: notes);
+          .createDispatch(widget.orderId,
+              destinationAddress: dest, notes: notes);
       if (mounted) {
         await QrShareSheet.show(
           context,
           code: dispatch.dispatchCode,
-          title: 'Dispatch Created!',
-          subtitle: 'Share this code with your driver to start the trip',
+          qrType: QrCodeType.tripQr,
           shareMessage:
-              'GreenRoot Dispatch: ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${widget.order.orderNumber}',
+              'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${widget.order.orderNumber}',
         );
         if (mounted) context.push('/dispatches/${dispatch.id}');
       }
@@ -722,7 +718,7 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
       ));
     }
 
-    if (status == 'LOADED') {
+    if (status == 'COMPLETED') {
       actions.add(_ActionDef(
         label: 'Link Driver (Create Dispatch)',
         icon: Icons.local_shipping_rounded,
@@ -773,8 +769,8 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: action.color,
                         side: BorderSide(color: action.color),
-                        minimumSize:
-                            const Size(double.infinity, AppSpacing.buttonHeight),
+                        minimumSize: const Size(
+                            double.infinity, AppSpacing.buttonHeight),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
@@ -792,8 +788,8 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: action.color,
                         foregroundColor: Colors.white,
-                        minimumSize:
-                            const Size(double.infinity, AppSpacing.buttonHeight),
+                        minimumSize: const Size(
+                            double.infinity, AppSpacing.buttonHeight),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
@@ -834,9 +830,8 @@ class _AssignManagerSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding, AppSpacing.lg,
-          AppSpacing.screenPadding, AppSpacing.x3l),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+          AppSpacing.lg, AppSpacing.screenPadding, AppSpacing.x3l),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -873,8 +868,8 @@ class _AssignManagerSheet extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'No managers found for this nursery.\nInvite a manager from Connections.',
-                    style:
-                        AppTypography.body.copyWith(color: AppColors.textSecondary),
+                    style: AppTypography.body
+                        .copyWith(color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -906,8 +901,8 @@ class _AssignManagerSheet extends StatelessWidget {
                                 m.name.isNotEmpty
                                     ? m.name[0].toUpperCase()
                                     : 'M',
-                                style: AppTypography.h3.copyWith(
-                                    color: AppColors.primaryMain),
+                                style: AppTypography.h3
+                                    .copyWith(color: AppColors.primaryMain),
                               ),
                             ),
                           ),
@@ -999,8 +994,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Optionally add a destination address and notes. After creating, share the dispatch QR with your driver.',
-            style:
-                AppTypography.body.copyWith(color: AppColors.textSecondary),
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.x2l),
           TextField(

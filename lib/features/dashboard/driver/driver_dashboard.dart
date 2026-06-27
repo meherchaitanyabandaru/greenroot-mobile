@@ -6,8 +6,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
-import '../../dispatches/dispatch_list_screen.dart';
 import '../../dispatches/dispatches.dart';
+import '../../driver/driver_trips_screen.dart';
 import '../shared/dashboard_card.dart';
 import '../shared/profile_tab.dart';
 import '../shared/role_shell.dart';
@@ -31,26 +31,13 @@ class DriverDashboard extends StatelessWidget {
           icon: Icons.route_outlined,
           activeIcon: Icons.route_rounded,
           label: 'My Trips',
-          screen: DispatchListScreen(),
+          screen: DriverTripsScreen(),
         ),
         RoleNavItem(
           icon: Icons.person_outline_rounded,
           activeIcon: Icons.person_rounded,
           label: 'Profile',
           screen: _DriverProfileTab(),
-        ),
-        // ── Drawer-only ───────────────────────────────────────────────────
-        RoleNavItem(
-          icon: Icons.storefront_outlined,
-          activeIcon: Icons.storefront_rounded,
-          label: 'My Nurseries',
-          screen: PlaceholderFeatureScreen(
-            title: 'Connected Nurseries',
-            icon: Icons.storefront_outlined,
-            subtitle:
-                'View and manage your nursery connections. Accept invites to join new nurseries.',
-          ),
-          inBottomNav: false,
         ),
       ],
     );
@@ -76,21 +63,25 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
   }
 
   @override
-  Widget build(BuildContext context, ) {
-    final user       = ref.watch(sessionProvider).user;
-    final dispState  = ref.watch(dispatchListProvider);
-    final paged      = dispState.paged;
-    final inTransit  = paged.items
+  Widget build(
+    BuildContext context,
+  ) {
+    final user = ref.watch(sessionProvider).user;
+    final dispState = ref.watch(dispatchListProvider);
+    final paged = dispState.paged;
+    final inTransit = paged.items
         .where((d) => d.status == 'IN_TRANSIT' || d.status == 'ASSIGNED')
         .toList();
-    final hasActive  = inTransit.isNotEmpty;
+    final hasActive = inTransit.isNotEmpty;
 
     void gotoTrips() =>
         ref.read(roleTabIndexProvider(AppRole.driver).notifier).state = 1;
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.read(dispatchListProvider.notifier).load(statusFilter: 'IN_TRANSIT');
+        ref
+            .read(dispatchListProvider.notifier)
+            .load(statusFilter: 'IN_TRANSIT');
       },
       color: AppColors.primaryMain,
       child: ListView(
@@ -242,8 +233,7 @@ class _ActiveTripBanner extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -315,7 +305,8 @@ class _DriverProfileTab extends ConsumerWidget {
         children: [
           const ProfileTabContent(role: AppRole.driver),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

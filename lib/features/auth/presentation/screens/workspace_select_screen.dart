@@ -26,7 +26,7 @@ class _WorkspaceSelectScreenState extends ConsumerState<WorkspaceSelectScreen> {
   void initState() {
     super.initState();
     final workspaces = ref.read(sessionProvider).mobileWorkspaces;
-    if (workspaces.isEmpty) return; // nothing to pre-select
+    if (workspaces.isEmpty) return;
     final savedRole = ref.read(activeRoleProvider);
     if (savedRole != null) {
       _selected = workspaces.firstWhere(
@@ -36,29 +36,34 @@ class _WorkspaceSelectScreenState extends ConsumerState<WorkspaceSelectScreen> {
     } else {
       _selected = workspaces.first;
     }
+    // Single workspace: skip the picker and auto-navigate.
+    if (workspaces.length == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _confirm(),);
+    }
   }
 
   Future<void> _confirm() async {
     final ws = _selected;
     if (ws == null) return;
     await ref.read(activeRoleProvider.notifier).selectRole(ws.appRole);
+    ref.read(sessionProvider.notifier).setActiveRole(ws.appRole);
     if (!mounted) return;
     context.go(_routeFor(ws.appRole));
   }
 
   String _routeFor(AppRole role) => switch (role) {
         AppRole.nurseryOwner => '/home/nursery-owner',
-        AppRole.manager      => '/home/manager',
-        AppRole.driver       => '/home/driver',
-        AppRole.admin        => '/home/admin',
-        _                    => '/home/buyer',
+        AppRole.manager => '/home/manager',
+        AppRole.driver => '/home/driver',
+        AppRole.admin => '/home/admin',
+        _ => '/home/buyer',
       };
 
   @override
   Widget build(BuildContext context) {
-    final session    = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider);
     final workspaces = session.mobileWorkspaces;
-    final user       = session.user;
+    final user = session.user;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -80,8 +85,8 @@ class _WorkspaceSelectScreenState extends ConsumerState<WorkspaceSelectScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'You have multiple roles. Choose a workspace to continue.',
-                style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.x3l),
 
@@ -222,9 +227,9 @@ class _WorkspaceCard extends StatelessWidget {
   }
 
   IconData _iconFor(String type) => switch (type) {
-        'OWNED_NURSERY'   => Icons.local_florist_outlined,
+        'OWNED_NURSERY' => Icons.local_florist_outlined,
         'MANAGER_NURSERY' => Icons.manage_accounts_outlined,
-        'DRIVER'          => Icons.local_shipping_outlined,
-        _                 => Icons.shopping_bag_outlined,
+        'DRIVER' => Icons.local_shipping_outlined,
+        _ => Icons.shopping_bag_outlined,
       };
 }

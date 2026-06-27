@@ -46,15 +46,18 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
       return;
     }
 
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       await ref.read(inventoryRepositoryProvider).upsert(
-        nurseryId: nurseryId,
-        plantId: _selectedPlant!.id,
-        sizeId: _selectedSize!.id,
-        availableQuantity: int.parse(_quantityCtrl.text.trim()),
-        status: _status,
-      );
+            nurseryId: nurseryId,
+            plantId: _selectedPlant!.id,
+            sizeId: _selectedSize!.id,
+            availableQuantity: int.parse(_quantityCtrl.text.trim()),
+            status: _status,
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -74,6 +77,44 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
   @override
   Widget build(BuildContext context) {
     final sizes = ref.watch(plantSizesProvider);
+    final caps = ref.watch(sessionProvider).capabilities;
+
+    if (!caps.isNurseryOwner) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Inventory'),
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+          children: [
+            const SizedBox(height: 96),
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 56,
+              color: AppColors.textMuted.withValues(alpha: 0.8),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'Owner action only',
+              style: AppTypography.h3,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Managers can view nursery availability, but inventory changes are restricted to the nursery owner.',
+              style: AppTypography.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -89,9 +130,13 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primaryMain),
                   )
-                : const Text('Save', style: TextStyle(color: AppColors.primaryMain, fontWeight: FontWeight.w600)),
+                : const Text('Save',
+                    style: TextStyle(
+                        color: AppColors.primaryMain,
+                        fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -108,7 +153,9 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.red600),
                 ),
-                child: Text(_error!, style: AppTypography.bodySmall.copyWith(color: AppColors.red600)),
+                child: Text(_error!,
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.red600)),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -126,10 +173,15 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
             _sectionLabel('Size'),
             const SizedBox(height: AppSpacing.sm),
             sizes.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
-              error: (err, _) => Text('Failed to load sizes: $err', style: AppTypography.bodySmall),
+              loading: () => const Center(
+                  child:
+                      CircularProgressIndicator(color: AppColors.primaryMain)),
+              error: (err, _) => Text('Failed to load sizes: $err',
+                  style: AppTypography.bodySmall),
               data: (sizeList) => sizeList.isEmpty
-                  ? Text('No sizes available', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted))
+                  ? Text('No sizes available',
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textMuted))
                   : Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
@@ -140,18 +192,27 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.sm),
                             decoration: BoxDecoration(
-                              color: selected ? AppColors.primaryMain : AppColors.surface,
+                              color: selected
+                                  ? AppColors.primaryMain
+                                  : AppColors.surface,
                               border: Border.all(
-                                  color: selected ? AppColors.primaryMain : AppColors.border),
+                                  color: selected
+                                      ? AppColors.primaryMain
+                                      : AppColors.border),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               size.displayName,
                               style: AppTypography.body.copyWith(
-                                color: selected ? Colors.white : AppColors.textPrimary,
-                                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                                color: selected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -193,16 +254,20 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.primaryMain : AppColors.surface,
+                      color:
+                          selected ? AppColors.primaryMain : AppColors.surface,
                       border: Border.all(
-                          color: selected ? AppColors.primaryMain : AppColors.border),
+                          color: selected
+                              ? AppColors.primaryMain
+                              : AppColors.border),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       _statusLabel(s),
                       style: AppTypography.body.copyWith(
                         color: selected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -218,10 +283,14 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
 
   String _statusLabel(String s) {
     switch (s) {
-      case 'AVAILABLE': return 'Available';
-      case 'OUT_OF_STOCK': return 'Out of Stock';
-      case 'SEASONAL': return 'Seasonal';
-      default: return s;
+      case 'AVAILABLE':
+        return 'Available';
+      case 'OUT_OF_STOCK':
+        return 'Out of Stock';
+      case 'SEASONAL':
+        return 'Seasonal';
+      default:
+        return s;
     }
   }
 }
@@ -287,19 +356,32 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
 
   Future<void> _search(String query) async {
     if (query.length < 2) {
-      setState(() { _results = []; _showDropdown = false; });
+      setState(() {
+        _results = [];
+        _showDropdown = false;
+      });
       return;
     }
     setState(() => _searching = true);
     try {
       final repo = ref.read(plantRepositoryProvider);
-      final (results, _) = await repo.listPlants(search: query, page: 1, perPage: 10);
-      if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; });
+      final (results, _) =
+          await repo.listPlants(search: query, page: 1, perPage: 10);
+      if (mounted)
+        setState(() {
+          _results = results;
+          _showDropdown = results.isNotEmpty;
+        });
     } catch (e) {
       if (mounted) {
-        setState(() { _results = []; _showDropdown = false; });
+        setState(() {
+          _results = [];
+          _showDropdown = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Plant search error: $e'), backgroundColor: AppColors.red600),
+          SnackBar(
+              content: Text('Plant search error: $e'),
+              backgroundColor: AppColors.red600),
         );
       }
     } finally {
@@ -321,14 +403,19 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
                     child: SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain)),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primaryMain)),
                   )
                 : widget.selected != null
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18, color: AppColors.textMuted),
+                        icon: const Icon(Icons.clear,
+                            size: 18, color: AppColors.textMuted),
                         onPressed: () {
                           _ctrl.clear();
-                          setState(() { _results = []; _showDropdown = false; });
+                          setState(() {
+                            _results = [];
+                            _showDropdown = false;
+                          });
                         },
                       )
                     : const Icon(Icons.search, color: AppColors.textMuted),
@@ -347,12 +434,16 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)
+              ],
             ),
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: _results.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, color: AppColors.border),
               itemBuilder: (_, i) {
                 final plant = _results[i];
                 return ListTile(
@@ -363,7 +454,10 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
                       : null,
                   onTap: () {
                     _ctrl.text = plant.displayName;
-                    setState(() { _showDropdown = false; _results = []; });
+                    setState(() {
+                      _showDropdown = false;
+                      _results = [];
+                    });
                     widget.onSelected(plant);
                   },
                 );

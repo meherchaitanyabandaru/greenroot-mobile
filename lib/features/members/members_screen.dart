@@ -824,10 +824,11 @@ class _SuccessView extends StatelessWidget {
           onPressed: () => QrShareSheet.show(
             context,
             code: invite.uuid,
-            title: _inviteLabel,
-            subtitle: 'Share this QR or code with the recipient',
+            qrType: invite.inviteType == 'MANAGER_INVITE'
+                ? QrCodeType.managerInvite
+                : QrCodeType.customerInvite,
             shareMessage:
-                'You\'ve been invited to join GreenRoot as ${_inviteLabel.toLowerCase().replaceAll(' invite', '')}.\n\nUse this code to accept the invite:\n${invite.uuid}\n\nOpen GreenRoot app → Accept Invite → paste or scan this code.',
+                'You\'ve been invited to join GreenRoot.\n\nInvitation code: ${invite.uuid}\n\nOpen GreenRoot app → Accept Invite → paste or scan.',
           ),
           leadingIcon: Icons.qr_code_rounded,
         ),
@@ -1002,10 +1003,11 @@ class _InviteCard extends StatelessWidget {
                 onTap: () => QrShareSheet.show(
                   context,
                   code: invite.uuid,
-                  title: 'Share Invite',
-                  subtitle: 'Scan or share this code to accept the invite',
+                  qrType: invite.inviteType == 'MANAGER_INVITE'
+                      ? QrCodeType.managerInvite
+                      : QrCodeType.customerInvite,
                   shareMessage:
-                      'You\'re invited to join GreenRoot.\n\nUse this invite code:\n${invite.uuid}\n\nOpen GreenRoot app → Accept Invite → paste or scan.',
+                      'You\'re invited to join GreenRoot.\n\nInvitation code:\n${invite.uuid}\n\nOpen GreenRoot app → Accept Invite → paste or scan.',
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,

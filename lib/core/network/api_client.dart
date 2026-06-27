@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
@@ -99,6 +100,33 @@ class ApiClient {
       throw NetworkExceptions.fromDioException(e);
     } catch (e) {
       AppLogger.e('Unexpected error on DELETE $path', e);
+      throw const UnknownError();
+    }
+  }
+
+  Future<dynamic> uploadFile(
+    String path, {
+    required File file,
+    Map<String, String> extraFields = const {},
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        ...extraFields,
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split('/').last,
+        ),
+      });
+      final response = await dio.post(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw NetworkExceptions.fromDioException(e);
+    } catch (e) {
+      AppLogger.e('Unexpected error on file upload $path', e);
       throw const UnknownError();
     }
   }

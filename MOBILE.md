@@ -96,6 +96,7 @@ lib/
     ├── quotations/     # Quotation list, create, detail
     ├── dispatches/     # Dispatch list, detail, tracking
     ├── requests/       # Plant request list, create, detail
+    ├── sourcing/       # Plant Sourcing Network discovery + posts
     ├── nurseries/      # Nursery list, detail
     ├── plants/         # Plant list, detail
     ├── inventory/      # Inventory add, detail
@@ -125,28 +126,20 @@ lib/
 | Members management screen (`/nursery/members?id=&tab=0\|1`) | ✅ |
 | Manager tab: list active managers + pending invites + "Invite Manager" CTA | ✅ |
 | Customer tab: linked customers + pending invites + "Invite Customer" CTA | ✅ |
+| Plant Sourcing Network: nearby members + Need/Available posts | ✅ |
+| Loading Workflow Screen (`/orders/loading?nursery=`) | ✅ |
+| Driver My Trips (`/driver/trips`) | ✅ |
 
 ---
 
 ## Pending Work (Priority Order)
 
-### 1. Loading Workflow Screen (Highest Priority)
-- BRD B.10, C.7 — no dedicated loading management screen exists
-- Orders in `LOADING` state need tabs: Not Started / In Loading / Loading Completed
-- Manager edits lock after `LOADING_COMPLETED`; only owner can reopen
-- Route needed: `/orders/:id/loading` or `/nursery/loading`
-
-### 2. Nursery Approval Status Screen
+### 1. Nursery Approval Status Screen
 - BRD B.3 — no pending approval screen
 - After nursery submission: show status, submitted date, admin comments
 - Splash routing must check nursery status on bootstrap
 
-### 3. Driver My Trips
-- Driver tab currently links to `/dispatches` (nursery-side, wrong for drivers)
-- Needs driver-specific trip list: Upcoming / Active / Completed / Cancelled tabs
-- Join Trip flow: drivers use `DRIVER_INVITE` (UUID or QR)
-
-### 4. Splash Smart Routing
+### 2. Splash Smart Routing
 - Currently: authenticated → `/home` (no further checks)
 - BRD rules: incomplete profile → `/create-profile`; no activity selected → start-activity screen; pending nursery → approval screen
 - "Select Starting Activity" screen not yet built
@@ -155,12 +148,7 @@ lib/
 - Current login screen says "Welcome back" but handles both new + existing users via OTP
 - Needs: T&C checkbox, Privacy Policy checkbox, label polish for new users
 
-### 6. QR Scanner
-- No `mobile_scanner` package added yet
-- Manager/customer/driver join currently uses UUID text input only
-- BRD requires QR code scanning
-
-### 7. Tracking Tab (Buying Screen)
+### 6. Tracking Tab (Buying Screen)
 - Currently a placeholder CTA linking to `/dispatches`
 - BRD D.6: customer should see dispatch status, trip status, map location, delivery proof
 

@@ -178,7 +178,7 @@ class _DriverDashboardScreen extends StatelessWidget {
                 icon: Icons.route_outlined,
                 label: 'My Trips',
                 subtitle: 'View all past and current deliveries',
-                onTap: () => context.push('/dispatches'),
+                onTap: () => context.push('/driver/trips'),
               ),
               _MenuItem(
                 icon: Icons.qr_code_rounded,

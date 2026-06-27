@@ -22,8 +22,7 @@ class PermissionService {
   Set<AppPermission> get _effectivePermissions {
     final effectiveRoles = _activeRole != null ? [_activeRole] : _roles;
     return {
-      for (final role in effectiveRoles)
-        ...rolePermissions[role] ?? {},
+      for (final role in effectiveRoles) ...rolePermissions[role] ?? {},
     };
   }
 
@@ -38,19 +37,20 @@ class PermissionService {
 
   // ── Screen access guards ───────────────────────────────────────────────────
   bool canAccessScreen(String screenName) => switch (screenName) {
-    'plants'        => hasPermission(AppPermission.plantsRead),
-    'nurseries'     => hasPermission(AppPermission.nurseriesRead),
-    'inventory'     => hasPermission(AppPermission.inventoryRead),
-    'requests'      => hasAnyPermission([
-                         AppPermission.requestCreate,
-                         AppPermission.requestRead,
-                       ]),
-    'orders'        => hasPermission(AppPermission.ordersRead),
-    'payments'      => hasPermission(AppPermission.paymentsRead),
-    'dispatches'    => hasPermission(AppPermission.dispatchRead),
-    'tracking'      => hasPermission(AppPermission.trackingRead),
-    'notifications' => hasPermission(AppPermission.notificationsRead),
-    'profile'       => hasPermission(AppPermission.profileRead),
-    _               => false,
-  };
+        'plants' => hasPermission(AppPermission.plantsRead),
+        'nurseries' => hasPermission(AppPermission.nurseriesRead),
+        'inventory' => hasPermission(AppPermission.inventoryRead),
+        'requests' => hasAnyPermission([
+            AppPermission.requestCreate,
+            AppPermission.requestRead,
+          ]),
+        'orders' => hasPermission(AppPermission.ordersRead),
+        'payments' => hasPermission(AppPermission.paymentsRead),
+        'dispatches' => hasPermission(AppPermission.dispatchRead),
+        'tracking' => hasPermission(AppPermission.trackingRead),
+        'sourcing' => hasPermission(AppPermission.sourcingRead),
+        'notifications' => hasPermission(AppPermission.notificationsRead),
+        'profile' => hasPermission(AppPermission.profileRead),
+        _ => false,
+      };
 }

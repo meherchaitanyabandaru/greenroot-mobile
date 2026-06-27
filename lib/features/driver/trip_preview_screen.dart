@@ -31,6 +31,27 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
     _load();
   }
 
+  void _showRejectGapInfo() {
+    // Backend gap: no reject dispatch endpoint exists in the API.
+    // Drivers should contact their nursery coordinator for reassignment.
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cannot Reject Trip'),
+        content: const Text(
+          'Rejecting a trip is not yet supported in the app. '
+          'Please contact your nursery coordinator to have this trip reassigned.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -50,8 +71,26 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
 
   Future<void> _accept() async {
     if (_dispatch == null) return;
+
+    // One-active-trip guard: check before showing accept.
     setState(() => _accepting = true);
     try {
+      final activeTrip =
+          await ref.read(dispatchRepositoryProvider).getActiveTrip();
+      if (activeTrip != null && activeTrip.id != _dispatch!.id) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'You already have an active trip (${activeTrip.dispatchCode}). Complete or cancel it first.'),
+              backgroundColor: AppColors.red600,
+            ),
+          );
+        }
+        if (mounted) setState(() => _accepting = false);
+        return;
+      }
+
       final accepted =
           await ref.read(dispatchRepositoryProvider).acceptDispatch(_dispatch!.id);
       if (mounted) {
@@ -61,13 +100,19 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
             backgroundColor: AppColors.primaryMain,
           ),
         );
-        // Navigate to driver trip dashboard
-        context.go('/dispatches/${accepted.id}');
+        context.go('/driver/trip/${accepted.id}');
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+          SnackBar(
+            content: Text(
+              e is ServerError && e.statusCode == 409
+                  ? 'You already have an active trip.'
+                  : e.message,
+            ),
+            backgroundColor: AppColors.red600,
+          ),
         );
       }
     } catch (e) {
@@ -103,6 +148,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
                       currentUserId: ref.watch(sessionProvider).user?.id,
                       onAccept: _accept,
                       accepting: _accepting,
+                      onReject: _showRejectGapInfo,
                     )
                   : const SizedBox.shrink(),
     );
@@ -162,12 +208,14 @@ class _TripDetails extends StatelessWidget {
   final int? currentUserId;
   final VoidCallback onAccept;
   final bool accepting;
+  final VoidCallback? onReject;
 
   const _TripDetails({
     required this.dispatch,
     required this.currentUserId,
     required this.onAccept,
     required this.accepting,
+    this.onReject,
   });
 
   @override
@@ -175,8 +223,6 @@ class _TripDetails extends StatelessWidget {
     final myTrip = dispatch.driverUserId != null && dispatch.driverUserId == currentUserId;
     final takenByOther = dispatch.driverUserId != null && dispatch.driverUserId != currentUserId;
     final alreadyAccepted = dispatch.status != 'PENDING' || myTrip || takenByOther;
-    final hasDriver =
-        dispatch.driverName != null || dispatch.status != 'PENDING';
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -333,7 +379,7 @@ class _TripDetails extends StatelessWidget {
 
         const SizedBox(height: AppSpacing.x3l),
 
-        // Accept button
+        // Accept / Reject buttons
         if (!alreadyAccepted) ...[
           SizedBox(
             width: double.infinity,
@@ -360,7 +406,24 @@ class _TripDetails extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
+          // Reject — backend gap: no reject endpoint exists.
+          SizedBox(
+            width: double.infinity,
+            height: AppSpacing.buttonHeight,
+            child: OutlinedButton.icon(
+              onPressed: accepting ? null : onReject,
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Reject Trip'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.red600,
+                side: BorderSide(color: AppColors.red600.withValues(alpha: 0.6)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -394,7 +457,7 @@ class _TripDetails extends StatelessWidget {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/dispatches/${dispatch.id}'),
+              onPressed: () => context.go('/driver/trip/${dispatch.id}'),
               icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Go to Trip'),
               style: OutlinedButton.styleFrom(

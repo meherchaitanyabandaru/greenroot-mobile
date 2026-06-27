@@ -1,4 +1,5 @@
 import 'workspace_model.dart';
+import '../../domain/rbac/roles.dart';
 
 class UserCapabilities {
   final bool isNurseryOwner;
@@ -38,25 +39,30 @@ class UserCapabilities {
   factory UserCapabilities.fromWorkspaces(
     List<Workspace> workspaces, {
     String? ownedNurseryStatus,
+    AppRole? activeRole,
   }) {
+    final roleWorkspaces = activeRole == null
+        ? workspaces
+        : workspaces.where((w) => w.appRole == activeRole).toList();
     Workspace? owned;
-    for (final w in workspaces) {
+    for (final w in roleWorkspaces) {
       if (w.type == 'OWNED_NURSERY') {
         owned = w;
         break;
       }
     }
     final managed =
-        workspaces.where((w) => w.type == 'MANAGER_NURSERY').toList();
+        roleWorkspaces.where((w) => w.type == 'MANAGER_NURSERY').toList();
     final status = ownedNurseryStatus?.toUpperCase();
-    final isApproved = owned != null && (status == 'APPROVED' || status == 'ACTIVE');
+    final isApproved =
+        owned != null && (status == 'APPROVED' || status == 'ACTIVE');
     final isPending = owned != null && status == 'PENDING';
     final isRejected = owned != null && status == 'REJECTED';
 
     return UserCapabilities(
       isNurseryOwner: isApproved,
       isManager: managed.isNotEmpty,
-      hasDriverProfile: workspaces.any((w) => w.type == 'DRIVER'),
+      hasDriverProfile: roleWorkspaces.any((w) => w.type == 'DRIVER'),
       hasPendingNursery: isPending,
       hasRejectedNursery: isRejected,
       ownedNurseryId: owned?.nurseryId,

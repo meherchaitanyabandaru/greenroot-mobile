@@ -83,6 +83,10 @@ class NotificationRepository {
   Future<void> markAllRead() async {
     await _client.put<dynamic>(ApiConstants.markAllNotificationsRead);
   }
+
+  Future<void> deleteNotification(int id) async {
+    await _client.delete<dynamic>(ApiConstants.deleteNotification(id));
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -216,6 +220,19 @@ class NotificationListNotifier
           .toList();
       state = state.copyWith(
         unreadCount: 0,
+        paged: state.paged.copyWith(items: updatedItems),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> deleteNotification(int id) async {
+    try {
+      await _repo.deleteNotification(id);
+      final updatedItems =
+          state.paged.items.where((n) => n.id != id).toList();
+      final unreadCount = updatedItems.where((n) => n.isUnread).length;
+      state = state.copyWith(
+        unreadCount: unreadCount,
         paged: state.paged.copyWith(items: updatedItems),
       );
     } catch (_) {}

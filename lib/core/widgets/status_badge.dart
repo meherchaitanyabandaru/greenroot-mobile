@@ -94,7 +94,11 @@ class _BadgeColors {
 BadgeVariant badgeVariantFromStatus(String status) {
   return switch (status.toUpperCase()) {
     'ACTIVE' || 'DELIVERED' || 'SUCCESS' || 'COMPLETED' => BadgeVariant.success,
-    'PENDING' || 'IN_PROGRESS' || 'IN_TRANSIT' => BadgeVariant.warning,
+    'PENDING' ||
+    'IN_PROGRESS' ||
+    'IN_TRANSIT' ||
+    'LOADING' =>
+      BadgeVariant.warning,
     'CANCELLED' || 'FAILED' || 'REJECTED' || 'EXPIRED' => BadgeVariant.error,
     'DISPATCHED' || 'PROCESSING' => BadgeVariant.info,
     _ => BadgeVariant.neutral,
