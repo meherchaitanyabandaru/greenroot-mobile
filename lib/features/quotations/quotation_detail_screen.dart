@@ -15,6 +15,7 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'quotations.dart';
 
 // ── Language support ───────────────────────────────────────────────────────────
@@ -284,6 +285,74 @@ class _QuotationDetailScreenState
     extends ConsumerState<QuotationDetailScreen> {
   bool _deleting = false;
   bool _exporting = false;
+  bool _buyerActing = false;
+
+  Future<void> _buyerAccept(Quotation q) async {
+    setState(() => _buyerActing = true);
+    try {
+      await ref.read(quotationRepositoryProvider).acceptQuotation(q.id);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quotation accepted'),
+          backgroundColor: AppColors.primaryMain,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _buyerActing = false);
+    }
+  }
+
+  Future<void> _buyerReject(Quotation q) async {
+    String? reason;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final ctrl = TextEditingController();
+        return AlertDialog(
+          title: const Text('Reject Quotation'),
+          content: TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(hintText: 'Reason (optional)'),
+            onChanged: (v) => reason = v,
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Reject', style: TextStyle(color: AppColors.red600)),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _buyerActing = true);
+    try {
+      await ref.read(quotationRepositoryProvider).rejectQuotation(q.id, reason: reason);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quotation rejected'),
+          backgroundColor: AppColors.red600,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _buyerActing = false);
+    }
+  }
 
   Future<void> _confirmDelete(Quotation q) async {
     final ok = await showDialog<bool>(
@@ -611,6 +680,13 @@ class _QuotationDetailScreenState
   }
 
   Widget _buildScaffold(Quotation q) {
+    final caps = ref.watch(sessionProvider).capabilities;
+    final isBuyerView = !caps.canSell;
+    final buyerCanAct = isBuyerView &&
+        (q.status == 'CUSTOMER_SENT' ||
+            q.status == 'APPROVED' ||
+            q.status == 'SENT');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -620,7 +696,7 @@ class _QuotationDetailScreenState
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
-          if (_deleting || _exporting)
+          if (_deleting || _exporting || _buyerActing)
             const Padding(
               padding: EdgeInsets.only(right: 16),
               child: SizedBox(
@@ -629,7 +705,7 @@ class _QuotationDetailScreenState
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: AppColors.primaryMain)),
             )
-          else ...[
+          else if (!isBuyerView) ...[
             // Edit
             IconButton(
               tooltip: 'Edit',
@@ -905,38 +981,74 @@ class _QuotationDetailScreenState
             const SizedBox(height: AppSpacing.sm),
           ],
 
-          // Action buttons
-          Row(children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _exporting ? null : () => _showPdfLangPicker(context, q),
-                icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                label: const Text('PDF'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryMain,
-                  side: const BorderSide(color: AppColors.primaryMain),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+          // Buyer action buttons (Accept / Reject)
+          if (buyerCanAct) ...[
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _buyerActing ? null : () => _buyerReject(q),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text('Reject'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.red600,
+                    side: const BorderSide(color: AppColors.red600),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _exporting ? null : () => _exportExcel(q),
-                icon: const Icon(Icons.table_chart_outlined, size: 18),
-                label: const Text('Excel'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryMain,
-                  side: const BorderSide(color: AppColors.primaryMain),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _buyerActing ? null : () => _buyerAccept(q),
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: const Text('Accept'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    elevation: 0,
+                  ),
                 ),
               ),
-            ),
-          ]),
+            ]),
+          ] else ...[
+            // Seller export buttons
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _exporting ? null : () => _showPdfLangPicker(context, q),
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: const Text('PDF'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryMain,
+                    side: const BorderSide(color: AppColors.primaryMain),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _exporting ? null : () => _exportExcel(q),
+                  icon: const Icon(Icons.table_chart_outlined, size: 18),
+                  label: const Text('Excel'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryMain,
+                    side: const BorderSide(color: AppColors.primaryMain),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+            ]),
+          ],
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),

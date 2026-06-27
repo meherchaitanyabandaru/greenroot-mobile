@@ -129,6 +129,9 @@ lib/
 | Plant Sourcing Network: nearby members + Need/Available posts | ✅ |
 | Loading Workflow Screen (`/orders/loading?nursery=`) | ✅ |
 | Driver My Trips (`/driver/trips`) | ✅ |
+| Buyer Tracking Tab (real dispatch list, In Transit / Being Loaded / Delivered) | ✅ |
+| Buyer quotation accept/reject in list card (CUSTOMER_SENT + APPROVED + SENT) | ✅ |
+| Buyer quotation accept/reject in detail screen | ✅ |
 
 ---
 
@@ -144,13 +147,9 @@ lib/
 - BRD rules: incomplete profile → `/create-profile`; no activity selected → start-activity screen; pending nursery → approval screen
 - "Select Starting Activity" screen not yet built
 
-### 5. Sign-up Screen Polish
+### 3. Sign-up Screen Polish
 - Current login screen says "Welcome back" but handles both new + existing users via OTP
 - Needs: T&C checkbox, Privacy Policy checkbox, label polish for new users
-
-### 6. Tracking Tab (Buying Screen)
-- Currently a placeholder CTA linking to `/dispatches`
-- BRD D.6: customer should see dispatch status, trip status, map location, delivery proof
 
 ---
 
