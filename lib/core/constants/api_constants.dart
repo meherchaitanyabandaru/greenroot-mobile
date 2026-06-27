@@ -6,7 +6,6 @@ abstract class ApiConstants {
   static const String verifyOtp    = '$v1/auth/verify-otp';
   static const String refreshToken = '$v1/auth/refresh-token';
   static const String logout       = '$v1/auth/logout';
-  static const String me           = '$v1/auth/me';
   static const String myWorkspaces = '$v1/me/workspaces';
 
   // Users
@@ -29,7 +28,6 @@ abstract class ApiConstants {
   static const String myNurseries           = '$v1/nurseries/mine';
   static String nurseryById(int id)         => '$v1/nurseries/$id';
   static String nurseryAddresses(int id)    => '$v1/nurseries/$id/addresses';
-  static String nurseryUsers(int id)        => '$v1/nurseries/$id/users';
 
   // Inventory
   static const String inventory          = '$v1/inventory';
