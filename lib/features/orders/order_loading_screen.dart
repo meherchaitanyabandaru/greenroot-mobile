@@ -26,7 +26,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
   final _states = <String, _LoadingTabState>{
     'CONFIRMED': _LoadingTabState(),
     'LOADING': _LoadingTabState(),
-    'COMPLETED': _LoadingTabState(),
+    'LOADED': _LoadingTabState(),
   };
 
   @override
@@ -43,26 +43,31 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
   }
 
   Future<void> _loadAll() async {
-    await Future.wait(_tabs.map((tab) => _load(tab.status)));
+    await Future.wait(_tabs.map((tab) => _load(tab.key)));
   }
 
-  Future<void> _load(String status) async {
-    final tabState = _states[status]!;
+  Future<void> _load(String key) async {
+    final tab = _tabs.firstWhere((t) => t.key == key);
+    final tabState = _states[key]!;
     setState(() {
       tabState.isLoading = true;
       tabState.error = null;
     });
     try {
       final repo = ref.read(orderRepositoryProvider);
-      final (orders, _) = await repo.listOrders(
-        page: 1,
-        perPage: 50,
-        status: status,
-        nurseryId: widget.nurseryId,
+      final results = await Future.wait(
+        tab.statuses.map((s) => repo.listOrders(
+          page: 1,
+          perPage: 50,
+          status: s,
+          nurseryId: widget.nurseryId,
+        )),
       );
       if (!mounted) return;
+      final merged = results.expand((r) => r.$1).toList()
+        ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
       setState(() {
-        tabState.orders = orders;
+        tabState.orders = merged;
         tabState.isLoading = false;
       });
     } on AppError catch (e) {
@@ -120,7 +125,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
           tabs: [
             for (final tab in _tabs)
               Tab(
-                text: '${tab.label} (${_states[tab.status]!.orders.length})',
+                text: '${tab.label} (${_states[tab.key]!.orders.length})',
               ),
           ],
         ),
@@ -162,12 +167,12 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               ),
             ),
             _LoadingOrderList(
-              state: _states['COMPLETED']!,
+              state: _states['LOADED']!,
               emptyTitle: _tabs[2].emptyTitle,
               emptySubtitle: _tabs[2].emptySubtitle,
               canManage: canManage,
               showItemAdjust: false,
-              onRefresh: () => _load('COMPLETED'),
+              onRefresh: () => _load('LOADED'),
               onOpen: (order) => context.push('/orders/${order.id}'),
               onStartLoading: null,
               onCompleteLoading: null,
@@ -670,14 +675,16 @@ class _LoadingTabState {
 }
 
 class _LoadingTab {
+  final String key;
   final String label;
-  final String status;
+  final List<String> statuses;
   final String emptyTitle;
   final String emptySubtitle;
 
   const _LoadingTab({
+    required this.key,
     required this.label,
-    required this.status,
+    required this.statuses,
     required this.emptyTitle,
     required this.emptySubtitle,
   });
@@ -685,21 +692,24 @@ class _LoadingTab {
 
 const _tabs = [
   _LoadingTab(
+    key: 'CONFIRMED',
     label: 'Not Started',
-    status: 'CONFIRMED',
+    statuses: ['CONFIRMED'],
     emptyTitle: 'No orders waiting',
     emptySubtitle: 'Confirmed orders ready for loading appear here.',
   ),
   _LoadingTab(
+    key: 'LOADING',
     label: 'In Loading',
-    status: 'LOADING',
+    statuses: ['LOADING'],
     emptyTitle: 'Nothing loading now',
     emptySubtitle: 'Orders move here after loading starts.',
   ),
   _LoadingTab(
-    label: 'Completed',
-    status: 'COMPLETED',
-    emptyTitle: 'No completed loading',
-    emptySubtitle: 'Orders appear here after loading is completed.',
+    key: 'LOADED',
+    label: 'Loaded',
+    statuses: ['LOADED', 'PARTIALLY_FULFILLED'],
+    emptyTitle: 'No loaded orders',
+    emptySubtitle: 'Orders appear here once loading is complete. Open an order to create a dispatch.',
   ),
 ];

@@ -36,9 +36,10 @@ class OrderTimeline extends StatelessWidget {
   List<_Step> _buildSteps() {
     final s = order.status;
     final cancelled = s == 'CANCELLED';
-    final pastLoading = !['PENDING', 'CONFIRMED', 'LOADING'].contains(s);
-    final pastLoaded =
-        !['PENDING', 'CONFIRMED', 'LOADING', 'COMPLETED'].contains(s);
+    final isLoaded = s == 'LOADED' || s == 'PARTIALLY_FULFILLED';
+    final isCompleted = s == 'COMPLETED';
+    final pastLoadingStarted = !cancelled && !['PENDING', 'CONFIRMED'].contains(s);
+    final pastLoadingCompleted = !cancelled && (isLoaded || isCompleted);
 
     final steps = <_Step>[
       // 1. Order Created
@@ -56,10 +57,10 @@ class OrderTimeline extends StatelessWidget {
             ? 'Awaiting confirmation'
             : (order.assignedManagerUserId != null
                 ? 'Manager assigned'
-                : 'Owner handling loading'),
-        state: s == 'PENDING'
-            ? _StepState.current
-            : (cancelled ? _StepState.pending : _StepState.completed),
+                : 'Owner handling'),
+        state: cancelled
+            ? _StepState.pending
+            : (s == 'PENDING' ? _StepState.current : _StepState.completed),
         icon: Icons.verified_user_outlined,
       ),
 
@@ -69,35 +70,39 @@ class OrderTimeline extends StatelessWidget {
         subtitle: order.loadingStartedAt != null
             ? _fmt(order.loadingStartedAt)
             : (s == 'CONFIRMED' ? 'Awaiting loading start' : null),
-        state: s == 'LOADING'
-            ? _StepState.current
-            : (['PENDING', 'CONFIRMED'].contains(s)
-                ? _StepState.pending
-                : (cancelled ? _StepState.pending : _StepState.completed)),
+        state: cancelled
+            ? _StepState.pending
+            : (s == 'LOADING'
+                ? _StepState.current
+                : (pastLoadingStarted ? _StepState.completed : _StepState.pending)),
         icon: Icons.inventory_2_outlined,
       ),
 
       // 4. Loading Completed
       _Step(
-        title: 'Loading Completed',
-        subtitle: order.loadingCompletedAt != null
-            ? _fmt(order.loadingCompletedAt)
-            : (s == 'LOADING' ? 'In progress' : null),
-        state: s == 'COMPLETED'
-            ? _StepState.current
-            : (pastLoading && !cancelled
-                ? _StepState.completed
-                : _StepState.pending),
+        title: s == 'PARTIALLY_FULFILLED' ? 'Partially Loaded' : 'Loading Completed',
+        subtitle: s == 'PARTIALLY_FULFILLED'
+            ? 'Some items had reduced quantities'
+            : (order.loadingCompletedAt != null
+                ? _fmt(order.loadingCompletedAt)
+                : (s == 'LOADING' ? 'In progress' : null)),
+        state: cancelled
+            ? _StepState.pending
+            : (!pastLoadingCompleted
+                ? _StepState.pending
+                : (isLoaded ? _StepState.current : _StepState.completed)),
         icon: Icons.done_all_rounded,
       ),
 
       // 5. Dispatched
       _Step(
         title: 'Dispatched',
-        subtitle: s == 'COMPLETED' ? 'Create dispatch from Actions' : null,
-        state: pastLoaded && !cancelled
-            ? _StepState.completed
-            : _StepState.pending,
+        subtitle: isLoaded
+            ? 'Ready — create dispatch from Actions'
+            : (isCompleted ? 'Sent to buyer' : null),
+        state: cancelled
+            ? _StepState.pending
+            : (isCompleted ? _StepState.completed : _StepState.pending),
         icon: Icons.local_shipping_rounded,
       ),
 
@@ -105,7 +110,7 @@ class OrderTimeline extends StatelessWidget {
       _Step(
         title: 'Delivered',
         subtitle: null,
-        state: s == 'DELIVERED' ? _StepState.completed : _StepState.pending,
+        state: isCompleted ? _StepState.completed : _StepState.pending,
         icon: Icons.check_circle_rounded,
       ),
     ];
@@ -115,9 +120,7 @@ class OrderTimeline extends StatelessWidget {
         title: 'Cancelled',
         subtitle: order.cancelledAt != null
             ? _fmt(order.cancelledAt)
-            : (order.cancelReason?.isNotEmpty == true
-                ? order.cancelReason
-                : null),
+            : (order.cancelReason?.isNotEmpty == true ? order.cancelReason : null),
         state: _StepState.cancelled,
         icon: Icons.cancel_rounded,
       ));

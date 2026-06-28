@@ -96,8 +96,11 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                       for (final (label, value) in [
                         ('All', null),
                         ('Pending', 'PENDING'),
-                        ('Processing', 'PROCESSING'),
-                        ('Delivered', 'DELIVERED'),
+                        ('Confirmed', 'CONFIRMED'),
+                        ('Loading', 'LOADING'),
+                        ('Loaded', 'LOADED'),
+                        ('Partial', 'PARTIALLY_FULFILLED'),
+                        ('Completed', 'COMPLETED'),
                         ('Cancelled', 'CANCELLED'),
                       ])
                         Padding(

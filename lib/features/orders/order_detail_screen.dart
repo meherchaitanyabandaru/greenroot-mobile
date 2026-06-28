@@ -116,12 +116,12 @@ class _OrderDetailBody extends StatelessWidget {
         // ── Buyer / Seller details ────────────────────────────────────────
         _InfoCard(order: order),
 
-        // ── Action card (owner/manager only) ─────────────────────────────
-        if (canManage) ...[
+        // ── Action card ───────────────────────────────────────────────────
+        if (canManage || order.status == 'PENDING') ...[
           const SizedBox(height: AppSpacing.x2l),
           _SectionCard(
             title: 'Actions',
-            child: _OrderActions(order: order, orderId: orderId),
+            child: _OrderActions(order: order, orderId: orderId, canManage: canManage),
           ),
         ],
 
@@ -482,7 +482,8 @@ class _SectionCard extends StatelessWidget {
 class _OrderActions extends ConsumerStatefulWidget {
   final Order order;
   final int orderId;
-  const _OrderActions({required this.order, required this.orderId});
+  final bool canManage;
+  const _OrderActions({required this.order, required this.orderId, required this.canManage});
 
   @override
   ConsumerState<_OrderActions> createState() => _OrderActionsState();
@@ -645,104 +646,123 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
   Widget build(BuildContext context) {
     final status = widget.order.status;
     final repo = ref.read(orderRepositoryProvider);
-
     final actions = <_ActionDef>[];
-    final isOwner = ref.read(sessionProvider).capabilities.isNurseryOwner;
-    final canAssignManager = isOwner &&
-        widget.order.sellerNurseryId != null &&
-        !['CANCELLED', 'DELIVERED'].contains(status);
 
-    if (status == 'PENDING') {
-      actions.add(_ActionDef(
-        label: 'Confirm Order',
-        icon: Icons.check_circle_outline,
-        color: AppColors.primaryMain,
-        onTap: () async {
-          await _doAction(() => repo.updateStatus(widget.orderId, 'CONFIRMED'));
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Order confirmed'),
-                  backgroundColor: AppColors.primaryMain),
-            );
-          }
-        },
-      ));
-    }
+    if (widget.canManage) {
+      // ── Owner / Manager actions ──────────────────────────────────────────
+      final isOwner = ref.read(sessionProvider).capabilities.isNurseryOwner;
+      final canAssignManager = isOwner &&
+          widget.order.sellerNurseryId != null &&
+          !['CANCELLED', 'COMPLETED', 'LOADED', 'PARTIALLY_FULFILLED'].contains(status);
 
-    if (canAssignManager) {
-      final managerLabel = widget.order.assignedManagerUserId != null
-          ? 'Re-assign Manager'
-          : 'Assign Manager';
-      actions.add(_ActionDef(
-        label: managerLabel,
-        icon: Icons.manage_accounts_rounded,
-        color: const Color(0xFF1565C0),
-        onTap: _assignManager,
-      ));
-    }
+      if (status == 'PENDING') {
+        actions.add(_ActionDef(
+          label: 'Confirm Order',
+          icon: Icons.check_circle_outline,
+          color: AppColors.primaryMain,
+          onTap: () async {
+            await _doAction(() => repo.updateStatus(widget.orderId, 'CONFIRMED'));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Order confirmed'), backgroundColor: AppColors.primaryMain),
+              );
+            }
+          },
+        ));
+      }
 
-    if (status == 'CONFIRMED') {
-      actions.add(_ActionDef(
-        label: 'Start Loading',
-        icon: Icons.inventory_outlined,
-        color: AppColors.primaryMain,
-        onTap: () async {
-          await _doAction(() => repo.startLoading(widget.orderId));
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Loading started'),
-                  backgroundColor: AppColors.primaryMain),
-            );
-          }
-        },
-      ));
-    }
+      if (canAssignManager) {
+        actions.add(_ActionDef(
+          label: widget.order.assignedManagerUserId != null ? 'Re-assign Manager' : 'Assign Manager',
+          icon: Icons.manage_accounts_rounded,
+          color: const Color(0xFF1565C0),
+          onTap: _assignManager,
+        ));
+      }
 
-    if (status == 'LOADING') {
-      actions.add(_ActionDef(
-        label: 'Complete Loading',
-        icon: Icons.done_all_rounded,
-        color: AppColors.primaryMain,
-        onTap: () async {
-          await _doAction(() => repo.completeLoading(widget.orderId));
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Loading completed'),
-                  backgroundColor: AppColors.primaryMain),
-            );
-          }
-        },
-      ));
-    }
+      if (status == 'CONFIRMED') {
+        actions.add(_ActionDef(
+          label: 'Start Loading',
+          icon: Icons.inventory_outlined,
+          color: AppColors.primaryMain,
+          onTap: () async {
+            await _doAction(() => repo.startLoading(widget.orderId));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Loading started'), backgroundColor: AppColors.primaryMain),
+              );
+            }
+          },
+        ));
+      }
 
-    if (status == 'COMPLETED') {
-      actions.add(_ActionDef(
-        label: 'Link Driver (Create Dispatch)',
-        icon: Icons.local_shipping_rounded,
-        color: AppColors.primaryMain,
-        onTap: _createDispatch,
-      ));
-    }
+      if (status == 'LOADING') {
+        actions.add(_ActionDef(
+          label: 'Complete Loading',
+          icon: Icons.done_all_rounded,
+          color: AppColors.primaryMain,
+          onTap: () async {
+            await _doAction(() => repo.completeLoading(widget.orderId));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Loading completed'), backgroundColor: AppColors.primaryMain),
+              );
+            }
+          },
+        ));
+      }
 
-    if (status != 'CANCELLED' && status != 'DELIVERED') {
-      actions.add(_ActionDef(
-        label: 'Cancel Order',
-        icon: Icons.cancel_outlined,
-        color: AppColors.red600,
-        outlined: true,
-        onTap: _confirmCancel,
-      ));
+      if (status == 'LOADED' || status == 'PARTIALLY_FULFILLED') {
+        actions.add(_ActionDef(
+          label: 'Create Dispatch (Link Driver)',
+          icon: Icons.local_shipping_rounded,
+          color: const Color(0xFF1565C0),
+          onTap: _createDispatch,
+        ));
+        actions.add(_ActionDef(
+          label: 'Mark as Completed',
+          icon: Icons.check_circle_outline,
+          color: AppColors.primaryMain,
+          outlined: true,
+          onTap: () async {
+            await _doAction(() => repo.updateStatus(widget.orderId, 'COMPLETED'));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Order marked as completed'), backgroundColor: AppColors.primaryMain),
+              );
+            }
+          },
+        ));
+      }
+
+      if (['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
+        actions.add(_ActionDef(
+          label: 'Cancel Order',
+          icon: Icons.cancel_outlined,
+          color: AppColors.red600,
+          outlined: true,
+          onTap: _confirmCancel,
+        ));
+      }
+    } else {
+      // ── Buyer: cancel only while PENDING ──────────────────────────────────
+      if (status == 'PENDING') {
+        actions.add(_ActionDef(
+          label: 'Cancel Order',
+          icon: Icons.cancel_outlined,
+          color: AppColors.red600,
+          outlined: true,
+          onTap: _confirmCancel,
+        ));
+      }
     }
 
     if (actions.isEmpty) {
       return Text(
         status == 'CANCELLED'
-            ? 'Order has been cancelled.'
-            : status == 'DELIVERED'
-                ? 'Order has been delivered.'
+            ? 'This order has been cancelled.'
+            : status == 'COMPLETED'
+                ? 'Order completed.'
                 : 'No actions available.',
         style: AppTypography.body.copyWith(color: AppColors.textMuted),
       );
@@ -759,39 +779,29 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
                   ? OutlinedButton.icon(
                       onPressed: _busy ? null : action.onTap,
                       icon: _busy
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: action.color))
+                          ? SizedBox(width: 16, height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: action.color))
                           : Icon(action.icon),
                       label: Text(action.label),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: action.color,
                         side: BorderSide(color: action.color),
-                        minimumSize: const Size(
-                            double.infinity, AppSpacing.buttonHeight),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     )
                   : ElevatedButton.icon(
                       onPressed: _busy ? null : action.onTap,
                       icon: _busy
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(width: 16, height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : Icon(action.icon),
                       label: Text(action.label),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: action.color,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(
-                            double.infinity, AppSpacing.buttonHeight),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
                       ),
                     ),

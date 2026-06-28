@@ -949,6 +949,17 @@ class _OrderStatusChip extends StatelessWidget {
   final String status;
   const _OrderStatusChip({required this.status});
 
+  String get _label => switch (status) {
+    'PENDING'             => 'Waiting',
+    'CONFIRMED'           => 'Confirmed',
+    'LOADING'             => 'Being Loaded',
+    'LOADED'              => 'Ready to Ship',
+    'PARTIALLY_FULFILLED' => 'Partial',
+    'COMPLETED'           => 'Completed',
+    'CANCELLED'           => 'Cancelled',
+    _                     => status.replaceAll('_', ' '),
+  };
+
   @override
   Widget build(BuildContext context) {
     Color bg, fg;
@@ -962,11 +973,18 @@ class _OrderStatusChip extends StatelessWidget {
         fg = AppColors.blue600;
         break;
       case 'LOADING':
-      case 'COMPLETED':
-        bg = const Color(0xFFE8F5E9);
-        fg = AppColors.primaryMain;
+        bg = const Color(0xFFF3E5F5);
+        fg = const Color(0xFF7B1FA2);
         break;
-      case 'DELIVERED':
+      case 'LOADED':
+        bg = const Color(0xFFE0F2F1);
+        fg = const Color(0xFF00695C);
+        break;
+      case 'PARTIALLY_FULFILLED':
+        bg = const Color(0xFFFFF3E0);
+        fg = const Color(0xFFE65100);
+        break;
+      case 'COMPLETED':
         bg = AppColors.forest100;
         fg = AppColors.primaryMain;
         break;
@@ -980,12 +998,10 @@ class _OrderStatusChip extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
       child: Text(
-        status,
-        style: AppTypography.caption
-            .copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10),
+        _label,
+        style: AppTypography.caption.copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10),
       ),
     );
   }
