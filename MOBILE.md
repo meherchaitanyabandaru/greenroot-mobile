@@ -1,6 +1,6 @@
 # GreenRoot — Mobile App Reference
 
-> Last updated: 2026-06-26
+> Last updated: 2026-06-28
 
 ---
 
@@ -34,13 +34,13 @@ API runs at `http://127.0.0.1:8080` via ADB tunnel from Mac.
 
 ## Dev Login
 
-| Mobile | OTP | Role |
-|---|---|---|
-| `9000000777` | `123456` | Admin |
-| `9111111111` | `123456` | Buyer |
-| `9222222222` | `123456` | Nursery Owner |
-| `9333333333` | `123456` | Driver |
-| `9555555555` | `123456` | Manager |
+| Mobile | OTP | Role | Name |
+|---|---|---|---|
+| `9000000000` | `123456` | Admin + Super Admin | GreenRoot Admin |
+| `9100000000` | `123456` | Nursery Owner | Priya Owner |
+| `9200000000` | `123456` | Manager | Gumastha Manager |
+| `9300000000` | `123456` | Buyer | Ravi Buyer |
+| `9400000000` | `123456` | Driver | Raju Driver |
 
 ---
 
