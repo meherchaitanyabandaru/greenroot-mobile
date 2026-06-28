@@ -131,25 +131,47 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
         child: TabBarView(
           controller: _tabController,
           children: [
-            for (final tab in _tabs)
-              _LoadingOrderList(
-                state: _states[tab.status]!,
-                emptyTitle: tab.emptyTitle,
-                emptySubtitle: tab.emptySubtitle,
-                canManage: canManage,
-                onRefresh: () => _load(tab.status),
-                onOpen: (order) => context.push('/orders/${order.id}'),
-                onStartLoading: (order) => _runAction(
-                  order,
-                  (repo) => repo.startLoading(order.id),
-                  'Loading started',
-                ),
-                onCompleteLoading: (order) => _runAction(
-                  order,
-                  (repo) => repo.completeLoading(order.id),
-                  'Loading completed',
-                ),
+            _LoadingOrderList(
+              state: _states['CONFIRMED']!,
+              emptyTitle: _tabs[0].emptyTitle,
+              emptySubtitle: _tabs[0].emptySubtitle,
+              canManage: canManage,
+              showItemAdjust: false,
+              onRefresh: () => _load('CONFIRMED'),
+              onOpen: (order) => context.push('/orders/${order.id}'),
+              onStartLoading: (order) => _runAction(
+                order,
+                (repo) => repo.startLoading(order.id),
+                'Loading started',
               ),
+              onCompleteLoading: null,
+            ),
+            _LoadingOrderList(
+              state: _states['LOADING']!,
+              emptyTitle: _tabs[1].emptyTitle,
+              emptySubtitle: _tabs[1].emptySubtitle,
+              canManage: canManage,
+              showItemAdjust: true,
+              onRefresh: () => _load('LOADING'),
+              onOpen: (order) => context.push('/orders/${order.id}'),
+              onStartLoading: null,
+              onCompleteLoading: (order) => _runAction(
+                order,
+                (repo) => repo.completeLoading(order.id),
+                'Loading completed',
+              ),
+            ),
+            _LoadingOrderList(
+              state: _states['COMPLETED']!,
+              emptyTitle: _tabs[2].emptyTitle,
+              emptySubtitle: _tabs[2].emptySubtitle,
+              canManage: canManage,
+              showItemAdjust: false,
+              onRefresh: () => _load('COMPLETED'),
+              onOpen: (order) => context.push('/orders/${order.id}'),
+              onStartLoading: null,
+              onCompleteLoading: null,
+            ),
           ],
         ),
       ),
@@ -162,16 +184,18 @@ class _LoadingOrderList extends StatelessWidget {
   final String emptyTitle;
   final String emptySubtitle;
   final bool canManage;
+  final bool showItemAdjust;
   final Future<void> Function() onRefresh;
   final ValueChanged<Order> onOpen;
-  final ValueChanged<Order> onStartLoading;
-  final ValueChanged<Order> onCompleteLoading;
+  final ValueChanged<Order>? onStartLoading;
+  final ValueChanged<Order>? onCompleteLoading;
 
   const _LoadingOrderList({
     required this.state,
     required this.emptyTitle,
     required this.emptySubtitle,
     required this.canManage,
+    required this.showItemAdjust,
     required this.onRefresh,
     required this.onOpen,
     required this.onStartLoading,
@@ -247,9 +271,12 @@ class _LoadingOrderList extends StatelessWidget {
         return _LoadingOrderCard(
           order: order,
           canManage: canManage,
+          showItemAdjust: showItemAdjust,
           onOpen: () => onOpen(order),
-          onStartLoading: () => onStartLoading(order),
-          onCompleteLoading: () => onCompleteLoading(order),
+          onStartLoading:
+              onStartLoading != null ? () => onStartLoading!(order) : null,
+          onCompleteLoading:
+              onCompleteLoading != null ? () => onCompleteLoading!(order) : null,
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
@@ -258,40 +285,29 @@ class _LoadingOrderList extends StatelessWidget {
   }
 }
 
-class _LoadingOrderCard extends StatelessWidget {
+class _LoadingOrderCard extends ConsumerWidget {
   final Order order;
   final bool canManage;
+  final bool showItemAdjust;
   final VoidCallback onOpen;
-  final VoidCallback onStartLoading;
-  final VoidCallback onCompleteLoading;
+  final VoidCallback? onStartLoading;
+  final VoidCallback? onCompleteLoading;
 
   const _LoadingOrderCard({
     required this.order,
     required this.canManage,
+    required this.showItemAdjust,
     required this.onOpen,
     required this.onStartLoading,
     required this.onCompleteLoading,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final date = DateTime.tryParse(order.orderDate);
     final dateStr =
         date != null ? DateFormat('dd MMM yyyy').format(date.toLocal()) : '';
-    final action = switch (order.status) {
-      'CONFIRMED' => (
-          label: 'Start Loading',
-          icon: Icons.inventory_outlined,
-          onTap: onStartLoading,
-        ),
-      'LOADING' => (
-          label: 'Complete Loading',
-          icon: Icons.done_all_rounded,
-          onTap: onCompleteLoading,
-        ),
-      _ => null,
-    };
 
     return Material(
       color: AppColors.surface,
@@ -308,6 +324,7 @@ class _LoadingOrderCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Row(
                 children: [
                   Expanded(
@@ -324,9 +341,8 @@ class _LoadingOrderCard extends StatelessWidget {
               if (order.sellerNursery != null)
                 Text(
                   order.sellerNursery!,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
                 ),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
@@ -338,10 +354,7 @@ class _LoadingOrderCard extends StatelessWidget {
                     label: fmt.format(order.totalAmount),
                   ),
                   if (dateStr.isNotEmpty)
-                    _MetaItem(
-                      icon: Icons.event_outlined,
-                      label: dateStr,
-                    ),
+                    _MetaItem(icon: Icons.event_outlined, label: dateStr),
                   if (order.assignedManagerName?.isNotEmpty == true)
                     _MetaItem(
                       icon: Icons.manage_accounts_outlined,
@@ -349,20 +362,280 @@ class _LoadingOrderCard extends StatelessWidget {
                     ),
                 ],
               ),
-              if (canManage && action != null) ...[
+
+              // Item adjustment section (LOADING tab only)
+              if (showItemAdjust && order.items.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: action.onTap,
-                    icon: Icon(action.icon),
-                    label: Text(action.label),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: AppRadius.inputRadius,
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.inventory_2_outlined,
+                              size: 14, color: AppColors.textMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Adjust Loaded Quantities',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Column headers
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              'Plant',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 64,
+                            child: Text(
+                              'Ordered',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 80,
+                            child: Text(
+                              'Loaded',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primaryMain,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: AppSpacing.sm),
+                      for (final item in order.items)
+                        _LoadingItemRow(
+                          key: ValueKey('${order.id}-${item.id}'),
+                          order: order,
+                          item: item,
+                        ),
+                    ],
                   ),
                 ),
+              ],
+
+              // Action button
+              if (canManage) ...[
+                const SizedBox(height: AppSpacing.md),
+                if (onStartLoading != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onStartLoading,
+                      icon: const Icon(Icons.inventory_outlined),
+                      label: const Text('Start Loading'),
+                    ),
+                  ),
+                if (onCompleteLoading != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onCompleteLoading,
+                      icon: const Icon(Icons.done_all_rounded),
+                      label: const Text('Complete Loading'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.successText,
+                      ),
+                    ),
+                  ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A single item row in the loading adjustment panel.
+/// Manages its own TextEditingController and debounced API call.
+class _LoadingItemRow extends ConsumerStatefulWidget {
+  final Order order;
+  final OrderItem item;
+
+  const _LoadingItemRow({super.key, required this.order, required this.item});
+
+  @override
+  ConsumerState<_LoadingItemRow> createState() => _LoadingItemRowState();
+}
+
+class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
+  late final TextEditingController _ctrl;
+  bool _saving = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.item.loadedQuantity ?? widget.item.quantity;
+    _ctrl = TextEditingController(text: _fmt(initial));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _fmt(double v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
+
+  Future<void> _save() async {
+    final qty = double.tryParse(_ctrl.text.trim());
+    if (qty == null || qty < 0) {
+      setState(() => _hasError = true);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _hasError = false;
+    });
+    try {
+      await ref.read(orderRepositoryProvider).setLoadedQuantity(
+            widget.order.id,
+            widget.item.id,
+            qty,
+          );
+    } on AppError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.errorText,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Plant name
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.item.displayName,
+                  style: AppTypography.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (widget.item.sizeName != null)
+                  Text(
+                    widget.item.sizeName!,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textMuted),
+                  ),
+              ],
+            ),
+          ),
+          // Ordered qty
+          SizedBox(
+            width: 64,
+            child: Text(
+              _fmt(widget.item.quantity),
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          // Loaded qty input
+          SizedBox(
+            width: 80,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: _hasError
+                          ? AppColors.errorText
+                          : AppColors.primaryMain,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 6),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(
+                          color: _hasError
+                              ? AppColors.errorText
+                              : AppColors.border,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(
+                          color: _hasError
+                              ? AppColors.errorText
+                              : AppColors.border,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(
+                            color: AppColors.primaryMain, width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (_) => _save(),
+                    onTapOutside: (_) => _save(),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                if (_saving)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: AppColors.primaryMain,
+                    ),
+                  )
+                else
+                  const SizedBox(width: 12),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

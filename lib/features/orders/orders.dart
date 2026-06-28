@@ -13,6 +13,7 @@ class OrderItem {
   final String? commonName;
   final String? sizeName;
   final double quantity;
+  final double? loadedQuantity;
   final double unitPrice;
   final double totalPrice;
 
@@ -23,6 +24,7 @@ class OrderItem {
     this.commonName,
     this.sizeName,
     required this.quantity,
+    this.loadedQuantity,
     required this.unitPrice,
     required this.totalPrice,
   });
@@ -34,6 +36,7 @@ class OrderItem {
         commonName: j['common_name'] as String?,
         sizeName: j['size_name'] as String?,
         quantity: (j['quantity'] as num).toDouble(),
+        loadedQuantity: (j['loaded_quantity'] as num?)?.toDouble(),
         unitPrice: (j['unit_price'] as num).toDouble(),
         totalPrice: (j['total_price'] as num).toDouble(),
       );
@@ -227,6 +230,17 @@ class OrderRepository {
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<OrderItem> setLoadedQuantity(int orderId, int itemId, double qty) async {
+    return _client.put(
+      ApiConstants.orderItemLoadedQuantity(orderId, itemId),
+      data: {'loaded_quantity': qty},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return OrderItem.fromJson(d['item'] as Map<String, dynamic>);
       },
     );
   }

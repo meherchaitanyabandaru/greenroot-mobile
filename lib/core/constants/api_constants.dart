@@ -48,6 +48,8 @@ abstract class ApiConstants {
   static String orderCompleteLoading(int id) =>
       '$v1/orders/$id/complete-loading';
   static String orderCancel(int id) => '$v1/orders/$id/cancel';
+  static String orderItemLoadedQuantity(int orderId, int itemId) =>
+      '$v1/orders/$orderId/items/$itemId/loaded-quantity';
   static String orderAssignManager(int id) => '$v1/orders/$id/assign-manager';
 
   // Payments
