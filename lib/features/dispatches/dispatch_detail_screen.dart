@@ -50,6 +50,7 @@ class DispatchDetailScreen extends ConsumerWidget {
           dispatch: dispatch,
           dispatchId: dispatchId,
           isDriver: caps.hasDriverProfile && !caps.isNurseryOwner && !caps.isManager,
+          isManager: caps.isManager,
         ),
       ),
     );
@@ -60,10 +61,12 @@ class _DetailView extends ConsumerStatefulWidget {
   final Dispatch dispatch;
   final int dispatchId;
   final bool isDriver;
+  final bool isManager;
   const _DetailView({
     required this.dispatch,
     required this.dispatchId,
     required this.isDriver,
+    this.isManager = false,
   });
 
   @override
@@ -79,13 +82,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       await ref.read(dispatchRepositoryProvider).updateStatus(widget.dispatchId, newStatus);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       if (mounted) {
+        final msg = switch (newStatus) {
+          'DISPATCHED' => 'Marked as dispatched.',
+          'IN_TRANSIT' => 'Trip started! Share your location.',
+          'DELIVERED' => 'Delivery confirmed.',
+          'CANCELLED' => 'Dispatch cancelled.',
+          _ => 'Status updated.',
+        };
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(newStatus == 'IN_TRANSIT'
-                ? 'Trip started! Share your location.'
-                : 'Status updated.'),
-            backgroundColor: AppColors.primaryMain,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: AppColors.primaryMain),
         );
       }
     } on AppError catch (e) {
@@ -110,6 +115,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     return _DetailContent(
       dispatch: widget.dispatch,
       isDriver: widget.isDriver,
+      isManager: widget.isManager,
       busy: _busy,
       onUpdateStatus: _updateStatus,
     );
@@ -120,12 +126,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 class _DetailContent extends StatelessWidget {
   final Dispatch dispatch;
   final bool isDriver;
+  final bool isManager;
   final bool busy;
   final void Function(String) onUpdateStatus;
 
   const _DetailContent({
     required this.dispatch,
     required this.isDriver,
+    this.isManager = false,
     required this.busy,
     required this.onUpdateStatus,
   });
@@ -302,7 +310,10 @@ class _DetailContent extends StatelessWidget {
         if (isDriver) ...[
           _DriverTripProgress(status: dispatch.status),
           const SizedBox(height: AppSpacing.md),
-          if (dispatch.status == 'PENDING')
+          // Driver can start trip from PENDING, ACCEPTED, or DISPATCHED
+          if (dispatch.status == 'PENDING' ||
+              dispatch.status == 'ACCEPTED' ||
+              dispatch.status == 'DISPATCHED')
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -371,50 +382,154 @@ class _DetailContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
         ],
 
-        // ── Owner: Share QR ────────────────────────────────────────────────────
-        if (!isDriver) ...[
-        // Share dispatch code as QR
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: OutlinedButton.icon(
-            onPressed: () => QrShareSheet.show(
-              context,
-              code: dispatch.dispatchCode,
-              qrType: QrCodeType.tripQr,
-              shareMessage:
-                  'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${dispatch.orderNumber ?? '-'}',
+        // ── Manager: Dispatch status actions ───────────────────────────────────
+        if (!isDriver && isManager) ...[
+          if (dispatch.status == 'ACCEPTED' || dispatch.status == 'PENDING')
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('DISPATCHED'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.local_shipping_rounded),
+                label: const Text('Mark Dispatched'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
             ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primaryMain),
-              foregroundColor: AppColors.primaryMain,
-              shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.buttonRadius),
+          if (dispatch.status == 'IN_TRANSIT')
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('DELIVERED'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_circle_rounded),
+                label: const Text('Confirm Delivery'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
             ),
-            icon: const Icon(Icons.qr_code_rounded, size: 20),
-            label: Text('Share Dispatch QR', style: AppTypography.label),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
+        ],
 
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton.icon(
-            onPressed: () => context.push(
-              '/dispatches/${dispatch.id}/track',
+        // ── Owner: Status actions + Share QR + Track ──────────────────────────
+        if (!isDriver) ...[
+          // Owner-only: Mark Dispatched (PENDING or ACCEPTED → DISPATCHED)
+          if (!isManager &&
+              (dispatch.status == 'PENDING' || dispatch.status == 'ACCEPTED')) ...[
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('DISPATCHED'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.local_shipping_rounded),
+                label: const Text('Mark Dispatched'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blue600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.buttonRadius),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          // Owner: confirm delivery when IN_TRANSIT
+          if (!isManager && dispatch.status == 'IN_TRANSIT') ...[
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => onUpdateStatus('DELIVERED'),
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_circle_rounded),
+                label: const Text('Confirm Delivery'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                  elevation: 0,
+                ),
+              ),
             ),
-            icon: const Icon(Icons.location_on_rounded, size: 20),
-            label: Text('Track Shipment', style: AppTypography.label),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          // Share dispatch code as QR
+          if (dispatch.status != 'DELIVERED' && dispatch.status != 'CANCELLED')
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () => QrShareSheet.show(
+                  context,
+                  code: dispatch.dispatchCode,
+                  qrType: QrCodeType.tripQr,
+                  shareMessage:
+                      'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${dispatch.orderNumber ?? '-'}',
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primaryMain),
+                  foregroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                ),
+                icon: const Icon(Icons.qr_code_rounded, size: 20),
+                label: Text('Share Dispatch QR', style: AppTypography.label),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push(
+                '/dispatches/${dispatch.id}/track',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.blue600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius),
+              ),
+              icon: const Icon(Icons.location_on_rounded, size: 20),
+              label: Text('Track Shipment', style: AppTypography.label),
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.x2l),
+          const SizedBox(height: AppSpacing.x2l),
         ], // end if (!isDriver)
       ],
     );
