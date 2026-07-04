@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/user_avatar.dart';
-import '../auth/data/models/capabilities_model.dart';
 import '../auth/data/models/user_models.dart';
 import '../auth/presentation/providers/session_provider.dart';
 
@@ -144,12 +143,6 @@ class ProfileScreen extends ConsumerWidget {
 
           // ── Account info card ─────────────────────────────────────────────
           _ProfileInfoCard(user: user),
-          const SizedBox(height: AppSpacing.x2l),
-
-          // My Roles / Access
-          const Text('My Roles & Access', style: AppTypography.h4),
-          const SizedBox(height: AppSpacing.sm),
-          _RolesSection(caps: caps),
           const SizedBox(height: AppSpacing.x2l),
 
           // Account settings
@@ -347,176 +340,6 @@ class _InfoRow extends StatelessWidget {
       ),
     );
   }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Roles section — shows each workspace as a card
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _RolesSection extends StatelessWidget {
-  final UserCapabilities caps;
-
-  const _RolesSection({required this.caps});
-
-  @override
-  Widget build(BuildContext context) {
-    final hasRoles =
-        caps.isNurseryOwner || caps.isManager || caps.hasDriverProfile;
-
-    if (!hasRoles) {
-      return Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.shopping_bag_outlined,
-              size: 32,
-              color: AppColors.primaryMain,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text('Customer', style: AppTypography.label),
-            const SizedBox(height: 3),
-            Text(
-              'Standard buying access — quotations, orders, tracking',
-              style: AppTypography.caption
-                  .copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        if (!caps.isDriverOnly) ...[
-          const _RoleCard(
-            icon: Icons.shopping_bag_outlined,
-            iconColor: Color(0xFF2E7D32),
-            iconBg: Color(0xFFE8F5E9),
-            title: 'Customer',
-            subtitle: 'Buying access — quotations, orders, tracking',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        if (caps.isNurseryOwner) ...[
-          _RoleCard(
-            icon: Icons.local_florist_rounded,
-            iconColor: AppColors.primaryMain,
-            iconBg: AppColors.primaryLight,
-            title: caps.ownedNurseryName ?? 'My Nursery',
-            subtitle: 'Nursery Owner — full selling access',
-            action: _RoleAction(
-              label: 'Manage',
-              onTap: () {},
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        if (caps.isManager) ...[
-          for (final w in caps.managedNurseries) ...[
-            _RoleCard(
-              icon: Icons.manage_accounts_rounded,
-              iconColor: AppColors.amber700,
-              iconBg: AppColors.amber100,
-              title: w.nurseryName ?? 'Nursery',
-              subtitle: 'Manager / Gumastha',
-              action: _RoleAction(
-                label: 'Open',
-                onTap: () {},
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ],
-        if (caps.hasDriverProfile) ...[
-          const _RoleCard(
-            icon: Icons.local_shipping_outlined,
-            iconColor: Color(0xFF1565C0),
-            iconBg: Color(0xFFE3F2FD),
-            title: 'Delivery Driver',
-            subtitle: 'Trips, vehicle details, documents',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-      ],
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String title;
-  final String subtitle;
-  final _RoleAction? action;
-
-  const _RoleCard({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.title,
-    required this.subtitle,
-    this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTypography.label),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          if (action != null)
-            TextButton(
-              onPressed: action!.onTap,
-              child: Text(action!.label),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoleAction {
-  final String label;
-  final VoidCallback onTap;
-
-  const _RoleAction({required this.label, required this.onTap});
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
