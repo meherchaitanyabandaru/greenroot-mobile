@@ -287,7 +287,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
           indicatorColor: AppColors.primaryMain,
           indicatorWeight: 2.5,
           tabs: const [
-            Tab(text: 'Offers'),
+            Tab(text: 'Quotations'),
             Tab(text: 'Orders'),
             Tab(text: 'Deliveries'),
           ],
@@ -306,7 +306,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 1 — OFFERS (Quotations sent to this buyer)
+// TAB 1 — QUOTATIONS (sent to this buyer by nurseries)
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _OffersTab extends ConsumerWidget {
@@ -331,8 +331,8 @@ class _OffersTab extends ConsumerWidget {
     if (paged.items.isEmpty) {
       return const _EmptyState(
         icon: Icons.request_quote_outlined,
-        title: 'No offers yet',
-        subtitle: 'When a nursery sends you an offer, it will appear here.',
+        title: 'No quotations yet',
+        subtitle: 'When a nursery sends you a quotation, it will appear here.',
       );
     }
 

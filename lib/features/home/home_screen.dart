@@ -1752,7 +1752,7 @@ class _CustomerActionCards extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Review and accept offers from nurseries',
+                        'Review and accept quotations from nurseries',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
                           fontSize: 12,
