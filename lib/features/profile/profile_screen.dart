@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../auth/data/models/capabilities_model.dart';
+import '../auth/data/models/user_models.dart';
 import '../auth/presentation/providers/session_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -96,7 +97,7 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
-          // Avatar + name
+          // ── Avatar + identity ─────────────────────────────────────────────
           Center(
             child: Column(
               children: [
@@ -110,25 +111,39 @@ class ProfileScreen extends ConsumerWidget {
                   user?.name ?? 'GreenRoot User',
                   style: AppTypography.h3,
                 ),
-                if (user?.mobile != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    user!.mobile!,
-                    style: AppTypography.body
-                        .copyWith(color: AppColors.textSecondary),
+                const SizedBox(height: AppSpacing.xs),
+                // Member ID badge
+                if (user?.userCode != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.badge_outlined, size: 13, color: AppColors.primaryMain),
+                        const SizedBox(width: 4),
+                        Text(
+                          user!.userCode!,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primaryMain,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-                if (user?.email != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    user!.email!,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.x2l),
+
+          // ── Account info card ─────────────────────────────────────────────
+          _ProfileInfoCard(user: user),
           const SizedBox(height: AppSpacing.x2l),
 
           // My Roles / Access
@@ -180,6 +195,154 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.x3l),
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Profile info card — contact details + account metadata
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _ProfileInfoCard extends StatelessWidget {
+  final UserProfile? user;
+  const _ProfileInfoCard({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <_InfoRow>[
+      _InfoRow(
+        icon: Icons.phone_outlined,
+        label: 'Mobile',
+        value: user?.mobile ?? '—',
+        badge: user?.mobileVerified == true ? 'Verified' : null,
+      ),
+      if (user?.email != null)
+        _InfoRow(
+          icon: Icons.email_outlined,
+          label: 'Email',
+          value: user!.email!,
+          badge: user?.emailVerified == true ? 'Verified' : null,
+        ),
+      if (user?.gender != null)
+        _InfoRow(
+          icon: _genderIcon(user!.gender!),
+          label: 'Gender',
+          value: _genderLabel(user!.gender!),
+        ),
+      _InfoRow(
+        icon: Icons.calendar_today_outlined,
+        label: 'Member since',
+        value: user?.createdAt != null ? _memberSince(user!.createdAt!) : '—',
+      ),
+      if (user?.lastLoginAt != null)
+        _InfoRow(
+          icon: Icons.access_time_rounded,
+          label: 'Last login',
+          value: _relativeTime(user!.lastLoginAt!),
+        ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i < rows.length - 1)
+              const Divider(height: 1, indent: 52, color: AppColors.border),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static IconData _genderIcon(String g) {
+    switch (g) {
+      case 'MALE': return Icons.male_rounded;
+      case 'FEMALE': return Icons.female_rounded;
+      default: return Icons.visibility_off_outlined;
+    }
+  }
+
+  static String _genderLabel(String g) {
+    switch (g) {
+      case 'MALE': return 'Male';
+      case 'FEMALE': return 'Female';
+      default: return 'Prefer not to say';
+    }
+  }
+
+  static String _memberSince(DateTime dt) {
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${m[dt.month - 1]} ${dt.year}';
+  }
+
+  static String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 365) return '${(diff.inDays / 365).floor()}y ago';
+    if (diff.inDays > 30)  return '${(diff.inDays / 30).floor()}mo ago';
+    if (diff.inDays > 0)   return '${diff.inDays}d ago';
+    if (diff.inHours > 0)  return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? badge;
+
+  const _InfoRow({required this.icon, required this.label, required this.value, this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.forest100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.primaryMain),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                const SizedBox(height: 2),
+                Text(value, style: AppTypography.body),
+              ],
+            ),
+          ),
+          if (badge != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                badge!,
+                style: AppTypography.caption.copyWith(
+                  color: const Color(0xFF2E7D32),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );

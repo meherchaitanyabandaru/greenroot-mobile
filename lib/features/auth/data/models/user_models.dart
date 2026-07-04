@@ -11,6 +11,7 @@ class UserProfile {
   final String? profileImageUrl;
   final String? status;
   final DateTime? createdAt;
+  final DateTime? lastLoginAt;
 
   const UserProfile({
     required this.id,
@@ -25,6 +26,7 @@ class UserProfile {
     this.profileImageUrl,
     this.status,
     this.createdAt,
+    this.lastLoginAt,
   });
 
   // Convenience getter used throughout the UI
@@ -53,6 +55,9 @@ class UserProfile {
       createdAt: u['created_at'] != null
           ? DateTime.tryParse(u['created_at'] as String)
           : null,
+      lastLoginAt: u['last_login_at'] != null
+          ? DateTime.tryParse(u['last_login_at'] as String)
+          : null,
     );
   }
 
@@ -76,6 +81,7 @@ class UserProfile {
         profileImageUrl: profileImageUrl ?? this.profileImageUrl,
         status: status,
         createdAt: createdAt,
+        lastLoginAt: lastLoginAt,
       );
 
   /// True when the user has completed their full profile.

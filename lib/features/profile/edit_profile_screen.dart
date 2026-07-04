@@ -133,7 +133,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(sessionProvider).user;
-    final emailLocked = user?.emailVerified == true;
+    final firstNameLocked = user?.firstName?.isNotEmpty == true;
+    final lastNameLocked  = user?.lastName?.isNotEmpty == true;
+    final emailLocked     = user?.email?.isNotEmpty == true;
+    final genderLocked    = user?.gender?.isNotEmpty == true;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -238,10 +241,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 _LockedField(
                   icon: Icons.email_outlined,
                   label: 'Email',
-                  value: user?.email ?? '—',
-                  note: 'Verified',
+                  value: user!.email!,
+                  note: user.emailVerified ? 'Verified' : 'Set',
                 )
-              else ...[
+              else
                 AppTextField(
                   label: 'Email (optional)',
                   hint: 'you@example.com',
@@ -257,40 +260,63 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     return null;
                   },
                 ),
-              ],
               const SizedBox(height: AppSpacing.x2l),
 
               // ── Personal details ──────────────────────────────────────────
               _sectionLabel('Personal Details'),
               const SizedBox(height: AppSpacing.sm),
-              AppTextField(
-                label: 'First Name',
-                hint: 'Enter your first name',
-                controller: _firstNameCtrl,
-                textInputAction: TextInputAction.next,
-                validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'First name is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppTextField(
-                label: 'Last Name',
-                hint: 'Enter your last name (optional)',
-                controller: _lastNameCtrl,
-                textInputAction: TextInputAction.done,
-              ),
+              if (firstNameLocked)
+                _LockedField(
+                  icon: Icons.person_outline_rounded,
+                  label: 'First Name',
+                  value: user!.firstName!,
+                  note: 'Set',
+                )
+              else
+                AppTextField(
+                  label: 'First Name',
+                  hint: 'Enter your first name',
+                  controller: _firstNameCtrl,
+                  textInputAction: TextInputAction.next,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'First name is required';
+                    }
+                    return null;
+                  },
+                ),
+              const SizedBox(height: AppSpacing.sm),
+              if (lastNameLocked)
+                _LockedField(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Last Name',
+                  value: user!.lastName!,
+                  note: 'Set',
+                )
+              else
+                AppTextField(
+                  label: 'Last Name (optional)',
+                  hint: 'Enter your last name',
+                  controller: _lastNameCtrl,
+                  textInputAction: TextInputAction.done,
+                ),
               const SizedBox(height: AppSpacing.x2l),
 
               // ── Gender ────────────────────────────────────────────────────
               _sectionLabel('Gender'),
               const SizedBox(height: AppSpacing.sm),
-              _GenderDropdown(
-                value: _gender,
-                onChanged: (g) => setState(() => _gender = g),
-              ),
+              if (genderLocked)
+                _LockedField(
+                  icon: _genderIcon(user!.gender!),
+                  label: 'Gender',
+                  value: _genderLabel(user.gender!),
+                  note: 'Set',
+                )
+              else
+                _GenderDropdown(
+                  value: _gender,
+                  onChanged: (g) => setState(() => _gender = g),
+                ),
 
               // ── Error ─────────────────────────────────────────────────────
               if (_error != null) ...[
@@ -325,12 +351,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ],
 
               const SizedBox(height: AppSpacing.x3l),
-              AppButton(
-                label: 'Save Changes',
-                onPressed: _uploadingImage ? null : _save,
-                isLoading: _isLoading,
-                trailingIcon: Icons.check_rounded,
-              ),
+              if (firstNameLocked && lastNameLocked && emailLocked && genderLocked)
+                Center(
+                  child: Text(
+                    'Profile is complete. You can still update your photo.',
+                    style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                AppButton(
+                  label: 'Save Changes',
+                  onPressed: _uploadingImage ? null : _save,
+                  isLoading: _isLoading,
+                  trailingIcon: Icons.check_rounded,
+                ),
               const SizedBox(height: AppSpacing.x3l),
             ],
           ),
@@ -370,6 +405,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         text,
         style: AppTypography.label.copyWith(color: AppColors.textSecondary),
       );
+
+  static IconData _genderIcon(String g) {
+    switch (g) {
+      case 'MALE': return Icons.male_rounded;
+      case 'FEMALE': return Icons.female_rounded;
+      default: return Icons.visibility_off_outlined;
+    }
+  }
+
+  static String _genderLabel(String g) {
+    switch (g) {
+      case 'MALE': return 'Male';
+      case 'FEMALE': return 'Female';
+      default: return 'Prefer not to say';
+    }
+  }
 }
 
 // ── Locked field ──────────────────────────────────────────────────────────────
