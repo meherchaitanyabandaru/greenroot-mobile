@@ -440,7 +440,7 @@ class _BuyerActionGrid extends StatelessWidget {
         ),
         _ActionCell(
           icon: Icons.storefront_outlined,
-          label: 'Nurseries',
+          label: 'My Nursery Connections',
           color: AppColors.blue600,
           onTap: onBrowseNurseries,
         ),
