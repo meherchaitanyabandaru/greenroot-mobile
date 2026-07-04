@@ -80,27 +80,6 @@ final _driverHomeProvider =
   }
 });
 
-final _buyerHomeProvider =
-    FutureProvider.autoDispose<_BuyerHomeData>((ref) async {
-  final orderRepo = ref.watch(orderRepositoryProvider);
-  final quotationRepo = ref.watch(quotationRepositoryProvider);
-  var orders = <Order>[];
-  var quotations = <Quotation>[];
-
-  try {
-    final (items, _) = await quotationRepo.listBuyingQuotations(
-      page: 1,
-      perPage: 30,
-    );
-    quotations = items;
-  } catch (_) {}
-  try {
-    final (items, _) = await orderRepo.listBuyingOrders(page: 1, perPage: 30);
-    orders = items;
-  } catch (_) {}
-
-  return _BuyerHomeData(orders: orders, quotations: quotations);
-});
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -119,7 +98,7 @@ class HomeScreen extends ConsumerWidget {
             await ref.read(sessionProvider.notifier).bootstrap();
             ref.invalidate(_operationsHomeProvider);
             ref.invalidate(_driverHomeProvider);
-            ref.invalidate(_buyerHomeProvider);
+            ref.invalidate(buyerHomeProvider);
             ref.invalidate(notificationListProvider);
           },
           child: ListView(
@@ -2033,12 +2012,6 @@ class _DriverHomeData {
       .firstOrNull;
 }
 
-class _BuyerHomeData {
-  final List<Order> orders;
-  final List<Quotation> quotations;
-
-  const _BuyerHomeData({required this.orders, required this.quotations});
-}
 
 BoxDecoration _cardDecoration({Color bg = AppColors.surface}) => BoxDecoration(
       color: bg,
