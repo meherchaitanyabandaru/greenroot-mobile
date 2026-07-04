@@ -56,6 +56,38 @@ UserCapabilities _capabilities(BuildContext context) {
   return container.read(sessionProvider).capabilities;
 }
 
+// ============================================================================
+// ROUTE GUARDS — RBAC at the navigation layer
+// ============================================================================
+//
+// Guards run on every navigation event (initial load, push, deep-link redirect).
+// Return null  → allow navigation.
+// Return '/home' → block and redirect to home.
+//
+// GUARD MATRIX
+// ─────────────────────────────────────────────────────────────
+//   Guard              BUYER   OWNER   MANAGER   DRIVER-ONLY
+//   _driverGuard        pass    pass    pass      block*
+//   _canSellGuard       block   pass    pass      block
+//   _sellerReadGuard    block   pass    pass      block
+//   _ownerGuard         block   pass    block     block
+//   _buyerGuard         pass    block   block     block
+//
+//   *driver pass: only /driver/*, /notifications, /dispatches/:id/track
+//
+// CAPABILITIES (UserCapabilities from session_provider.dart)
+//   caps.isNurseryOwner  — user owns a nursery (mutually exclusive with isManager)
+//   caps.isManager       — user is a nursery manager (mutually exclusive with isNurseryOwner)
+//   caps.isDriverOnly    — user has ONLY a driver profile, no other role
+//   caps.canSell         — isNurseryOwner || isManager  (shorthand for sell access)
+//   caps.primaryNurseryId — nursery ID for all nursery-scoped API calls
+//
+// ============================================================================
+
+// _driverGuard: confine driver-only users to driver screens.
+// Non-drivers pass through immediately (null).
+// Driver-allowed paths: /driver/*, /notifications, /dispatches/:id/track
+// Everything else for a driver → /home
 String? _driverGuard(BuildContext context, GoRouterState state) {
   final caps = _capabilities(context);
   if (!caps.isDriverOnly) return null;
@@ -69,30 +101,50 @@ String? _driverGuard(BuildContext context, GoRouterState state) {
   return '/home';
 }
 
+// _canSellGuard: require canSell capability (owner OR manager).
+// Blocks: pure buyers, driver-only users.
+// Applied on: seller-create routes — order create, quotation create, dispatch create.
+// API equivalent: routes that call POST /api/v1/orders, POST /api/v1/quotations, etc.
 String? _canSellGuard(BuildContext context, GoRouterState state) {
   final driverRedirect = _driverGuard(context, state);
   if (driverRedirect != null) return driverRedirect;
   return _capabilities(context).canSell ? null : '/home';
 }
 
+// _ownerGuard: require isNurseryOwner (NOT just canSell).
+// Blocks: managers (canSell=true but isNurseryOwner=false), buyers, drivers.
+// Applied on: owner-exclusive routes:
+//   /nursery/members    → team management, MANAGER_INVITE (owner-only API)
+//   /inventory/add      → add inventory items (owner-only API)
+// API equivalent: POST /api/v1/invites (MANAGER_INVITE), POST /api/v1/nurseries/:id/inventory
 String? _ownerGuard(BuildContext context, GoRouterState state) {
   final driverRedirect = _driverGuard(context, state);
   if (driverRedirect != null) return driverRedirect;
   return _capabilities(context).isNurseryOwner ? null : '/home';
 }
 
+// _sellerReadGuard: require canSell for read-only seller views.
+// Blocks: buyers (no canSell), drivers.
+// Applied on: routes that display nursery-scope read data (order lists,
+// dispatch lists, quotation lists) scoped to the seller's nursery context.
+// Note: buyers have their own buyer-scoped versions of these lists.
 String? _sellerReadGuard(BuildContext context, GoRouterState state) {
   final driverRedirect = _driverGuard(context, state);
   if (driverRedirect != null) return driverRedirect;
   return _capabilities(context).canSell ? null : '/home';
 }
 
-// Buyer-only routes: blocks drivers AND sellers (owner/manager) from buyer-specific screens.
-// Buyers are users who are not owners, not managers, and not driver-only.
+// _buyerGuard: restrict routes to pure buyer users only.
+// A "pure buyer" is: !isDriverOnly && !canSell
+// Blocks: owners (canSell=true), managers (canSell=true), driver-only users.
+// Applied on: /my-payments (buyer payment history — GET /api/v1/payments scoped to buyer)
+//
+// IMPORTANT: owners and managers also use payments — but their payment routes
+// are seller-scoped (order-linked). Use _canSellGuard for those routes, not this.
 String? _buyerGuard(BuildContext context, GoRouterState state) {
   final caps = _capabilities(context);
   if (caps.isDriverOnly) return '/home';
-  if (caps.canSell) return '/home'; // owner or manager → not a buyer-only screen
+  if (caps.canSell) return '/home'; // owner or manager → blocked from buyer-only screens
   return null;
 }
 

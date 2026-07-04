@@ -1,3 +1,93 @@
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  GREENROOT — BUYER PAYMENTS SCREEN                                          ║
+// ║  Role:   BUYER (customer) only                                               ║
+// ║  Route:  /my-payments                                                        ║
+// ║  Guard:  _buyerGuard — blocks owners, managers, and drivers                 ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+//
+// PURPOSE
+// ───────
+// Displays the payment history for a buyer — all payments linked to the buyer's
+// orders. This is a READ-ONLY screen; buyers cannot create or modify payments
+// (payments are recorded by nursery staff / backend on order completion).
+//
+// WHY BUYER-ONLY (not shared with owner/manager)
+// ────────────────────────────────────────────────
+// Owners and managers see payment data in a different context — scoped to the
+// nursery's receivables (all orders from all buyers). That is a separate,
+// seller-scoped payments screen. This screen is scoped to the buyer's OWN
+// outgoing payments only.
+//
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │  RBAC — ALLOWED ACTIONS                                                     │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │  ✅  List own payments                 GET /api/v1/payments                 │
+// │        Query params: page (int), per_page (int, default 20)                 │
+// │        Response: { data: [Payment...], pagination: ApiPagination }          │
+// │        API automatically scopes to the authenticated buyer's payments       │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │  RBAC — FORBIDDEN                                                           │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │  ❌  Create payments     (backend-only operation on order completion)        │
+// │  ❌  Modify payments     (immutable records)                                 │
+// │  ❌  View other users' payments (API scoped to authenticated user)           │
+// │  ❌  Owners/managers accessing this route (_buyerGuard → /home)             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+//
+// API DETAILS
+// ────────────
+//   GET /api/v1/payments?page=:page&per_page=:perPage
+//
+//   Response shape:
+//   {
+//     "data": [
+//       {
+//         "id": int,
+//         "payment_code": string,       — unique payment reference (e.g. "PAY-001234")
+//         "order_number": string?,      — linked order reference
+//         "amount": float,              — payment amount in INR
+//         "payment_status": string,     — PENDING | COMPLETED | FAILED | REFUNDED
+//         "payment_method": string?,    — CASH | UPI | BANK_TRANSFER | CARD | OTHER
+//         "transaction_reference": string?,  — external transaction ID
+//         "notes": string?,
+//         "created_at": string          — ISO 8601 datetime
+//       }
+//     ],
+//     "pagination": { "page": int, "per_page": int, "total": int, "total_pages": int }
+//   }
+//
+// PAYMENT STATUS VALUES
+// ──────────────────────
+//   PENDING    — payment recorded but not yet confirmed
+//   COMPLETED  — payment confirmed and processed
+//   FAILED     — payment attempt failed
+//   REFUNDED   — payment was refunded (order cancelled after payment)
+//
+// PAGINATION PATTERN
+// ───────────────────
+//   Uses ApiPagination from lib/core/models/pagination.dart
+//   Pull-to-refresh resets to page=1
+//   Infinite scroll increments page via loadMore callback
+//
+// API CLIENT PATTERN
+// ───────────────────
+//   Uses ApiClient.instance singleton (NOT a Riverpod provider).
+//   PaymentRepository is injected via paymentRepositoryProvider (Riverpod Provider).
+//   Do NOT use ref.watch(apiClientProvider) — that provider does not exist.
+//
+// ERROR HANDLING
+// ───────────────
+//   401 unauthorized — session expired; SessionProvider handles token refresh
+//   403 forbidden    — should not happen (guard prevents non-buyers reaching this)
+//   404 not_found    — would indicate API misconfiguration; show generic error
+//
+// SEE ALSO
+// ─────────
+//   lib/features/buyer/buyer_tab.dart   — buyer's main tab (links here via profile)
+//   lib/features/buyer/buyer_home.dart  — buyer home (payment history CTA)
+//   lib/app/router.dart _buyerGuard     — route guard
+//   lib/core/models/pagination.dart     — ApiPagination model
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
