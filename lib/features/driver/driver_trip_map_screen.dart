@@ -51,8 +51,8 @@ class DriverTripMapScreen extends ConsumerWidget {
         ],
       ),
       body: async.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryMain)),
         error: (err, _) => _ErrorView(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
@@ -87,12 +87,14 @@ class _AppBarTitle extends StatelessWidget {
                 children: [
                   Text(
                     'Trip Code',
-                    style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textMuted),
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: dispatch.dispatchCode));
+                      Clipboard.setData(
+                          ClipboardData(text: dispatch.dispatchCode));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Trip code copied'),
@@ -100,7 +102,8 @@ class _AppBarTitle extends StatelessWidget {
                         ),
                       );
                     },
-                    child: const Icon(Icons.copy_rounded, size: 13, color: AppColors.textMuted),
+                    child: const Icon(Icons.copy_rounded,
+                        size: 13, color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -123,7 +126,8 @@ class _AppBarTitle extends StatelessWidget {
 class DriverTripMapBody extends ConsumerStatefulWidget {
   final Dispatch dispatch;
   final int dispatchId;
-  const DriverTripMapBody({super.key, required this.dispatch, required this.dispatchId});
+  const DriverTripMapBody(
+      {super.key, required this.dispatch, required this.dispatchId});
 
   @override
   ConsumerState<DriverTripMapBody> createState() => DriverTripMapBodyState();
@@ -155,8 +159,10 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   @override
   void initState() {
     super.initState();
-    _initGps();
-    _fetchNurseryAndGeocode();
+    if (_usesLiveMap(widget.dispatch.status)) {
+      _initGps();
+      _fetchNurseryAndGeocode();
+    }
     if (widget.dispatch.status == 'IN_TRANSIT') {
       _startGpsPosting();
       _loadTracking();
@@ -177,7 +183,10 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     if (perm == LocationPermission.denied) {
       perm = await Geolocator.requestPermission();
     }
-    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
+    if (perm == LocationPermission.denied ||
+        perm == LocationPermission.deniedForever) {
+      return;
+    }
 
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
@@ -200,7 +209,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     _postingGps = true;
     try {
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
       );
       if (mounted) setState(() => _devicePos = pos);
       await ref.read(trackingRepositoryProvider).postLocation(
@@ -223,6 +233,9 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     } catch (_) {}
   }
 
+  bool _usesLiveMap(String status) =>
+      status == 'DISPATCHED' || status == 'IN_TRANSIT';
+
   void _onMapReady() {
     _mapReady = true;
     _fitBounds();
@@ -231,7 +244,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   void _fitBounds() {
     if (!_mapReady || !mounted) return;
     final points = <LatLng>[
-      if (_devicePos != null) LatLng(_devicePos!.latitude, _devicePos!.longitude),
+      if (_devicePos != null)
+        LatLng(_devicePos!.latitude, _devicePos!.longitude),
       if (_loadingPointLatLng != null) _loadingPointLatLng!,
       if (_deliveryPointLatLng != null) _deliveryPointLatLng!,
     ];
@@ -273,7 +287,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           orElse: () => addresses.first,
         );
         final parts = <String>[
-          if (primary['address_line1'] != null) primary['address_line1'] as String,
+          if (primary['address_line1'] != null)
+            primary['address_line1'] as String,
           if (primary['city'] != null) primary['city'] as String,
           if (primary['state'] != null) primary['state'] as String,
         ].where((s) => s.isNotEmpty).toList();
@@ -308,7 +323,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       final results = resp.data;
       if (results != null && results.isNotEmpty) {
         final r = results.first as Map<String, dynamic>;
-        return LatLng(double.parse(r['lat'] as String), double.parse(r['lon'] as String));
+        return LatLng(
+            double.parse(r['lat'] as String), double.parse(r['lon'] as String));
       }
     } catch (_) {}
     return null;
@@ -319,7 +335,9 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   Future<void> _acceptTrip() async {
     setState(() => _busy = true);
     try {
-      await ref.read(dispatchRepositoryProvider).acceptDispatch(widget.dispatchId);
+      await ref
+          .read(dispatchRepositoryProvider)
+          .acceptDispatch(widget.dispatchId);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       _snack('Trip accepted! Waiting for nursery to load plants.');
     } on AppError catch (e) {
@@ -336,7 +354,9 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     }
     setState(() => _busy = true);
     try {
-      await ref.read(dispatchRepositoryProvider).updateStatus(widget.dispatchId, 'IN_TRANSIT');
+      await ref
+          .read(dispatchRepositoryProvider)
+          .updateStatus(widget.dispatchId, 'IN_TRANSIT');
       _startGpsPosting();
       await _postGps();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
@@ -363,7 +383,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
             child: const Text('Complete'),
           ),
         ],
@@ -372,7 +393,9 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     if (ok != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      await ref.read(dispatchRepositoryProvider).updateStatus(widget.dispatchId, 'DELIVERED');
+      await ref
+          .read(dispatchRepositoryProvider)
+          .updateStatus(widget.dispatchId, 'DELIVERED');
       _gpsTimer?.cancel();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       ref.invalidate(activeDriverTripProvider);
@@ -413,17 +436,21 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     final d = widget.dispatch;
 
     final isDelivered = d.status == 'DELIVERED' || d.status == 'CANCELLED';
+    final showMap = _usesLiveMap(d.status);
 
     double? distKm;
-    if (_loadingPointLatLng != null && _deliveryPointLatLng != null) {
+    if (showMap &&
+        _loadingPointLatLng != null &&
+        _deliveryPointLatLng != null) {
       const calc = Distance();
-      distKm = calc.as(LengthUnit.Kilometer, _loadingPointLatLng!, _deliveryPointLatLng!);
+      distKm = calc.as(
+          LengthUnit.Kilometer, _loadingPointLatLng!, _deliveryPointLatLng!);
     }
 
     return Column(
       children: [
         // ── Fixed map — hidden for completed/cancelled trips ───────────────────
-        if (!isDelivered) ...[
+        if (!isDelivered && showMap) ...[
           _MapSection(
             mapController: _mapController,
             devicePos: _devicePos,
@@ -456,12 +483,14 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
             color: AppColors.primaryMain,
             onRefresh: () async {
               ref.invalidate(dispatchDetailProvider(widget.dispatchId));
-              await _initGps();
+              if (showMap) {
+                await _initGps();
+                await _fetchNurseryAndGeocode();
+              }
               if (d.status == 'IN_TRANSIT') {
                 await _loadTracking();
                 await _postGps();
               }
-              await _fetchNurseryAndGeocode();
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -479,7 +508,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
                     createdAt: d.createdAt,
                     updatedAt: d.updatedAt,
                     expanded: _journeyExpanded,
-                    onToggle: () => setState(() => _journeyExpanded = !_journeyExpanded),
+                    onToggle: () =>
+                        setState(() => _journeyExpanded = !_journeyExpanded),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Plants summary
@@ -487,7 +517,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
                     _PlantsCard(
                       items: d.items,
                       expanded: _plantsExpanded,
-                      onToggle: () => setState(() => _plantsExpanded = !_plantsExpanded),
+                      onToggle: () =>
+                          setState(() => _plantsExpanded = !_plantsExpanded),
                     ),
                 ],
               ),
@@ -501,11 +532,14 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           busy: _busy,
           destinationAddress: d.destinationAddress,
           onAccept: _acceptTrip,
-          onRefresh: () => ref.invalidate(dispatchDetailProvider(widget.dispatchId)),
+          onRefresh: () =>
+              ref.invalidate(dispatchDetailProvider(widget.dispatchId)),
           onNavigate: _openGoogleMaps,
           onStartJourney: _startJourney,
-          onAddEvent: () => context.push('/driver/trips/${widget.dispatchId}/event'),
-          onUploadProof: () => context.push('/driver/trips/${widget.dispatchId}/proof'),
+          onAddEvent: () =>
+              context.push('/driver/trips/${widget.dispatchId}/event'),
+          onUploadProof: () =>
+              context.push('/driver/trips/${widget.dispatchId}/proof'),
           onCompleteDelivery: _completeDelivery,
         ),
       ],
@@ -550,7 +584,10 @@ class _MapSection extends StatelessWidget {
     final truckLatLng = devicePos != null
         ? LatLng(devicePos!.latitude, devicePos!.longitude)
         : null;
-    final center = truckLatLng ?? loadingPointLatLng ?? deliveryPointLatLng ?? defaultCenter;
+    final center = truckLatLng ??
+        loadingPointLatLng ??
+        deliveryPointLatLng ??
+        defaultCenter;
     final zoom = truckLatLng != null ? 13.0 : 6.0;
 
     // Build route polyline: loading → truck → delivery (when we have points)
@@ -561,7 +598,8 @@ class _MapSection extends StatelessWidget {
     ];
 
     // GPS tracking polyline (actual driven path for IN_TRANSIT)
-    final gpsPts = trackingPts.map((p) => LatLng(p.latitude, p.longitude)).toList();
+    final gpsPts =
+        trackingPts.map((p) => LatLng(p.latitude, p.longitude)).toList();
 
     return SizedBox(
       height: 264,
@@ -648,7 +686,8 @@ class _MapSection extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 2.5),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryMain.withValues(alpha: 0.45),
+                              color:
+                                  AppColors.primaryMain.withValues(alpha: 0.45),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -679,7 +718,8 @@ class _MapSection extends StatelessWidget {
               bottom: 8,
               left: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(99),
@@ -779,7 +819,8 @@ class _MapMarker extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(4),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 3),
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 3),
             ],
           ),
           child: Column(
@@ -899,12 +940,25 @@ class _GpsChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, icon, label) = !granted
-        ? (AppColors.amber100, AppColors.amber700, Icons.gps_off_rounded, 'GPS off')
+        ? (
+            AppColors.amber100,
+            AppColors.amber700,
+            Icons.gps_off_rounded,
+            'GPS off'
+          )
         : isPosting
-            ? (AppColors.primaryLight, AppColors.primaryMain, Icons.gps_fixed_rounded,
-                'GPS Active')
-            : (AppColors.primaryLight, AppColors.primaryMain, Icons.gps_fixed_rounded,
-                'GPS Ready');
+            ? (
+                AppColors.primaryLight,
+                AppColors.primaryMain,
+                Icons.gps_fixed_rounded,
+                'GPS Active'
+              )
+            : (
+                AppColors.primaryLight,
+                AppColors.primaryMain,
+                Icons.gps_fixed_rounded,
+                'GPS Ready'
+              );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -994,7 +1048,9 @@ class _OrderJourneyCard extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
                     color: AppColors.textSecondary,
                   ),
                 ],
@@ -1170,11 +1226,7 @@ class _StepRow extends StatelessWidget {
           Colors.white,
           AppColors.textPrimary
         ),
-      _StepState.active => (
-          AppColors.blue600,
-          Colors.white,
-          AppColors.blue600
-        ),
+      _StepState.active => (AppColors.blue600, Colors.white, AppColors.blue600),
       _StepState.pending => (
           AppColors.border,
           AppColors.textMuted,
@@ -1201,7 +1253,8 @@ class _StepRow extends StatelessWidget {
                   ),
                   child: Center(
                     child: step.state == _StepState.completed
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
+                        ? const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 14)
                         : Text(
                             '${step.number}',
                             style: TextStyle(
@@ -1491,7 +1544,8 @@ class _BottomActionBar extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textSecondary,
               side: const BorderSide(color: AppColors.border),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+              shape:
+                  RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
             ),
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Refresh Status'),
@@ -1566,7 +1620,8 @@ class _BottomActionBar extends StatelessWidget {
               backgroundColor: AppColors.primaryMain.withValues(alpha: 0.15),
               disabledBackgroundColor: AppColors.forest100,
               disabledForegroundColor: AppColors.primaryMain,
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+              shape:
+                  RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
             ),
             icon: const Icon(Icons.check_circle_rounded),
             label: Text('Trip Completed', style: AppTypography.label),
@@ -1609,7 +1664,8 @@ class _PrimaryBtn extends StatelessWidget {
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
               )
             : Icon(icon),
         label: Text(label, style: AppTypography.label),
@@ -1681,15 +1737,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.textMuted),
+            const Icon(Icons.error_outline_rounded,
+                size: 48, color: AppColors.textMuted),
             const SizedBox(height: AppSpacing.md),
-            Text(message, style: AppTypography.body, textAlign: TextAlign.center),
+            Text(message,
+                style: AppTypography.body, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.md),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain),
             ),
           ],
         ),

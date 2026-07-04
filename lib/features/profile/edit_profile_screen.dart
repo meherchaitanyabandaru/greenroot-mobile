@@ -31,9 +31,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isLoading = false;
   String? _error;
 
-  // Avatar state
+  // Avatar state — bytes for local preview after pick
   Uint8List? _pickedBytes;
-  String? _pendingImageUrl;
   bool _uploadingImage = false;
   String? _imageError;
 
@@ -57,12 +56,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
+  /// Pick an image, upload via POST /api/v1/users/me/avatar (multipart).
+  /// The API uploads to MinIO and updates profile_image_url in one step.
+  /// Session is updated immediately — no need to wait for Save.
   Future<void> _pickAndUploadImage() async {
     setState(() => _imageError = null);
-    final picker = ImagePicker();
     XFile? picked;
     try {
-      picked = await picker.pickImage(
+      picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         maxWidth: 800,
         maxHeight: 800,
@@ -81,16 +82,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
       final fileName = 'avatar-${DateTime.now().millisecondsSinceEpoch}.$ext';
 
-      final storage = StorageService(ApiClient.instance);
-      final result = await storage.presign('profile-images', fileName, contentType);
-      await storage.uploadBytes(result.uploadUrl, bytes, contentType);
+      final updated = await StorageService(ApiClient.instance)
+          .uploadAvatar(bytes, fileName, contentType);
 
-      if (mounted) {
-        setState(() {
-          _pickedBytes = bytes;
-          _pendingImageUrl = result.fileUrl;
-        });
-      }
+      ref.read(sessionProvider.notifier).updateUser(updated);
+      if (mounted) setState(() => _pickedBytes = bytes);
     } on AppError catch (e) {
       if (mounted) setState(() => _imageError = e.message);
     } catch (_) {
@@ -119,8 +115,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ? null
               : (email.isEmpty ? null : email),
           gender: _gender,
-          profileImageUrl:
-              _pendingImageUrl ?? user?.profileImageUrl,
+          // Preserve the current profileImageUrl — avatar is saved separately via uploadAvatar.
+          profileImageUrl: user?.profileImageUrl,
         ),
       );
       ref.read(sessionProvider.notifier).updateUser(updated);
@@ -162,7 +158,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       onTap: _uploadingImage ? null : _pickAndUploadImage,
                       child: Stack(
                         children: [
-                          // Avatar circle
                           Container(
                             width: 96,
                             height: 96,
@@ -170,13 +165,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               color: AppColors.primaryLight,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: AppColors.primaryMain, width: 2.5,),
+                                color: AppColors.primaryMain,
+                                width: 2.5,
+                              ),
                             ),
-                            child: ClipOval(
-                              child: _buildAvatarContent(user),
-                            ),
+                            child: ClipOval(child: _buildAvatarContent(user)),
                           ),
-                          // Edit badge
+                          // Camera badge
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -187,7 +182,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 color: AppColors.primaryMain,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: AppColors.background, width: 2,),
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
                               ),
                               child: _uploadingImage
                                   ? const Padding(
@@ -197,8 +194,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Icon(Icons.camera_alt_rounded,
-                                      color: Colors.white, size: 15,),
+                                  : const Icon(
+                                      Icons.camera_alt_rounded,
+                                      color: Colors.white,
+                                      size: 15,
+                                    ),
                             ),
                           ),
                         ],
@@ -206,9 +206,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      _uploadingImage
-                          ? 'Uploading…'
-                          : 'Tap to change photo',
+                      _uploadingImage ? 'Uploading…' : 'Tap to change photo',
                       style: AppTypography.caption
                           .copyWith(color: AppColors.textMuted),
                     ),
@@ -261,7 +259,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ],
               const SizedBox(height: AppSpacing.x2l),
 
-              // ── Personal details (editable) ───────────────────────────────
+              // ── Personal details ──────────────────────────────────────────
               _sectionLabel('Personal Details'),
               const SizedBox(height: AppSpacing.sm),
               AppTextField(
@@ -302,12 +300,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     color: AppColors.errorBg,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppColors.errorText.withValues(alpha: 0.3),),
+                      color: AppColors.errorText.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 18, color: AppColors.errorText,),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 18,
+                        color: AppColors.errorText,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -337,31 +339,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildAvatarContent(UserProfile? user) {
-    // 1. Local preview after picking
+    // 1. Local bytes preview (just picked, session already updated)
     if (_pickedBytes != null) {
-      return Image.memory(
-        _pickedBytes!,
-        width: 96,
-        height: 96,
-        fit: BoxFit.cover,
-      );
+      return Image.memory(_pickedBytes!, width: 96, height: 96, fit: BoxFit.cover);
     }
-    // 2. Existing network image from API
-    final imageUrl = user?.profileImageUrl;
-    if (imageUrl != null && imageUrl.isNotEmpty) {
+    // 2. Network image from session
+    final url = user?.profileImageUrl;
+    if (url != null && url.isNotEmpty) {
       return Image.network(
-        imageUrl,
+        url,
         width: 96,
         height: 96,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _initialsWidget(user),
+        errorBuilder: (_, __, ___) => _initials(user),
       );
     }
-    // 3. Fallback initials
-    return _initialsWidget(user);
+    // 3. Initials fallback
+    return _initials(user);
   }
 
-  Widget _initialsWidget(UserProfile? user) => Center(
+  Widget _initials(UserProfile? user) => Center(
         child: Text(
           user?.initials ?? '?',
           style: AppTypography.h2.copyWith(color: AppColors.primaryMain),
@@ -393,7 +390,9 @@ class _LockedField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.md,),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: AppColors.slate100,
         borderRadius: BorderRadius.circular(12),
@@ -415,9 +414,11 @@ class _LockedField extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted),),
+                Text(
+                  label,
+                  style:
+                      AppTypography.caption.copyWith(color: AppColors.textMuted),
+                ),
                 const SizedBox(height: 2),
                 Text(value, style: AppTypography.body),
               ],
@@ -426,12 +427,17 @@ class _LockedField extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Icon(Icons.lock_outline_rounded,
-                  size: 15, color: AppColors.textMuted,),
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 15,
+                color: AppColors.textMuted,
+              ),
               const SizedBox(height: 2),
-              Text(note,
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.primaryMain),),
+              Text(
+                note,
+                style:
+                    AppTypography.caption.copyWith(color: AppColors.primaryMain),
+              ),
             ],
           ),
         ],
@@ -507,9 +513,11 @@ class _GenderChip extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 22,
-                color: selected ? Colors.white : AppColors.textSecondary,),
+            Icon(
+              icon,
+              size: 22,
+              color: selected ? Colors.white : AppColors.textSecondary,
+            ),
             const SizedBox(height: 6),
             Text(
               label,
