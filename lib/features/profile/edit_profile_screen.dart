@@ -39,13 +39,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(sessionProvider).user;
-    if (user != null) {
-      _firstNameCtrl.text = user.firstName ?? '';
-      _lastNameCtrl.text = user.lastName ?? '';
-      _emailCtrl.text = user.email ?? '';
-      _gender = user.gender;
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(sessionProvider).user;
+      if (user == null) return;
+      if (_firstNameCtrl.text.isEmpty) _firstNameCtrl.text = user.firstName ?? '';
+      if (_lastNameCtrl.text.isEmpty) _lastNameCtrl.text = user.lastName ?? '';
+      if (_emailCtrl.text.isEmpty) _emailCtrl.text = user.email ?? '';
+      if (_gender == null) setState(() => _gender = user.gender);
+    });
   }
 
   @override
