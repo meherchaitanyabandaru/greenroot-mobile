@@ -5,7 +5,9 @@ class UserProfile {
   final String? lastName;
   final String? gender;
   final String? mobile;
+  final bool mobileVerified;
   final String? email;
+  final bool emailVerified;
   final String? profileImageUrl;
   final String? status;
   final DateTime? createdAt;
@@ -17,7 +19,9 @@ class UserProfile {
     this.lastName,
     this.gender,
     this.mobile,
+    this.mobileVerified = false,
     this.email,
+    this.emailVerified = false,
     this.profileImageUrl,
     this.status,
     this.createdAt,
@@ -41,7 +45,9 @@ class UserProfile {
       lastName:        u['last_name']         as String?,
       gender:          u['gender']            as String?,
       mobile:          u['mobile']            as String?,
+      mobileVerified:  u['mobile_verified']   as bool? ?? false,
       email:           u['email']             as String?,
+      emailVerified:   u['email_verified']    as bool? ?? false,
       profileImageUrl: u['profile_image_url'] as String?,
       status:          u['status']            as String?,
       createdAt: u['created_at'] != null
@@ -64,7 +70,9 @@ class UserProfile {
         lastName: lastName ?? this.lastName,
         gender: gender ?? this.gender,
         mobile: mobile,
+        mobileVerified: mobileVerified,
         email: email ?? this.email,
+        emailVerified: emailVerified,
         profileImageUrl: profileImageUrl ?? this.profileImageUrl,
         status: status,
         createdAt: createdAt,

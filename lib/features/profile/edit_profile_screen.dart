@@ -23,6 +23,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   String? _gender;
   bool _isLoading = false;
   String? _error;
@@ -34,6 +35,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (user != null) {
       _firstNameCtrl.text = user.firstName ?? '';
       _lastNameCtrl.text = user.lastName ?? '';
+      _emailCtrl.text = user.email ?? '';
       _gender = user.gender;
     }
   }
@@ -42,6 +44,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void dispose() {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -52,12 +55,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _error = null;
     });
     try {
+      final user = ref.read(sessionProvider).user;
       final lastName = _lastNameCtrl.text.trim();
+      final email = _emailCtrl.text.trim();
       final repo = AuthRepository(AuthRemoteDataSource(ApiClient.instance));
       final updated = await repo.updateProfile(
         UpdateProfileRequest(
           firstName: _firstNameCtrl.text.trim(),
           lastName: lastName.isEmpty ? null : lastName,
+          email: (user?.emailVerified == true)
+              ? null
+              : (email.isEmpty ? null : email),
           gender: _gender,
         ),
       );
@@ -74,6 +82,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(sessionProvider).user;
+    final emailLocked = user?.emailVerified == true;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -93,51 +102,74 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             children: [
               // Avatar
               Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primaryMain, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      user?.initials ?? '?',
-                      style:
-                          AppTypography.h2.copyWith(color: AppColors.primaryMain),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.primaryMain, width: 2.5),
+                      ),
+                      child: Center(
+                        child: Text(
+                          user?.initials ?? '?',
+                          style: AppTypography.h2
+                              .copyWith(color: AppColors.primaryMain),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.x2l),
 
-              // ── Locked fields ─────────────────────────────────────────────
-              const Text('Account', style: AppTypography.label),
+              // ── Account (locked) ──────────────────────────────────────────
+              _sectionLabel('Account'),
               const SizedBox(height: AppSpacing.sm),
               _LockedField(
                 icon: Icons.phone_outlined,
                 label: 'Mobile Number',
                 value: user?.mobile ?? '—',
+                note: 'Verified via OTP',
               ),
               const SizedBox(height: AppSpacing.sm),
-              _LockedField(
-                icon: Icons.email_outlined,
-                label: 'Email',
-                value: user?.email?.isNotEmpty == true ? user!.email! : 'Not set',
-                muted: user?.email == null || user!.email!.isEmpty,
-              ),
+              if (emailLocked)
+                _LockedField(
+                  icon: Icons.email_outlined,
+                  label: 'Email',
+                  value: user?.email ?? '—',
+                  note: 'Verified',
+                )
+              else ...[
+                AppTextField(
+                  label: 'Email (optional)',
+                  hint: 'you@example.com',
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: (val) {
+                    if (val != null && val.trim().isNotEmpty) {
+                      if (!val.contains('@') || !val.contains('.')) {
+                        return 'Enter a valid email address';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: AppSpacing.x2l),
 
-              // ── Editable fields ───────────────────────────────────────────
-              const Text('Personal Details', style: AppTypography.label),
+              // ── Personal details (editable) ───────────────────────────────
+              _sectionLabel('Personal Details'),
               const SizedBox(height: AppSpacing.sm),
               AppTextField(
                 label: 'First Name',
                 hint: 'Enter your first name',
                 controller: _firstNameCtrl,
                 textInputAction: TextInputAction.next,
-                autofocus: false,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'First name is required';
@@ -147,22 +179,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
               AppTextField(
-                label: 'Last Name (optional)',
-                hint: 'Enter your last name',
+                label: 'Last Name',
+                hint: 'Enter your last name (optional)',
                 controller: _lastNameCtrl,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.done,
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.x2l),
 
-              // Gender picker
-              const Text('Gender (optional)',
-                  style: AppTypography.label),
+              // ── Gender ────────────────────────────────────────────────────
+              _sectionLabel('Gender'),
               const SizedBox(height: AppSpacing.sm),
-              _GenderPicker(
+              _GenderSelector(
                 value: _gender,
                 onChanged: (g) => setState(() => _gender = g),
               ),
 
+              // ── Error ─────────────────────────────────────────────────────
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.md),
                 Container(
@@ -170,7 +202,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.errorBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.red600.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.errorText.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -178,9 +211,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           size: 18, color: AppColors.errorText),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: Text(_error!,
-                            style: AppTypography.bodySmall
-                                .copyWith(color: AppColors.errorText)),
+                        child: Text(
+                          _error!,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.errorText),
+                        ),
                       ),
                     ],
                   ),
@@ -201,21 +236,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
   }
+
+  Widget _sectionLabel(String text) => Text(
+        text,
+        style: AppTypography.label.copyWith(color: AppColors.textSecondary),
+      );
 }
 
-// ── Locked (read-only) field ──────────────────────────────────────────────────
+// ── Locked field ──────────────────────────────────────────────────────────────
 
 class _LockedField extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final bool muted;
+  final String note;
 
   const _LockedField({
     required this.icon,
     required this.label,
     required this.value,
-    this.muted = false,
+    required this.note,
   });
 
   @override
@@ -230,7 +270,15 @@ class _LockedField extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.textMuted),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.textSecondary),
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -240,53 +288,55 @@ class _LockedField extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: AppColors.textMuted)),
                 const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: AppTypography.body.copyWith(
-                    color: muted ? AppColors.textMuted : AppColors.textPrimary,
-                    fontStyle: muted ? FontStyle.italic : FontStyle.normal,
-                  ),
-                ),
+                Text(value, style: AppTypography.body),
               ],
             ),
           ),
-          const Icon(Icons.lock_outline_rounded,
-              size: 16, color: AppColors.textMuted),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  size: 15, color: AppColors.textMuted),
+              const SizedBox(height: 2),
+              Text(note,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.primaryMain)),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Gender picker ─────────────────────────────────────────────────────────────
+// ── Gender selector ───────────────────────────────────────────────────────────
 
-class _GenderPicker extends StatelessWidget {
+class _GenderSelector extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
 
-  const _GenderPicker({required this.value, required this.onChanged});
+  const _GenderSelector({required this.value, required this.onChanged});
+
+  static const _options = [
+    ('MALE', 'Male', Icons.male_rounded),
+    ('FEMALE', 'Female', Icons.female_rounded),
+    ('NON_BINARY', 'Non-binary', Icons.transgender_rounded),
+    ('OTHER', 'Other', Icons.people_outline_rounded),
+    ('PREFER_NOT_TO_SAY', 'Prefer not\nto say', Icons.visibility_off_outlined),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    const options = [
-      ('MALE', 'Male', Icons.male_rounded),
-      ('FEMALE', 'Female', Icons.female_rounded),
-      ('OTHER', 'Other', Icons.people_outline_rounded),
-    ];
-
-    return Row(
-      children: options
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: _options
           .map(
-            (o) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _GenderChip(
-                  label: o.$2,
-                  icon: o.$3,
-                  selected: value == o.$1,
-                  onTap: () => onChanged(value == o.$1 ? null : o.$1),
-                ),
-              ),
+            (o) => _GenderChip(
+              label: o.$2,
+              icon: o.$3,
+              selected: value == o.$1,
+              onTap: () => onChanged(value == o.$1 ? null : o.$1),
             ),
           )
           .toList(),
@@ -313,7 +363,8 @@ class _GenderChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryMain : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
@@ -323,16 +374,19 @@ class _GenderChip extends StatelessWidget {
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
                 size: 22,
                 color: selected ? Colors.white : AppColors.textSecondary),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
                 color: selected ? Colors.white : AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
+                height: 1.3,
               ),
             ),
           ],
