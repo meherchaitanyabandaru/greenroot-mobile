@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../features/auth/presentation/providers/session_provider.dart';
 import 'router.dart';
 
 class GreenRootApp extends ConsumerWidget {
@@ -8,6 +9,10 @@ class GreenRootApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Re-evaluate all router redirects whenever session status changes.
+    // This is how the global auth guard in router.dart stays reactive.
+    ref.listen(sessionProvider, (_, __) => appRouter.refresh());
+
     return MaterialApp.router(
       title: 'GreenRoot',
       theme: AppTheme.light,

@@ -151,9 +151,33 @@ String? _buyerGuard(BuildContext context, GoRouterState state) {
   return null;
 }
 
+/// Paths that are accessible without authentication.
+const _publicPaths = {'/login', '/otp', '/'};
+
+bool _isPublic(String path) =>
+    _publicPaths.contains(path) || path.startsWith('/invite');
+
 final appRouter = GoRouter(
   initialLocation: '/',
   debugLogDiagnostics: true,
+  redirect: (BuildContext context, GoRouterState state) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final session = container.read(sessionProvider);
+    final path = state.uri.path;
+
+    // Session not yet bootstrapped — send every deep-link to splash so
+    // bootstrap() runs before any authenticated screen is rendered.
+    if (session.status == SessionStatus.unknown && !_isPublic(path)) {
+      return '/';
+    }
+
+    // Fully unauthenticated after bootstrap — go to login.
+    if (session.status == SessionStatus.unauthenticated && !_isPublic(path)) {
+      return '/login';
+    }
+
+    return null;
+  },
   routes: [
     // ── Splash ──────────────────────────────────────────────────────────────
     GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
