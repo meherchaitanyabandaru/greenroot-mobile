@@ -133,12 +133,14 @@ class UpdateProfileRequest {
   final String? lastName;
   final String? email;
   final String? gender;
+  final String? profileImageUrl;
 
   const UpdateProfileRequest({
     required this.firstName,
     this.lastName,
     this.email,
     this.gender,
+    this.profileImageUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -146,5 +148,6 @@ class UpdateProfileRequest {
         if (lastName != null) 'last_name': lastName,
         if (email != null) 'email': email,
         if (gender != null) 'gender': gender,
+        if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
       };
 }

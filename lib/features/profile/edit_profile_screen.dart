@@ -1,7 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -28,6 +31,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isLoading = false;
   String? _error;
 
+  // Avatar state
+  Uint8List? _pickedBytes;
+  String? _pendingImageUrl;
+  bool _uploadingImage = false;
+  String? _imageError;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +55,49 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    setState(() => _imageError = null);
+    final picker = ImagePicker();
+    XFile? picked;
+    try {
+      picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+    } catch (_) {
+      if (mounted) setState(() => _imageError = 'Could not open image picker.');
+      return;
+    }
+    if (picked == null) return;
+
+    setState(() => _uploadingImage = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final fileName = 'avatar-${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+      final storage = StorageService(ApiClient.instance);
+      final result = await storage.presign('profile-images', fileName, contentType);
+      await storage.uploadBytes(result.uploadUrl, bytes, contentType);
+
+      if (mounted) {
+        setState(() {
+          _pickedBytes = bytes;
+          _pendingImageUrl = result.fileUrl;
+        });
+      }
+    } on AppError catch (e) {
+      if (mounted) setState(() => _imageError = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _imageError = 'Upload failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
   }
 
   Future<void> _save() async {
@@ -67,6 +119,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ? null
               : (email.isEmpty ? null : email),
           gender: _gender,
+          profileImageUrl:
+              _pendingImageUrl ?? user?.profileImageUrl,
         ),
       );
       ref.read(sessionProvider.notifier).updateUser(updated);
@@ -100,27 +154,72 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
+              // ── Avatar picker ─────────────────────────────────────────────
               Center(
-                child: Stack(
+                child: Column(
                   children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.primaryMain, width: 2.5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          user?.initials ?? '?',
-                          style: AppTypography.h2
-                              .copyWith(color: AppColors.primaryMain),
-                        ),
+                    GestureDetector(
+                      onTap: _uploadingImage ? null : _pickAndUploadImage,
+                      child: Stack(
+                        children: [
+                          // Avatar circle
+                          Container(
+                            width: 96,
+                            height: 96,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.primaryMain, width: 2.5,),
+                            ),
+                            child: ClipOval(
+                              child: _buildAvatarContent(user),
+                            ),
+                          ),
+                          // Edit badge
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryMain,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: AppColors.background, width: 2,),
+                              ),
+                              child: _uploadingImage
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(6),
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.camera_alt_rounded,
+                                      color: Colors.white, size: 15,),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _uploadingImage
+                          ? 'Uploading…'
+                          : 'Tap to change photo',
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                    if (_imageError != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _imageError!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.errorText),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -203,12 +302,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     color: AppColors.errorBg,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppColors.errorText.withValues(alpha: 0.3)),
+                        color: AppColors.errorText.withValues(alpha: 0.3),),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 18, color: AppColors.errorText),
+                          size: 18, color: AppColors.errorText,),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -225,7 +324,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: AppSpacing.x3l),
               AppButton(
                 label: 'Save Changes',
-                onPressed: _save,
+                onPressed: _uploadingImage ? null : _save,
                 isLoading: _isLoading,
                 trailingIcon: Icons.check_rounded,
               ),
@@ -236,6 +335,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
   }
+
+  Widget _buildAvatarContent(UserProfile? user) {
+    // 1. Local preview after picking
+    if (_pickedBytes != null) {
+      return Image.memory(
+        _pickedBytes!,
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+      );
+    }
+    // 2. Existing network image from API
+    final imageUrl = user?.profileImageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initialsWidget(user),
+      );
+    }
+    // 3. Fallback initials
+    return _initialsWidget(user);
+  }
+
+  Widget _initialsWidget(UserProfile? user) => Center(
+        child: Text(
+          user?.initials ?? '?',
+          style: AppTypography.h2.copyWith(color: AppColors.primaryMain),
+        ),
+      );
 
   Widget _sectionLabel(String text) => Text(
         text,
@@ -262,7 +393,7 @@ class _LockedField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          horizontal: AppSpacing.md, vertical: AppSpacing.md,),
       decoration: BoxDecoration(
         color: AppColors.slate100,
         borderRadius: BorderRadius.circular(12),
@@ -286,7 +417,7 @@ class _LockedField extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: AppColors.textMuted),),
                 const SizedBox(height: 2),
                 Text(value, style: AppTypography.body),
               ],
@@ -296,11 +427,11 @@ class _LockedField extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               const Icon(Icons.lock_outline_rounded,
-                  size: 15, color: AppColors.textMuted),
+                  size: 15, color: AppColors.textMuted,),
               const SizedBox(height: 2),
               Text(note,
                   style: AppTypography.caption
-                      .copyWith(color: AppColors.primaryMain)),
+                      .copyWith(color: AppColors.primaryMain),),
             ],
           ),
         ],
@@ -378,7 +509,7 @@ class _GenderChip extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 22,
-                color: selected ? Colors.white : AppColors.textSecondary),
+                color: selected ? Colors.white : AppColors.textSecondary,),
             const SizedBox(height: 6),
             Text(
               label,

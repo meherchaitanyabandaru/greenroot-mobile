@@ -107,12 +107,28 @@ class ProfileScreen extends ConsumerWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.primaryMain, width: 2),
                   ),
-                  child: Center(
-                    child: Text(
-                      user?.initials ?? '?',
-                      style: AppTypography.h2
-                          .copyWith(color: AppColors.primaryMain),
-                    ),
+                  child: ClipOval(
+                    child: (user?.profileImageUrl?.isNotEmpty == true)
+                        ? Image.network(
+                            user!.profileImageUrl!,
+                            width: 88,
+                            height: 88,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                user.initials,
+                                style: AppTypography.h2
+                                    .copyWith(color: AppColors.primaryMain),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              user?.initials ?? '?',
+                              style: AppTypography.h2
+                                  .copyWith(color: AppColors.primaryMain),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
