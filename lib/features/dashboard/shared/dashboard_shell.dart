@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../features/auth/presentation/providers/session_provider.dart';
 
 class DashboardShell extends ConsumerWidget {
@@ -90,39 +91,12 @@ class DashboardShell extends ConsumerWidget {
             ],
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _Avatar(user?.initials ?? '?'),
+              child: const UserAvatar(size: 34, borderWidth: 1.5),
             ),
           ),
         ],
       ),
       body: body,
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final String initials;
-  const _Avatar(this.initials);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.primaryMain, width: 1.5),
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: AppTypography.label.copyWith(
-            color: AppColors.primaryMain,
-            fontSize: 12,
-          ),
-        ),
-      ),
     );
   }
 }

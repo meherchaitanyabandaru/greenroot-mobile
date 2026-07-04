@@ -7,6 +7,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/qr_scanner_screen.dart';
 import '../../core/widgets/status_badge.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../buyer/buyer_home.dart';
 import '../dashboard/owner/owner_dashboard_data.dart';
@@ -264,21 +265,10 @@ class _TopHeader extends ConsumerWidget {
         ),
         const _NotificationButton(),
         const SizedBox(width: 8),
-        GestureDetector(
+        UserAvatar(
+          size: 46,
+          borderWidth: 1.5,
           onTap: () => ref.read(mainTabIndexProvider.notifier).state = 99,
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.forest100,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primaryMain, width: 1.5),
-            ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: AppColors.primaryMain,
-            ),
-          ),
         ),
       ],
     );

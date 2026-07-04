@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../auth/data/models/capabilities_model.dart';
 import '../auth/presentation/providers/session_provider.dart';
 
@@ -99,37 +100,10 @@ class ProfileScreen extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primaryMain, width: 2),
-                  ),
-                  child: ClipOval(
-                    child: (user?.profileImageUrl?.isNotEmpty == true)
-                        ? Image.network(
-                            user!.profileImageUrl!,
-                            width: 88,
-                            height: 88,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
-                              child: Text(
-                                user.initials,
-                                style: AppTypography.h2
-                                    .copyWith(color: AppColors.primaryMain),
-                              ),
-                            ),
-                          )
-                        : Center(
-                            child: Text(
-                              user?.initials ?? '?',
-                              style: AppTypography.h2
-                                  .copyWith(color: AppColors.primaryMain),
-                            ),
-                          ),
-                  ),
+                UserAvatar(
+                  size: 88,
+                  borderWidth: 2,
+                  onTap: () => context.push('/edit-profile'),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(

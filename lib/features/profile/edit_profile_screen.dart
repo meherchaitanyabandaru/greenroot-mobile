@@ -286,7 +286,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               // ── Gender ────────────────────────────────────────────────────
               _sectionLabel('Gender'),
               const SizedBox(height: AppSpacing.sm),
-              _GenderSelector(
+              _GenderDropdown(
                 value: _gender,
                 onChanged: (g) => setState(() => _gender = g),
               ),
@@ -446,89 +446,65 @@ class _LockedField extends StatelessWidget {
   }
 }
 
-// ── Gender selector ───────────────────────────────────────────────────────────
+// ── Gender dropdown (3 options) ───────────────────────────────────────────────
 
-class _GenderSelector extends StatelessWidget {
+class _GenderDropdown extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
 
-  const _GenderSelector({required this.value, required this.onChanged});
+  const _GenderDropdown({required this.value, required this.onChanged});
 
   static const _options = [
     ('MALE', 'Male', Icons.male_rounded),
     ('FEMALE', 'Female', Icons.female_rounded),
-    ('NON_BINARY', 'Non-binary', Icons.transgender_rounded),
-    ('OTHER', 'Other', Icons.people_outline_rounded),
-    ('PREFER_NOT_TO_SAY', 'Prefer not\nto say', Icons.visibility_off_outlined),
+    ('PREFER_NOT_TO_SAY', 'Prefer not to say', Icons.visibility_off_outlined),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: _options
-          .map(
-            (o) => _GenderChip(
-              label: o.$2,
-              icon: o.$3,
-              selected: value == o.$1,
-              onTap: () => onChanged(value == o.$1 ? null : o.$1),
-            ),
-          )
-          .toList(),
-    );
+  // Normalise any existing DB value that isn't in our 3 options to null.
+  String? get _normalisedValue {
+    if (value == null) return null;
+    return _options.any((o) => o.$1 == value) ? value : null;
   }
-}
-
-class _GenderChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _GenderChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryMain : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primaryMain : AppColors.border,
-            width: selected ? 2 : 1,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _normalisedValue,
+          isExpanded: true,
+          hint: Text(
+            'Select gender',
+            style: AppTypography.body.copyWith(color: AppColors.textMuted),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: selected ? Colors.white : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: AppTypography.caption.copyWith(
-                color: selected ? Colors.white : AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-              ),
-            ),
-          ],
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppColors.textMuted,
+          ),
+          style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+          dropdownColor: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          items: _options
+              .map(
+                (o) => DropdownMenuItem<String>(
+                  value: o.$1,
+                  child: Row(
+                    children: [
+                      Icon(o.$3, size: 20, color: AppColors.primaryMain),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(o.$2, style: AppTypography.body),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
         ),
       ),
     );
