@@ -23,9 +23,6 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(plantListProvider.notifier).load();
-    });
     _scrollCtrl.addListener(_onScroll);
   }
 
@@ -45,7 +42,9 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final paged = ref.watch(plantListProvider).paged;
+    final listState = ref.watch(plantListProvider);
+    final paged = listState.paged;
+    final idle = listState.search.isEmpty && !paged.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -57,8 +56,13 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
         foregroundColor: AppColors.textPrimary,
       ),
       body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(plantListProvider.notifier).load(search: _searchCtrl.text),
+        onRefresh: () async {
+          if (_searchCtrl.text.isNotEmpty) {
+            await ref
+                .read(plantListProvider.notifier)
+                .load(search: _searchCtrl.text);
+          }
+        },
         color: AppColors.primaryMain,
         child: CustomScrollView(
           controller: _scrollCtrl,
@@ -83,13 +87,33 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                     });
                   },
                   onClear: () =>
-                      ref.read(plantListProvider.notifier).load(search: ''),
+                      ref.read(plantListProvider.notifier).reset(),
                 ),
               ),
             ),
 
+            // Idle state — prompt user to search
+            if (idle)
+              const SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.search_rounded,
+                          size: 52, color: AppColors.textMuted),
+                      SizedBox(height: AppSpacing.md),
+                      Text('Search for plants',
+                          style: AppTypography.h4),
+                      SizedBox(height: AppSpacing.xs),
+                      Text('Type a name or plant code above.',
+                          style: AppTypography.bodySmall),
+                    ],
+                  ),
+                ),
+              )
+
             // Body
-            if (paged.isLoading)
+            else if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
                   child:

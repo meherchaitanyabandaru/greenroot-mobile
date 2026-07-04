@@ -226,8 +226,17 @@ class PlantListNotifier extends StateNotifier<PlantListState> {
   PlantListNotifier(this._repo)
       : super(PlantListState(paged: PagedState.initial()));
 
+  void reset() {
+    _page = 0;
+    state = PlantListState(paged: PagedState.initial());
+  }
+
   Future<void> load({String? search}) async {
     final s = search ?? state.search;
+    if (s.isEmpty) {
+      reset();
+      return;
+    }
     state = state.copyWith(
       search: s,
       paged: state.paged.copyWith(isLoading: true, clearError: true),
