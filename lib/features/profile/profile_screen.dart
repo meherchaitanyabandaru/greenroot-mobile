@@ -15,6 +15,37 @@ class ProfileScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final user = session.user;
     final caps = session.capabilities;
+    final accountItems = [
+      _SettingsTile(
+        icon: Icons.person_outline_rounded,
+        label: 'Edit Profile',
+        onTap: () => context.push('/edit-profile'),
+      ),
+      if (caps.isDriverOnly)
+        _SettingsTile(
+          icon: Icons.route_outlined,
+          label: 'My Trips',
+          onTap: () => context.push('/driver/trips'),
+        )
+      else ...[
+        _SettingsTile(
+          icon: Icons.location_on_outlined,
+          label: 'My Addresses',
+          onTap: () => context.push('/my-addresses'),
+        ),
+        if (!caps.canSell)
+          _SettingsTile(
+            icon: Icons.payments_outlined,
+            label: 'Payment History',
+            onTap: () => context.push('/my-payments'),
+          ),
+      ],
+      _SettingsTile(
+        icon: Icons.notifications_none_rounded,
+        label: 'Notifications',
+        onTap: () => context.push('/notifications'),
+      ),
+    ];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -25,7 +56,7 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('Profile', style: AppTypography.h3),
         actions: [
           IconButton(
-            onPressed: () => context.push('/create-profile'),
+            onPressed: () => context.push('/edit-profile'),
             icon: const Icon(Icons.edit_outlined, color: AppColors.textPrimary),
             tooltip: 'Edit Profile',
           ),
@@ -38,12 +69,16 @@ class ProfileScreen extends ConsumerWidget {
                   content: const Text('Are you sure you want to sign out?'),
                   actions: [
                     TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel')),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
                     TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Sign Out',
-                            style: TextStyle(color: AppColors.red600))),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Sign Out',
+                        style: TextStyle(color: AppColors.red600),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -115,30 +150,7 @@ class ProfileScreen extends ConsumerWidget {
           // Account settings
           const Text('Account', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
-          _SettingsSection(
-            items: [
-              _SettingsTile(
-                icon: Icons.person_outline_rounded,
-                label: 'Edit Profile',
-                onTap: () => context.push('/create-profile'),
-              ),
-              _SettingsTile(
-                icon: Icons.location_on_outlined,
-                label: 'My Addresses',
-                onTap: () => context.push('/my-addresses'),
-              ),
-              _SettingsTile(
-                icon: Icons.payments_outlined,
-                label: 'Payment History',
-                onTap: () => context.push('/my-payments'),
-              ),
-              _SettingsTile(
-                icon: Icons.notifications_none_rounded,
-                label: 'Notifications',
-                onTap: () => context.push('/notifications'),
-              ),
-            ],
-          ),
+          _SettingsSection(items: accountItems),
           const SizedBox(height: AppSpacing.x2l),
 
           // App info
@@ -168,8 +180,10 @@ class ProfileScreen extends ConsumerWidget {
               });
             },
             icon: const Icon(Icons.logout_rounded, color: AppColors.red600),
-            label: const Text('Sign Out',
-                style: TextStyle(color: AppColors.red600)),
+            label: const Text(
+              'Sign Out',
+              style: TextStyle(color: AppColors.red600),
+            ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.red600),
               minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
@@ -206,8 +220,11 @@ class _RolesSection extends StatelessWidget {
         ),
         child: Column(
           children: [
-            const Icon(Icons.shopping_bag_outlined,
-                size: 32, color: AppColors.primaryMain),
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 32,
+              color: AppColors.primaryMain,
+            ),
             const SizedBox(height: AppSpacing.sm),
             const Text('Customer', style: AppTypography.label),
             const SizedBox(height: 3),
@@ -225,10 +242,10 @@ class _RolesSection extends StatelessWidget {
     return Column(
       children: [
         if (!caps.isDriverOnly) ...[
-          _RoleCard(
+          const _RoleCard(
             icon: Icons.shopping_bag_outlined,
-            iconColor: const Color(0xFF2E7D32),
-            iconBg: const Color(0xFFE8F5E9),
+            iconColor: Color(0xFF2E7D32),
+            iconBg: Color(0xFFE8F5E9),
             title: 'Customer',
             subtitle: 'Buying access — quotations, orders, tracking',
           ),
@@ -265,10 +282,10 @@ class _RolesSection extends StatelessWidget {
           ],
         ],
         if (caps.hasDriverProfile) ...[
-          _RoleCard(
+          const _RoleCard(
             icon: Icons.local_shipping_outlined,
-            iconColor: const Color(0xFF1565C0),
-            iconBg: const Color(0xFFE3F2FD),
+            iconColor: Color(0xFF1565C0),
+            iconBg: Color(0xFFE3F2FD),
             title: 'Delivery Driver',
             subtitle: 'Trips, vehicle details, documents',
           ),
@@ -360,11 +377,12 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Material(
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: AppColors.border),
       ),
       child: Column(
         children: [
