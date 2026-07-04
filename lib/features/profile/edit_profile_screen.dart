@@ -39,14 +39,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = ref.read(sessionProvider).user;
-      if (user == null) return;
-      if (_firstNameCtrl.text.isEmpty) _firstNameCtrl.text = user.firstName ?? '';
-      if (_lastNameCtrl.text.isEmpty) _lastNameCtrl.text = user.lastName ?? '';
-      if (_emailCtrl.text.isEmpty) _emailCtrl.text = user.email ?? '';
-      if (_gender == null) setState(() => _gender = user.gender);
-    });
+    // Try immediate fill — works when session is already loaded.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryFill());
+  }
+
+  /// Pre-fills editable controllers from the session user.
+  /// Safe to call multiple times — only fills empty fields.
+  void _tryFill() {
+    if (!mounted) return;
+    final user = ref.read(sessionProvider).user;
+    if (user == null) return;
+    if (_firstNameCtrl.text.isEmpty) _firstNameCtrl.text = user.firstName ?? '';
+    if (_lastNameCtrl.text.isEmpty) _lastNameCtrl.text = user.lastName ?? '';
+    if (_emailCtrl.text.isEmpty) _emailCtrl.text = user.email ?? '';
+    if (_gender == null && user.gender != null) {
+      setState(() => _gender = user.gender);
+    }
   }
 
   @override
@@ -132,11 +140,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(sessionProvider).user;
+    final session = ref.watch(sessionProvider);
+
+    // When bootstrap completes and user data arrives, fill empty controllers.
+    ref.listen<UserProfile?>(
+      sessionProvider.select((s) => s.user),
+      (_, user) { if (user != null) _tryFill(); },
+    );
+
+    final user = session.user;
     final firstNameLocked = user?.firstName?.isNotEmpty == true;
     final lastNameLocked  = user?.lastName?.isNotEmpty == true;
     final emailLocked     = user?.email?.isNotEmpty == true;
     final genderLocked    = user?.gender?.isNotEmpty == true;
+
+    // Show spinner while bootstrap is still running.
+    if (session.isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          title: const Text('Edit Profile', style: AppTypography.h3),
+          foregroundColor: AppColors.textPrimary,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
