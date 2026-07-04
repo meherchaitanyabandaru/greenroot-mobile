@@ -166,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 label: 'About GreenRoot',
-                onTap: () {},
+                onTap: () => context.push('/about-greenroot'),
               ),
             ],
           ),
