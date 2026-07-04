@@ -161,7 +161,7 @@ class ProfileScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.help_outline_rounded,
                 label: 'Help & Support',
-                onTap: () {},
+                onTap: () => context.push('/help-support'),
               ),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
