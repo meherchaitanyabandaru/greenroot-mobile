@@ -11,7 +11,8 @@ class PlantCategory {
   final String name;
   final bool isActive;
 
-  const PlantCategory({required this.id, required this.name, required this.isActive});
+  const PlantCategory(
+      {required this.id, required this.name, required this.isActive});
 
   factory PlantCategory.fromJson(Map<String, dynamic> j) => PlantCategory(
         id: (j['id'] as num).toInt(),
@@ -115,7 +116,8 @@ class Plant {
     return (primary ?? images.first).imageUrl;
   }
 
-  String get displayName => commonName?.isNotEmpty == true ? commonName! : scientificName;
+  String get displayName =>
+      commonName?.isNotEmpty == true ? commonName! : scientificName;
 }
 
 // ── Repository ────────────────────────────────────────────────────────────────
@@ -146,7 +148,8 @@ class PlantRepository {
         final items = (d['plants'] as List<dynamic>)
             .map((e) => Plant.fromJson(e as Map<String, dynamic>))
             .toList();
-        final pagination = ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
+        final pagination =
+            ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
         return (items, pagination);
       },
     );
@@ -206,29 +209,13 @@ final plantSizesProvider = FutureProvider<List<PlantSize>>((ref) async {
 class PlantListState {
   final PagedState<Plant> paged;
   final String search;
-  final int? categoryId;
-  final String? plantType;
 
-  const PlantListState({
-    required this.paged,
-    this.search = '',
-    this.categoryId,
-    this.plantType,
-  });
+  const PlantListState({required this.paged, this.search = ''});
 
-  PlantListState copyWith({
-    PagedState<Plant>? paged,
-    String? search,
-    int? categoryId,
-    String? plantType,
-    bool clearCategory = false,
-    bool clearType = false,
-  }) =>
+  PlantListState copyWith({PagedState<Plant>? paged, String? search}) =>
       PlantListState(
         paged: paged ?? this.paged,
         search: search ?? this.search,
-        categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
-        plantType: clearType ? null : (plantType ?? this.plantType),
       );
 }
 
@@ -239,24 +226,14 @@ class PlantListNotifier extends StateNotifier<PlantListState> {
   PlantListNotifier(this._repo)
       : super(PlantListState(paged: PagedState.initial()));
 
-  Future<void> load({String? search, int? categoryId, String? plantType}) async {
+  Future<void> load({String? search}) async {
     final s = search ?? state.search;
-    final cid = categoryId ?? state.categoryId;
-    final pt = plantType ?? state.plantType;
-
     state = state.copyWith(
       search: s,
-      categoryId: cid,
-      plantType: pt,
       paged: state.paged.copyWith(isLoading: true, clearError: true),
     );
     try {
-      final (items, pagination) = await _repo.listPlants(
-        page: 1,
-        search: s,
-        categoryId: cid,
-        plantType: pt,
-      );
+      final (items, pagination) = await _repo.listPlants(page: 1, search: s);
       _page = 1;
       state = state.copyWith(
         paged: PagedState(
@@ -280,8 +257,6 @@ class PlantListNotifier extends StateNotifier<PlantListState> {
       final (items, pagination) = await _repo.listPlants(
         page: _page + 1,
         search: state.search,
-        categoryId: state.categoryId,
-        plantType: state.plantType,
       );
       _page++;
       state = state.copyWith(
@@ -295,10 +270,6 @@ class PlantListNotifier extends StateNotifier<PlantListState> {
       state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
     }
   }
-
-  void clearFilters() {
-    load(search: '', categoryId: null, plantType: null);
-  }
 }
 
 final plantListProvider =
@@ -306,7 +277,6 @@ final plantListProvider =
   return PlantListNotifier(ref.watch(plantRepositoryProvider));
 });
 
-final plantDetailProvider =
-    FutureProvider.family<Plant, int>((ref, id) async {
+final plantDetailProvider = FutureProvider.family<Plant, int>((ref, id) async {
   return ref.watch(plantRepositoryProvider).getPlant(id);
 });
