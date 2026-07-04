@@ -650,7 +650,9 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
 
     if (widget.canManage) {
       // ── Owner / Manager actions ──────────────────────────────────────────
-      final isOwner = ref.read(sessionProvider).capabilities.isNurseryOwner;
+      final caps = ref.read(sessionProvider).capabilities;
+      final isOwner = caps.isNurseryOwner;
+      // Assign manager: owner-only, not yet completed/cancelled/loaded
       final canAssignManager = isOwner &&
           widget.order.sellerNurseryId != null &&
           !['CANCELLED', 'COMPLETED', 'LOADED', 'PARTIALLY_FULFILLED'].contains(status);
@@ -735,7 +737,8 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
         ));
       }
 
-      if (['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
+      // Cancel order: owner-only per Mobile UI plan (§7 Manager Must Never See: cancel order)
+      if (isOwner && ['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
         actions.add(_ActionDef(
           label: 'Cancel Order',
           icon: Icons.cancel_outlined,
@@ -745,7 +748,7 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
         ));
       }
     } else {
-      // ── Buyer: cancel only while PENDING ──────────────────────────────────
+      // ── Buyer: cancel own PENDING order only (test-api.sh confirms buyer cancel PENDING → 200)
       if (status == 'PENDING') {
         actions.add(_ActionDef(
           label: 'Cancel Order',

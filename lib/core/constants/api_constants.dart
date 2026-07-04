@@ -13,6 +13,8 @@ abstract class ApiConstants {
   static String userById(int id) => '$v1/users/$id';
   static String userRoles(int id) => '$v1/users/$id/roles';
   static String userAddresses(int id) => '$v1/users/$id/addresses';
+  static String userAddressById(int addressId) =>
+      '$v1/users/addresses/$addressId';
 
   // Plants
   static const String plants = '$v1/plants';

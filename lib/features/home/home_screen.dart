@@ -5,10 +5,15 @@ import '../../app/main_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/qr_scanner_screen.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../buyer/buyer_home.dart';
 import '../dashboard/owner/owner_dashboard_data.dart';
 import '../dispatches/dispatches.dart';
+import '../manager/manager_home.dart';
+import '../owner/owner_home.dart';
+import '../driver/trip_preview_screen.dart';
 import '../notifications/notifications.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
@@ -127,11 +132,11 @@ class HomeScreen extends ConsumerWidget {
               if (caps.isDriverOnly)
                 const _DriverHome()
               else if (caps.isNurseryOwner)
-                const _OwnerHome()
+                const OwnerHome()
               else if (caps.isManager)
-                const _ManagerHome()
+                const ManagerHome()
               else
-                const _CustomerHome(),
+                const BuyerHome(),
             ],
           ),
         ),
@@ -140,263 +145,24 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _OwnerHome extends ConsumerWidget {
-  const _OwnerHome();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref.watch(_operationsHomeProvider).valueOrNull;
-    final nurseryId = data?.nurseryId;
-    final orders = data?.orders ?? const <Order>[];
-    final dispatches = data?.dispatches ?? const <Dispatch>[];
-    final requests = data?.requests ?? const <PlantRequest>[];
-    final dashboard = data?.dashboard ?? OwnerDashboardData.empty;
-    final activeOrders = orders
-        .where((o) => !{'DELIVERED', 'CANCELLED'}.contains(o.status))
-        .take(3)
-        .toList();
-    final inTransit = dispatches.where((d) => d.status == 'IN_TRANSIT').length;
-    final loading = orders.where((o) => o.status == 'LOADING').length;
-    final openRequests = requests.where((r) => r.status == 'OPEN').length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _OwnerPrimaryActions(nurseryId: nurseryId),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Today\'s Summary',
-          actionLabel: 'View All',
-          onAction: () => context.push(
-            nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders',
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SummaryCard(
-          items: [
-            _SummaryItem(
-              icon: Icons.shopping_bag_outlined,
-              value: '${dashboard.sellOrders.total}',
-              label: 'Orders',
-              sub: '${dashboard.sellOrders.pending} pending',
-              color: AppColors.primaryMain,
-              onTap: () => context.push(
-                nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders',
-              ),
-            ),
-            _SummaryItem(
-              icon: Icons.local_shipping_outlined,
-              value: '${dispatches.length}',
-              label: 'Dispatches',
-              sub: '$inTransit in transit',
-              color: AppColors.blue600,
-              onTap: () => context.push('/dispatches'),
-            ),
-            _SummaryItem(
-              icon: Icons.inventory_2_outlined,
-              value: '$loading',
-              label: 'Loading',
-              sub: 'in progress',
-              color: AppColors.amber600,
-              onTap: () => context.push(
-                nurseryId != null
-                    ? '/orders/loading?nursery=$nurseryId'
-                    : '/orders/loading',
-              ),
-            ),
-            _SummaryItem(
-              icon: Icons.eco_outlined,
-              value: '$openRequests',
-              label: 'Requests',
-              sub: 'open',
-              color: AppColors.teal700,
-              onTap: () => context.push('/requests/create'),
-            ),
-            _SummaryItem(
-              icon: Icons.people_outline_rounded,
-              value: '${dashboard.connections.total}',
-              label: 'Contacts',
-              sub:
-                  '${dashboard.connections.managers}M ${dashboard.connections.drivers}D',
-              color: AppColors.purple700,
-              onTap: () => context.push('/connections'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        _IconActionRow(
-          actions: [
-            _IconAction('My Nursery', Icons.storefront_outlined, () {
-              if (nurseryId != null) context.push('/nurseries/$nurseryId');
-            }),
-            _IconAction('Managers', Icons.groups_outlined, () {
-              if (nurseryId != null) {
-                context.push('/nursery/members?id=$nurseryId&tab=0');
-              }
-            }),
-            _IconAction('Availability', Icons.local_florist_outlined, () {
-              context.push('/inventory/add');
-            }),
-            _IconAction('Customers', Icons.person_add_alt_outlined, () {
-              context.push('/connections');
-            }),
-          ],
-        ),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Recent Orders',
-          actionLabel: 'View All',
-          onAction: () => context.push(
-            nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders',
-          ),
-        ),
-        const SizedBox(height: 12),
-        _OrderPanel(orders: activeOrders),
-        const SizedBox(height: 18),
-        _LiveDispatchCard(
-            dispatch:
-                dispatches.where((d) => d.status == 'IN_TRANSIT').firstOrNull),
-      ],
-    );
-  }
-}
-
-class _ManagerHome extends ConsumerWidget {
-  const _ManagerHome();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref.watch(_operationsHomeProvider).valueOrNull;
-    final nurseryId = data?.nurseryId;
-    final orders = data?.orders ?? const <Order>[];
-    final dispatches = data?.dispatches ?? const <Dispatch>[];
-    final requests = data?.requests ?? const <PlantRequest>[];
-    final activeOrders = orders
-        .where((o) => !{'DELIVERED', 'CANCELLED'}.contains(o.status))
-        .take(3)
-        .toList();
-    final loading = orders.where((o) => o.status == 'LOADING').length;
-    final delivered = orders.where((o) => o.status == 'DELIVERED').length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _QuickTiles(
-          tiles: [
-            _QuickTile('Create Order', 'New Order', Icons.post_add_rounded,
-                AppColors.primaryMain, () => context.push('/orders/create')),
-            _QuickTile('Plant Request', 'From Nurseries', Icons.eco_outlined,
-                AppColors.teal700, () => context.push('/requests/create')),
-            _QuickTile(
-                'Create Dispatch',
-                'New Trip',
-                Icons.local_shipping_outlined,
-                AppColors.blue600,
-                () => context.push('/orders/loading')),
-            _QuickTile('Sourcing', 'Network', Icons.travel_explore_outlined,
-                AppColors.purple700, () => context.push('/sourcing')),
-          ],
-        ),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Today\'s Summary',
-          actionLabel: 'View All',
-          onAction: () => context.push(
-            nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders',
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SummaryCard(
-          items: [
-            _SummaryItem(
-              icon: Icons.shopping_bag_outlined,
-              value: '${orders.length}',
-              label: 'Orders',
-              sub:
-                  '${orders.where((o) => o.status == 'CONFIRMED').length} ready',
-              color: AppColors.primaryMain,
-              onTap: () => context.push(
-                nurseryId != null ? '/orders?nursery=$nurseryId' : '/orders',
-              ),
-            ),
-            _SummaryItem(
-              icon: Icons.local_shipping_outlined,
-              value: '${dispatches.length}',
-              label: 'Dispatches',
-              sub:
-                  '${dispatches.where((d) => d.status == 'IN_TRANSIT').length} in transit',
-              color: AppColors.blue600,
-              onTap: () => context.push('/dispatches'),
-            ),
-            _SummaryItem(
-              icon: Icons.inventory_2_outlined,
-              value: '$loading',
-              label: 'Loading',
-              sub: 'in progress',
-              color: AppColors.amber600,
-              onTap: () => context.push(
-                nurseryId != null
-                    ? '/orders/loading?nursery=$nurseryId'
-                    : '/orders/loading',
-              ),
-            ),
-            _SummaryItem(
-              icon: Icons.check_circle_outline_rounded,
-              value: '$delivered',
-              label: 'Delivered',
-              sub: 'completed',
-              color: AppColors.teal700,
-              onTap: () => context.push('/orders?status=DELIVERED'),
-            ),
-            _SummaryItem(
-              icon: Icons.eco_outlined,
-              value: '${requests.where((r) => r.status == 'OPEN').length}',
-              label: 'Requests',
-              sub: 'open',
-              color: AppColors.purple700,
-              onTap: () => context.push('/requests/create'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        _TaskStrip(
-          tasks: [
-            _TaskItem(
-                'Orders to Confirm',
-                orders.where((o) => o.status == 'PENDING').length,
-                Icons.inventory_2_outlined,
-                () => context.push('/orders?status=PENDING')),
-            _TaskItem(
-                'Dispatch to Create',
-                orders.where((o) => o.status == 'COMPLETED').length,
-                Icons.local_shipping_outlined,
-                () => context.push('/orders?status=COMPLETED')),
-            _TaskItem(
-                'Need Posts',
-                requests.where((r) => r.status == 'OPEN').length,
-                Icons.eco_outlined,
-                () => context.push('/requests/create')),
-          ],
-        ),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Active Orders',
-          actionLabel: 'View All',
-          onAction: () => context.push('/orders'),
-        ),
-        const SizedBox(height: 12),
-        _OrderPanel(orders: activeOrders),
-        const SizedBox(height: 18),
-        _LiveDispatchCard(
-            dispatch:
-                dispatches.where((d) => d.status == 'IN_TRANSIT').firstOrNull),
-      ],
-    );
-  }
-}
-
 class _DriverHome extends ConsumerWidget {
   const _DriverHome();
+
+  Future<void> _openQrScanner(BuildContext context) async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+        fullscreenDialog: true,
+      ),
+    );
+    if (code != null && code.isNotEmpty && context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TripPreviewScreen(code: code),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -449,7 +215,7 @@ class _DriverHome extends ConsumerWidget {
         const SizedBox(height: 22),
         _DriverActionGrid(
           onTrips: () => ref.read(mainTabIndexProvider.notifier).state = 1,
-          onJoin: () => ref.read(mainTabIndexProvider.notifier).state = 2,
+          onJoin: () => _openQrScanner(context),
           onTrack: active == null
               ? null
               : () => context.push(
@@ -472,50 +238,6 @@ class _DriverHome extends ConsumerWidget {
   }
 }
 
-class _CustomerHome extends ConsumerWidget {
-  const _CustomerHome();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref.watch(_buyerHomeProvider).valueOrNull ??
-        const _BuyerHomeData(orders: [], quotations: []);
-    final activeOrder = data.orders
-        .where((o) => !{'DELIVERED', 'CANCELLED'}.contains(o.status))
-        .firstOrNull;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _CustomerHero(
-            onTap: () => ref.read(mainTabIndexProvider.notifier).state = 1),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'My Quotations',
-          actionLabel: 'View All',
-          onAction: () => ref.read(mainTabIndexProvider.notifier).state = 1,
-        ),
-        const SizedBox(height: 12),
-        _QuoteCards(quotations: data.quotations),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'My Orders',
-          actionLabel: 'View All',
-          onAction: () => ref.read(mainTabIndexProvider.notifier).state = 2,
-        ),
-        const SizedBox(height: 12),
-        _OrderStatsGrid(orders: data.orders),
-        const SizedBox(height: 18),
-        if (activeOrder != null) _TrackOrderCard(order: activeOrder),
-        const SizedBox(height: 18),
-        _CustomerActionCards(
-          onOrders: () => ref.read(mainTabIndexProvider.notifier).state = 2,
-          onNursery: () => context.push('/register/nursery'),
-          onInvite: () => context.push('/invite/accept'),
-        ),
-      ],
-    );
-  }
-}
 
 class _TopHeader extends ConsumerWidget {
   final dynamic caps;
@@ -686,210 +408,113 @@ class _RolePill extends StatelessWidget {
   }
 }
 
-class _OwnerPrimaryActions extends StatelessWidget {
-  final int? nurseryId;
-
-  const _OwnerPrimaryActions({required this.nurseryId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _WideActionCard(
-            title: 'Create Order',
-            subtitle: 'New customer order',
-            icon: Icons.add_shopping_cart_rounded,
-            color: AppColors.primaryMain,
-            onTap: () => context.push('/orders/create'),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _WideActionCard(
-            title: 'Plant Request',
-            subtitle: 'Request from nurseries',
-            icon: Icons.eco_outlined,
-            color: AppColors.primaryMain,
-            onTap: () => context.push('/requests/create'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _WideActionCard extends StatelessWidget {
+class _RoleDashboardHero extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color color;
+  final String primaryLabel;
+  final String primaryValue;
+  final String secondaryLabel;
+  final String secondaryValue;
   final VoidCallback onTap;
 
-  const _WideActionCard({
+  const _RoleDashboardHero({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.color,
+    required this.primaryLabel,
+    required this.primaryValue,
+    required this.secondaryLabel,
+    required this.secondaryValue,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.forest50,
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.forest100),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(icon, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        title,
-                        style: AppTypography.h4.copyWith(height: 1.15),
-                      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: _cardDecoration(bg: AppColors.forest50),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.h3.copyWith(
+                      color: AppColors.primaryMain,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.18,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      _HeroMetric(label: primaryLabel, value: primaryValue),
+                      const SizedBox(width: 14),
+                      _HeroMetric(label: secondaryLabel, value: secondaryValue),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              const CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 17,
-                  color: AppColors.primaryMain,
-                ),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 74,
+              height: 74,
+              decoration: BoxDecoration(
+                color: AppColors.forest100,
+                borderRadius: BorderRadius.circular(20),
               ),
-            ],
-          ),
+              child: Icon(icon, color: AppColors.primaryMain, size: 38),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _QuickTiles extends StatelessWidget {
-  final List<_QuickTile> tiles;
+class _HeroMetric extends StatelessWidget {
+  final String label;
+  final String value;
 
-  const _QuickTiles({required this.tiles});
+  const _HeroMetric({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.none,
-      child: Row(
-        children: [
-          for (final tile in tiles)
-            Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: tile,
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.forest100),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: AppTypography.h2.copyWith(height: 1)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickTile(
-    this.title,
-    this.subtitle,
-    this.icon,
-    this.color,
-    this.onTap,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: 116,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.12)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: color, size: 25),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -1712,64 +1337,175 @@ class _SafetyBanner extends StatelessWidget {
   }
 }
 
-class _CustomerHero extends StatelessWidget {
-  final VoidCallback onTap;
+class _CustomerLifecycleHero extends StatelessWidget {
+  final List<Quotation> quotations;
+  final List<Order> orders;
+  final Order? activeOrder;
+  final VoidCallback onQuotes;
+  final VoidCallback onOrders;
+  final VoidCallback onTracking;
 
-  const _CustomerHero({required this.onTap});
+  const _CustomerLifecycleHero({
+    required this.quotations,
+    required this.orders,
+    required this.activeOrder,
+    required this.onQuotes,
+    required this.onOrders,
+    required this.onTracking,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final awaitingQuotes = quotations.where(_isCustomerQuoteAwaiting).length;
+    final activeOrders = orders.where(_isActiveOrder).length;
+    final trackableOrders = orders.where(_isTrackableOrder).length;
+
     return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: AppColors.forest50,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(bg: AppColors.forest50),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Best Quality Plants',
-                  style: AppTypography.h3.copyWith(
-                    color: AppColors.primaryMain,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Purchase Dashboard',
+                      style: AppTypography.h3.copyWith(
+                        color: AppColors.primaryMain,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      activeOrder == null
+                          ? 'Review quotes and follow your order lifecycle.'
+                          : 'Your active order is ${_prettyStatus(activeOrder!.status).toLowerCase()}.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Straight from trusted nurseries',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              ),
+              const SizedBox(width: 14),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.forest100,
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: onTap,
-                  child: const Text('Browse Quotations'),
+                child: const Icon(
+                  Icons.shopping_bag_rounded,
+                  color: AppColors.primaryMain,
+                  size: 34,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Container(
-            width: 98,
-            height: 98,
-            decoration: BoxDecoration(
-              color: AppColors.forest100,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: const Icon(
-              Icons.local_florist_rounded,
-              color: AppColors.primaryMain,
-              size: 52,
-            ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _HeroActionMetric(
+                  label: 'Quotes',
+                  value: '$awaitingQuotes',
+                  icon: Icons.request_quote_outlined,
+                  onTap: onQuotes,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _HeroActionMetric(
+                  label: 'Orders',
+                  value: '$activeOrders',
+                  icon: Icons.receipt_long_outlined,
+                  onTap: onOrders,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _HeroActionMetric(
+                  label: 'Track',
+                  value: '$trackableOrders',
+                  icon: Icons.map_outlined,
+                  onTap: onTracking,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+class _HeroActionMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeroActionMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.forest100),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.primaryMain, size: 22),
+            const SizedBox(height: 8),
+            Text(value, style: AppTypography.h2.copyWith(height: 1)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+bool _isCustomerQuoteAwaiting(Quotation quotation) {
+  return {'SENT', 'CUSTOMER_SENT'}.contains(quotation.status);
+}
+
+bool _isActiveOrder(Order order) {
+  return !{'DELIVERED', 'COMPLETED', 'CANCELLED'}.contains(order.status);
+}
+
+bool _isTrackableOrder(Order order) {
+  return {
+    'LOADING',
+    'LOADED',
+    'PARTIALLY_FULFILLED',
+    'COMPLETED',
+    'DELIVERED',
+  }.contains(order.status);
 }
 
 class _QuoteCards extends StatelessWidget {
@@ -1784,7 +1520,7 @@ class _QuoteCards extends StatelessWidget {
         Expanded(
           child: _MiniMetricCard(
             icon: Icons.schedule_rounded,
-            value: '${quotations.where((q) => q.status == 'SENT').length}',
+            value: '${quotations.where(_isCustomerQuoteAwaiting).length}',
             label: 'Awaiting Response',
             color: AppColors.amber600,
             onTap: () => context.push('/quotations'),
@@ -1827,8 +1563,8 @@ class _OrderStatsGrid extends StatelessWidget {
         Expanded(
           child: _MiniMetricCard(
             icon: Icons.inventory_2_outlined,
-            value: '${orders.where((o) => o.status == 'LOADING').length}',
-            label: 'Loading',
+            value: '${orders.where(_isActiveOrder).length}',
+            label: 'Active',
             color: AppColors.blue600,
             onTap: () => context.push('/orders?status=LOADING'),
           ),
@@ -1837,20 +1573,26 @@ class _OrderStatsGrid extends StatelessWidget {
         Expanded(
           child: _MiniMetricCard(
             icon: Icons.local_shipping_outlined,
-            value: '${orders.where((o) => o.status == 'DISPATCHED').length}',
-            label: 'Dispatched',
+            value: '${orders.where((o) => {
+                  'LOADED',
+                  'PARTIALLY_FULFILLED'
+                }.contains(o.status)).length}',
+            label: 'Ready',
             color: AppColors.amber600,
-            onTap: () => context.push('/orders?status=DISPATCHED'),
+            onTap: () => context.push('/orders?status=LOADED'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _MiniMetricCard(
             icon: Icons.location_on_outlined,
-            value: '${orders.where((o) => o.status == 'DELIVERED').length}',
-            label: 'Delivered',
+            value: '${orders.where((o) => {
+                  'COMPLETED',
+                  'DELIVERED'
+                }.contains(o.status)).length}',
+            label: 'Completed',
             color: AppColors.primaryMain,
-            onTap: () => context.push('/orders?status=DELIVERED'),
+            onTap: () => context.push('/orders?status=COMPLETED'),
           ),
         ),
         const SizedBox(width: 12),
@@ -1986,44 +1728,120 @@ class _TrackOrderCard extends StatelessWidget {
 
 class _CustomerActionCards extends StatelessWidget {
   final VoidCallback onOrders;
+  final VoidCallback onBuyPlants;
   final VoidCallback onNursery;
   final VoidCallback onInvite;
 
   const _CustomerActionCards({
     required this.onOrders,
+    required this.onBuyPlants,
     required this.onNursery,
     required this.onInvite,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _SmallLinkCard(
-            title: 'Previous Orders',
-            subtitle: 'View your past orders',
-            icon: Icons.receipt_long_outlined,
-            onTap: onOrders,
+        // Primary CTA — view quotations from nurseries
+        InkWell(
+          onTap: onBuyPlants,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryMain,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.description_outlined,
+                    color: Colors.white, size: 26),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'My Quotations',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      Text(
+                        'Review and accept offers from nurseries',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    color: Colors.white, size: 18),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SmallLinkCard(
-            title: 'Register Nursery',
-            subtitle: 'Become a nursery owner',
-            icon: Icons.storefront_outlined,
-            onTap: onNursery,
-          ),
+        const SizedBox(height: 12),
+        // Explore row — browse nurseries and plants
+        Row(
+          children: [
+            Expanded(
+              child: _SmallLinkCard(
+                title: 'Browse Nurseries',
+                subtitle: 'Find a nursery near you',
+                icon: Icons.storefront_outlined,
+                onTap: () => context.push('/nurseries'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SmallLinkCard(
+                title: 'Plant Catalog',
+                subtitle: 'Explore available plants',
+                icon: Icons.eco_outlined,
+                onTap: () => context.push('/plants'),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SmallLinkCard(
-            title: 'Accept Invite',
-            subtitle: 'UUID or QR',
-            icon: Icons.qr_code_scanner_rounded,
-            onTap: onInvite,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _SmallLinkCard(
+                title: 'My Orders',
+                subtitle: 'View past orders',
+                icon: Icons.receipt_long_outlined,
+                onTap: onOrders,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SmallLinkCard(
+                title: 'Register Nursery',
+                subtitle: 'Become an owner',
+                icon: Icons.local_florist_outlined,
+                onTap: onNursery,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SmallLinkCard(
+                title: 'Accept Invite',
+                subtitle: 'UUID or QR',
+                icon: Icons.qr_code_scanner_rounded,
+                onTap: onInvite,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -2199,14 +2017,20 @@ class _DriverHomeData {
   final List<Dispatch> dispatches;
   const _DriverHomeData(this.dispatches);
 
-  int get upcoming => dispatches
-      .where((d) => d.status == 'PENDING' || d.status == 'DISPATCHED')
+  // PENDING = assigned but not accepted; ACCEPTED = driver accepted, not yet dispatched
+  int get upcoming =>
+      dispatches.where((d) => d.status == 'PENDING').length;
+  // ACCEPTED + DISPATCHED + IN_TRANSIT all count as "in progress" for driver
+  int get active => dispatches
+      .where((d) => {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status))
       .length;
-  int get active => dispatches.where((d) => d.status == 'IN_TRANSIT').length;
   int get completed => dispatches.where((d) => d.status == 'DELIVERED').length;
   int get cancelled => dispatches.where((d) => d.status == 'CANCELLED').length;
-  Dispatch? get activeTrip =>
-      dispatches.where((d) => d.status == 'IN_TRANSIT').firstOrNull;
+  // Active trip = ACCEPTED (accepted not yet dispatched) or DISPATCHED or IN_TRANSIT
+  Dispatch? get activeTrip => dispatches
+      .where(
+          (d) => {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status))
+      .firstOrNull;
 }
 
 class _BuyerHomeData {

@@ -47,6 +47,13 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        title: const Text('Nurseries', style: AppTypography.h3),
+        foregroundColor: AppColors.textPrimary,
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref
             .read(nurseryListProvider.notifier)

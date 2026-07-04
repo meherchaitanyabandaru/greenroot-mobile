@@ -322,6 +322,29 @@ class OrderRepository {
       },
     );
   }
+
+  // Buyer creates their own order — no buyer_mobile needed (API uses auth token)
+  Future<Order> createBuyerOrder({
+    required int sellerNurseryId,
+    required List<OrderItemRequest> items,
+    String? buyerName,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{
+      'seller_nursery_id': sellerNurseryId,
+      'items': items.map((i) => i.toJson()).toList(),
+      if (buyerName?.isNotEmpty == true) 'buyer_name': buyerName,
+      if (notes?.isNotEmpty == true) 'notes': notes,
+    };
+    return _client.post(
+      ApiConstants.orders,
+      data: body,
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────

@@ -34,12 +34,13 @@ class NurseryManager {
 
   factory NurseryManager.fromJson(Map<String, dynamic> json) {
     return NurseryManager(
-      id:     (json['id'] as num).toInt(),
+      id: (json['id'] as num).toInt(),
       userId: (json['user_id'] as num?)?.toInt() ?? 0,
-      name:   json['name'] as String? ?? json['full_name'] as String?,
+      name: json['name'] as String? ?? json['full_name'] as String?,
       mobile: json['mobile'] as String?,
-      email:  json['email'] as String?,
-      role:   json['role'] as String? ?? json['role_code'] as String? ?? 'MANAGER',
+      email: json['email'] as String?,
+      role:
+          json['role'] as String? ?? json['role_code'] as String? ?? 'MANAGER',
     );
   }
 }
@@ -67,14 +68,15 @@ class NurseryInvite {
 
   factory NurseryInvite.fromJson(Map<String, dynamic> json) {
     return NurseryInvite(
-      id:           (json['id'] as num).toInt(),
-      uuid:         json['invite_uuid'] as String? ?? json['uuid'] as String? ?? '',
-      inviteType:   json['invite_type'] as String? ?? '',
-      status:       json['status'] as String? ?? '',
-      targetName:   json['target_name'] as String?,
+      id: (json['id'] as num).toInt(),
+      uuid: json['invite_uuid'] as String? ?? json['uuid'] as String? ?? '',
+      inviteType: json['invite_type'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      targetName: json['target_name'] as String?,
       targetMobile: json['target_mobile'] as String?,
-      targetEmail:  json['target_email'] as String?,
-      createdAt:    DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      targetEmail: json['target_email'] as String?,
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -105,9 +107,9 @@ class MembersState {
   }) =>
       MembersState(
         isLoading: isLoading ?? this.isLoading,
-        managers:  managers  ?? this.managers,
-        invites:   invites   ?? this.invites,
-        error:     error,
+        managers: managers ?? this.managers,
+        invites: invites ?? this.invites,
+        error: error,
       );
 }
 
@@ -126,9 +128,10 @@ class MembersNotifier extends StateNotifier<MembersState> {
         _client.get<List<NurseryManager>>(
           ApiConstants.nurseryManagers(nurseryId),
           fromJson: (json) {
-            final map  = json as Map<String, dynamic>;
+            final map = json as Map<String, dynamic>;
             final list = map['managers'] as List<dynamic>? ??
-                map['users'] as List<dynamic>? ?? [];
+                map['users'] as List<dynamic>? ??
+                [];
             return list
                 .cast<Map<String, dynamic>>()
                 .map(NurseryManager.fromJson)
@@ -138,7 +141,9 @@ class MembersNotifier extends StateNotifier<MembersState> {
         _client.get<List<NurseryInvite>>(
           ApiConstants.nurseryInvites(nurseryId),
           fromJson: (json) {
-            final list = (json as Map<String, dynamic>)['invites'] as List<dynamic>? ?? [];
+            final list =
+                (json as Map<String, dynamic>)['invites'] as List<dynamic>? ??
+                    [];
             return list
                 .cast<Map<String, dynamic>>()
                 .map(NurseryInvite.fromJson)
@@ -148,8 +153,8 @@ class MembersNotifier extends StateNotifier<MembersState> {
       ]);
       state = state.copyWith(
         isLoading: false,
-        managers:  results[0] as List<NurseryManager>,
-        invites:   results[1] as List<NurseryInvite>,
+        managers: results[0] as List<NurseryManager>,
+        invites: results[1] as List<NurseryInvite>,
       );
     } on AppError catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
@@ -167,10 +172,11 @@ class MembersNotifier extends StateNotifier<MembersState> {
       final invite = await _client.post<NurseryInvite>(
         ApiConstants.invites,
         data: {
-          'invite_type':   inviteType,
-          'nursery_id':    nurseryId,
+          'invite_type': inviteType,
+          'nursery_id': nurseryId,
           'target_mobile': targetMobile,
-          if (targetName != null && targetName.isNotEmpty) 'target_name': targetName,
+          if (targetName != null && targetName.isNotEmpty)
+            'target_name': targetName,
         },
         fromJson: (json) {
           final map = json as Map<String, dynamic>;
@@ -279,27 +285,30 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
       body: state.isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primaryMain))
-          : state.error != null && state.managers.isEmpty && state.invites.isEmpty
+          : state.error != null &&
+                  state.managers.isEmpty &&
+                  state.invites.isEmpty
               ? ErrorState(
                   message: state.error!,
-                  onRetry: () =>
-                      ref.read(membersProvider(widget.nurseryId).notifier).load(),
+                  onRetry: () => ref
+                      .read(membersProvider(widget.nurseryId).notifier)
+                      .load(),
                 )
               : TabBarView(
                   controller: _tabController,
                   children: [
                     _ManagersTab(
-                      nurseryId:   widget.nurseryId,
+                      nurseryId: widget.nurseryId,
                       nurseryName: widget.nurseryName,
-                      managers:    state.managers,
-                      invites:     state.invites
+                      managers: state.managers,
+                      invites: state.invites
                           .where((i) => i.inviteType == 'MANAGER_INVITE')
                           .toList(),
                     ),
                     _CustomersTab(
-                      nurseryId:   widget.nurseryId,
+                      nurseryId: widget.nurseryId,
                       nurseryName: widget.nurseryName,
-                      invites:     state.invites
+                      invites: state.invites
                           .where((i) => i.inviteType == 'CUSTOMER_INVITE')
                           .toList(),
                     ),
@@ -327,8 +336,7 @@ class _ManagersTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(membersProvider(nurseryId).notifier).load(),
+      onRefresh: () => ref.read(membersProvider(nurseryId).notifier).load(),
       color: AppColors.primaryMain,
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -354,11 +362,11 @@ class _ManagersTab extends ConsumerWidget {
             _MemberList(
               items: managers
                   .map((m) => _MemberItem(
-                        name:     m.name ?? 'Unknown',
+                        name: m.name ?? 'Unknown',
                         subtitle: m.mobile ?? m.email ?? 'No contact',
-                        badge:    m.role,
+                        badge: m.role,
                         badgeColor: AppColors.primaryMain,
-                        icon:     Icons.manage_accounts_rounded,
+                        icon: Icons.manage_accounts_rounded,
                       ))
                   .toList(),
             ),
@@ -383,9 +391,9 @@ class _ManagersTab extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _InviteSheet(
-        nurseryId:   nurseryId,
+        nurseryId: nurseryId,
         nurseryName: nurseryName,
-        inviteType:  inviteType,
+        inviteType: inviteType,
         onCreated: (inv) =>
             ref.read(membersProvider(nurseryId).notifier).load(),
       ),
@@ -408,12 +416,11 @@ class _CustomersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pendingInvites   = invites.where((i) => i.isPending).toList();
-    final acceptedInvites  = invites.where((i) => i.isAccepted).toList();
+    final pendingInvites = invites.where((i) => i.isPending).toList();
+    final acceptedInvites = invites.where((i) => i.isAccepted).toList();
 
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(membersProvider(nurseryId).notifier).load(),
+      onRefresh: () => ref.read(membersProvider(nurseryId).notifier).load(),
       color: AppColors.primaryMain,
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -433,17 +440,18 @@ class _CustomersTab extends ConsumerWidget {
             const EmptyState(
               icon: Icons.shopping_bag_outlined,
               title: 'No customers yet',
-              subtitle: 'Invite customers to place orders through your nursery.',
+              subtitle:
+                  'Invite customers to place orders through your nursery.',
             )
           else
             _MemberList(
               items: acceptedInvites
                   .map((inv) => _MemberItem(
-                        name:     inv.targetName ?? 'Customer',
+                        name: inv.targetName ?? 'Customer',
                         subtitle: inv.targetMobile ?? inv.targetEmail ?? '',
-                        badge:    'CUSTOMER',
+                        badge: 'CUSTOMER',
                         badgeColor: AppColors.forest600,
-                        icon:     Icons.shopping_bag_rounded,
+                        icon: Icons.shopping_bag_rounded,
                       ))
                   .toList(),
             ),
@@ -467,9 +475,9 @@ class _CustomersTab extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _InviteSheet(
-        nurseryId:   nurseryId,
+        nurseryId: nurseryId,
         nurseryName: nurseryName,
-        inviteType:  'CUSTOMER_INVITE',
+        inviteType: 'CUSTOMER_INVITE',
         onCreated: (inv) =>
             ref.read(membersProvider(nurseryId).notifier).load(),
       ),
@@ -497,8 +505,8 @@ class _InviteSheet extends ConsumerStatefulWidget {
 }
 
 class _InviteSheetState extends ConsumerState<_InviteSheet> {
-  final _formKey   = GlobalKey<FormState>();
-  final _nameCtrl  = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   bool _isLoading = false;
   NurseryInvite? _created;
@@ -515,25 +523,22 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
       ? 'Invite Manager / Gumastha'
       : 'Invite Customer';
 
-  String get _roleLabel => widget.inviteType == 'MANAGER_INVITE'
-      ? 'Manager'
-      : 'Customer';
+  String get _roleLabel =>
+      widget.inviteType == 'MANAGER_INVITE' ? 'Manager' : 'Customer';
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
-      _error     = null;
+      _error = null;
     });
-    final invite = await ref
-        .read(membersProvider(widget.nurseryId).notifier)
-        .createInvite(
-          inviteType:   widget.inviteType,
-          targetMobile: _phoneCtrl.text.trim(),
-          targetName:   _nameCtrl.text.trim().isEmpty
-              ? null
-              : _nameCtrl.text.trim(),
-        );
+    final invite =
+        await ref.read(membersProvider(widget.nurseryId).notifier).createInvite(
+              inviteType: widget.inviteType,
+              targetMobile: _phoneCtrl.text.trim(),
+              targetName:
+                  _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            );
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (invite != null) {
@@ -571,17 +576,22 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
         AppSpacing.screenPadding,
         AppSpacing.x2l + bottomPadding,
       ),
-      child: _created != null ? _SuccessView(invite: _created!, onCopy: _copyUUID, onDone: () => Navigator.pop(context)) : _FormView(
-        formKey:     _formKey,
-        nameCtrl:    _nameCtrl,
-        phoneCtrl:   _phoneCtrl,
-        title:       _title,
-        roleLabel:   _roleLabel,
-        isLoading:   _isLoading,
-        error:       _error,
-        onSubmit:    _submit,
-        onCancel:    () => Navigator.pop(context),
-      ),
+      child: _created != null
+          ? _SuccessView(
+              invite: _created!,
+              onCopy: _copyUUID,
+              onDone: () => Navigator.pop(context))
+          : _FormView(
+              formKey: _formKey,
+              nameCtrl: _nameCtrl,
+              phoneCtrl: _phoneCtrl,
+              title: _title,
+              roleLabel: _roleLabel,
+              isLoading: _isLoading,
+              error: _error,
+              onSubmit: _submit,
+              onCancel: () => Navigator.pop(context),
+            ),
     );
   }
 }
@@ -711,8 +721,7 @@ class _FormView extends StatelessWidget {
           OutlinedButton(
             onPressed: onCancel,
             style: OutlinedButton.styleFrom(
-              minimumSize:
-                  const Size(double.infinity, AppSpacing.buttonHeight),
+              minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
               side: const BorderSide(color: AppColors.border),
               foregroundColor: AppColors.textPrimary,
             ),
@@ -734,13 +743,6 @@ class _SuccessView extends StatelessWidget {
     required this.onCopy,
     required this.onDone,
   });
-
-  String get _inviteLabel => switch (invite.inviteType) {
-        'MANAGER_INVITE' => 'Manager Invite',
-        'DRIVER_INVITE' => 'Driver Invite',
-        'CUSTOMER_INVITE' => 'Customer Invite',
-        _ => 'Invite',
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -836,8 +838,7 @@ class _SuccessView extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onCopy,
           style: OutlinedButton.styleFrom(
-            minimumSize:
-                const Size(double.infinity, AppSpacing.buttonHeight),
+            minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
             side: const BorderSide(color: AppColors.border),
             foregroundColor: AppColors.textPrimary,
           ),
@@ -896,11 +897,10 @@ class _MemberList extends StatelessWidget {
       ),
       title: Text(item.name, style: AppTypography.label),
       subtitle: Text(item.subtitle,
-          style: AppTypography.caption
-              .copyWith(color: AppColors.textSecondary)),
+          style:
+              AppTypography.caption.copyWith(color: AppColors.textSecondary)),
       trailing: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: item.badgeColor.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
@@ -983,8 +983,7 @@ class _InviteCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.warningBg,
                   borderRadius: BorderRadius.circular(20),

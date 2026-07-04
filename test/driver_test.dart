@@ -55,14 +55,13 @@ void main() {
     });
 
     test('driver+owner is NOT driver-only', () {
-      const caps = UserCapabilities(
-          hasDriverProfile: true, isNurseryOwner: true);
+      const caps =
+          UserCapabilities(hasDriverProfile: true, isNurseryOwner: true);
       expect(caps.isDriverOnly, isFalse);
     });
 
     test('driver+manager is NOT driver-only', () {
-      const caps = UserCapabilities(
-          hasDriverProfile: true, isManager: true);
+      const caps = UserCapabilities(hasDriverProfile: true, isManager: true);
       expect(caps.isDriverOnly, isFalse);
     });
 
@@ -75,23 +74,22 @@ void main() {
   // ── ActiveTripState ─────────────────────────────────────────────────────────
   group('ActiveTripState result mapping', () {
     test('no active trips → result is none, trip is null', () {
-      const state = ActiveTripState(
-          trip: null, result: ActiveTripResult.none);
+      const state = ActiveTripState(trip: null, result: ActiveTripResult.none);
       expect(state.trip, isNull);
       expect(state.result, ActiveTripResult.none);
     });
 
     test('one active trip → result is found', () {
       final dispatch = _makeDispatch(id: 1, status: 'IN_TRANSIT');
-      final state = ActiveTripState(
-          trip: dispatch, result: ActiveTripResult.found);
+      final state =
+          ActiveTripState(trip: dispatch, result: ActiveTripResult.found);
       expect(state.trip, isNotNull);
       expect(state.result, ActiveTripResult.found);
     });
 
     test('integrity error → result is integrityError, trip is null', () {
-      const state = ActiveTripState(
-          trip: null, result: ActiveTripResult.integrityError);
+      const state =
+          ActiveTripState(trip: null, result: ActiveTripResult.integrityError);
       expect(state.trip, isNull);
       expect(state.result, ActiveTripResult.integrityError);
     });
@@ -99,7 +97,14 @@ void main() {
 
   // ── Status-to-action mapping ────────────────────────────────────────────────
   group('Status-to-action logic', () {
-    final statuses = ['PENDING', 'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+    final statuses = [
+      'PENDING',
+      'ACCEPTED',
+      'DISPATCHED',
+      'IN_TRANSIT',
+      'DELIVERED',
+      'CANCELLED'
+    ];
 
     for (final status in statuses) {
       test('status $status maps to expected action group', () {
@@ -275,14 +280,14 @@ void main() {
     test('blocks accept when different active trip exists', () {
       final currentActive = _makeDispatch(id: 99, status: 'IN_TRANSIT');
       final newTripId = 42;
-      final canAccept = currentActive == null || currentActive.id == newTripId;
+      final canAccept = currentActive.id == newTripId;
       expect(canAccept, isFalse);
     });
 
     test('allows viewing own already-accepted trip', () {
       final currentActive = _makeDispatch(id: 42, status: 'ACCEPTED');
       final newTripId = 42; // same trip
-      final canAccept = currentActive == null || currentActive.id == newTripId;
+      final canAccept = currentActive.id == newTripId;
       expect(canAccept, isTrue);
     });
   });

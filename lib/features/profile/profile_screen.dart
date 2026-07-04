@@ -123,6 +123,16 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => context.push('/create-profile'),
               ),
               _SettingsTile(
+                icon: Icons.location_on_outlined,
+                label: 'My Addresses',
+                onTap: () => context.push('/my-addresses'),
+              ),
+              _SettingsTile(
+                icon: Icons.payments_outlined,
+                label: 'Payment History',
+                onTap: () => context.push('/my-payments'),
+              ),
+              _SettingsTile(
                 icon: Icons.notifications_none_rounded,
                 label: 'Notifications',
                 onTap: () => context.push('/notifications'),
@@ -158,8 +168,8 @@ class ProfileScreen extends ConsumerWidget {
               });
             },
             icon: const Icon(Icons.logout_rounded, color: AppColors.red600),
-            label:
-                const Text('Sign Out', style: TextStyle(color: AppColors.red600)),
+            label: const Text('Sign Out',
+                style: TextStyle(color: AppColors.red600)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.red600),
               minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
@@ -183,7 +193,8 @@ class _RolesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasRoles = caps.isNurseryOwner || caps.isManager || caps.hasDriverProfile;
+    final hasRoles =
+        caps.isNurseryOwner || caps.isManager || caps.hasDriverProfile;
 
     if (!hasRoles) {
       return Container(
@@ -213,15 +224,16 @@ class _RolesSection extends StatelessWidget {
 
     return Column(
       children: [
-        // Always show customer card
-        _RoleCard(
-          icon: Icons.shopping_bag_outlined,
-          iconColor: const Color(0xFF2E7D32),
-          iconBg: const Color(0xFFE8F5E9),
-          title: 'Customer',
-          subtitle: 'Buying access — quotations, orders, tracking',
-        ),
-        const SizedBox(height: AppSpacing.sm),
+        if (!caps.isDriverOnly) ...[
+          _RoleCard(
+            icon: Icons.shopping_bag_outlined,
+            iconColor: const Color(0xFF2E7D32),
+            iconBg: const Color(0xFFE8F5E9),
+            title: 'Customer',
+            subtitle: 'Buying access — quotations, orders, tracking',
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         if (caps.isNurseryOwner) ...[
           _RoleCard(
             icon: Icons.local_florist_rounded,

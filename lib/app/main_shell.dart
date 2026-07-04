@@ -13,12 +13,9 @@ import '../features/driver/driver_home_screen.dart';
 import '../features/driver/driver_trips_screen.dart';
 import '../features/driver/trip_preview_screen.dart';
 import '../features/home/home_screen.dart';
-import '../features/notifications/notification_list_screen.dart';
 import '../features/notifications/notifications.dart';
-import '../features/plants/plant_list_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/selling/selling_screen.dart';
-import '../features/sourcing/sourcing_screen.dart';
 
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -77,10 +74,10 @@ class _Tab {
 
 // ── Role → tab mapping ────────────────────────────────────────────────────────
 //
-// Owner   : Home | Business | Sourcing | Profile
-// Manager : Home | My Work  | Sourcing | Profile
-// Driver  : Home | Trips    | Profile
-// Customer: Home | Plants   | My Activity | Profile
+// Owner   : Home | Buying | Selling | Profile
+// Manager : Home | Buying | Work    | Profile
+// Driver  : Home | Driver | Profile
+// Customer: Home | Buying | Profile
 
 List<_Tab> _buildTabs(UserCapabilities caps) {
   const home = _Tab(
@@ -97,7 +94,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
   );
 
   // ── Driver only (no nursery / manager role)
-  // Navigation: Home | Trips | Notifications | Profile  (§ Driver Bottom Navigation)
+  // Navigation: Home | Driver | Profile
   if (caps.isDriverOnly) {
     return [
       const _Tab(
@@ -110,13 +107,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         screen: DriverTripsScreen(),
         icon: Icons.route_outlined,
         activeIcon: Icons.route_rounded,
-        label: 'Trips',
-      ),
-      const _Tab(
-        screen: NotificationListScreen(),
-        icon: Icons.notifications_none_rounded,
-        activeIcon: Icons.notifications_rounded,
-        label: 'Notifications',
+        label: 'Driver',
       ),
       profile,
     ];
@@ -127,16 +118,16 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
     return [
       home,
       const _Tab(
+        screen: BuyingScreen(),
+        icon: Icons.shopping_bag_outlined,
+        activeIcon: Icons.shopping_bag_rounded,
+        label: 'Buying',
+      ),
+      const _Tab(
         screen: SellingScreen(),
         icon: Icons.work_outline_rounded,
         activeIcon: Icons.work_rounded,
-        label: 'My Work',
-      ),
-      const _Tab(
-        screen: SourcingScreen(),
-        icon: Icons.travel_explore_outlined,
-        activeIcon: Icons.travel_explore_rounded,
-        label: 'Sourcing',
+        label: 'Work',
       ),
       profile,
     ];
@@ -147,16 +138,16 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
     return [
       home,
       const _Tab(
+        screen: BuyingScreen(),
+        icon: Icons.shopping_bag_outlined,
+        activeIcon: Icons.shopping_bag_rounded,
+        label: 'Buying',
+      ),
+      const _Tab(
         screen: SellingScreen(),
         icon: Icons.storefront_outlined,
         activeIcon: Icons.storefront_rounded,
-        label: 'Business',
-      ),
-      const _Tab(
-        screen: SourcingScreen(),
-        icon: Icons.travel_explore_outlined,
-        activeIcon: Icons.travel_explore_rounded,
-        label: 'Sourcing',
+        label: 'Selling',
       ),
       profile,
     ];
@@ -166,16 +157,10 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
   return [
     home,
     const _Tab(
-      screen: PlantListScreen(),
-      icon: Icons.eco_outlined,
-      activeIcon: Icons.eco_rounded,
-      label: 'Plants',
-    ),
-    const _Tab(
       screen: BuyingScreen(),
-      icon: Icons.receipt_long_outlined,
-      activeIcon: Icons.receipt_long_rounded,
-      label: 'My Activity',
+      icon: Icons.shopping_bag_outlined,
+      activeIcon: Icons.shopping_bag_rounded,
+      label: 'Buying',
     ),
     profile,
   ];
@@ -270,15 +255,8 @@ Widget? _buildFab(
     );
   }
 
-  // Customer FAB
-  return FloatingActionButton(
-    heroTag: 'fab_customer',
-    backgroundColor: AppColors.primaryMain,
-    foregroundColor: Colors.white,
-    tooltip: 'More actions',
-    onPressed: () => _showCustomerFabSheet(context, ref),
-    child: const Icon(Icons.add_rounded),
-  );
+  // Customer actions live in onboarding/profile/home, not as a global action.
+  return null;
 }
 
 // ── FAB action sheets ─────────────────────────────────────────────────────────
@@ -301,10 +279,10 @@ void _showOwnerFabSheet(BuildContext context, WidgetRef ref) {
         onTap: () => context.push('/quotations/create'),
       ),
       _FabAction(
-        icon: Icons.search_rounded,
-        title: 'Need Plants',
-        subtitle: 'Post a plant requirement on sourcing network',
-        onTap: () => context.push('/sourcing'),
+        icon: Icons.eco_outlined,
+        title: 'Plant Request',
+        subtitle: 'Request plants from nearby nurseries',
+        onTap: () => context.push('/requests/create'),
       ),
     ],
   );
@@ -316,43 +294,28 @@ void _showManagerFabSheet(BuildContext context, WidgetRef ref) {
     title: 'Create',
     actions: [
       _FabAction(
+        icon: Icons.add_shopping_cart_rounded,
+        title: 'Create Order',
+        subtitle: 'New selling order for a customer',
+        onTap: () => context.push('/orders/create'),
+      ),
+      _FabAction(
         icon: Icons.request_quote_outlined,
         title: 'Create Quotation',
         subtitle: 'Send a price quote to a customer',
         onTap: () => context.push('/quotations/create'),
       ),
       _FabAction(
-        icon: Icons.search_rounded,
-        title: 'Need Plants',
-        subtitle: 'Post a plant requirement on sourcing network',
-        onTap: () => context.push('/sourcing'),
+        icon: Icons.eco_outlined,
+        title: 'Plant Request',
+        subtitle: 'Request plants from nearby nurseries',
+        onTap: () => context.push('/requests/create'),
       ),
       _FabAction(
-        icon: Icons.sell_outlined,
-        title: 'Available Plants',
-        subtitle: 'Post plant availability on sourcing network',
-        onTap: () => context.push('/sourcing'),
-      ),
-    ],
-  );
-}
-
-void _showCustomerFabSheet(BuildContext context, WidgetRef ref) {
-  _showFabSheet(
-    context,
-    title: 'Actions',
-    actions: [
-      _FabAction(
-        icon: Icons.qr_code_scanner_rounded,
-        title: 'Scan Customer Invite',
-        subtitle: 'Accept an invitation from a nursery',
-        onTap: () => context.push('/invite/accept'),
-      ),
-      _FabAction(
-        icon: Icons.storefront_outlined,
-        title: 'Register My Nursery',
-        subtitle: 'Start a nursery and become an owner',
-        onTap: () => context.push('/register/nursery'),
+        icon: Icons.local_shipping_outlined,
+        title: 'Create Dispatch',
+        subtitle: 'Create delivery after loading is complete',
+        onTap: () => context.push('/orders?status=LOADED'),
       ),
     ],
   );
@@ -500,11 +463,10 @@ class _FabActionTile extends StatelessWidget {
 
 // ── Bottom navigation bar ─────────────────────────────────────────────────────
 
-// ── Driver bottom nav — 5 slots with center scan button ───────────────────────
-// Layout: Home | Trips | [●Scan] | Notifications | Profile
-// Tab index mapping: pos0→0, pos1→1, pos2=action, pos3→2, pos4→3
+// ── Driver bottom nav with center scan action ─────────────────────────────────
+// Layout: Home | Driver | [Scan] | Profile
 
-class _DriverBottomNav extends ConsumerWidget {
+class _DriverBottomNav extends StatelessWidget {
   final List<_Tab> tabs;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
@@ -516,10 +478,8 @@ class _DriverBottomNav extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unread = ref.watch(notificationListProvider).unreadCount;
-
-    // tabs[0]=Home  tabs[1]=Trips  tabs[2]=Notifications  tabs[3]=Profile
+  Widget build(BuildContext context) {
+    // tabs[0]=Home  tabs[1]=Driver  tabs[2]=Profile
     Future<void> scanQr() async {
       final code = await Navigator.of(context).push<String>(
         MaterialPageRoute(
@@ -559,7 +519,6 @@ class _DriverBottomNav extends ConsumerWidget {
                   selected: selectedIndex == 0,
                   unreadCount: 0,
                   onTap: () => onSelected(0),
-                  showLabel: false,
                 ),
               ),
               // Trips
@@ -569,31 +528,19 @@ class _DriverBottomNav extends ConsumerWidget {
                   selected: selectedIndex == 1,
                   unreadCount: 0,
                   onTap: () => onSelected(1),
-                  showLabel: false,
                 ),
               ),
               // Center scan button
               Expanded(
                 child: _CenterScanButton(onTap: scanQr),
               ),
-              // Notifications
+              // Profile
               Expanded(
                 child: _BottomNavItem(
                   tab: tabs[2],
                   selected: selectedIndex == 2,
-                  unreadCount: unread,
-                  onTap: () => onSelected(2),
-                  showLabel: false,
-                ),
-              ),
-              // Profile
-              Expanded(
-                child: _BottomNavItem(
-                  tab: tabs[3],
-                  selected: selectedIndex == 3,
                   unreadCount: 0,
-                  onTap: () => onSelected(3),
-                  showLabel: false,
+                  onTap: () => onSelected(2),
                 ),
               ),
             ],
@@ -702,14 +649,12 @@ class _BottomNavItem extends StatelessWidget {
   final bool selected;
   final int unreadCount;
   final VoidCallback onTap;
-  final bool showLabel;
 
   const _BottomNavItem({
     required this.tab,
     required this.selected,
     required this.unreadCount,
     required this.onTap,
-    this.showLabel = true,
   });
 
   @override
@@ -730,18 +675,16 @@ class _BottomNavItem extends StatelessWidget {
               size: 26,
             ),
           ),
-          if (showLabel) ...[
-            const SizedBox(height: 5),
-            Text(
-              tab.label,
-              style: AppTypography.caption.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 5),
+          Text(
+            tab.label,
+            style: AppTypography.caption.copyWith(
+              color: color,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             ),
-          ],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 6),
           AnimatedContainer(
             duration: const Duration(milliseconds: 160),

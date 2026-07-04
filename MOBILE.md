@@ -60,10 +60,19 @@ Fields: `isNurseryOwner`, `isManager`, `hasDriverProfile`, `ownedNurseryId`, `ow
 | Tab | File | Logic |
 |---|---|---|
 | Home | `lib/features/home/home_screen.dart` | Greeting, role badges, capability-based action cards |
-| Buying | `lib/features/buying/buying_screen.dart` | Quotations / Orders / Tracking · FAB → new quotation |
-| Selling | `lib/features/selling/selling_screen.dart` | Gate: if `!canSell` → CTA; if owner → owner menu; if manager → manager loading queue |
-| Driver | `lib/features/driver_section/driver_screen.dart` | Gate: if `!hasDriverProfile` → register CTA; else driver dashboard |
+| Buying | `lib/features/buying/buying_screen.dart` | Buyer-scoped quotations, orders, and delivery tracking |
+| Selling / Work | `lib/features/selling/selling_screen.dart` | Owner/manager operational menu, loading queue, orders, quotations, dispatches, plant requests, and sourcing entry |
+| Driver | `lib/features/driver/driver_home_screen.dart` and `lib/features/driver/driver_trips_screen.dart` | Driver trips, scan, tracking, delivery proof |
 | Profile | `lib/features/profile/profile_screen.dart` | Avatar, My Roles/Access cards, settings, sign out |
+
+Role tab sets:
+
+| Role | Tabs |
+|---|---|
+| Nursery Owner | Home, Buying, Selling, Profile |
+| Manager | Home, Buying, Work, Profile |
+| Buyer only | Home, Buying, Profile |
+| Driver only | Home, Driver, Profile |
 
 ### Auth Flow
 
@@ -105,7 +114,7 @@ lib/
 
 ---
 
-## Completed Work (as of 2026-06-25)
+## Completed Work (as of 2026-07-04)
 
 | Feature | Status |
 |---|---|
@@ -132,6 +141,17 @@ lib/
 | Buyer Tracking Tab (real dispatch list, In Transit / Being Loaded / Delivered) | ✅ |
 | Buyer quotation accept/reject in list card (CUSTOMER_SENT + APPROVED + SENT) | ✅ |
 | Buyer quotation accept/reject in detail screen | ✅ |
+| Buying tab sections for quotations, orders, tracking | ✅ |
+| Owner/manager create actions consolidated into global FAB | ✅ |
+| Role home dashboards aligned to buyer / owner / manager / driver lifecycle work | ✅ |
+| MainShell role tabs realigned to `Mobile_UI_UX_Plan.md` | ✅ |
+| Deep-link guards for customer/driver/internal role leaks | ✅ |
+| My Addresses screen (`/my-addresses`) — add, edit, delete delivery addresses | ✅ |
+| My Payments screen (`/my-payments`) — payment history for buyer | ✅ |
+| `/nurseries` route for buyers — browse active nurseries | ✅ |
+| `/plants` route for buyers — browse plant catalog | ✅ |
+| Profile screen: My Addresses + Payment History links | ✅ |
+| Buyer home: Browse Nurseries + Plant Catalog explore cards | ✅ |
 
 ---
 
@@ -172,15 +192,19 @@ lib/
 
 ---
 
-## Role Navigation (Bottom Tabs by Capability)
+## Role Navigation (Current Cleanup Target)
 
-| Role | Home | Buying | Selling | Driver | Profile |
-|---|---|---|---|---|---|
-| Nursery Owner | ✅ | ✅ (as buyer too) | ✅ owner menu | hidden | ✅ |
-| Manager | ✅ | ✅ | ✅ manager queue | hidden | ✅ |
-| Buyer only | ✅ | ✅ | CTA to register | hidden | ✅ |
-| Driver | ✅ | hidden | hidden | ✅ | ✅ |
-| Owner + Driver | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Role | Current Tabs | Cleanup Target |
+|---|---|---|
+| Nursery Owner | Home, Buying, Selling, Profile + create FAB | Keep; refine Selling internals |
+| Manager | Home, Buying, Work, Profile + create FAB | Keep; refine Work internals |
+| Buyer only | Home, Buying, Profile | Keep; add true buyer direct-buy flow |
+| Driver | Home, Driver, Profile + scan action | Keep; refresh screenshots |
+| Admin/Super Admin | Mobile-safe admin notice | Web portal only notice |
+
+Cleanup progress is tracked in `MOBILE_UI_CLEANUP_TRACKER.md`.
+
+Major UI milestones must now include role screenshots in `/private/tmp/greenroot-mobile-visuals`.
 
 ---
 

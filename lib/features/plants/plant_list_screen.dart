@@ -51,6 +51,13 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        title: const Text('Plant Catalog', style: AppTypography.h3),
+        foregroundColor: AppColors.textPrimary,
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(plantListProvider.notifier).load(
               search: _searchCtrl.text,

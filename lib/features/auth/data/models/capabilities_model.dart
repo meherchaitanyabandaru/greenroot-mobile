@@ -54,8 +54,8 @@ class UserCapabilities {
     final managed =
         roleWorkspaces.where((w) => w.type == 'MANAGER_NURSERY').toList();
     final status = ownedNurseryStatus?.toUpperCase();
-    final isApproved =
-        owned != null && (status == 'APPROVED' || status == 'ACTIVE');
+    final isApproved = owned != null &&
+        (status == null || status == 'APPROVED' || status == 'ACTIVE');
     final isPending = owned != null && status == 'PENDING';
     final isRejected = owned != null && status == 'REJECTED';
 

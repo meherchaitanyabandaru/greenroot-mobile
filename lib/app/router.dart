@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/auth/presentation/screens/create_profile_screen.dart';
@@ -24,9 +25,15 @@ import '../features/driver/trip_event_screen.dart';
 import '../features/driver/trip_preview_screen.dart';
 import '../features/inventory/inventory_add_screen.dart';
 import '../features/inventory/inventory_detail_screen.dart';
+import '../features/inventory/inventory_list_screen.dart';
+import '../features/requests/request_list_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
 import '../features/nurseries/nursery_detail_screen.dart';
+import '../features/nurseries/nursery_list_screen.dart';
+import '../features/plants/plant_list_screen.dart';
+import '../features/profile/my_addresses_screen.dart';
+import '../features/buyer/buyer_payments_screen.dart';
 import '../features/orders/order_create_screen.dart';
 import '../features/orders/order_detail_screen.dart';
 import '../features/orders/order_loading_screen.dart';
@@ -37,37 +44,55 @@ import '../features/quotations/quotation_detail_screen.dart';
 import '../features/quotations/quotation_list_screen.dart';
 import '../features/quotations/quotations.dart';
 import '../features/requests/request_create_screen.dart';
-import '../features/members/members_screen.dart';
+import '../features/owner/owner_members_screen.dart';
 import '../features/requests/request_detail_screen.dart';
 import '../features/connections/connections_screen.dart';
 import '../features/sourcing/sourcing_screen.dart';
 import '../features/tracking/dispatch_tracking_screen.dart';
 import 'main_shell.dart';
 
-// Routes that drivers are not permitted to access.
-const _driverForbiddenPrefixes = [
-  '/orders',
-  '/quotations',
-  '/plants/',
-  '/inventory',
-  '/requests',
-  '/sourcing',
-  '/nursery/members',
-  '/dispatches',
-  '/connections',
-];
+UserCapabilities _capabilities(BuildContext context) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  return container.read(sessionProvider).capabilities;
+}
 
 String? _driverGuard(BuildContext context, GoRouterState state) {
-  final container = ProviderScope.containerOf(context, listen: false);
-  final session = container.read(sessionProvider);
-  if (!session.capabilities.isDriverOnly) return null;
+  final caps = _capabilities(context);
+  if (!caps.isDriverOnly) return null;
 
   final path = state.uri.path;
-  for (final prefix in _driverForbiddenPrefixes) {
-    if (path == prefix || path.startsWith(prefix)) {
-      return '/home';
-    }
+  if (path.startsWith('/driver/')) return null;
+  if (path == '/notifications' ||
+      path.startsWith('/dispatches/') && path.endsWith('/track')) {
+    return null;
   }
+  return '/home';
+}
+
+String? _canSellGuard(BuildContext context, GoRouterState state) {
+  final driverRedirect = _driverGuard(context, state);
+  if (driverRedirect != null) return driverRedirect;
+  return _capabilities(context).canSell ? null : '/home';
+}
+
+String? _ownerGuard(BuildContext context, GoRouterState state) {
+  final driverRedirect = _driverGuard(context, state);
+  if (driverRedirect != null) return driverRedirect;
+  return _capabilities(context).isNurseryOwner ? null : '/home';
+}
+
+String? _sellerReadGuard(BuildContext context, GoRouterState state) {
+  final driverRedirect = _driverGuard(context, state);
+  if (driverRedirect != null) return driverRedirect;
+  return _capabilities(context).canSell ? null : '/home';
+}
+
+// Buyer-only routes: blocks drivers AND sellers (owner/manager) from buyer-specific screens.
+// Buyers are users who are not owners, not managers, and not driver-only.
+String? _buyerGuard(BuildContext context, GoRouterState state) {
+  final caps = _capabilities(context);
+  if (caps.isDriverOnly) return '/home';
+  if (caps.canSell) return '/home'; // owner or manager → not a buyer-only screen
   return null;
 }
 
@@ -149,8 +174,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/driver/scan/preview',
-      builder: (_, state) => TripPreviewScreen(
-          code: state.uri.queryParameters['code'] ?? ''),
+      builder: (_, state) =>
+          TripPreviewScreen(code: state.uri.queryParameters['code'] ?? ''),
     ),
     GoRoute(
       path: '/driver/trips',
@@ -163,8 +188,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/driver/trips/:id/event',
-      builder: (_, state) => TripEventScreen(
-          dispatchId: int.parse(state.pathParameters['id']!)),
+      builder: (_, state) =>
+          TripEventScreen(dispatchId: int.parse(state.pathParameters['id']!)),
     ),
     GoRoute(
       path: '/driver/trips/:id/proof',
@@ -174,6 +199,11 @@ final appRouter = GoRouter(
 
     // ── Plants ───────────────────────────────────────────────────────────────
     GoRoute(
+      path: '/plants',
+      redirect: _driverGuard,
+      builder: (_, __) => const PlantListScreen(),
+    ),
+    GoRoute(
       path: '/plants/:id',
       redirect: _driverGuard,
       builder: (_, state) =>
@@ -182,33 +212,60 @@ final appRouter = GoRouter(
 
     // ── Nurseries ─────────────────────────────────────────────────────────────
     GoRoute(
+      path: '/nurseries',
+      redirect: _driverGuard,
+      builder: (_, __) => const NurseryListScreen(),
+    ),
+    GoRoute(
       path: '/nurseries/:id',
       builder: (_, state) => NurseryDetailScreen(
           nurseryId: int.parse(state.pathParameters['id']!)),
     ),
 
+    // ── My Profile sub-screens ────────────────────────────────────────────────
+    GoRoute(
+      path: '/my-addresses',
+      redirect: _driverGuard,
+      builder: (_, __) => const MyAddressesScreen(),
+    ),
+    GoRoute(
+      path: '/my-payments',
+      redirect: _buyerGuard,
+      builder: (_, __) => const BuyerPaymentsScreen(),
+    ),
+
     // ── Inventory ─────────────────────────────────────────────────────────────
     GoRoute(
+      path: '/inventory',
+      redirect: _canSellGuard,
+      builder: (_, __) => const InventoryListScreen(),
+    ),
+    GoRoute(
       path: '/inventory/add',
-      redirect: _driverGuard,
+      redirect: _ownerGuard,
       builder: (_, __) => const InventoryAddScreen(),
     ),
     GoRoute(
       path: '/inventory/:id',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, state) =>
           InventoryDetailScreen(itemId: int.parse(state.pathParameters['id']!)),
     ),
 
     // ── Requests ──────────────────────────────────────────────────────────────
     GoRoute(
+      path: '/requests',
+      redirect: _canSellGuard,
+      builder: (_, __) => const RequestListScreen(),
+    ),
+    GoRoute(
       path: '/requests/create',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, __) => const RequestCreateScreen(),
     ),
     GoRoute(
       path: '/requests/:id',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, state) => RequestDetailScreen(
           requestId: int.parse(state.pathParameters['id']!)),
     ),
@@ -226,7 +283,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/orders/loading',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, state) {
         final nurseryId =
             int.tryParse(state.uri.queryParameters['nursery'] ?? '');
@@ -235,7 +292,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/orders/create',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, __) => const OrderCreateScreen(),
     ),
     GoRoute(
@@ -253,7 +310,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/quotations/create',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, state) {
         final type = state.uri.queryParameters['type'];
         return QuotationCreateScreen(initialType: type);
@@ -267,7 +324,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/quotations/:id/edit',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, state) =>
           QuotationCreateScreen(quotation: state.extra as Quotation?),
     ),
@@ -275,21 +332,21 @@ final appRouter = GoRouter(
     // ── Connections ───────────────────────────────────────────────────────────
     GoRoute(
       path: '/connections',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, __) => const ConnectionsScreen(),
     ),
 
     // ── Plant Sourcing Network ───────────────────────────────────────────────
     GoRoute(
       path: '/sourcing',
-      redirect: _driverGuard,
+      redirect: _canSellGuard,
       builder: (_, __) => const SourcingScreen(),
     ),
 
     // ── Nursery Members Management ────────────────────────────────────────────
     GoRoute(
       path: '/nursery/members',
-      redirect: _driverGuard,
+      redirect: _ownerGuard,
       builder: (_, state) {
         final id = int.tryParse(state.uri.queryParameters['id'] ?? '') ?? 0;
         final name = state.uri.queryParameters['name'] ?? 'My Nursery';
@@ -305,12 +362,12 @@ final appRouter = GoRouter(
     // ── Dispatches ────────────────────────────────────────────────────────────
     GoRoute(
       path: '/dispatches',
-      redirect: _driverGuard,
+      redirect: _sellerReadGuard,
       builder: (_, __) => const DispatchListScreen(),
     ),
     GoRoute(
       path: '/dispatches/:id',
-      redirect: _driverGuard,
+      redirect: _sellerReadGuard,
       builder: (_, state) => DispatchDetailScreen(
           dispatchId: int.parse(state.pathParameters['id']!)),
     ),

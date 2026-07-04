@@ -88,7 +88,15 @@ class SessionNotifier extends StateNotifier<SessionState> {
       final workspaces = await _repo.getWorkspaces();
       final roles = await _repo.getUserRoles();
       final nurseryId = await _repo.getNurseryId();
-      final activeRole = await _repo.getStoredActiveRole();
+      final storedActiveRole = await _repo.getStoredActiveRole();
+      final mobileRoles = workspaces
+          .where((w) => w.isBusinessWorkspace)
+          .map((w) => w.appRole)
+          .toSet();
+      final activeRole =
+          storedActiveRole != null && mobileRoles.contains(storedActiveRole)
+              ? storedActiveRole
+              : null;
 
       // Fetch nursery status separately for pending/rejected routing
       String? ownedNurseryStatus;
