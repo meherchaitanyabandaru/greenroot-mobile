@@ -78,6 +78,13 @@ class UserProfile {
         createdAt: createdAt,
       );
 
+  /// True when the user has completed their full profile.
+  /// firstName + lastName + gender must all be set.
+  bool get isProfileComplete =>
+      (firstName?.isNotEmpty ?? false) &&
+      (lastName?.isNotEmpty ?? false) &&
+      (gender?.isNotEmpty ?? false);
+
   String get initials {
     final fn = firstName;
     final ln = lastName;

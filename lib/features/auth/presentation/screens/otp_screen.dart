@@ -69,13 +69,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     await ref.read(activeRoleProvider.notifier).loadSavedRole();
     if (!mounted) return;
 
-    // First-time user → complete profile before entering the app
-    if (verifyState.isNewUser) {
+    final session = ref.read(sessionProvider);
+
+    // Send to profile completion only if new user AND profile not yet complete.
+    // Guards against repeat redirects when the user has already filled all fields.
+    if (verifyState.isNewUser && !(session.user?.isProfileComplete ?? false)) {
       context.go('/create-profile');
       return;
     }
 
-    final session = ref.read(sessionProvider);
     SplashScreen.routeAfterLogin(context, session);
   }
 

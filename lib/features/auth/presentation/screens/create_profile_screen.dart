@@ -28,6 +28,32 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill with existing data if any
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(sessionProvider).user;
+      if (user == null) return;
+      // Profile already complete — skip straight to activity selection
+      if (user.isProfileComplete) {
+        context.go('/select-activity');
+        return;
+      }
+      // Pre-fill whatever is already saved
+      if (user.firstName?.isNotEmpty == true) {
+        final full = [user.firstName, user.lastName]
+            .whereType<String>()
+            .where((s) => s.isNotEmpty)
+            .join(' ');
+        _nameCtrl.text = full;
+      }
+      if (user.email?.isNotEmpty == true) {
+        _emailCtrl.text = user.email!;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
