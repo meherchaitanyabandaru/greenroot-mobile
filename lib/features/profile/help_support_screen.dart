@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 
-class HelpSupportScreen extends StatelessWidget {
+class HelpSupportScreen extends ConsumerWidget {
   const HelpSupportScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final caps = ref.watch(sessionProvider).capabilities;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,20 +36,21 @@ class HelpSupportScreen extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.support_agent_rounded,
-                    color: Colors.white, size: 40),
+                    color: Colors.white, size: 40,),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('We\'re here to help',
-                          style: AppTypography.h3
-                              .copyWith(color: Colors.white)),
+                      Text(
+                        'We\'re here to help',
+                        style: AppTypography.h3.copyWith(color: Colors.white),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Mon – Sat, 9 AM – 6 PM',
                         style: AppTypography.bodySmall.copyWith(
-                            color: Colors.white.withValues(alpha: 0.8)),
+                            color: Colors.white.withValues(alpha: 0.8),),
                       ),
                     ],
                   ),
@@ -55,16 +61,19 @@ class HelpSupportScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.x2l),
 
           // Contact options
-          _SectionHeader(title: 'Contact Us'),
+          const _SectionHeader(title: 'Contact Us'),
           const SizedBox(height: AppSpacing.sm),
           _ContactTile(
             icon: Icons.chat_rounded,
             iconBg: const Color(0xFFE8F5E9),
             iconColor: const Color(0xFF25D366),
             title: 'WhatsApp Support',
-            subtitle: 'Chat with us on WhatsApp',
-            onTap: () => _launch('https://wa.me/919000000000'
-                '?text=Hi%20GreenRoot%20Support%2C%20I%20need%20help%20with...'),
+            subtitle: '+91 90000 00000',
+            copyValue: '+91 90000 00000',
+            onTap: () => _launch(
+              'https://wa.me/919000000000'
+              '?text=Hi%20GreenRoot%20Support%2C%20I%20need%20help%20with...',
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           _ContactTile(
@@ -73,8 +82,11 @@ class HelpSupportScreen extends StatelessWidget {
             iconColor: AppColors.blue600,
             title: 'Email Support',
             subtitle: 'support@greenroot.in',
-            onTap: () => _launch('mailto:support@greenroot.in'
-                '?subject=GreenRoot%20Support%20Request'),
+            copyValue: 'support@greenroot.in',
+            onTap: () => _launch(
+              'mailto:support@greenroot.in'
+              '?subject=GreenRoot%20Support%20Request',
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           _ContactTile(
@@ -83,17 +95,20 @@ class HelpSupportScreen extends StatelessWidget {
             iconColor: const Color(0xFF7B1FA2),
             title: 'Call Us',
             subtitle: '+91 90000 00000',
+            copyValue: '+91 90000 00000',
             onTap: () => _launch('tel:+919000000000'),
           ),
           const SizedBox(height: AppSpacing.x2l),
 
-          // FAQ — General
-          _SectionHeader(title: 'Frequently Asked Questions'),
+          // FAQs — role-aware
+          const _SectionHeader(title: 'Frequently Asked Questions'),
           const SizedBox(height: AppSpacing.sm),
-          _FaqSection(
+
+          // Common to all roles
+          const _FaqSection(
             title: 'Getting Started',
             icon: Icons.rocket_launch_outlined,
-            items: const [
+            items: [
               _FaqItem(
                 question: 'How do I complete my profile?',
                 answer:
@@ -116,94 +131,112 @@ class HelpSupportScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          _FaqSection(
-            title: 'Orders & Quotations',
-            icon: Icons.shopping_bag_outlined,
-            items: const [
-              _FaqItem(
-                question: 'How do I receive a quotation from a nursery?',
-                answer:
-                    'Nurseries send quotations directly to your account. '
-                    'You\'ll see them under Buying → Quotations. '
-                    'You can accept or reject each quotation from there.',
-              ),
-              _FaqItem(
-                question: 'Can I cancel an order?',
-                answer:
-                    'Orders can only be cancelled while they are in PENDING status. '
-                    'Once a nursery confirms the order, cancellation is not allowed. '
-                    'Contact the nursery directly for any changes.',
-              ),
-              _FaqItem(
-                question: 'How do I track my delivery?',
-                answer:
-                    'Go to Buying → Deliveries. You\'ll see live delivery status '
-                    'and driver location once the dispatch is created by the nursery.',
-              ),
-              _FaqItem(
-                question: 'Why can\'t I place an order directly?',
-                answer:
-                    'GreenRoot is a B2B platform. Nurseries send you a price quotation '
-                    'first. You accept it, and the nursery creates the order. '
-                    'This ensures pricing accuracy for bulk plant purchases.',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _FaqSection(
-            title: 'Nursery Owners & Managers',
-            icon: Icons.storefront_outlined,
-            items: const [
-              _FaqItem(
-                question: 'How do I register my nursery?',
-                answer:
-                    'Go to Profile → Register Nursery. Fill in your nursery details '
-                    'and submit for approval. The GreenRoot admin team reviews applications '
-                    'within 2–3 business days.',
-              ),
-              _FaqItem(
-                question: 'Why is my nursery still showing as Pending?',
-                answer:
-                    'Nursery approval is a manual review process. If it has been more than '
-                    '3 business days, please contact support with your nursery name and '
-                    'registered mobile number.',
-              ),
-              _FaqItem(
-                question: 'How do I add a manager to my nursery?',
-                answer:
-                    'Go to your nursery dashboard → Members → Invite Manager. '
-                    'Enter their mobile number to send an invite. They will need to '
-                    'accept the invite from their app.',
-              ),
-              _FaqItem(
-                question: 'Can a manager create orders and quotations?',
-                answer:
-                    'Yes. Managers have full work access — they can create quotations, '
-                    'manage orders, and handle dispatches on behalf of the nursery owner.',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _FaqSection(
-            title: 'Drivers',
-            icon: Icons.local_shipping_outlined,
-            items: const [
-              _FaqItem(
-                question: 'How do I start a trip?',
-                answer:
-                    'Scan the QR code on the dispatch sheet using the scanner button '
-                    'in the Driver tab. Review the trip details and tap Accept to begin.',
-              ),
-              _FaqItem(
-                question: 'What do I do if I can\'t deliver to the address?',
-                answer:
-                    'Add a trip event from the active trip screen. Select the appropriate '
-                    'event type (e.g., Address Not Found) and add a note. '
-                    'The nursery manager will be notified.',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.x2l),
+
+          // Buyer + Owner/Manager: orders and quotations
+          if (!caps.isDriverOnly) ...[
+            const _FaqSection(
+              title: 'Orders & Quotations',
+              icon: Icons.shopping_bag_outlined,
+              items: [
+                _FaqItem(
+                  question: 'How do I receive a quotation from a nursery?',
+                  answer:
+                      'Nurseries send quotations directly to your account. '
+                      'You\'ll see them under Buying → Quotations. '
+                      'You can accept or reject each quotation from there.',
+                ),
+                _FaqItem(
+                  question: 'Can I cancel an order?',
+                  answer:
+                      'Orders can only be cancelled while they are in PENDING status. '
+                      'Once a nursery confirms the order, cancellation is not allowed. '
+                      'Contact the nursery directly for any changes.',
+                ),
+                _FaqItem(
+                  question: 'How do I track my delivery?',
+                  answer:
+                      'Go to Buying → Deliveries. You\'ll see live delivery status '
+                      'and driver location once the dispatch is created by the nursery.',
+                ),
+                _FaqItem(
+                  question: 'Why can\'t I place an order directly?',
+                  answer:
+                      'GreenRoot is a B2B platform. Nurseries send you a price quotation '
+                      'first. You accept it, and the nursery creates the order. '
+                      'This ensures pricing accuracy for bulk plant purchases.',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+
+          // Nursery Owners and Managers only
+          if (caps.canSell) ...[
+            const _FaqSection(
+              title: 'Nursery Owners & Managers',
+              icon: Icons.storefront_outlined,
+              items: [
+                _FaqItem(
+                  question: 'How do I register my nursery?',
+                  answer:
+                      'Go to Profile → Register Nursery. Fill in your nursery details '
+                      'and submit for approval. The GreenRoot admin team reviews applications '
+                      'within 2–3 business days.',
+                ),
+                _FaqItem(
+                  question: 'Why is my nursery still showing as Pending?',
+                  answer:
+                      'Nursery approval is a manual review process. If it has been more than '
+                      '3 business days, please contact support with your nursery name and '
+                      'registered mobile number.',
+                ),
+                _FaqItem(
+                  question: 'How do I add a manager to my nursery?',
+                  answer:
+                      'Go to your nursery dashboard → Members → Invite Manager. '
+                      'Enter their mobile number to send an invite. They will need to '
+                      'accept the invite from their app.',
+                ),
+                _FaqItem(
+                  question: 'Can a manager create orders and quotations?',
+                  answer:
+                      'Yes. Managers have full work access — they can create quotations, '
+                      'manage orders, and handle dispatches on behalf of the nursery owner.',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+
+          // Drivers (driver profile, including drivers who are also other roles)
+          if (caps.hasDriverProfile) ...[
+            const _FaqSection(
+              title: 'Drivers',
+              icon: Icons.local_shipping_outlined,
+              items: [
+                _FaqItem(
+                  question: 'How do I start a trip?',
+                  answer:
+                      'Scan the QR code on the dispatch sheet using the scanner button '
+                      'in the Driver tab. Review the trip details and tap Accept to begin.',
+                ),
+                _FaqItem(
+                  question: 'What do I do if I can\'t deliver to the address?',
+                  answer:
+                      'Add a trip event from the active trip screen. Select the appropriate '
+                      'event type (e.g., Address Not Found) and add a note. '
+                      'The nursery manager will be notified.',
+                ),
+                _FaqItem(
+                  question: 'How do I mark a delivery as complete?',
+                  answer:
+                      'From the active trip screen, tap "Complete Delivery". '
+                      'You\'ll be asked to upload a proof photo (optional) before confirming.',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           // App info
           _AppInfoTile(),
@@ -239,6 +272,7 @@ class _ContactTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String subtitle;
+  final String copyValue;
   final VoidCallback onTap;
 
   const _ContactTile({
@@ -247,8 +281,21 @@ class _ContactTile extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.subtitle,
+    required this.copyValue,
     required this.onTap,
   });
+
+  void _copy(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: copyValue));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Copied: $copyValue'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +307,7 @@ class _ContactTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.md),
+              horizontal: AppSpacing.md, vertical: AppSpacing.md,),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
@@ -281,16 +328,38 @@ class _ContactTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      title,
+                      style: AppTypography.body
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      subtitle,
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 15, color: AppColors.textMuted),
+              // Copy icon
+              IconButton(
+                onPressed: () => _copy(context),
+                icon: const Icon(
+                  Icons.copy_rounded,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
+                tooltip: 'Copy',
+                splashRadius: 20,
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 15,
+                color: AppColors.textMuted,
+              ),
             ],
           ),
         ),
@@ -330,17 +399,16 @@ class _FaqSection extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           leading: Icon(icon, color: AppColors.primaryMain, size: 22),
-          title: Text(title,
-              style: AppTypography.body
-                  .copyWith(fontWeight: FontWeight.w700)),
+          title: Text(
+            title,
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+          ),
           iconColor: AppColors.primaryMain,
           collapsedIconColor: AppColors.textMuted,
           childrenPadding: EdgeInsets.zero,
           children: [
             const Divider(height: 1, color: AppColors.border),
-            ...items.map(
-              (item) => _FaqTile(item: item),
-            ),
+            ...items.map((item) => _FaqTile(item: item)),
           ],
         ),
       ),
@@ -358,15 +426,16 @@ class _FaqTile extends StatelessWidget {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 0),
-        title: Text(item.question,
-            style: AppTypography.body
-                .copyWith(color: AppColors.textPrimary)),
+            horizontal: AppSpacing.md, vertical: 0,),
+        title: Text(
+          item.question,
+          style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+        ),
         iconColor: AppColors.primaryMain,
         collapsedIconColor: AppColors.textMuted,
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         childrenPadding: const EdgeInsets.fromLTRB(
-            AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+            AppSpacing.md, 0, AppSpacing.md, AppSpacing.md,),
         children: [
           Text(
             item.answer,
@@ -401,18 +470,19 @@ class _AppInfoTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.eco_rounded,
-                color: AppColors.primaryMain, size: 24),
+                color: AppColors.primaryMain, size: 24,),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('GreenRoot',
-                    style: AppTypography.label),
-                Text('Version 1.0.0 · Platform B2B',
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                const Text('GreenRoot', style: AppTypography.label),
+                Text(
+                  'Version 1.0.0 · Platform B2B',
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textMuted),
+                ),
               ],
             ),
           ),
