@@ -36,74 +36,40 @@
 // │  ✅  Manage delivery addresses         GET/POST/PUT/DELETE                  │
 // │                                         /api/v1/users/:id/addresses         │
 // │  ✅  Register nursery application      POST /api/v1/nurseries               │
-// │         (becomes nursery owner on admin approval; normal buyer flow)        │
 // │  ✅  Accept customer/team invite       POST /api/v1/invites/:uuid/accept    │
 // ├─────────────────────────────────────────────────────────────────────────────┤
 // │  RBAC — WHAT A BUYER CANNOT DO                                              │
 // ├─────────────────────────────────────────────────────────────────────────────┤
-// │  ❌  Create orders     POST /api/v1/orders   — nursery staff creates orders │
-// │  ❌  Create quotations POST /api/v1/quotations — nursery → buyer flow only  │
-// │  ❌  Approve quotations     POST .../approve                                │
-// │  ❌  Convert quotations     POST .../convert-to-order                       │
-// │  ❌  Access inventory       ANY  /api/v1/nurseries/:id/inventory            │
-// │  ❌  Access plant requests  ANY  /api/v1/nurseries/:id/requests             │
-// │  ❌  Access sourcing network GET /api/v1/sourcing                           │
-// │  ❌  Create dispatches      POST /api/v1/dispatches                         │
-// │  ❌  Assign drivers         POST /api/v1/dispatches/:id/assign-driver       │
-// │  ❌  Invite managers        POST /api/v1/invites  (MANAGER_INVITE type)     │
-// │  ❌  Cancel non-PENDING orders — status must be exactly PENDING             │
+// │  ❌  Create orders     POST /api/v1/orders                                  │
+// │  ❌  Create quotations POST /api/v1/quotations                              │
+// │  ❌  Approve / convert quotations                                           │
+// │  ❌  Access inventory, plant requests, sourcing network                     │
+// │  ❌  Create dispatches / assign drivers                                     │
+// │  ❌  Cancel non-PENDING orders                                              │
 // └─────────────────────────────────────────────────────────────────────────────┘
 //
 // API CALLS — ON LOAD & PULL-TO-REFRESH
 // ──────────────────────────────────────
-//   1. GET /api/v1/quotations?page=1&per_page=5&status=APPROVED,SENT,CUSTOMER_SENT
-//        → "X offers waiting" badge card at top of home
-//        → Response: { data: [quotation...], pagination: { page, per_page, total, total_pages } }
-//        → quotation fields: id, quotation_number, status, total_amount,
-//                            nursery_name, created_at, items[]
-//
-//   2. GET /api/v1/orders?page=1&per_page=5
-//        → Active order card (most recent non-COMPLETED / non-CANCELLED order)
-//        → Response: { data: [order...], pagination: {...} }
-//        → order fields: id, order_number, status, total_amount, nursery_name, created_at
-//
-//   3. GET /api/v1/dispatches?page=1&per_page=3
-//        → Live delivery card when a dispatch is IN_TRANSIT
-//        → Response: { data: [dispatch...], pagination: {...} }
-//        → dispatch fields: id, dispatch_number, status, vehicle_number, driver_name,
-//                           estimated_arrival, order_id
+//   1. GET /api/v1/orders?buying=true&page=1&per_page=30
+//        → KPI counts + active orders list
 //
 // ORDER STATUS VALUES (state machine — API enforced)
 // ───────────────────────────────────────────────────
 //   PENDING → CONFIRMED → LOADING → LOADED | PARTIALLY_FULFILLED → COMPLETED
 //                                                                 ↘ CANCELLED (only from PENDING)
 //
-// QUOTATION STATUS VALUES
-// ────────────────────────
-//   DRAFT → APPROVED → SENT | CUSTOMER_SENT → CUSTOMER_ACCEPTED | CUSTOMER_REJECTED
-//                                            → CONVERTED (when nursery converts to order)
-//                                            → EXPIRED
-//
 // NAVIGATION FROM THIS WIDGET
 // ────────────────────────────
-//   context.push('/quotations/:id')        — quotation detail + accept/reject actions
-//   context.push('/orders/:id')            — order detail + cancel button (PENDING only)
-//   context.push('/dispatches/:id/track')  — live delivery map
-//   context.push('/plants')               — browse plant catalog
-//   context.push('/nurseries')            — browse and explore nurseries
+//   context.push('/orders/:id')    — order detail + cancel button (PENDING only)
+//   context.push('/plants')        — browse plant catalog
+//   context.push('/nurseries')     — browse and explore nurseries
+//   mainTabIndexProvider = 1       — jump to Buying tab
 //
 // BUSINESS RULES — MUST ENFORCE IN UI
 // ─────────────────────────────────────
 //   • NEVER render "Create Order", "Place Order", "Buy Now" button or FAB
-//   • "Accept / Reject" buttons visible ONLY when quotation.status ∈
-//     { APPROVED, SENT, CUSTOMER_SENT }
 //   • "Cancel Order" visible ONLY when order.status == 'PENDING'
-//   • Orders in LOADING, LOADED, PARTIALLY_FULFILLED, COMPLETED are immutable;
-//     show read-only status badge, no action buttons
 //   • Empty state: show "Explore nurseries →" CTA, NOT "Create your first order"
-//   • If pending_quotations > 0, show a prominent "You have N offers" banner
-//     at the very top above the orders list
-//   • Label incoming quotations as "Offers from nurseries" — buyer did not create them
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -114,48 +80,34 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../orders/orders.dart';
-import '../quotations/quotations.dart';
 
-/// Fetches buyer home data: quotations and orders scoped to the current buyer.
+/// Fetches buyer home data: orders scoped to the current buyer.
 /// Public so that HomeScreen can invalidate it on pull-to-refresh.
 final buyerHomeProvider =
     FutureProvider.autoDispose<_BuyerHomeData>((ref) async {
   final orderRepo = ref.watch(orderRepositoryProvider);
-  final quotationRepo = ref.watch(quotationRepositoryProvider);
   var orders = <Order>[];
-  var quotations = <Quotation>[];
-  try {
-    final (items, _) =
-        await quotationRepo.listBuyingQuotations(page: 1, perPage: 30);
-    quotations = items;
-  } catch (_) {}
   try {
     final (items, _) = await orderRepo.listBuyingOrders(page: 1, perPage: 30);
     orders = items;
   } catch (_) {}
-  return _BuyerHomeData(orders: orders, quotations: quotations);
+  return _BuyerHomeData(orders: orders);
 });
 
 class _BuyerHomeData {
   final List<Order> orders;
-  final List<Quotation> quotations;
 
-  const _BuyerHomeData({required this.orders, required this.quotations});
-
-  List<Quotation> get pendingOffers => quotations
-      .where(
-        (q) => {'APPROVED', 'SENT', 'CUSTOMER_SENT'}
-            .contains(q.status.toUpperCase()),
-      )
-      .toList();
+  const _BuyerHomeData({required this.orders});
 
   List<Order> get activeOrders => orders
-      .where(
-          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
+      .where((o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
       .toList();
 
   int get completedCount =>
       orders.where((o) => o.status.toUpperCase() == 'COMPLETED').length;
+
+  int get cancelledCount =>
+      orders.where((o) => o.status.toUpperCase() == 'CANCELLED').length;
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────
@@ -167,24 +119,18 @@ class BuyerHome extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(buyerHomeProvider).valueOrNull ??
-        const _BuyerHomeData(orders: [], quotations: []);
-    final pending = data.pendingOffers;
+        const _BuyerHomeData(orders: []);
     final active = data.activeOrders;
-    final isEmpty = data.orders.isEmpty && data.quotations.isEmpty;
+    final isEmpty = data.orders.isEmpty;
 
     void goToBuying() => ref.read(mainTabIndexProvider.notifier).state = 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Prominent offers banner when nurseries have sent quotations
-        if (pending.isNotEmpty) ...[
-          _OffersBanner(count: pending.length, onTap: goToBuying),
-          const SizedBox(height: 16),
-        ],
         // KPI summary row
         _BuyerSummaryRow(
-          pendingCount: pending.length,
+          totalCount: data.orders.length,
           activeCount: active.length,
           completedCount: data.completedCount,
           onTap: goToBuying,
@@ -209,25 +155,6 @@ class BuyerHome extends ConsumerWidget {
               ),
           const SizedBox(height: 12),
         ],
-        // Pending offers list (up to 3)
-        if (pending.isNotEmpty) ...[
-          _SectionHeader(
-            title: 'Offers from Nurseries',
-            actionLabel: 'View All',
-            onAction: goToBuying,
-          ),
-          const SizedBox(height: 12),
-          ...pending.take(3).map(
-                (q) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _BuyerQuotationCard(
-                    quotation: q,
-                    onTap: () => context.push('/quotations/${q.id}'),
-                  ),
-                ),
-              ),
-          const SizedBox(height: 12),
-        ],
         // Quick actions
         _BuyerActionGrid(
           onBrowsePlants: () => context.push('/plants'),
@@ -237,79 +164,8 @@ class BuyerHome extends ConsumerWidget {
         ),
         const SizedBox(height: 22),
         // Empty state
-        if (isEmpty)
-          _EmptyBuyerState(onExplore: () => context.push('/nurseries')),
+        if (isEmpty) _EmptyBuyerState(onExplore: () => context.push('/nurseries')),
       ],
-    );
-  }
-}
-
-// ── Offers banner ─────────────────────────────────────────────────────────────
-
-class _OffersBanner extends StatelessWidget {
-  final int count;
-  final VoidCallback onTap;
-
-  const _OffersBanner({required this.count, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF9800), Color(0xFFFFC107)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: AppRadius.cardRadius,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.orange.withValues(alpha: 0.25),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.mark_email_unread_outlined,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'You have $count offer${count == 1 ? '' : 's'}',
-                    style: AppTypography.h3.copyWith(color: Colors.white),
-                  ),
-                  Text(
-                    'Nurseries are waiting for your response',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.88),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -317,13 +173,13 @@ class _OffersBanner extends StatelessWidget {
 // ── KPI summary row ───────────────────────────────────────────────────────────
 
 class _BuyerSummaryRow extends StatelessWidget {
-  final int pendingCount;
+  final int totalCount;
   final int activeCount;
   final int completedCount;
   final VoidCallback onTap;
 
   const _BuyerSummaryRow({
-    required this.pendingCount,
+    required this.totalCount,
     required this.activeCount,
     required this.completedCount,
     required this.onTap,
@@ -336,10 +192,10 @@ class _BuyerSummaryRow extends StatelessWidget {
       child: Row(
         children: [
           _KpiCell(
-            icon: Icons.request_quote_outlined,
-            value: '$pendingCount',
-            label: 'Offers',
-            color: AppColors.amber600,
+            icon: Icons.shopping_bag_outlined,
+            value: '$totalCount',
+            label: 'Total',
+            color: AppColors.primaryMain,
             onTap: onTap,
           ),
           const SizedBox(
@@ -347,10 +203,10 @@ class _BuyerSummaryRow extends StatelessWidget {
             child: VerticalDivider(width: 1, color: AppColors.border),
           ),
           _KpiCell(
-            icon: Icons.shopping_bag_outlined,
+            icon: Icons.pending_outlined,
             value: '$activeCount',
             label: 'Active',
-            color: AppColors.primaryMain,
+            color: AppColors.blue600,
             onTap: onTap,
           ),
           const SizedBox(
@@ -361,7 +217,7 @@ class _BuyerSummaryRow extends StatelessWidget {
             icon: Icons.check_circle_outline_rounded,
             value: '$completedCount',
             label: 'Done',
-            color: AppColors.blue600,
+            color: const Color(0xFF2E7D32),
             onTap: onTap,
           ),
         ],
@@ -551,96 +407,6 @@ class _BuyerOrderCard extends StatelessWidget {
   }
 }
 
-// ── Quotation card ────────────────────────────────────────────────────────────
-
-class _BuyerQuotationCard extends StatelessWidget {
-  final Quotation quotation;
-  final VoidCallback onTap;
-
-  const _BuyerQuotationCard({required this.quotation, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,##0.00');
-    final itemCount = quotation.items.length;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadius.cardRadius,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDecoration(accent: const Color(0xFFFFF3E0)),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.amber600.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.request_quote_outlined,
-                color: AppColors.amber600,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    quotation.nurseryName ?? 'Nursery',
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '$itemCount item${itemCount == 1 ? '' : 's'} · ${quotation.quotationCode}',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.amber600.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Awaiting You',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.amber600,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '₹${fmt.format(quotation.totalAmount)}',
-                  style: AppTypography.bodySmall.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Quick-action grid ─────────────────────────────────────────────────────────
 
 class _BuyerActionGrid extends StatelessWidget {
@@ -762,7 +528,7 @@ class _EmptyBuyerState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Browse nurseries and request plants. Your orders and offers will appear here.',
+            'Browse nurseries and request plants. Your orders will appear here.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -773,7 +539,8 @@ class _EmptyBuyerState extends StatelessWidget {
             label: const Text('Explore Nurseries'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
