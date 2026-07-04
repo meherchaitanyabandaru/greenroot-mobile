@@ -75,9 +75,9 @@ class _Tab {
 // ── Role → tab mapping ────────────────────────────────────────────────────────
 //
 // Owner   : Home | Buying | Selling | Profile
-// Manager : Home | Buying | Work    | Profile
-// Driver  : Home | Driver | Profile
-// Customer: Home | Buying | Profile
+// Manager : Home | Work              | Profile
+// Driver  : Home | Driver            | Profile  (+ center QR scan)
+// Customer: Home | Buying            | Profile
 
 List<_Tab> _buildTabs(UserCapabilities caps) {
   const home = _Tab(
@@ -113,16 +113,10 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
     ];
   }
 
-  // ── Manager (not an owner)
+  // ── Manager (not an owner): no Buying tab — managers work at a nursery, they don't buy
   if (caps.isManager && !caps.isNurseryOwner) {
     return [
       home,
-      const _Tab(
-        screen: BuyingScreen(),
-        icon: Icons.shopping_bag_outlined,
-        activeIcon: Icons.shopping_bag_rounded,
-        label: 'Buying',
-      ),
       const _Tab(
         screen: SellingScreen(),
         icon: Icons.work_outline_rounded,
