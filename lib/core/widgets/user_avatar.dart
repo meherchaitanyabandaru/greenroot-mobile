@@ -89,7 +89,7 @@ class _AvatarView extends StatelessWidget {
     } else if (caps.isManager) {
       icon = Icons.manage_accounts_rounded;
     } else {
-      icon = Icons.shopping_bag_outlined;
+      icon = Icons.person_outline_rounded;
     }
     return Center(
       child: Icon(icon, color: AppColors.primaryMain, size: size * 0.48),

@@ -136,6 +136,14 @@ class BuyerHome extends ConsumerWidget {
           onTap: goToBuying,
         ),
         const SizedBox(height: 22),
+        // Quick actions
+        _BuyerActionGrid(
+          onBrowsePlants: () => context.push('/plants'),
+          onBrowseNurseries: () => context.push('/nurseries'),
+          onMyOrders: goToBuying,
+          onTrackDeliveries: goToBuying,
+        ),
+        const SizedBox(height: 22),
         // Active orders list (up to 3)
         if (active.isNotEmpty) ...[
           _SectionHeader(
@@ -155,14 +163,6 @@ class BuyerHome extends ConsumerWidget {
               ),
           const SizedBox(height: 12),
         ],
-        // Quick actions
-        _BuyerActionGrid(
-          onBrowsePlants: () => context.push('/plants'),
-          onBrowseNurseries: () => context.push('/nurseries'),
-          onMyOrders: goToBuying,
-          onTrackDeliveries: goToBuying,
-        ),
-        const SizedBox(height: 22),
         // Empty state
         if (isEmpty) _EmptyBuyerState(onExplore: () => context.push('/nurseries')),
       ],
@@ -442,7 +442,7 @@ class _BuyerActionGrid extends StatelessWidget {
           icon: Icons.storefront_outlined,
           label: 'My Nursery Connections',
           color: AppColors.blue600,
-          onTap: onBrowseNurseries,
+          onTap: () => context.push('/buyer/connections'),
         ),
         _ActionCell(
           icon: Icons.shopping_bag_outlined,

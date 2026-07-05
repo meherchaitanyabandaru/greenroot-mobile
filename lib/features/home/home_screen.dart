@@ -106,7 +106,7 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
             children: [
               _TopHeader(caps: caps),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               _GreetingBlock(caps: caps, firstName: session.user?.firstName),
               const SizedBox(height: 20),
               if (caps.isDriverOnly)
@@ -228,14 +228,6 @@ class _TopHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        IconButton(
-          onPressed: () => context.push('/workspace-select'),
-          icon: const Icon(Icons.menu_rounded, size: 30),
-          color: AppColors.textPrimary,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 38, height: 38),
-        ),
-        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,31 +306,34 @@ class _GreetingBlock extends StatelessWidget {
 
   const _GreetingBlock({required this.caps, this.firstName});
 
+  String get _timeGreeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    if (hour < 21) return 'Good Evening';
+    return 'Good Night';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final name = firstName?.isNotEmpty == true ? firstName! : 'there';
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Good Morning, ${firstName?.isNotEmpty == true ? firstName! : 'there'}!',
-                style: AppTypography.h1.copyWith(fontSize: 25, height: 1.1),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _roleSubtitle(caps),
-                style: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+        Text(
+          '$_timeGreeting, $name 👋',
+          style: AppTypography.h2.copyWith(fontSize: 20, height: 1.2),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _roleSubtitle(caps),
+          style: AppTypography.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        _RolePill(label: _roleLabel(caps), icon: _roleIcon(caps)),
       ],
     );
   }
@@ -2038,12 +2033,12 @@ IconData _roleIcon(caps) {
 }
 
 String _roleSubtitle(caps) {
-  if (caps.isDriverOnly) return 'Stay safe and complete your trips.';
+  if (caps.isDriverOnly) return 'Stay safe on the road. Check your trips below.';
   if (caps.isNurseryOwner)
-    return caps.ownedNurseryName ?? 'Manage your nursery.';
+    return 'Here\'s what\'s happening at ${caps.ownedNurseryName ?? 'your nursery'} today.';
   if (caps.isManager)
-    return caps.primaryNurseryName ?? 'Manage nursery operations.';
-  return 'Let\'s find the perfect plants for you.';
+    return 'Here\'s what\'s happening at ${caps.primaryNurseryName ?? 'your nursery'} today.';
+  return 'Here\'s what\'s happening with your orders today.';
 }
 
 String _prettyStatus(String status) => status

@@ -269,6 +269,12 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 
   @override
   Widget build(BuildContext context) {
+    // TabBarView builds tabs lazily — watch all providers here so autoDispose
+    // doesn't reclaim them before tab widgets render and issue their own watches.
+    ref.watch(_buyerQuotationProvider);
+    ref.watch(_buyerOrderProvider);
+    ref.watch(_buyerDispatchProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -1022,9 +1028,7 @@ class _DispatchCard extends StatelessWidget {
     final isInTransit = d.status == 'DISPATCHED' || d.status == 'IN_TRANSIT';
 
     return GestureDetector(
-      onTap: () => isInTransit
-          ? context.push('/dispatches/${d.id}/track')
-          : context.push('/dispatches/${d.id}'),
+      onTap: () => context.push('/dispatches/${d.id}/buyer-track'),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,

@@ -1,15 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/errors/app_error.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/qr_share_sheet.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dashboard/owner/owner_dashboard_data.dart';
 
 class ConnectionsScreen extends ConsumerWidget {
   const ConnectionsScreen({super.key});
+
+  Future<void> _inviteCustomer(
+      BuildContext context, int nurseryId) async {
+    final result = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _InviteCustomerSheet(),
+    );
+    if (result == null || !context.mounted) return;
+
+    try {
+      final body = <String, dynamic>{
+        'invite_type': 'CUSTOMER_INVITE',
+        'nursery_id': nurseryId,
+        'target_mobile': result['mobile'],
+        if ((result['name'] ?? '').isNotEmpty) 'target_name': result['name'],
+      };
+      final data = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/api/v1/invites',
+        data: body,
+      );
+      final invite = (data['invite'] ?? data) as Map<String, dynamic>;
+      final uuid = invite['invite_uuid'] as String? ?? '';
+      final expiresRaw = invite['expires_at'] as String?;
+      final expiresAt =
+          expiresRaw != null ? DateTime.tryParse(expiresRaw) : null;
+      if (uuid.isNotEmpty && context.mounted) {
+        await QrShareSheet.show(
+          context,
+          code: uuid,
+          qrType: QrCodeType.customerInvite,
+          expiresAt: expiresAt,
+        );
+      }
+    } on AppError catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.red600,
+        ));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not create invite. Try again.'),
+          backgroundColor: AppColors.red600,
+        ));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,6 +174,11 @@ class ConnectionsScreen extends ConsumerWidget {
                 loading: () => null,
                 error: (_, __) => null,
               ),
+              actionLabel: 'Invite via QR',
+              actionIcon: Icons.qr_code_rounded,
+              onAction: nurseryId != null
+                  ? () => _inviteCustomer(context, nurseryId)
+                  : null,
               onViewAll: nurseryId != null
                   ? () => context.push('/orders?nursery=$nurseryId')
                   : null,
@@ -260,6 +322,140 @@ class _ConnectionCard extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Invite customer bottom sheet ───────────────────────────────────────────────
+
+class _InviteCustomerSheet extends StatefulWidget {
+  const _InviteCustomerSheet();
+
+  @override
+  State<_InviteCustomerSheet> createState() => _InviteCustomerSheetState();
+}
+
+class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
+  final _mobileCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _mobileCtrl.dispose();
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final mobile = _mobileCtrl.text.trim();
+    if (mobile.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Enter a valid 10-digit mobile number'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    Navigator.of(context)
+        .pop({'mobile': mobile, 'name': _nameCtrl.text.trim()});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: AppSpacing.screenPadding,
+        right: AppSpacing.screenPadding,
+        top: AppSpacing.lg,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.x2l,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.blue100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.qr_code_rounded,
+                    color: AppColors.blue600, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Invite Customer', style: AppTypography.h4),
+                    Text(
+                      'Generate a QR code to share with your customer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.x2l),
+          TextField(
+            controller: _mobileCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Customer Mobile *',
+              hintText: '10-digit mobile number',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              prefixIcon: const Icon(Icons.phone_outlined),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _nameCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Customer Name (optional)',
+              hintText: 'e.g. Ravi Kumar',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              prefixIcon: const Icon(Icons.person_outline_rounded),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x2l),
+          SizedBox(
+            width: double.infinity,
+            height: AppSpacing.buttonHeight,
+            child: FilledButton.icon(
+              onPressed: _submit,
+              icon: const Icon(Icons.qr_code_rounded, size: 20),
+              label: const Text('Generate Invite QR'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryMain,
+                textStyle: AppTypography.button,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
         ],
       ),
     );

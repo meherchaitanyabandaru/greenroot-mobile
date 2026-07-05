@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -151,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
           _SettingsSection(items: accountItems),
           const SizedBox(height: AppSpacing.x2l),
 
-          // App info
+          // Support
           const Text('Support', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
           _SettingsSection(
@@ -160,6 +162,26 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.help_outline_rounded,
                 label: 'Help & Support',
                 onTap: () => context.push('/help-support'),
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip_outlined,
+                label: 'Privacy Policy',
+                onTap: () async {
+                  final uri = Uri.parse('https://www.greenroot.in/privacy');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.gavel_rounded,
+                label: 'Terms & Conditions',
+                onTap: () async {
+                  final uri = Uri.parse('https://www.greenroot.in/terms');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
               ),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
@@ -277,13 +299,17 @@ class _ProfileInfoCard extends StatelessWidget {
   }
 
   static String _relativeTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inDays > 365) return '${(diff.inDays / 365).floor()}y ago';
-    if (diff.inDays > 30)  return '${(diff.inDays / 30).floor()}mo ago';
-    if (diff.inDays > 0)   return '${diff.inDays}d ago';
-    if (diff.inHours > 0)  return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
+    final local = dt.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final itemDay = DateTime(local.year, local.month, local.day);
+    final daysDiff = today.difference(itemDay).inDays;
+    final timeStr = DateFormat('h:mm a').format(local);
+    if (daysDiff == 0) return 'Today, $timeStr';
+    if (daysDiff == 1) return 'Yesterday, $timeStr';
+    if (daysDiff < 30) return '${daysDiff}d ago';
+    if (daysDiff < 365) return '${(daysDiff / 30).floor()}mo ago';
+    return '${(daysDiff / 365).floor()}y ago';
   }
 }
 

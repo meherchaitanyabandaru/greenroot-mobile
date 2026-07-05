@@ -52,6 +52,8 @@ import '../features/requests/request_detail_screen.dart';
 import '../features/connections/connections_screen.dart';
 import '../features/sourcing/sourcing_screen.dart';
 import '../features/tracking/dispatch_tracking_screen.dart';
+import '../features/buyer/buyer_delivery_tracking_screen.dart';
+import '../features/buyer/buyer_nursery_connections_screen.dart';
 import 'main_shell.dart';
 
 UserCapabilities _capabilities(BuildContext context) {
@@ -423,6 +425,10 @@ final appRouter = GoRouter(
       redirect: _canSellGuard,
       builder: (_, __) => const ConnectionsScreen(),
     ),
+    GoRoute(
+      path: '/buyer/connections',
+      builder: (_, __) => const BuyerNurseryConnectionsScreen(),
+    ),
 
     // ── Plant Sourcing Network ───────────────────────────────────────────────
     GoRoute(
@@ -465,6 +471,12 @@ final appRouter = GoRouter(
         dispatchId: int.parse(state.pathParameters['id']!),
         title: state.uri.queryParameters['title'],
         isDriver: state.uri.queryParameters['driver'] == 'true',
+      ),
+    ),
+    GoRoute(
+      path: '/dispatches/:id/buyer-track',
+      builder: (_, state) => BuyerDeliveryTrackingScreen(
+        dispatchId: int.parse(state.pathParameters['id']!),
       ),
     ),
   ],
