@@ -58,6 +58,7 @@ class Dispatch {
   final int? sellerNurseryId;
   final String? vehicleNumber;
   final String? driverName;
+  final String? driverMobile;
   final int? driverUserId;
   final String? dispatchDate;
   final String? deliveryDate;
@@ -77,6 +78,7 @@ class Dispatch {
     this.sellerNurseryId,
     this.vehicleNumber,
     this.driverName,
+    this.driverMobile,
     this.driverUserId,
     this.dispatchDate,
     this.deliveryDate,
@@ -99,6 +101,7 @@ class Dispatch {
             : null,
         vehicleNumber: j['vehicle_number'] as String?,
         driverName: j['driver_name'] as String?,
+        driverMobile: j['driver_mobile'] as String?,
         driverUserId: j['driver_user_id'] != null ? (j['driver_user_id'] as num).toInt() : null,
         dispatchDate: j['dispatch_date'] as String?,
         deliveryDate: j['delivery_date'] as String?,
@@ -161,6 +164,18 @@ class DispatchRepository {
         final pagination =
             ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
         return (items, pagination);
+      },
+    );
+  }
+
+  Future<List<Dispatch>> listByOrder(int orderId) async {
+    return _client.get(
+      ApiConstants.dispatchesByOrder(orderId),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return (d['dispatches'] as List<dynamic>)
+            .map((e) => Dispatch.fromJson(e as Map<String, dynamic>))
+            .toList();
       },
     );
   }

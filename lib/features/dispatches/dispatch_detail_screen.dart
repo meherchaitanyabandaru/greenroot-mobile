@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -207,10 +208,12 @@ class _DetailContent extends StatelessWidget {
           child: Column(
             children: [
               if (dispatch.driverName != null)
-                _Row(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Driver',
-                    value: dispatch.driverName!),
+                _PersonRow(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Driver',
+                  name: dispatch.driverName!,
+                  phone: dispatch.driverMobile,
+                ),
               if (dispatch.vehicleNumber != null) ...[
                 if (dispatch.driverName != null)
                   const Divider(height: 1, indent: 56),
@@ -664,6 +667,74 @@ class _TripStep {
     required this.done,
     required this.current,
   });
+}
+
+class _PersonRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String name;
+  final String? phone;
+
+  const _PersonRow({
+    required this.icon,
+    required this.label,
+    required this.name,
+    this.phone,
+  });
+
+  Future<void> _call() async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+                color: AppColors.forest100, shape: BoxShape.circle),
+            child: Icon(icon, size: 18, color: AppColors.primaryMain),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary)),
+                Text(name, style: AppTypography.body),
+                if (phone != null)
+                  Text(phone!,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted)),
+              ],
+            ),
+          ),
+          if (phone != null)
+            GestureDetector(
+              onTap: _call,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.phone_rounded,
+                    size: 20, color: AppColors.primaryMain),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Row extends StatelessWidget {

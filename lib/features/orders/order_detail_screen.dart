@@ -8,11 +8,19 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
+import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import 'orders.dart';
+
+// Fetches dispatches for a single order. Used by the dispatch section below.
+final _orderDispatchesProvider =
+    FutureProvider.autoDispose.family<List<Dispatch>, int>(
+  (ref, orderId) =>
+      ref.watch(dispatchRepositoryProvider).listByOrder(orderId),
+);
 
 class OrderDetailScreen extends ConsumerWidget {
   final int orderId;
@@ -24,6 +32,7 @@ class OrderDetailScreen extends ConsumerWidget {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final caps = ref.watch(sessionProvider).capabilities;
     final canManage = caps.isNurseryOwner || caps.isManager;
+    final isBuyer = !canManage && !caps.hasDriverProfile;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -74,6 +83,7 @@ class OrderDetailScreen extends ConsumerWidget {
           orderId: orderId,
           fmt: fmt,
           canManage: canManage,
+          isBuyer: isBuyer,
         ),
       ),
     );
@@ -87,12 +97,14 @@ class _OrderDetailBody extends StatelessWidget {
   final int orderId;
   final NumberFormat fmt;
   final bool canManage;
+  final bool isBuyer;
 
   const _OrderDetailBody({
     required this.order,
     required this.orderId,
     required this.fmt,
     required this.canManage,
+    required this.isBuyer,
   });
 
   @override
@@ -107,9 +119,19 @@ class _OrderDetailBody extends StatelessWidget {
 
         // ── Timeline ─────────────────────────────────────────────────────
         _SectionCard(
-          title: 'Order Timeline',
-          child: OrderTimeline(order: order),
+          title: isBuyer ? 'Your Order Journey' : 'Order Timeline',
+          child: OrderTimeline(
+            order: order,
+            role: isBuyer
+                ? OrderTimelineRole.buyer
+                : OrderTimelineRole.seller,
+          ),
         ),
+
+        const SizedBox(height: AppSpacing.x2l),
+
+        // ── Dispatch tracking ─────────────────────────────────────────────
+        _DispatchSection(orderId: orderId, isBuyer: isBuyer, canManage: canManage),
 
         const SizedBox(height: AppSpacing.x2l),
 
@@ -117,7 +139,9 @@ class _OrderDetailBody extends StatelessWidget {
         _InfoCard(order: order),
 
         // ── Action card ───────────────────────────────────────────────────
-        if (canManage || order.status == 'PENDING') ...[
+        // Buyers: only cancel PENDING is available (BUSINESS_RULES.md §Buyer Rules)
+        // Sellers/Managers: see all valid next actions based on current status
+        if (canManage || (isBuyer && order.status == 'PENDING')) ...[
           const SizedBox(height: AppSpacing.x2l),
           _SectionCard(
             title: 'Actions',
@@ -737,8 +761,8 @@ class _OrderActionsState extends ConsumerState<_OrderActions> {
         ));
       }
 
-      // Cancel order: owner-only per Mobile UI plan (§7 Manager Must Never See: cancel order)
-      if (isOwner && ['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
+      // Per BUSINESS_RULES.md §Order Cancel Rules: owner + manager can cancel PENDING/CONFIRMED/LOADING
+      if (['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
         actions.add(_ActionDef(
           label: 'Cancel Order',
           icon: Icons.cancel_outlined,
@@ -828,6 +852,182 @@ class _ActionDef {
     this.outlined = false,
     required this.onTap,
   });
+}
+
+// ── Dispatch section ──────────────────────────────────────────────────────────
+// Shows all dispatches linked to this order.
+// Buyer: tracking view (status + driver + vehicle + "Track" link when in transit).
+// Seller/Manager: operational view (all dispatches, "View Details" on each).
+
+class _DispatchSection extends ConsumerWidget {
+  final int orderId;
+  final bool isBuyer;
+  final bool canManage;
+
+  const _DispatchSection({
+    required this.orderId,
+    required this.isBuyer,
+    required this.canManage,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(_orderDispatchesProvider(orderId));
+
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (dispatches) {
+        if (dispatches.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isBuyer ? 'Delivery Tracking' : 'Dispatches',
+              style: AppTypography.h4,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ...dispatches.map((d) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: _DispatchCard(dispatch: d, isBuyer: isBuyer),
+                )),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DispatchCard extends StatelessWidget {
+  final Dispatch dispatch;
+  final bool isBuyer;
+
+  const _DispatchCard({required this.dispatch, required this.isBuyer});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dispatch;
+    final isActive =
+        {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
+    final isDelivered = d.status == 'DELIVERED';
+
+    Color chipBg;
+    Color chipText;
+    if (isDelivered) {
+      chipBg = AppColors.primaryLight;
+      chipText = AppColors.primaryMain;
+    } else if (isActive) {
+      chipBg = AppColors.amber100;
+      chipText = AppColors.amber700;
+    } else {
+      chipBg = AppColors.slate50;
+      chipText = AppColors.textSecondary;
+    }
+
+    return GestureDetector(
+      onTap: () => context.push('/dispatches/${d.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(
+            color: isActive ? AppColors.amber500 : AppColors.border,
+            width: isActive ? 1.5 : 1.0,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: chipBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.local_shipping_rounded,
+                      color: chipText, size: 18),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(d.dispatchCode, style: AppTypography.label),
+                      if (d.driverName?.isNotEmpty == true)
+                        Text(
+                          d.driverName!,
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: chipBg,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text(
+                    d.status.replaceAll('_', ' '),
+                    style: AppTypography.caption
+                        .copyWith(color: chipText, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            if (d.vehicleNumber?.isNotEmpty == true ||
+                d.driverMobile?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.sm),
+              const Divider(height: 1, color: AppColors.border),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  if (d.vehicleNumber?.isNotEmpty == true) ...[
+                    const Icon(Icons.directions_car_outlined,
+                        size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(d.vehicleNumber!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary)),
+                    const SizedBox(width: AppSpacing.md),
+                  ],
+                  if (d.driverMobile?.isNotEmpty == true && !isBuyer) ...[
+                    const Icon(Icons.phone_outlined,
+                        size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(d.driverMobile!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary)),
+                  ],
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Text(
+                        isActive && isBuyer ? 'Track' : 'View Details',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right,
+                          size: 16, color: AppColors.primaryMain),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Assign Manager Sheet ──────────────────────────────────────────────────────

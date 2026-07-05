@@ -68,6 +68,7 @@ abstract class ApiConstants {
 
   // Dispatches
   static const String dispatches = '$v1/dispatches';
+  static String dispatchesByOrder(int orderId) => '$v1/orders/$orderId/dispatches';
   static String dispatchById(int id) => '$v1/dispatches/$id';
   static String dispatchStatus(int id) => '$v1/dispatches/$id/status';
   static String dispatchByCode(String code) => '$v1/dispatches/code/$code';

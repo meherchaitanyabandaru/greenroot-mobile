@@ -1,9 +1,9 @@
 // ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║  GREENROOT — BUYER TAB  (Buying tab content for BUYER role)                 ║
+// ║  GREENROOT — BUYER TAB                                                      ║
 // ║  Role:  BUYER only  |  Entry: BuyingScreen → BuyerTab                      ║
 // ║  APIs:  GET /api/v1/quotations?buying=true                                  ║
 // ║         GET /api/v1/orders?buying=true                                      ║
-// ║         GET /api/v1/dispatches                                              ║
+// ║  Dispatch info is shown inside the Order Detail screen, not as a tab.       ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 import 'package:flutter/material.dart';
@@ -12,13 +12,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
+import '../../core/providers/paged_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/trade_status_chip.dart';
-import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
 
@@ -26,216 +26,30 @@ import '../quotations/quotations.dart';
 // PROVIDERS
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ── Buyer Quotations ──────────────────────────────────────────────────────────
-
-class _BuyerQuotationState {
-  final PagedState<Quotation> paged;
-  const _BuyerQuotationState({required this.paged});
-  _BuyerQuotationState copyWith({PagedState<Quotation>? paged}) =>
-      _BuyerQuotationState(paged: paged ?? this.paged);
-}
-
-class _BuyerQuotationNotifier extends StateNotifier<_BuyerQuotationState> {
-  final QuotationRepository _repo;
-  int _page = 0;
-
-  _BuyerQuotationNotifier(this._repo)
-      : super(_BuyerQuotationState(paged: PagedState.initial()));
-
-  Future<void> load() async {
-    state = state.copyWith(
-      paged: state.paged.copyWith(isLoading: true, clearError: true),
-    );
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingQuotations(page: 1, perPage: 20);
-      _page = 1;
-      state = state.copyWith(
-        paged: PagedState(
-          items: items,
-          isLoading: false,
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError catch (e) {
-      state = state.copyWith(
-        paged: state.paged.copyWith(isLoading: false, error: e),
-      );
-    }
-  }
-
-  Future<void> loadMore() async {
-    if (state.paged.isLoadingMore || !state.paged.hasMore) return;
-    state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingQuotations(page: _page + 1, perPage: 20);
-      _page++;
-      state = state.copyWith(
-        paged: state.paged.copyWith(
-          items: [...state.paged.items, ...items],
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError {
-      state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
-    }
-  }
-
-  void updateItem(Quotation updated) {
-    state = state.copyWith(
-      paged: state.paged.copyWith(
-        items: state.paged.items
-            .map((q) => q.id == updated.id ? updated : q)
-            .toList(),
-      ),
-    );
-  }
+class _BuyerQuotationNotifier extends PagedNotifier<Quotation> {
+  _BuyerQuotationNotifier(QuotationRepository repo)
+      : super(
+          fetch: (p, pp) => repo.listBuyingQuotations(page: p, perPage: pp),
+          idOf: (q) => q.id,
+        );
 }
 
 final _buyerQuotationProvider = StateNotifierProvider.autoDispose<
-    _BuyerQuotationNotifier, _BuyerQuotationState>(
+    _BuyerQuotationNotifier, PagedState<Quotation>>(
   (ref) => _BuyerQuotationNotifier(ref.watch(quotationRepositoryProvider)),
 );
 
-// ── Buyer Orders ──────────────────────────────────────────────────────────────
-
-class _BuyerOrderState {
-  final PagedState<Order> paged;
-  const _BuyerOrderState({required this.paged});
-  _BuyerOrderState copyWith({PagedState<Order>? paged}) =>
-      _BuyerOrderState(paged: paged ?? this.paged);
-}
-
-class _BuyerOrderNotifier extends StateNotifier<_BuyerOrderState> {
-  final OrderRepository _repo;
-  int _page = 0;
-
-  _BuyerOrderNotifier(this._repo)
-      : super(_BuyerOrderState(paged: PagedState.initial()));
-
-  Future<void> load() async {
-    state = state.copyWith(
-      paged: state.paged.copyWith(isLoading: true, clearError: true),
-    );
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingOrders(page: 1, perPage: 20);
-      _page = 1;
-      state = state.copyWith(
-        paged: PagedState(
-          items: items,
-          isLoading: false,
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError catch (e) {
-      state = state.copyWith(
-        paged: state.paged.copyWith(isLoading: false, error: e),
-      );
-    }
-  }
-
-  Future<void> loadMore() async {
-    if (state.paged.isLoadingMore || !state.paged.hasMore) return;
-    state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingOrders(page: _page + 1, perPage: 20);
-      _page++;
-      state = state.copyWith(
-        paged: state.paged.copyWith(
-          items: [...state.paged.items, ...items],
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError {
-      state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
-    }
-  }
-
-  void updateItem(Order updated) {
-    state = state.copyWith(
-      paged: state.paged.copyWith(
-        items: state.paged.items
-            .map((o) => o.id == updated.id ? updated : o)
-            .toList(),
-      ),
-    );
-  }
+class _BuyerOrderNotifier extends PagedNotifier<Order> {
+  _BuyerOrderNotifier(OrderRepository repo)
+      : super(
+          fetch: (p, pp) => repo.listBuyingOrders(page: p, perPage: pp),
+          idOf: (o) => o.id,
+        );
 }
 
 final _buyerOrderProvider =
-    StateNotifierProvider.autoDispose<_BuyerOrderNotifier, _BuyerOrderState>(
+    StateNotifierProvider.autoDispose<_BuyerOrderNotifier, PagedState<Order>>(
   (ref) => _BuyerOrderNotifier(ref.watch(orderRepositoryProvider)),
-);
-
-// ── Buyer Dispatches ──────────────────────────────────────────────────────────
-
-class _BuyerDispatchState {
-  final PagedState<Dispatch> paged;
-  const _BuyerDispatchState({required this.paged});
-  _BuyerDispatchState copyWith({PagedState<Dispatch>? paged}) =>
-      _BuyerDispatchState(paged: paged ?? this.paged);
-}
-
-class _BuyerDispatchNotifier extends StateNotifier<_BuyerDispatchState> {
-  final DispatchRepository _repo;
-  int _page = 0;
-
-  _BuyerDispatchNotifier(this._repo)
-      : super(_BuyerDispatchState(paged: PagedState.initial()));
-
-  Future<void> load() async {
-    state = state.copyWith(
-      paged: state.paged.copyWith(isLoading: true, clearError: true),
-    );
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingDispatches(page: 1, perPage: 20);
-      _page = 1;
-      state = state.copyWith(
-        paged: PagedState(
-          items: items,
-          isLoading: false,
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError catch (e) {
-      state = state.copyWith(
-        paged: state.paged.copyWith(isLoading: false, error: e),
-      );
-    }
-  }
-
-  Future<void> loadMore() async {
-    if (state.paged.isLoadingMore || !state.paged.hasMore) return;
-    state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
-    try {
-      final (items, pagination) =
-          await _repo.listBuyingDispatches(page: _page + 1, perPage: 20);
-      _page++;
-      state = state.copyWith(
-        paged: state.paged.copyWith(
-          items: [...state.paged.items, ...items],
-          isLoadingMore: false,
-          hasMore: pagination.hasMore,
-        ),
-      );
-    } on AppError {
-      state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
-    }
-  }
-}
-
-final _buyerDispatchProvider = StateNotifierProvider.autoDispose<
-    _BuyerDispatchNotifier, _BuyerDispatchState>(
-  (ref) => _BuyerDispatchNotifier(ref.watch(dispatchRepositoryProvider)),
 );
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -256,11 +70,10 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
     Future.microtask(() {
       ref.read(_buyerQuotationProvider.notifier).load();
       ref.read(_buyerOrderProvider.notifier).load();
-      ref.read(_buyerDispatchProvider.notifier).load();
     });
   }
 
@@ -272,11 +85,8 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 
   @override
   Widget build(BuildContext context) {
-    // TabBarView builds tabs lazily — watch all providers here so autoDispose
-    // doesn't reclaim them before tab widgets render and issue their own watches.
     ref.watch(_buyerQuotationProvider);
     ref.watch(_buyerOrderProvider);
-    ref.watch(_buyerDispatchProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -298,7 +108,6 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
           tabs: const [
             Tab(text: 'Quotations'),
             Tab(text: 'Orders'),
-            Tab(text: 'Deliveries'),
           ],
         ),
       ),
@@ -307,7 +116,6 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
         children: const [
           _OffersTab(),
           _OrdersTab(),
-          _DeliveriesTab(),
         ],
       ),
     );
@@ -315,7 +123,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 1 — QUOTATIONS (sent to this buyer by nurseries)
+// TAB 1 — QUOTATIONS
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _OffersTab extends ConsumerWidget {
@@ -323,8 +131,7 @@ class _OffersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(_buyerQuotationProvider);
-    final paged = state.paged;
+    final paged = ref.watch(_buyerQuotationProvider);
 
     if (paged.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -482,7 +289,6 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
             Row(
               children: [
                 Expanded(
@@ -495,7 +301,6 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                 TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
               ],
             ),
-
             if (q.nurseryName?.isNotEmpty == true) ...[
               const SizedBox(height: AppSpacing.xs),
               Row(
@@ -517,10 +322,7 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                 ],
               ),
             ],
-
             const SizedBox(height: AppSpacing.sm),
-
-            // Items count + total
             Row(
               children: [
                 if (q.items.isNotEmpty) ...[
@@ -553,13 +355,10 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                 const Spacer(),
                 Text(
                   fmt.format(q.totalAmount),
-                  style:
-                      AppTypography.h3.copyWith(color: AppColors.primaryMain),
+                  style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
                 ),
               ],
             ),
-
-            // Action buttons (only for actionable statuses)
             if (_canRespond) ...[
               const SizedBox(height: AppSpacing.md),
               const Divider(height: 1, color: AppColors.border),
@@ -706,7 +505,7 @@ class _RejectReasonSheetState extends State<_RejectReasonSheet> {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — ORDERS
+// TAB 2 — ORDERS (Dispatch info lives in Order Detail screen)
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _OrdersTab extends ConsumerWidget {
@@ -714,8 +513,7 @@ class _OrdersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(_buyerOrderProvider);
-    final paged = state.paged;
+    final paged = ref.watch(_buyerOrderProvider);
 
     if (paged.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -922,8 +720,7 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                 const Spacer(),
                 Text(
                   fmt.format(o.totalAmount),
-                  style:
-                      AppTypography.h3.copyWith(color: AppColors.primaryMain),
+                  style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
                 ),
               ],
             ),
@@ -962,199 +759,3 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
     );
   }
 }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TAB 3 — DELIVERIES (Dispatches for buyer's orders)
-// ══════════════════════════════════════════════════════════════════════════════
-
-class _DeliveriesTab extends ConsumerWidget {
-  const _DeliveriesTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(_buyerDispatchProvider);
-    final paged = state.paged;
-
-    if (paged.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (paged.error != null && paged.items.isEmpty) {
-      return ErrorState(
-        error: paged.error,
-        onRetry: () => ref.read(_buyerDispatchProvider.notifier).load(),
-      );
-    }
-
-    if (paged.items.isEmpty) {
-      return const EmptyState(
-        icon: Icons.local_shipping_outlined,
-        title: 'No deliveries yet',
-        subtitle: 'Dispatches for your orders will appear here.',
-      );
-    }
-
-    return RefreshIndicator(
-      color: AppColors.primaryMain,
-      onRefresh: () => ref.read(_buyerDispatchProvider.notifier).load(),
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenPadding,
-          vertical: AppSpacing.lg,
-        ),
-        itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, i) {
-          if (i == paged.items.length) {
-            ref.read(_buyerDispatchProvider.notifier).loadMore();
-            return const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return _DispatchCard(dispatch: paged.items[i]);
-        },
-      ),
-    );
-  }
-}
-
-class _DispatchCard extends StatelessWidget {
-  final Dispatch dispatch;
-  const _DispatchCard({required this.dispatch});
-
-  @override
-  Widget build(BuildContext context) {
-    final d = dispatch;
-    final dateFmt = DateFormat('d MMM yyyy');
-    final date = DateTime.tryParse(d.dispatchDate ?? d.createdAt)?.toLocal();
-    final isInTransit = d.status == 'DISPATCHED' || d.status == 'IN_TRANSIT';
-
-    return GestureDetector(
-      onTap: () => context.push('/dispatches/${d.id}/buyer-track'),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isInTransit ? AppColors.primaryMain : AppColors.border,
-            width: isInTransit ? 1.5 : 1.0,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    d.dispatchNumber ?? d.dispatchCode,
-                    style: AppTypography.h4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                TradeStatusChip(status: d.status, kind: TradeChipKind.dispatch),
-              ],
-            ),
-            if (d.orderNumber?.isNotEmpty == true) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.receipt_long_outlined,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    'Order ${d.orderNumber}',
-                    style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                if (d.vehicleNumber?.isNotEmpty == true) ...[
-                  const Icon(
-                    Icons.local_shipping_outlined,
-                    size: 14,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    d.vehicleNumber!,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                ],
-                if (date != null) ...[
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    size: 14,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    dateFmt.format(date),
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-                const Spacer(),
-                if (isInTransit)
-                  Row(
-                    children: [
-                      Text(
-                        'Track',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 16,
-                        color: AppColors.primaryMain,
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-            if (d.driverName?.isNotEmpty == true) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.person_outline,
-                    size: 14,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    d.driverName!,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
