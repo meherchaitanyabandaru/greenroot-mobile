@@ -53,6 +53,7 @@ abstract class ApiConstants {
   static String orderItemLoadedQuantity(int orderId, int itemId) =>
       '$v1/orders/$orderId/items/$itemId/loaded-quantity';
   static String orderAssignManager(int id) => '$v1/orders/$id/assign-manager';
+  static String orderConfirm(int id) => '$v1/orders/$id/confirm';
 
   // Payments
   static const String payments = '$v1/payments';
@@ -108,6 +109,8 @@ abstract class ApiConstants {
   // Quotations
   static const String quotations = '$v1/quotations';
   static String quotationById(int id) => '$v1/quotations/$id';
+  static String quotationApprove(int id) => '$v1/quotations/$id/approve';
+  static String quotationConvert(int id) => '$v1/quotations/$id/convert-to-order';
 
   // Notifications
   static const String notifications = '$v1/notifications';
@@ -134,6 +137,8 @@ abstract class ApiConstants {
       '$v1/nurseries/$nurseryId/sourcing-membership';
   static String featuredPlants(int nurseryId) =>
       '$v1/nurseries/$nurseryId/featured-plants';
+  static String featuredPlantById(int nurseryId, int featuredId) =>
+      '$v1/nurseries/$nurseryId/featured-plants/$featuredId';
   static const String sourcingNetworkNurseries =
       '$v1/sourcing-network/nurseries';
   static String sourcingNetworkNursery(int nurseryId) =>

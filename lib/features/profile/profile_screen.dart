@@ -190,25 +190,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.x2l),
-
-          // Sign out
-          OutlinedButton.icon(
-            onPressed: () {
-              ref.read(sessionProvider.notifier).logout().then((_) {
-                if (context.mounted) context.go('/login');
-              });
-            },
-            icon: const Icon(Icons.logout_rounded, color: AppColors.red600),
-            label: const Text(
-              'Sign Out',
-              style: TextStyle(color: AppColors.red600),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.red600),
-              minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
-            ),
-          ),
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),

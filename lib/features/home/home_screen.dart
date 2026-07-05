@@ -2014,7 +2014,7 @@ BoxDecoration _cardDecoration({Color bg = AppColors.surface}) => BoxDecoration(
 String _headerSubtitle(caps) {
   if (caps.isDriverOnly) return 'Delivering Green, On Time';
   if (caps.isManager) return 'Manage. Deliver. Grow.';
-  if (caps.isNurseryOwner) return 'Plant Supply Simplified';
+  if (caps.isNurseryOwner) return 'Your Plants, Your Business';
   return 'Quality Plants. On Time.';
 }
 
@@ -2035,7 +2035,7 @@ IconData _roleIcon(caps) {
 String _roleSubtitle(caps) {
   if (caps.isDriverOnly) return 'Stay safe on the road. Check your trips below.';
   if (caps.isNurseryOwner)
-    return 'Here\'s what\'s happening at ${caps.ownedNurseryName ?? 'your nursery'} today.';
+    return 'Manage orders, team & deliveries for ${caps.ownedNurseryName ?? 'your nursery'}.';
   if (caps.isManager)
     return 'Here\'s what\'s happening at ${caps.primaryNurseryName ?? 'your nursery'} today.';
   return 'Here\'s what\'s happening with your orders today.';

@@ -15,7 +15,7 @@ class EnvConfig {
 
   static const dev = EnvConfig(
     environment: AppEnvironment.dev,
-    apiBaseUrl: 'http://127.0.0.1:8080', // adb reverse tcp:8080 tcp:8080 tunnels to Mac
+    apiBaseUrl: 'http://192.168.1.7:8080', // Mac LAN IP — wireless ADB
     appName: 'GreenRoot Dev',
     enableLogging: true,
   );

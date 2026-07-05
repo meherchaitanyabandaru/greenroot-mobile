@@ -214,6 +214,16 @@ class OrderRepository {
     );
   }
 
+  Future<Order> confirmOrder(int id) async {
+    return _client.post(
+      ApiConstants.orderConfirm(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
   Future<Order> startLoading(int id) async {
     return _client.post(
       ApiConstants.orderStartLoading(id),

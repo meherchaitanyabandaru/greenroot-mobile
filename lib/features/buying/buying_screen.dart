@@ -59,12 +59,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../buyer/buyer_tab.dart';
 import '../manager/manager_work_tab.dart';
-import '../owner/owner_tab.dart';
 
 /// Role-aware "Buying" tab wrapper.
 ///
-/// Dispatches to the correct tab widget based on session capabilities.
-/// Never contains direct UI — it is a pure role router.
+/// Owners buy from other nurseries as customers — identical buyer experience.
+/// Managers do not have a buyer persona; they use the work tab.
 class BuyingScreen extends ConsumerWidget {
   const BuyingScreen({super.key});
 
@@ -72,7 +71,6 @@ class BuyingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final caps = ref.watch(sessionProvider).capabilities;
 
-    if (caps.isNurseryOwner) return const OwnerTab();
     if (caps.isManager) return const ManagerWorkTab();
     return const BuyerTab();
   }

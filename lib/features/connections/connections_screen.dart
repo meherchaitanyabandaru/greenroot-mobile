@@ -11,25 +11,44 @@ import '../../core/widgets/qr_share_sheet.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dashboard/owner/owner_dashboard_data.dart';
 
+// ── Connections Screen ────────────────────────────────────────────────────────
+//
+// INVITE API RULE (service.go line 62):
+//   Both MANAGER_INVITE and CUSTOMER_INVITE require target_mobile OR target_email.
+//   Invite is person-specific — UUID/QR is then shared with that person.
+//
+// Sections (order):
+//   1. Customers  — buyers who've ordered or accepted CUSTOMER_INVITE
+//   2. Managers (Gumastha) — staff via MANAGER_INVITE
+//   3. Drivers — independent delivery partners
+
 class ConnectionsScreen extends ConsumerWidget {
   const ConnectionsScreen({super.key});
 
-  Future<void> _inviteCustomer(
-      BuildContext context, int nurseryId) async {
+  Future<void> _invite(
+    BuildContext context,
+    WidgetRef ref, {
+    required String inviteType,
+    required int nurseryId,
+    required QrCodeType qrType,
+  }) async {
+    final isCustomer = inviteType == 'CUSTOMER_INVITE';
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => const _InviteCustomerSheet(),
+      builder: (_) => _InviteSheet(
+        isCustomer: isCustomer,
+      ),
     );
     if (result == null || !context.mounted) return;
 
     try {
       final body = <String, dynamic>{
-        'invite_type': 'CUSTOMER_INVITE',
+        'invite_type': inviteType,
         'nursery_id': nurseryId,
         'target_mobile': result['mobile'],
         if ((result['name'] ?? '').isNotEmpty) 'target_name': result['name'],
@@ -40,14 +59,14 @@ class ConnectionsScreen extends ConsumerWidget {
       );
       final invite = (data['invite'] ?? data) as Map<String, dynamic>;
       final uuid = invite['invite_uuid'] as String? ?? '';
-      final expiresRaw = invite['expires_at'] as String?;
-      final expiresAt =
-          expiresRaw != null ? DateTime.tryParse(expiresRaw) : null;
+      final expiresAt = invite['expires_at'] != null
+          ? DateTime.tryParse(invite['expires_at'] as String)
+          : null;
       if (uuid.isNotEmpty && context.mounted) {
         await QrShareSheet.show(
           context,
           code: uuid,
-          qrType: QrCodeType.customerInvite,
+          qrType: qrType,
           expiresAt: expiresAt,
         );
       }
@@ -56,6 +75,7 @@ class ConnectionsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(e.message),
           backgroundColor: AppColors.red600,
+          behavior: SnackBarBehavior.floating,
         ));
       }
     } catch (_) {
@@ -63,6 +83,7 @@ class ConnectionsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Could not create invite. Try again.'),
           backgroundColor: AppColors.red600,
+          behavior: SnackBarBehavior.floating,
         ));
       }
     }
@@ -73,15 +94,17 @@ class ConnectionsScreen extends ConsumerWidget {
     final dashboard = ref.watch(ownerDashboardProvider);
     final session = ref.watch(sessionProvider);
     final nurseryId = session.nurseryId;
-    final nurseryName = session.capabilities.ownedNurseryName;
+    final nurseryName = session.capabilities.ownedNurseryName ?? 'My Nursery';
+    final counts = dashboard.valueOrNull?.connections;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Connections'),
+        title: const Text('Connections', style: AppTypography.h3),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(ownerDashboardProvider.future),
@@ -89,98 +112,64 @@ class ConnectionsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           children: [
-            // Description
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: AppColors.forest100,
-                borderRadius: AppRadius.cardRadius,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.people_outline_rounded,
-                      color: AppColors.primaryMain, size: 22),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Connections stay permanently once added — '
-                      'like a professional network built on trust.',
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.forest600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.x2l),
-
-            // Managers
-            _ConnectionCard(
-              icon: Icons.manage_accounts_rounded,
-              iconBg: AppColors.teal100,
-              iconColor: AppColors.teal700,
-              title: 'Managers',
-              subtitle: 'Gumasthas who manage your nursery operations',
-              count: dashboard.when(
-                data: (d) => d.connections.managers,
-                loading: () => null,
-                error: (_, __) => null,
-              ),
-              actionLabel: 'Invite Manager',
-              actionIcon: Icons.person_add_alt_1_rounded,
-              onAction: () {
-                if (nurseryId != null) {
-                  context.push('/nursery/members',
-                      extra: {'id': nurseryId, 'name': nurseryName ?? 'My Nursery', 'tab': 1});
-                }
-              },
-              onViewAll: nurseryId != null
-                  ? () => context.push(
-                      '/nursery/members?id=$nurseryId&name=${Uri.encodeComponent(nurseryName ?? 'My Nursery')}&tab=0')
-                  : null,
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Drivers
-            _ConnectionCard(
-              icon: Icons.local_shipping_rounded,
-              iconBg: AppColors.amber100,
-              iconColor: AppColors.amber600,
-              title: 'Delivery Drivers',
-              subtitle: 'Create a dispatch from a loaded order to assign a driver',
-              count: dashboard.when(
-                data: (d) => d.connections.drivers,
-                loading: () => null,
-                error: (_, __) => null,
-              ),
-              actionLabel: 'Create Dispatch',
-              actionIcon: Icons.local_shipping_rounded,
-              onAction: () => context.push('/orders'),
-              onViewAll: () => context.push('/dispatches'),
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Customers
+            // ── 1. Customers ─────────────────────────────────────────────────
             _ConnectionCard(
               icon: Icons.people_alt_rounded,
-              iconBg: AppColors.blue100,
-              iconColor: AppColors.blue600,
+              iconBg: const Color(0xFFE8F5E9),
+              iconColor: AppColors.primaryMain,
               title: 'Customers',
-              subtitle: 'Buyers who have placed orders with your nursery',
-              count: dashboard.when(
-                data: (d) => d.connections.customers,
-                loading: () => null,
-                error: (_, __) => null,
-              ),
-              actionLabel: 'Invite via QR',
+              subtitle: 'Buyers who have placed orders or accepted invites from $nurseryName',
+              count: counts?.customers,
+              actionLabel: 'Invite Customer',
               actionIcon: Icons.qr_code_rounded,
               onAction: nurseryId != null
-                  ? () => _inviteCustomer(context, nurseryId)
+                  ? () => _invite(
+                        context, ref,
+                        inviteType: 'CUSTOMER_INVITE',
+                        nurseryId: nurseryId,
+                        qrType: QrCodeType.customerInvite,
+                      )
                   : null,
               onViewAll: nurseryId != null
-                  ? () => context.push('/orders?nursery=$nurseryId')
+                  ? () => context.push(Uri(
+                        path: '/nursery/members',
+                        queryParameters: {
+                          'id': '$nurseryId',
+                          'name': nurseryName,
+                          'tab': '1',
+                        },
+                      ).toString())
+                  : null,
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // ── 2. Managers (Gumastha) ────────────────────────────────────────
+            _ConnectionCard(
+              icon: Icons.manage_accounts_rounded,
+              iconBg: const Color(0xFFE3F2FD),
+              iconColor: AppColors.blue600,
+              title: 'Managers (Gumastha)',
+              subtitle: 'Staff who manage day-to-day nursery operations at $nurseryName',
+              count: counts?.managers,
+              actionLabel: 'Invite Gumastha',
+              actionIcon: Icons.qr_code_rounded,
+              onAction: nurseryId != null
+                  ? () => _invite(
+                        context, ref,
+                        inviteType: 'MANAGER_INVITE',
+                        nurseryId: nurseryId,
+                        qrType: QrCodeType.managerInvite,
+                      )
+                  : null,
+              onViewAll: nurseryId != null
+                  ? () => context.push(Uri(
+                        path: '/nursery/members',
+                        queryParameters: {
+                          'id': '$nurseryId',
+                          'name': nurseryName,
+                          'tab': '0',
+                        },
+                      ).toString())
                   : null,
             ),
 
@@ -226,19 +215,27 @@ class _ConnectionCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
                     color: iconBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
                 ),
@@ -249,12 +246,16 @@ class _ConnectionCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(title, style: AppTypography.h4),
-                          if (count != null) ...[
-                            const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(title,
+                                style: AppTypography.h4,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                          if (count != null && count! > 0)
                             Container(
+                              margin: const EdgeInsets.only(left: AppSpacing.xs),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                  horizontal: 9, vertical: 3),
                               decoration: BoxDecoration(
                                 color: iconBg,
                                 borderRadius: BorderRadius.circular(100),
@@ -263,24 +264,25 @@ class _ConnectionCard extends StatelessWidget {
                                 '$count',
                                 style: AppTypography.caption.copyWith(
                                   color: iconColor,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
-                          ],
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(subtitle,
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textSecondary)),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          if (actionLabel != null || onViewAll != null)
+          if (onViewAll != null || (actionLabel != null && onAction != null))
             Container(
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.border)),
@@ -295,16 +297,15 @@ class _ConnectionCard extends StatelessWidget {
                         label: const Text('View All'),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.md),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         ),
                       ),
                     ),
-                  if (onViewAll != null && actionLabel != null)
+                  if (onViewAll != null && actionLabel != null && onAction != null)
                     const SizedBox(
                       height: 40,
-                      child: VerticalDivider(
-                          width: 1, color: AppColors.border),
+                      child: VerticalDivider(width: 1, color: AppColors.border),
                     ),
                   if (actionLabel != null && onAction != null)
                     Expanded(
@@ -313,9 +314,9 @@ class _ConnectionCard extends StatelessWidget {
                         icon: Icon(actionIcon ?? Icons.add_rounded, size: 16),
                         label: Text(actionLabel!),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primaryMain,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.md),
+                          foregroundColor: iconColor,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         ),
                       ),
                     ),
@@ -328,16 +329,17 @@ class _ConnectionCard extends StatelessWidget {
   }
 }
 
-// ── Invite customer bottom sheet ───────────────────────────────────────────────
+// ── Shared invite bottom sheet ────────────────────────────────────────────────
 
-class _InviteCustomerSheet extends StatefulWidget {
-  const _InviteCustomerSheet();
+class _InviteSheet extends StatefulWidget {
+  final bool isCustomer;
+  const _InviteSheet({required this.isCustomer});
 
   @override
-  State<_InviteCustomerSheet> createState() => _InviteCustomerSheetState();
+  State<_InviteSheet> createState() => _InviteSheetState();
 }
 
-class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
+class _InviteSheetState extends State<_InviteSheet> {
   final _mobileCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
 
@@ -357,12 +359,23 @@ class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
       ));
       return;
     }
-    Navigator.of(context)
-        .pop({'mobile': mobile, 'name': _nameCtrl.text.trim()});
+    Navigator.of(context).pop({'mobile': mobile, 'name': _nameCtrl.text.trim()});
   }
 
   @override
   Widget build(BuildContext context) {
+    final isCustomer = widget.isCustomer;
+    final iconColor = isCustomer ? AppColors.primaryMain : AppColors.blue600;
+    final iconBg = isCustomer ? const Color(0xFFE8F5E9) : const Color(0xFFE3F2FD);
+    final icon = isCustomer ? Icons.people_alt_rounded : Icons.manage_accounts_rounded;
+    final title = isCustomer ? 'Invite Customer' : 'Invite Gumastha';
+    final subtitle = isCustomer
+        ? 'Generate a QR code to share with your customer'
+        : 'Generate a QR code to share with your manager';
+    final mobileLabel = isCustomer ? 'Customer Mobile *' : 'Gumastha Mobile *';
+    final nameLabel = isCustomer ? 'Customer Name (optional)' : 'Gumastha Name (optional)';
+    final nameHint = isCustomer ? 'e.g. Ravi Kumar' : 'e.g. Suresh Gumastha';
+
     return Padding(
       padding: EdgeInsets.only(
         left: AppSpacing.screenPadding,
@@ -388,29 +401,23 @@ class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.blue100,
-                  borderRadius: BorderRadius.circular(10),
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.qr_code_rounded,
-                    color: AppColors.blue600, size: 22),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: AppSpacing.md),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Invite Customer', style: AppTypography.h4),
-                    Text(
-                      'Generate a QR code to share with your customer',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
+                    Text(title, style: AppTypography.h4),
+                    Text(subtitle,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -421,10 +428,9 @@ class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
             controller: _mobileCtrl,
             keyboardType: TextInputType.phone,
             decoration: InputDecoration(
-              labelText: 'Customer Mobile *',
+              labelText: mobileLabel,
               hintText: '10-digit mobile number',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               prefixIcon: const Icon(Icons.phone_outlined),
             ),
           ),
@@ -433,10 +439,9 @@ class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
             controller: _nameCtrl,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              labelText: 'Customer Name (optional)',
-              hintText: 'e.g. Ravi Kumar',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              labelText: nameLabel,
+              hintText: nameHint,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               prefixIcon: const Icon(Icons.person_outline_rounded),
             ),
           ),
@@ -449,7 +454,7 @@ class _InviteCustomerSheetState extends State<_InviteCustomerSheet> {
               icon: const Icon(Icons.qr_code_rounded, size: 20),
               label: const Text('Generate Invite QR'),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
+                backgroundColor: iconColor,
                 textStyle: AppTypography.button,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),

@@ -16,6 +16,7 @@ import '../features/home/home_screen.dart';
 import '../features/notifications/notifications.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/selling/selling_screen.dart';
+import '../features/sourcing/sourcing_screen.dart';
 
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -143,6 +144,12 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         activeIcon: Icons.storefront_rounded,
         label: 'Selling',
       ),
+      const _Tab(
+        screen: SourcingScreen(),
+        icon: Icons.store_mall_directory_outlined,
+        activeIcon: Icons.store_mall_directory_rounded,
+        label: 'Market',
+      ),
       profile,
     ];
   }
@@ -225,7 +232,7 @@ Widget? _buildFab(
     );
   }
 
-  // Owner FAB
+  // Owner FAB — create order or quotation
   if (caps.isNurseryOwner) {
     return FloatingActionButton(
       heroTag: 'fab_owner',
@@ -261,22 +268,16 @@ void _showOwnerFabSheet(BuildContext context, WidgetRef ref) {
     title: 'Create',
     actions: [
       _FabAction(
-        icon: Icons.add_shopping_cart_rounded,
-        title: 'Create Order',
-        subtitle: 'New selling order for a customer',
-        onTap: () => context.push('/orders/create'),
-      ),
-      _FabAction(
         icon: Icons.request_quote_outlined,
         title: 'Create Quotation',
         subtitle: 'Send a price quote to a customer',
         onTap: () => context.push('/quotations/create'),
       ),
       _FabAction(
-        icon: Icons.eco_outlined,
-        title: 'Plant Request',
-        subtitle: 'Request plants from nearby nurseries',
-        onTap: () => context.push('/requests/create'),
+        icon: Icons.add_shopping_cart_rounded,
+        title: 'Create Order',
+        subtitle: 'New selling order for a customer',
+        onTap: () => context.push('/orders/create'),
       ),
     ],
   );

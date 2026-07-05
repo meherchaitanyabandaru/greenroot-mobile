@@ -15,6 +15,9 @@ import '../../core/models/pagination.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/error_state.dart';
+import '../../core/widgets/trade_status_chip.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
@@ -193,7 +196,7 @@ class _BuyerDispatchNotifier extends StateNotifier<_BuyerDispatchState> {
     );
     try {
       final (items, pagination) =
-          await _repo.listDispatches(page: 1, perPage: 20);
+          await _repo.listBuyingDispatches(page: 1, perPage: 20);
       _page = 1;
       state = state.copyWith(
         paged: PagedState(
@@ -215,7 +218,7 @@ class _BuyerDispatchNotifier extends StateNotifier<_BuyerDispatchState> {
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
       final (items, pagination) =
-          await _repo.listDispatches(page: _page + 1, perPage: 20);
+          await _repo.listBuyingDispatches(page: _page + 1, perPage: 20);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
@@ -328,14 +331,14 @@ class _OffersTab extends ConsumerWidget {
     }
 
     if (paged.error != null && paged.items.isEmpty) {
-      return _ErrorRetry(
-        message: paged.error!.message,
+      return ErrorState(
+        error: paged.error,
         onRetry: () => ref.read(_buyerQuotationProvider.notifier).load(),
       );
     }
 
     if (paged.items.isEmpty) {
-      return const _EmptyState(
+      return const EmptyState(
         icon: Icons.request_quote_outlined,
         title: 'No quotations yet',
         subtitle: 'When a nursery sends you a quotation, it will appear here.',
@@ -489,7 +492,7 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _StatusChip(status: q.status, type: _ChipType.quotation),
+                TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
               ],
             ),
 
@@ -719,14 +722,14 @@ class _OrdersTab extends ConsumerWidget {
     }
 
     if (paged.error != null && paged.items.isEmpty) {
-      return _ErrorRetry(
-        message: paged.error!.message,
+      return ErrorState(
+        error: paged.error,
         onRetry: () => ref.read(_buyerOrderProvider.notifier).load(),
       );
     }
 
     if (paged.items.isEmpty) {
-      return const _EmptyState(
+      return const EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No orders yet',
         subtitle: 'Your orders from nurseries will appear here.',
@@ -862,7 +865,7 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _StatusChip(status: o.status, type: _ChipType.order),
+                TradeStatusChip(status: o.status, kind: TradeChipKind.order),
               ],
             ),
             if (o.sellerNursery?.isNotEmpty == true) ...[
@@ -977,14 +980,14 @@ class _DeliveriesTab extends ConsumerWidget {
     }
 
     if (paged.error != null && paged.items.isEmpty) {
-      return _ErrorRetry(
-        message: paged.error!.message,
+      return ErrorState(
+        error: paged.error,
         onRetry: () => ref.read(_buyerDispatchProvider.notifier).load(),
       );
     }
 
     if (paged.items.isEmpty) {
-      return const _EmptyState(
+      return const EmptyState(
         icon: Icons.local_shipping_outlined,
         title: 'No deliveries yet',
         subtitle: 'Dispatches for your orders will appear here.',
@@ -1058,7 +1061,7 @@ class _DispatchCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _StatusChip(status: d.status, type: _ChipType.dispatch),
+                TradeStatusChip(status: d.status, kind: TradeChipKind.dispatch),
               ],
             ),
             if (d.orderNumber?.isNotEmpty == true) ...[
@@ -1155,247 +1158,3 @@ class _DispatchCard extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SHARED WIDGETS
-// ══════════════════════════════════════════════════════════════════════════════
-
-enum _ChipType { quotation, order, dispatch }
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  final _ChipType type;
-  const _StatusChip({required this.status, required this.type});
-
-  ({Color bg, Color text, String label}) _resolve() {
-    switch (type) {
-      case _ChipType.quotation:
-        return switch (status) {
-          'DRAFT' => (
-              bg: AppColors.slate100,
-              text: AppColors.slate600,
-              label: 'Draft'
-            ),
-          'APPROVED' || 'SENT' || 'CUSTOMER_SENT' => (
-              bg: AppColors.amber100,
-              text: AppColors.amber700,
-              label: 'Offer Sent'
-            ),
-          'CUSTOMER_ACCEPTED' => (
-              bg: AppColors.primaryLight,
-              text: AppColors.primaryMain,
-              label: 'Accepted'
-            ),
-          'CUSTOMER_REJECTED' => (
-              bg: AppColors.red100,
-              text: AppColors.red600,
-              label: 'Declined'
-            ),
-          'CONVERTED' => (
-              bg: AppColors.primaryLight,
-              text: AppColors.successText,
-              label: 'Converted'
-            ),
-          'EXPIRED' => (
-              bg: AppColors.slate100,
-              text: AppColors.textMuted,
-              label: 'Expired'
-            ),
-          _ => (
-              bg: AppColors.slate100,
-              text: AppColors.slate600,
-              label: status
-            ),
-        };
-      case _ChipType.order:
-        return switch (status) {
-          'PENDING' => (
-              bg: AppColors.amber100,
-              text: AppColors.amber700,
-              label: 'Pending'
-            ),
-          'CONFIRMED' => (
-              bg: AppColors.blue100,
-              text: AppColors.blue600,
-              label: 'Confirmed'
-            ),
-          'LOADING' => (
-              bg: AppColors.orange100,
-              text: AppColors.orange700,
-              label: 'Loading'
-            ),
-          'LOADED' => (
-              bg: AppColors.teal100,
-              text: AppColors.teal700,
-              label: 'Loaded'
-            ),
-          'PARTIALLY_FULFILLED' => (
-              bg: AppColors.amber100,
-              text: AppColors.amber700,
-              label: 'Partial'
-            ),
-          'COMPLETED' => (
-              bg: AppColors.primaryLight,
-              text: AppColors.successText,
-              label: 'Completed'
-            ),
-          'CANCELLED' => (
-              bg: AppColors.red100,
-              text: AppColors.red600,
-              label: 'Cancelled'
-            ),
-          _ => (
-              bg: AppColors.slate100,
-              text: AppColors.slate600,
-              label: status
-            ),
-        };
-      case _ChipType.dispatch:
-        return switch (status) {
-          'PENDING' || 'PENDING_ACCEPTANCE' => (
-              bg: AppColors.amber100,
-              text: AppColors.amber700,
-              label: 'Preparing'
-            ),
-          'ACCEPTED' => (
-              bg: AppColors.blue100,
-              text: AppColors.blue600,
-              label: 'Accepted'
-            ),
-          'DISPATCHED' || 'IN_TRANSIT' => (
-              bg: AppColors.teal100,
-              text: AppColors.teal700,
-              label: 'In Transit'
-            ),
-          'DELIVERED' => (
-              bg: AppColors.primaryLight,
-              text: AppColors.successText,
-              label: 'Delivered'
-            ),
-          'CANCELLED' => (
-              bg: AppColors.red100,
-              text: AppColors.red600,
-              label: 'Cancelled'
-            ),
-          _ => (
-              bg: AppColors.slate100,
-              text: AppColors.slate600,
-              label: status
-            ),
-        };
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final (:bg, :text, :label) = _resolve();
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.caption
-            .copyWith(color: text, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x3l),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(36),
-              ),
-              child: Icon(icon, size: 36, color: AppColors.primaryMain),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              style: AppTypography.h3,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              subtitle,
-              style:
-                  AppTypography.body.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorRetry extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorRetry({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x3l),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.wifi_off_outlined,
-              size: 48,
-              color: AppColors.textMuted,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Could not load',
-              style: AppTypography.h3,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              message,
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            TextButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryMain,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

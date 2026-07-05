@@ -3,6 +3,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
+import '../orders/orders.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -216,6 +217,26 @@ class QuotationRepository {
 
   Future<void> deleteQuotation(int id) async {
     await _client.delete(ApiConstants.quotationById(id));
+  }
+
+  Future<Quotation> approveQuotation(int id) async {
+    return _client.post(
+      ApiConstants.quotationApprove(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> convertToOrder(int id) async {
+    return _client.post(
+      ApiConstants.quotationConvert(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
   }
 
   Future<(List<Quotation>, ApiPagination)> listBuyingQuotations({

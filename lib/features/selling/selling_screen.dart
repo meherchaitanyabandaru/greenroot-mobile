@@ -65,9 +65,7 @@ import '../owner/owner_tab.dart';
 
 /// Role-aware "Selling / Work" tab wrapper.
 ///
-/// Dispatches to OwnerTab (nursery owner) or ManagerWorkTab (manager).
-/// Never shown to buyers or driver-only users — MainShell gates this tab
-/// behind caps.canSell.
+/// Manager → ManagerWorkTab. Owner → OwnerTab (quotations, orders, dispatches).
 class SellingScreen extends ConsumerWidget {
   const SellingScreen({super.key});
 
@@ -75,7 +73,6 @@ class SellingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final caps = ref.watch(sessionProvider).capabilities;
 
-    // Manager checked first — isManager and isNurseryOwner are mutually exclusive
     if (caps.isManager) return const ManagerWorkTab();
     return const OwnerTab();
   }

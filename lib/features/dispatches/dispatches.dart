@@ -146,6 +146,25 @@ class DispatchRepository {
     );
   }
 
+  Future<(List<Dispatch>, ApiPagination)> listBuyingDispatches({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    return _client.get(
+      ApiConstants.dispatches,
+      queryParameters: {'page': page, 'per_page': perPage, 'buying': 'true'},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        final items = (d['dispatches'] as List<dynamic>)
+            .map((e) => Dispatch.fromJson(e as Map<String, dynamic>))
+            .toList();
+        final pagination =
+            ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
+        return (items, pagination);
+      },
+    );
+  }
+
   Future<Dispatch> getDispatch(int id) async {
     return _client.get(
       ApiConstants.dispatchById(id),
