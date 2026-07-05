@@ -10,12 +10,11 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
 import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
-import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import 'orders.dart';
 
-// Fetches dispatches for a single order. Used by the dispatch section below.
+// Fetches dispatches for a single order, shown inline in the order detail.
 final _orderDispatchesProvider =
     FutureProvider.autoDispose.family<List<Dispatch>, int>(
   (ref, orderId) =>
@@ -29,36 +28,23 @@ class OrderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(orderDetailProvider(orderId));
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final caps = ref.watch(sessionProvider).capabilities;
     final canManage = caps.isNurseryOwner || caps.isManager;
+    final isOwner = caps.isNurseryOwner;
     final isBuyer = !canManage && !caps.hasDriverProfile;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: async.when(
+        title: async.maybeWhen(
           data: (o) => Text(o.orderNumber, style: AppTypography.h4),
-          loading: () => const Text('Order Details'),
-          error: (_, __) => const Text('Order Details'),
+          orElse: () => const Text('Order Details'),
         ),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        actions: [
-          async.when(
-            data: (o) => Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
-              child: StatusBadge(
-                label: o.status.replaceAll('_', ' '),
-                variant: badgeVariantFromStatus(o.status),
-                dot: true,
-              ),
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-        ],
+        surfaceTintColor: Colors.transparent,
       ),
       body: async.when(
         loading: () => const Center(
@@ -67,8 +53,7 @@ class OrderDetailScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.textMuted),
+              const Icon(Icons.error_outline, size: 48, color: AppColors.textMuted),
               const SizedBox(height: AppSpacing.md),
               Text(err.toString(), style: AppTypography.body),
               TextButton(
@@ -83,6 +68,7 @@ class OrderDetailScreen extends ConsumerWidget {
           orderId: orderId,
           fmt: fmt,
           canManage: canManage,
+          isOwner: isOwner,
           isBuyer: isBuyer,
         ),
       ),
@@ -97,6 +83,7 @@ class _OrderDetailBody extends StatelessWidget {
   final int orderId;
   final NumberFormat fmt;
   final bool canManage;
+  final bool isOwner;
   final bool isBuyer;
 
   const _OrderDetailBody({
@@ -104,6 +91,7 @@ class _OrderDetailBody extends StatelessWidget {
     required this.orderId,
     required this.fmt,
     required this.canManage,
+    required this.isOwner,
     required this.isBuyer,
   });
 
@@ -112,8 +100,16 @@ class _OrderDetailBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        // ── Order summary header ──────────────────────────────────────────
-        _SummaryCard(order: order, fmt: fmt),
+        // ── Hero card: status + amount + role-based action ────────────────
+        // This is the FIRST thing the user sees. No scrolling needed to act.
+        _HeroCard(
+          order: order,
+          orderId: orderId,
+          fmt: fmt,
+          canManage: canManage,
+          isOwner: isOwner,
+          isBuyer: isBuyer,
+        ),
 
         const SizedBox(height: AppSpacing.x2l),
 
@@ -122,34 +118,19 @@ class _OrderDetailBody extends StatelessWidget {
           title: isBuyer ? 'Your Order Journey' : 'Order Timeline',
           child: OrderTimeline(
             order: order,
-            role: isBuyer
-                ? OrderTimelineRole.buyer
-                : OrderTimelineRole.seller,
+            role: isBuyer ? OrderTimelineRole.buyer : OrderTimelineRole.seller,
           ),
         ),
 
         const SizedBox(height: AppSpacing.x2l),
 
-        // ── Dispatch tracking ─────────────────────────────────────────────
-        _DispatchSection(orderId: orderId, isBuyer: isBuyer, canManage: canManage),
+        // ── Dispatch tracking (embedded — no separate tab) ────────────────
+        _DispatchSection(orderId: orderId, isBuyer: isBuyer),
 
-        const SizedBox(height: AppSpacing.x2l),
-
-        // ── Buyer / Seller details ────────────────────────────────────────
+        // ── Order info ────────────────────────────────────────────────────
         _InfoCard(order: order),
 
-        // ── Action card ───────────────────────────────────────────────────
-        // Buyers: only cancel PENDING is available (BUSINESS_RULES.md §Buyer Rules)
-        // Sellers/Managers: see all valid next actions based on current status
-        if (canManage || (isBuyer && order.status == 'PENDING')) ...[
-          const SizedBox(height: AppSpacing.x2l),
-          _SectionCard(
-            title: 'Actions',
-            child: _OrderActions(order: order, orderId: orderId, canManage: canManage),
-          ),
-        ],
-
-        // ── Items card ────────────────────────────────────────────────────
+        // ── Items ─────────────────────────────────────────────────────────
         if (order.items.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.x2l),
           _ItemsCard(order: order, fmt: fmt),
@@ -161,63 +142,759 @@ class _OrderDetailBody extends StatelessWidget {
   }
 }
 
-// ── Summary card ──────────────────────────────────────────────────────────────
+// ── Hero card ─────────────────────────────────────────────────────────────────
+// Combines order summary + current status + role-appropriate actions.
+// The user sees their next step immediately — no scrolling required.
 
-class _SummaryCard extends StatelessWidget {
+class _StatusConfig {
+  final Color color;
+  final IconData icon;
+  final String headline;
+  final String message;
+  const _StatusConfig({
+    required this.color,
+    required this.icon,
+    required this.headline,
+    required this.message,
+  });
+}
+
+class _HeroCard extends ConsumerStatefulWidget {
   final Order order;
+  final int orderId;
   final NumberFormat fmt;
+  final bool canManage;
+  final bool isOwner;
+  final bool isBuyer;
 
-  const _SummaryCard({required this.order, required this.fmt});
+  const _HeroCard({
+    required this.order,
+    required this.orderId,
+    required this.fmt,
+    required this.canManage,
+    required this.isOwner,
+    required this.isBuyer,
+  });
+
+  @override
+  ConsumerState<_HeroCard> createState() => _HeroCardState();
+}
+
+class _HeroCardState extends ConsumerState<_HeroCard> {
+  bool _busy = false;
+
+  Order get _order => widget.order;
+  String get _status => _order.status;
+
+  // ── Status visual config ───────────────────────────────────────────────────
+
+  _StatusConfig get _cfg {
+    switch (_status) {
+      case 'PENDING':
+        return widget.isBuyer
+            ? const _StatusConfig(
+                color: AppColors.amber600,
+                icon: Icons.schedule_rounded,
+                headline: 'Waiting for Confirmation',
+                message: 'The nursery will review and confirm your order.',
+              )
+            : const _StatusConfig(
+                color: AppColors.amber600,
+                icon: Icons.notifications_active_rounded,
+                headline: 'New Order',
+                message: 'Confirm this order to begin preparation.',
+              );
+      case 'CONFIRMED':
+        return widget.isBuyer
+            ? const _StatusConfig(
+                color: AppColors.blue600,
+                icon: Icons.verified_rounded,
+                headline: 'Order Confirmed',
+                message: 'The nursery has confirmed your order and is preparing it.',
+              )
+            : const _StatusConfig(
+                color: AppColors.blue600,
+                icon: Icons.inventory_2_outlined,
+                headline: 'Confirmed — Ready to Load',
+                message: 'Start loading items to prepare for dispatch.',
+              );
+      case 'LOADING':
+        return _StatusConfig(
+          color: AppColors.blue600,
+          icon: Icons.inventory_2_outlined,
+          headline: 'Loading in Progress',
+          message: widget.isBuyer
+              ? 'Your items are being carefully loaded.'
+              : 'Mark loading complete when all items are ready.',
+        );
+      case 'LOADED':
+        return _StatusConfig(
+          color: AppColors.primaryMain,
+          icon: Icons.done_all_rounded,
+          headline: 'Order Loaded',
+          message: widget.isBuyer
+              ? 'Your order is ready — dispatch is being arranged.'
+              : 'Create a dispatch to assign a driver.',
+        );
+      case 'PARTIALLY_FULFILLED':
+        return _StatusConfig(
+          color: AppColors.amber700,
+          icon: Icons.warning_amber_rounded,
+          headline: 'Partially Fulfilled',
+          message: widget.isBuyer
+              ? 'Some items had reduced quantities. Dispatch is being arranged.'
+              : 'Some items had reduced quantities. Create dispatch or mark complete.',
+        );
+      case 'COMPLETED':
+        return _StatusConfig(
+          color: AppColors.primaryMain,
+          icon: Icons.check_circle_rounded,
+          headline: widget.isBuyer ? 'Delivered' : 'Order Completed',
+          message: widget.isBuyer
+              ? 'Your order has been delivered. Thank you!'
+              : 'Order delivered and completed successfully.',
+        );
+      case 'CANCELLED':
+        return _StatusConfig(
+          color: AppColors.red600,
+          icon: Icons.cancel_rounded,
+          headline: 'Order Cancelled',
+          message: _order.cancelReason?.isNotEmpty == true
+              ? 'Reason: ${_order.cancelReason}'
+              : 'This order has been cancelled.',
+        );
+      default:
+        return _StatusConfig(
+          color: AppColors.textSecondary,
+          icon: Icons.help_outline,
+          headline: _status,
+          message: '',
+        );
+    }
+  }
+
+  // ── API actions ────────────────────────────────────────────────────────────
+
+  Future<void> _doAction(Future<Order> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+      ref.invalidate(orderDetailProvider(widget.orderId));
+    } on AppError catch (e) {
+      if (mounted) _snack(e.message, AppColors.red600);
+    } catch (e) {
+      if (mounted) _snack(e.toString(), AppColors.red600);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _confirm() async {
+    await _doAction(
+        () => ref.read(orderRepositoryProvider).confirmOrder(widget.orderId));
+    if (mounted) _snack('Order confirmed', AppColors.primaryMain);
+  }
+
+  Future<void> _startLoading() async {
+    await _doAction(
+        () => ref.read(orderRepositoryProvider).startLoading(widget.orderId));
+    if (mounted) _snack('Loading started', AppColors.blue600);
+  }
+
+  Future<void> _completeLoading() async {
+    await _doAction(() =>
+        ref.read(orderRepositoryProvider).completeLoading(widget.orderId));
+    if (mounted) _snack('Loading completed', AppColors.primaryMain);
+  }
+
+  Future<void> _markCompleted() async {
+    await _doAction(() => ref
+        .read(orderRepositoryProvider)
+        .updateStatus(widget.orderId, 'COMPLETED'));
+    if (mounted) _snack('Order marked as completed', AppColors.primaryMain);
+  }
+
+  Future<void> _createDispatch() async {
+    String? dest;
+    String? notes;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CreateDispatchSheet(
+        onSubmit: (d, n) {
+          dest = d;
+          notes = n;
+          Navigator.pop(ctx, true);
+        },
+        onCancel: () => Navigator.pop(ctx, false),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final dispatch = await ref.read(dispatchRepositoryProvider).createDispatch(
+            widget.orderId,
+            destinationAddress: dest,
+            notes: notes,
+          );
+      if (mounted) {
+        await QrShareSheet.show(
+          context,
+          code: dispatch.dispatchCode,
+          qrType: QrCodeType.tripQr,
+          shareMessage:
+              'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${_order.orderNumber}',
+        );
+        if (mounted) {
+          ref.invalidate(orderDetailProvider(widget.orderId));
+          ref.invalidate(_orderDispatchesProvider(widget.orderId));
+          context.push('/dispatches/${dispatch.id}');
+        }
+      }
+    } on AppError catch (e) {
+      if (mounted) _snack(e.message, AppColors.red600);
+    } catch (e) {
+      if (mounted) _snack(e.toString(), AppColors.red600);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _assignManager() async {
+    final nurseryId = _order.sellerNurseryId;
+    if (nurseryId == null) return;
+    List<NurseryManager> managers;
+    try {
+      managers = await ref.read(orderRepositoryProvider).getNurseryManagers(nurseryId);
+    } catch (_) {
+      managers = [];
+    }
+    if (!mounted) return;
+    final selected = await showModalBottomSheet<NurseryManager>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _AssignManagerSheet(managers: managers),
+    );
+    if (selected == null || !mounted) return;
+    await _doAction(
+        () => ref.read(orderRepositoryProvider).assignManager(widget.orderId, selected.userId));
+    if (mounted) _snack('${selected.name} assigned', AppColors.primaryMain);
+  }
+
+  Future<void> _confirmCancel() async {
+    String? reason;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final ctrl = TextEditingController();
+        return AlertDialog(
+          title: const Text('Cancel Order', style: AppTypography.h3),
+          content: TextField(
+            controller: ctrl,
+            decoration:
+                const InputDecoration(hintText: 'Reason (optional)'),
+            onChanged: (v) => reason = v,
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Back')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Cancel Order',
+                  style: TextStyle(color: AppColors.red600)),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    await _doAction(() => ref
+        .read(orderRepositoryProvider)
+        .cancelOrder(widget.orderId, reason: reason));
+    if (mounted) _snack('Order cancelled', AppColors.red600);
+  }
+
+  void _snack(String msg, Color bg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: bg));
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final cfg = _cfg;
+    final canManage = widget.canManage;
+    final isOwner = widget.isOwner;
+    final status = _status;
+
+    // Determine primary + secondary buttons for this role × state
+    Widget? primaryBtn;
+    Widget? secondaryBtn;
+    Widget? tertiaryBtn;
+
+    if (canManage) {
+      switch (status) {
+        case 'PENDING':
+          primaryBtn = _BigButton(
+            label: 'Confirm Order',
+            icon: Icons.check_circle_outline_rounded,
+            color: AppColors.primaryMain,
+            onTap: _busy ? null : _confirm,
+          );
+          secondaryBtn = _OutlineButton(
+            label: 'Cancel Order',
+            color: AppColors.red600,
+            onTap: _busy ? null : _confirmCancel,
+          );
+        case 'CONFIRMED':
+          primaryBtn = _BigButton(
+            label: 'Start Loading',
+            icon: Icons.inventory_2_outlined,
+            color: AppColors.blue600,
+            onTap: _busy ? null : _startLoading,
+          );
+          secondaryBtn = _OutlineButton(
+            label: 'Cancel Order',
+            color: AppColors.red600,
+            onTap: _busy ? null : _confirmCancel,
+          );
+        case 'LOADING':
+          primaryBtn = _BigButton(
+            label: 'Complete Loading',
+            icon: Icons.done_all_rounded,
+            color: AppColors.primaryMain,
+            onTap: _busy ? null : _completeLoading,
+          );
+          secondaryBtn = _OutlineButton(
+            label: 'Cancel Order',
+            color: AppColors.red600,
+            onTap: _busy ? null : _confirmCancel,
+          );
+        case 'LOADED':
+        case 'PARTIALLY_FULFILLED':
+          primaryBtn = _BigButton(
+            label: 'Create Dispatch',
+            icon: Icons.local_shipping_rounded,
+            color: AppColors.blue600,
+            onTap: _busy ? null : _createDispatch,
+          );
+          secondaryBtn = _OutlineButton(
+            label: 'Mark as Completed',
+            color: AppColors.primaryMain,
+            onTap: _busy ? null : _markCompleted,
+          );
+      }
+
+      // Owner-only: assign manager — shown as a subtle tertiary link
+      final canAssignMgr = isOwner &&
+          _order.sellerNurseryId != null &&
+          !{'CANCELLED', 'COMPLETED', 'LOADED', 'PARTIALLY_FULFILLED'}
+              .contains(status);
+      if (canAssignMgr) {
+        tertiaryBtn = TextButton.icon(
+          onPressed: _busy ? null : _assignManager,
+          icon: const Icon(Icons.manage_accounts_rounded, size: 16),
+          label: Text(
+            _order.assignedManagerUserId != null
+                ? 'Re-assign Manager'
+                : 'Assign Manager',
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.textSecondary,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          ),
+        );
+      }
+    } else if (widget.isBuyer && status == 'PENDING') {
+      // Buyer can only cancel their own PENDING order
+      secondaryBtn = _OutlineButton(
+        label: 'Cancel Order',
+        color: AppColors.red600,
+        onTap: _busy ? null : _confirmCancel,
+      );
+    }
+
+    final hasActions = primaryBtn != null || secondaryBtn != null || tertiaryBtn != null;
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.cardRadius,
         border: Border.all(color: AppColors.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: const Icon(Icons.receipt_long_rounded,
-                    color: AppColors.primaryMain, size: 22),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
+          // Colored status strip at the very top
+          Container(height: 4, color: cfg.color),
+
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Order amount + item count
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(order.orderNumber, style: AppTypography.h3),
-                    Text(order.orderCode,
-                        style: AppTypography.caption
-                            .copyWith(color: AppColors.textMuted)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.fmt.format(_order.totalAmount),
+                            style: AppTypography.h1
+                                .copyWith(color: AppColors.textPrimary),
+                          ),
+                          if (_order.items.isNotEmpty)
+                            Text(
+                              '${_order.items.length} item${_order.items.length == 1 ? '' : 's'}',
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.textMuted),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Status badge pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cfg.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: cfg.color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            status.replaceAll('_', ' '),
+                            style: AppTypography.caption.copyWith(
+                              color: cfg.color,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            fmt.format(order.totalAmount),
-            style: AppTypography.h2.copyWith(color: AppColors.primaryMain),
-          ),
-          if (order.items.isNotEmpty)
-            Text(
-              '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
-              style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // Status icon + headline + message
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: cfg.color.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(cfg.icon, color: cfg.color, size: 20),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(cfg.headline, style: AppTypography.label),
+                          if (cfg.message.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                cfg.message,
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.textSecondary),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Action buttons — only shown when there's something to do
+                if (hasActions) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: AppSpacing.md),
+                  if (_busy)
+                    const Center(
+                      child: SizedBox(
+                        height: 28,
+                        width: 28,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.primaryMain),
+                      ),
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (primaryBtn != null) ...[
+                          primaryBtn,
+                          if (secondaryBtn != null)
+                            const SizedBox(height: AppSpacing.sm),
+                        ],
+                        if (secondaryBtn != null) secondaryBtn,
+                        if (tertiaryBtn != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          tertiaryBtn,
+                        ],
+                      ],
+                    ),
+                ],
+              ],
             ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Reusable button helpers ────────────────────────────────────────────────────
+
+class _BigButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _BigButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.sm)),
+          elevation: 0,
+          textStyle:
+              AppTypography.label.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlineButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _OutlineButton({required this.label, required this.color, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color),
+          minimumSize:
+              const Size(double.infinity, AppSpacing.buttonHeightSm),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.sm)),
+          textStyle: AppTypography.label,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+// ── Section card wrapper ───────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _SectionCard({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTypography.h4),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.cardRadius,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Dispatch section ──────────────────────────────────────────────────────────
+// Embedded below the timeline — dispatch info lives with the order, not in a tab.
+
+class _DispatchSection extends ConsumerWidget {
+  final int orderId;
+  final bool isBuyer;
+
+  const _DispatchSection({required this.orderId, required this.isBuyer});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(_orderDispatchesProvider(orderId)).maybeWhen(
+          data: (dispatches) {
+            if (dispatches.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isBuyer ? 'Delivery Tracking' : 'Dispatches',
+                  style: AppTypography.h4,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ...dispatches.map((d) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _DispatchCard(dispatch: d, isBuyer: isBuyer),
+                    )),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
+        );
+  }
+}
+
+class _DispatchCard extends StatelessWidget {
+  final Dispatch dispatch;
+  final bool isBuyer;
+
+  const _DispatchCard({required this.dispatch, required this.isBuyer});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dispatch;
+    final isActive = {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
+    final isDelivered = d.status == 'DELIVERED';
+
+    final chipColor = isDelivered
+        ? AppColors.primaryMain
+        : isActive
+            ? AppColors.amber700
+            : AppColors.textSecondary;
+    final chipBg = isDelivered
+        ? AppColors.primaryLight
+        : isActive
+            ? AppColors.amber100
+            : AppColors.slate50;
+
+    return GestureDetector(
+      onTap: () => context.push('/dispatches/${d.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(
+            color: isActive ? AppColors.amber500 : AppColors.border,
+            width: isActive ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: chipBg, borderRadius: BorderRadius.circular(10)),
+              child: Icon(Icons.local_shipping_rounded,
+                  color: chipColor, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(d.dispatchCode, style: AppTypography.label),
+                  if (d.driverName?.isNotEmpty == true)
+                    Text(d.driverName!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary)),
+                  if (d.vehicleNumber?.isNotEmpty == true)
+                    Text(d.vehicleNumber!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textMuted)),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: chipBg,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text(
+                    d.status.replaceAll('_', ' '),
+                    style: AppTypography.caption.copyWith(
+                        color: chipColor, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    Text(
+                      isActive && isBuyer ? 'Track' : 'Details',
+                      style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 14, color: AppColors.primaryMain),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,7 +904,6 @@ class _SummaryCard extends StatelessWidget {
 
 class _InfoCard extends StatelessWidget {
   final Order order;
-
   const _InfoCard({required this.order});
 
   @override
@@ -235,11 +911,9 @@ class _InfoCard extends StatelessWidget {
     final date = DateTime.tryParse(order.orderDate);
     final dateStr =
         date != null ? DateFormat('dd MMM yyyy').format(date.toLocal()) : '';
-
     final buyerLabel = order.buyerName ?? order.customerName ?? 'Unknown Buyer';
-    final responsibleLabel = order.assignedManagerName != null
-        ? order.assignedManagerName!
-        : (order.assignedManagerUserId != null
+    final responsibleLabel = order.assignedManagerName ??
+        (order.assignedManagerUserId != null
             ? 'Manager #${order.assignedManagerUserId}'
             : 'Nursery Owner');
 
@@ -251,49 +925,28 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _InfoRow(
-            icon: Icons.person_outline_rounded,
-            label: 'Buyer',
-            value: buyerLabel,
-          ),
+          _InfoRow(icon: Icons.person_outline_rounded, label: 'Buyer', value: buyerLabel),
           if (order.sellerNursery != null) ...[
             const Divider(height: 1, indent: 56),
-            _InfoRow(
-              icon: Icons.store_outlined,
-              label: 'Seller',
-              value: order.sellerNursery!,
-            ),
+            _InfoRow(icon: Icons.store_outlined, label: 'Seller', value: order.sellerNursery!),
           ],
           const Divider(height: 1, indent: 56),
-          _InfoRow(
-            icon: Icons.manage_accounts_outlined,
-            label: 'Responsible',
-            value: responsibleLabel,
-          ),
+          _InfoRow(icon: Icons.manage_accounts_outlined, label: 'Responsible', value: responsibleLabel),
           if (dateStr.isNotEmpty) ...[
             const Divider(height: 1, indent: 56),
-            _InfoRow(
-              icon: Icons.calendar_today_outlined,
-              label: 'Order Date',
-              value: dateStr,
-            ),
+            _InfoRow(icon: Icons.calendar_today_outlined, label: 'Order Date', value: dateStr),
           ],
           if (order.notes?.isNotEmpty == true) ...[
             const Divider(height: 1, indent: 56),
-            _InfoRow(
-              icon: Icons.notes_outlined,
-              label: 'Notes',
-              value: order.notes!,
-            ),
+            _InfoRow(icon: Icons.notes_outlined, label: 'Notes', value: order.notes!),
           ],
           if (order.cancelReason?.isNotEmpty == true) ...[
             const Divider(height: 1, indent: 56),
             _InfoRow(
-              icon: Icons.cancel_outlined,
-              label: 'Cancel Reason',
-              value: order.cancelReason!,
-              valueColor: AppColors.red600,
-            ),
+                icon: Icons.cancel_outlined,
+                label: 'Cancel Reason',
+                value: order.cancelReason!,
+                valueColor: AppColors.red600),
           ],
         ],
       ),
@@ -354,7 +1007,6 @@ class _InfoRow extends StatelessWidget {
 class _ItemsCard extends StatefulWidget {
   final Order order;
   final NumberFormat fmt;
-
   const _ItemsCard({required this.order, required this.fmt});
 
   @override
@@ -379,8 +1031,7 @@ class _ItemsCardState extends State<_ItemsCard> {
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.amber100,
                     borderRadius: BorderRadius.circular(12),
@@ -396,8 +1047,7 @@ class _ItemsCardState extends State<_ItemsCard> {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Items can be added, removed, or updated until Loading Completed.',
-            style:
-                AppTypography.caption.copyWith(color: AppColors.textSecondary),
+            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
           ),
         ],
         const SizedBox(height: AppSpacing.md),
@@ -420,23 +1070,21 @@ class _ItemsCardState extends State<_ItemsCard> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(entry.value.displayName,
-                                      style: AppTypography.body),
+                                  Text(entry.value.displayName, style: AppTypography.body),
                                   if (entry.value.sizeName != null)
                                     Text(entry.value.sizeName!,
-                                        style: AppTypography.caption.copyWith(
-                                            color: AppColors.textSecondary)),
+                                        style: AppTypography.caption
+                                            .copyWith(color: AppColors.textSecondary)),
                                 ],
                               ),
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(widget.fmt.format(entry.value.totalPrice),
-                                    style: AppTypography.label),
+                                Text(widget.fmt.format(entry.value.totalPrice), style: AppTypography.label),
                                 Text('Qty: ${entry.value.quantity.toInt()}',
-                                    style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary)),
+                                    style: AppTypography.caption
+                                        .copyWith(color: AppColors.textSecondary)),
                               ],
                             ),
                           ],
@@ -454,9 +1102,7 @@ class _ItemsCardState extends State<_ItemsCard> {
                       border: Border(top: BorderSide(color: AppColors.border)),
                     ),
                     child: Text(
-                      _expanded
-                          ? 'Show less'
-                          : 'Show ${items.length - 3} more items',
+                      _expanded ? 'Show less' : 'Show ${items.length - 3} more items',
                       style: AppTypography.caption.copyWith(
                           color: AppColors.primaryMain,
                           fontWeight: FontWeight.w600),
@@ -468,564 +1114,6 @@ class _ItemsCardState extends State<_ItemsCard> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Section card wrapper ───────────────────────────────────────────────────────
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _SectionCard({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AppTypography.h4),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppRadius.cardRadius,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: child,
-        ),
-      ],
-    );
-  }
-}
-
-// ── Order action buttons ───────────────────────────────────────────────────────
-
-class _OrderActions extends ConsumerStatefulWidget {
-  final Order order;
-  final int orderId;
-  final bool canManage;
-  const _OrderActions({required this.order, required this.orderId, required this.canManage});
-
-  @override
-  ConsumerState<_OrderActions> createState() => _OrderActionsState();
-}
-
-class _OrderActionsState extends ConsumerState<_OrderActions> {
-  bool _busy = false;
-
-  Future<void> _doAction(Future<Order> Function() action) async {
-    setState(() => _busy = true);
-    try {
-      await action();
-      ref.invalidate(orderDetailProvider(widget.orderId));
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _assignManager() async {
-    final nurseryId = widget.order.sellerNurseryId;
-    if (nurseryId == null) return;
-
-    final repo = ref.read(orderRepositoryProvider);
-    List<NurseryManager> managers;
-    try {
-      managers = await repo.getNurseryManagers(nurseryId);
-    } catch (_) {
-      managers = [];
-    }
-
-    if (!mounted) return;
-
-    final selected = await showModalBottomSheet<NurseryManager>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _AssignManagerSheet(managers: managers),
-    );
-
-    if (selected == null || !mounted) return;
-
-    await _doAction(() => repo.assignManager(widget.orderId, selected.userId));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${selected.name} assigned as manager'),
-          backgroundColor: AppColors.primaryMain,
-        ),
-      );
-    }
-  }
-
-  Future<void> _createDispatch() async {
-    String? dest;
-    String? notes;
-
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _CreateDispatchSheet(
-        onSubmit: (d, n) {
-          dest = d;
-          notes = n;
-          Navigator.pop(ctx, true);
-        },
-        onCancel: () => Navigator.pop(ctx, false),
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _busy = true);
-    try {
-      final dispatch = await ref
-          .read(dispatchRepositoryProvider)
-          .createDispatch(widget.orderId,
-              destinationAddress: dest, notes: notes);
-      if (mounted) {
-        await QrShareSheet.show(
-          context,
-          code: dispatch.dispatchCode,
-          qrType: QrCodeType.tripQr,
-          shareMessage:
-              'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${widget.order.orderNumber}',
-        );
-        if (mounted) context.push('/dispatches/${dispatch.id}');
-      }
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _confirmCancel() async {
-    String? reason;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final ctrl = TextEditingController();
-        return AlertDialog(
-          title: const Text('Cancel Order'),
-          content: TextField(
-            controller: ctrl,
-            decoration: const InputDecoration(hintText: 'Reason (optional)'),
-            onChanged: (v) => reason = v,
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Back')),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Cancel Order',
-                  style: TextStyle(color: AppColors.red600)),
-            ),
-          ],
-        );
-      },
-    );
-    if (confirmed != true) return;
-    await _doAction(() => ref
-        .read(orderRepositoryProvider)
-        .cancelOrder(widget.orderId, reason: reason));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Order cancelled'),
-            backgroundColor: AppColors.red600),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final status = widget.order.status;
-    final repo = ref.read(orderRepositoryProvider);
-    final actions = <_ActionDef>[];
-
-    if (widget.canManage) {
-      // ── Owner / Manager actions ──────────────────────────────────────────
-      final caps = ref.read(sessionProvider).capabilities;
-      final isOwner = caps.isNurseryOwner;
-      // Assign manager: owner-only, not yet completed/cancelled/loaded
-      final canAssignManager = isOwner &&
-          widget.order.sellerNurseryId != null &&
-          !['CANCELLED', 'COMPLETED', 'LOADED', 'PARTIALLY_FULFILLED'].contains(status);
-
-      if (status == 'PENDING') {
-        actions.add(_ActionDef(
-          label: 'Confirm Order',
-          icon: Icons.check_circle_outline,
-          color: AppColors.primaryMain,
-          onTap: () async {
-            await _doAction(() => repo.updateStatus(widget.orderId, 'CONFIRMED'));
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Order confirmed'), backgroundColor: AppColors.primaryMain),
-              );
-            }
-          },
-        ));
-      }
-
-      if (canAssignManager) {
-        actions.add(_ActionDef(
-          label: widget.order.assignedManagerUserId != null ? 'Re-assign Manager' : 'Assign Manager',
-          icon: Icons.manage_accounts_rounded,
-          color: const Color(0xFF1565C0),
-          onTap: _assignManager,
-        ));
-      }
-
-      if (status == 'CONFIRMED') {
-        actions.add(_ActionDef(
-          label: 'Start Loading',
-          icon: Icons.inventory_outlined,
-          color: AppColors.primaryMain,
-          onTap: () async {
-            await _doAction(() => repo.startLoading(widget.orderId));
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Loading started'), backgroundColor: AppColors.primaryMain),
-              );
-            }
-          },
-        ));
-      }
-
-      if (status == 'LOADING') {
-        actions.add(_ActionDef(
-          label: 'Complete Loading',
-          icon: Icons.done_all_rounded,
-          color: AppColors.primaryMain,
-          onTap: () async {
-            await _doAction(() => repo.completeLoading(widget.orderId));
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Loading completed'), backgroundColor: AppColors.primaryMain),
-              );
-            }
-          },
-        ));
-      }
-
-      if (status == 'LOADED' || status == 'PARTIALLY_FULFILLED') {
-        actions.add(_ActionDef(
-          label: 'Create Dispatch (Link Driver)',
-          icon: Icons.local_shipping_rounded,
-          color: const Color(0xFF1565C0),
-          onTap: _createDispatch,
-        ));
-        actions.add(_ActionDef(
-          label: 'Mark as Completed',
-          icon: Icons.check_circle_outline,
-          color: AppColors.primaryMain,
-          outlined: true,
-          onTap: () async {
-            await _doAction(() => repo.updateStatus(widget.orderId, 'COMPLETED'));
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Order marked as completed'), backgroundColor: AppColors.primaryMain),
-              );
-            }
-          },
-        ));
-      }
-
-      // Per BUSINESS_RULES.md §Order Cancel Rules: owner + manager can cancel PENDING/CONFIRMED/LOADING
-      if (['PENDING', 'CONFIRMED', 'LOADING'].contains(status)) {
-        actions.add(_ActionDef(
-          label: 'Cancel Order',
-          icon: Icons.cancel_outlined,
-          color: AppColors.red600,
-          outlined: true,
-          onTap: _confirmCancel,
-        ));
-      }
-    } else {
-      // ── Buyer: cancel own PENDING order only (test-api.sh confirms buyer cancel PENDING → 200)
-      if (status == 'PENDING') {
-        actions.add(_ActionDef(
-          label: 'Cancel Order',
-          icon: Icons.cancel_outlined,
-          color: AppColors.red600,
-          outlined: true,
-          onTap: _confirmCancel,
-        ));
-      }
-    }
-
-    if (actions.isEmpty) {
-      return Text(
-        status == 'CANCELLED'
-            ? 'This order has been cancelled.'
-            : status == 'COMPLETED'
-                ? 'Order completed.'
-                : 'No actions available.',
-        style: AppTypography.body.copyWith(color: AppColors.textMuted),
-      );
-    }
-
-    return Column(
-      children: [
-        for (final action in actions)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: SizedBox(
-              width: double.infinity,
-              child: action.outlined
-                  ? OutlinedButton.icon(
-                      onPressed: _busy ? null : action.onTap,
-                      icon: _busy
-                          ? SizedBox(width: 16, height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: action.color))
-                          : Icon(action.icon),
-                      label: Text(action.label),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: action.color,
-                        side: BorderSide(color: action.color),
-                        minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: _busy ? null : action.onTap,
-                      icon: _busy
-                          ? const SizedBox(width: 16, height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Icon(action.icon),
-                      label: Text(action.label),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: action.color,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        elevation: 0,
-                      ),
-                    ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _ActionDef {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool outlined;
-  final VoidCallback onTap;
-  const _ActionDef({
-    required this.label,
-    required this.icon,
-    required this.color,
-    this.outlined = false,
-    required this.onTap,
-  });
-}
-
-// ── Dispatch section ──────────────────────────────────────────────────────────
-// Shows all dispatches linked to this order.
-// Buyer: tracking view (status + driver + vehicle + "Track" link when in transit).
-// Seller/Manager: operational view (all dispatches, "View Details" on each).
-
-class _DispatchSection extends ConsumerWidget {
-  final int orderId;
-  final bool isBuyer;
-  final bool canManage;
-
-  const _DispatchSection({
-    required this.orderId,
-    required this.isBuyer,
-    required this.canManage,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(_orderDispatchesProvider(orderId));
-
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (dispatches) {
-        if (dispatches.isEmpty) return const SizedBox.shrink();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isBuyer ? 'Delivery Tracking' : 'Dispatches',
-              style: AppTypography.h4,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ...dispatches.map((d) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: _DispatchCard(dispatch: d, isBuyer: isBuyer),
-                )),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _DispatchCard extends StatelessWidget {
-  final Dispatch dispatch;
-  final bool isBuyer;
-
-  const _DispatchCard({required this.dispatch, required this.isBuyer});
-
-  @override
-  Widget build(BuildContext context) {
-    final d = dispatch;
-    final isActive =
-        {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
-    final isDelivered = d.status == 'DELIVERED';
-
-    Color chipBg;
-    Color chipText;
-    if (isDelivered) {
-      chipBg = AppColors.primaryLight;
-      chipText = AppColors.primaryMain;
-    } else if (isActive) {
-      chipBg = AppColors.amber100;
-      chipText = AppColors.amber700;
-    } else {
-      chipBg = AppColors.slate50;
-      chipText = AppColors.textSecondary;
-    }
-
-    return GestureDetector(
-      onTap: () => context.push('/dispatches/${d.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: AppRadius.cardRadius,
-          border: Border.all(
-            color: isActive ? AppColors.amber500 : AppColors.border,
-            width: isActive ? 1.5 : 1.0,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: chipBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.local_shipping_rounded,
-                      color: chipText, size: 18),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(d.dispatchCode, style: AppTypography.label),
-                      if (d.driverName?.isNotEmpty == true)
-                        Text(
-                          d.driverName!,
-                          style: AppTypography.caption
-                              .copyWith(color: AppColors.textSecondary),
-                        ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: chipBg,
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text(
-                    d.status.replaceAll('_', ' '),
-                    style: AppTypography.caption
-                        .copyWith(color: chipText, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            if (d.vehicleNumber?.isNotEmpty == true ||
-                d.driverMobile?.isNotEmpty == true) ...[
-              const SizedBox(height: AppSpacing.sm),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  if (d.vehicleNumber?.isNotEmpty == true) ...[
-                    const Icon(Icons.directions_car_outlined,
-                        size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(d.vehicleNumber!,
-                        style: AppTypography.caption
-                            .copyWith(color: AppColors.textSecondary)),
-                    const SizedBox(width: AppSpacing.md),
-                  ],
-                  if (d.driverMobile?.isNotEmpty == true && !isBuyer) ...[
-                    const Icon(Icons.phone_outlined,
-                        size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(d.driverMobile!,
-                        style: AppTypography.caption
-                            .copyWith(color: AppColors.textSecondary)),
-                  ],
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Text(
-                        isActive && isBuyer ? 'Track' : 'View Details',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(Icons.chevron_right,
-                          size: 16, color: AppColors.primaryMain),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1054,8 +1142,7 @@ class _AssignManagerSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2)),
+                  color: AppColors.border, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -1089,55 +1176,55 @@ class _AssignManagerSheet extends StatelessWidget {
               ),
             )
           else
-            ...managers.map((m) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).pop(m),
-                    borderRadius: AppRadius.cardRadius,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: AppRadius.cardRadius,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryLight,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                m.name.isNotEmpty
-                                    ? m.name[0].toUpperCase()
-                                    : 'M',
-                                style: AppTypography.h3
-                                    .copyWith(color: AppColors.primaryMain),
-                              ),
+            ...managers.map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(m),
+                  borderRadius: AppRadius.cardRadius,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.border),
+                      borderRadius: AppRadius.cardRadius,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              m.name.isNotEmpty ? m.name[0].toUpperCase() : 'M',
+                              style: AppTypography.h3
+                                  .copyWith(color: AppColors.primaryMain),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(m.name, style: AppTypography.label),
-                                Text(m.mobile,
-                                    style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary)),
-                              ],
-                            ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(m.name, style: AppTypography.label),
+                              Text(m.mobile,
+                                  style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary)),
+                            ],
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: AppColors.textMuted),
-                        ],
-                      ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textMuted),
+                      ],
                     ),
                   ),
-                )),
+                ),
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
@@ -1157,7 +1244,6 @@ class _AssignManagerSheet extends StatelessWidget {
 class _CreateDispatchSheet extends StatefulWidget {
   final void Function(String? dest, String? notes) onSubmit;
   final VoidCallback onCancel;
-
   const _CreateDispatchSheet({required this.onSubmit, required this.onCancel});
 
   @override
@@ -1197,9 +1283,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
+                  color: AppColors.border, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -1241,8 +1325,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
                 elevation: 0,
               ),
             ),
