@@ -15,7 +15,7 @@ class EnvConfig {
 
   static const dev = EnvConfig(
     environment: AppEnvironment.dev,
-    apiBaseUrl: 'http://192.168.1.7:8080', // Mac LAN IP — wireless ADB
+    apiBaseUrl: 'http://localhost:8080', // use LAN IP (e.g. 192.168.1.x:8080) for physical device testing
     appName: 'GreenRoot Dev',
     enableLogging: true,
   );

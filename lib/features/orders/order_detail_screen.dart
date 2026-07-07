@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -100,8 +101,7 @@ class _OrderDetailBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        // ── Hero card: status + amount + role-based action ────────────────
-        // This is the FIRST thing the user sees. No scrolling needed to act.
+        // ── Hero: status + amount + action — always first ─────────────────
         _HeroCard(
           order: order,
           orderId: orderId,
@@ -113,22 +113,27 @@ class _OrderDetailBody extends StatelessWidget {
 
         const SizedBox(height: AppSpacing.x2l),
 
-        // ── Timeline ─────────────────────────────────────────────────────
-        _SectionCard(
-          title: isBuyer ? 'Your Order Journey' : 'Order Timeline',
-          child: OrderTimeline(
-            order: order,
-            role: isBuyer ? OrderTimelineRole.buyer : OrderTimelineRole.seller,
+        if (isBuyer) ...[
+          // ── BUYER VIEW ───────────────────────────────────────────────────
+          // No operational timeline — buyers don't care about loading steps.
+          // Just: delivery tracking (if a dispatch exists) → info → items.
+          _BuyerDeliverySection(orderId: orderId),
+          const SizedBox(height: AppSpacing.x2l),
+        ] else ...[
+          // ── SELLER / MANAGER VIEW ────────────────────────────────────────
+          // Operational timeline (loading steps matter here).
+          _SectionCard(
+            title: 'Order Timeline',
+            child: OrderTimeline(order: order, role: OrderTimelineRole.seller),
           ),
-        ),
+          const SizedBox(height: AppSpacing.x2l),
 
-        const SizedBox(height: AppSpacing.x2l),
+          // Dispatch cards below timeline
+          _SellerDispatchSection(orderId: orderId),
+        ],
 
-        // ── Dispatch tracking (embedded — no separate tab) ────────────────
-        _DispatchSection(orderId: orderId, isBuyer: isBuyer),
-
-        // ── Order info ────────────────────────────────────────────────────
-        _InfoCard(order: order),
+        // ── Collapsible order info (buyer + seller) ───────────────────────
+        _CollapsibleInfoCard(order: order),
 
         // ── Items ─────────────────────────────────────────────────────────
         if (order.items.isNotEmpty) ...[
@@ -766,14 +771,13 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Dispatch section ──────────────────────────────────────────────────────────
-// Embedded below the timeline — dispatch info lives with the order, not in a tab.
+// ── Buyer delivery section ────────────────────────────────────────────────────
+// Shown only to buyers. No operational timeline — just: "is it coming and who?"
+// Large, prominent card with driver info and call button when a dispatch exists.
 
-class _DispatchSection extends ConsumerWidget {
+class _BuyerDeliverySection extends ConsumerWidget {
   final int orderId;
-  final bool isBuyer;
-
-  const _DispatchSection({required this.orderId, required this.isBuyer});
+  const _BuyerDeliverySection({required this.orderId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -783,14 +787,229 @@ class _DispatchSection extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isBuyer ? 'Delivery Tracking' : 'Dispatches',
-                  style: AppTypography.h4,
-                ),
+                Text('Your Delivery', style: AppTypography.h4),
                 const SizedBox(height: AppSpacing.md),
                 ...dispatches.map((d) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _DispatchCard(dispatch: d, isBuyer: isBuyer),
+                      child: _BuyerDeliveryCard(dispatch: d),
+                    )),
+              ],
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
+        );
+  }
+}
+
+class _BuyerDeliveryCard extends StatelessWidget {
+  final Dispatch dispatch;
+  const _BuyerDeliveryCard({required this.dispatch});
+
+  Future<void> _call(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dispatch;
+    final isOnWay = {'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
+    final isDelivered = d.status == 'DELIVERED';
+    final hasDriver = d.driverName?.isNotEmpty == true;
+    final hasPhone = d.driverMobile?.isNotEmpty == true;
+
+    final Color statusColor;
+    final Color statusBg;
+    final IconData statusIcon;
+    final String statusLabel;
+
+    if (isDelivered) {
+      statusColor = AppColors.primaryMain;
+      statusBg = AppColors.primaryLight;
+      statusIcon = Icons.check_circle_rounded;
+      statusLabel = 'Delivered';
+    } else if (isOnWay) {
+      statusColor = AppColors.amber700;
+      statusBg = AppColors.amber100;
+      statusIcon = Icons.local_shipping_rounded;
+      statusLabel = 'On the Way';
+    } else if (d.status == 'ACCEPTED') {
+      statusColor = AppColors.blue600;
+      statusBg = const Color(0xFFEFF6FF);
+      statusIcon = Icons.person_rounded;
+      statusLabel = 'Driver Assigned';
+    } else {
+      statusColor = AppColors.textSecondary;
+      statusBg = AppColors.slate50;
+      statusIcon = Icons.schedule_rounded;
+      statusLabel = d.status.replaceAll('_', ' ');
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(
+          color: isOnWay ? AppColors.amber500 : AppColors.border,
+          width: isOnWay ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Status strip + icon row
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 26),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(statusLabel,
+                          style: AppTypography.h4
+                              .copyWith(color: statusColor)),
+                      if (isOnWay)
+                        Text(
+                          'Your order is on its way to you',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        )
+                      else if (isDelivered)
+                        Text(
+                          'Successfully delivered',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        )
+                      else if (hasDriver)
+                        Text(
+                          'Driver will pick up your order soon',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Driver + vehicle details with call button
+          if (hasDriver || d.vehicleNumber?.isNotEmpty == true) ...[
+            const Divider(height: 1, color: AppColors.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.cardPadding,
+                  vertical: AppSpacing.md),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_outline_rounded,
+                      size: 18, color: AppColors.textMuted),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasDriver)
+                          Text(d.driverName!,
+                              style: AppTypography.label),
+                        if (d.vehicleNumber?.isNotEmpty == true)
+                          Text(d.vehicleNumber!,
+                              style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  // Call driver button — the most useful thing for a buyer
+                  if (hasPhone)
+                    GestureDetector(
+                      onTap: () => _call(d.driverMobile!),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.phone_rounded,
+                                size: 15, color: AppColors.primaryMain),
+                            const SizedBox(width: 5),
+                            Text('Call Driver',
+                                style: AppTypography.caption.copyWith(
+                                    color: AppColors.primaryMain,
+                                    fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+
+          // Track / View details footer
+          GestureDetector(
+            onTap: () => context.push('/dispatches/${d.id}'),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: AppColors.forest100,
+                borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(AppRadius.xl)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isOnWay ? 'Track Shipment' : 'View Details',
+                    style: AppTypography.label
+                        .copyWith(color: AppColors.primaryMain),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 16, color: AppColors.primaryMain),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Seller dispatch section ────────────────────────────────────────────────────
+// Compact dispatch cards for seller/manager, shown below the operational timeline.
+
+class _SellerDispatchSection extends ConsumerWidget {
+  final int orderId;
+  const _SellerDispatchSection({required this.orderId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(_orderDispatchesProvider(orderId)).maybeWhen(
+          data: (dispatches) {
+            if (dispatches.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dispatches', style: AppTypography.h4),
+                const SizedBox(height: AppSpacing.md),
+                ...dispatches.map((d) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _SellerDispatchRow(dispatch: d),
                     )),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -801,11 +1020,14 @@ class _DispatchSection extends ConsumerWidget {
   }
 }
 
-class _DispatchCard extends StatelessWidget {
+class _SellerDispatchRow extends StatelessWidget {
   final Dispatch dispatch;
-  final bool isBuyer;
+  const _SellerDispatchRow({required this.dispatch});
 
-  const _DispatchCard({required this.dispatch, required this.isBuyer});
+  Future<void> _call(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -863,35 +1085,33 @@ class _DispatchCard extends StatelessWidget {
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
+            // Call driver pill for seller too
+            if (d.driverMobile?.isNotEmpty == true) ...[
+              GestureDetector(
+                onTap: () => _call(d.driverMobile!),
+                child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                      horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                      color: chipBg,
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text(
-                    d.status.replaceAll('_', ' '),
-                    style: AppTypography.caption.copyWith(
-                        color: chipColor, fontWeight: FontWeight.w700),
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  child: const Icon(Icons.phone_rounded,
+                      size: 16, color: AppColors.primaryMain),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Text(
-                      isActive && isBuyer ? 'Track' : 'Details',
-                      style: AppTypography.caption.copyWith(
-                          color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    const Icon(Icons.chevron_right,
-                        size: 14, color: AppColors.primaryMain),
-                  ],
-                ),
-              ],
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                  color: chipBg, borderRadius: BorderRadius.circular(20)),
+              child: Text(
+                d.status.replaceAll('_', ' '),
+                style: AppTypography.caption.copyWith(
+                    color: chipColor, fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -900,21 +1120,53 @@ class _DispatchCard extends StatelessWidget {
   }
 }
 
-// ── Info card ─────────────────────────────────────────────────────────────────
+// ── Collapsible info card ─────────────────────────────────────────────────────
+// Collapsed by default — progressive disclosure for order metadata.
 
-class _InfoCard extends StatelessWidget {
+class _CollapsibleInfoCard extends StatefulWidget {
   final Order order;
-  const _InfoCard({required this.order});
+  const _CollapsibleInfoCard({required this.order});
+
+  @override
+  State<_CollapsibleInfoCard> createState() => _CollapsibleInfoCardState();
+}
+
+class _CollapsibleInfoCardState extends State<_CollapsibleInfoCard>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late final AnimationController _ctrl;
+  late final Animation<double> _turn;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200));
+    _turn = Tween(begin: 0.0, end: 0.5).animate(
+        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    _expanded ? _ctrl.forward() : _ctrl.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.tryParse(order.orderDate);
+    final o = widget.order;
+    final date = DateTime.tryParse(o.orderDate);
     final dateStr =
         date != null ? DateFormat('dd MMM yyyy').format(date.toLocal()) : '';
-    final buyerLabel = order.buyerName ?? order.customerName ?? 'Unknown Buyer';
-    final responsibleLabel = order.assignedManagerName ??
-        (order.assignedManagerUserId != null
-            ? 'Manager #${order.assignedManagerUserId}'
+    final buyerLabel = o.buyerName ?? o.customerName ?? 'Unknown Buyer';
+    final responsibleLabel = o.assignedManagerName ??
+        (o.assignedManagerUserId != null
+            ? 'Manager #${o.assignedManagerUserId}'
             : 'Nursery Owner');
 
     return Container(
@@ -925,28 +1177,79 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _InfoRow(icon: Icons.person_outline_rounded, label: 'Buyer', value: buyerLabel),
-          if (order.sellerNursery != null) ...[
-            const Divider(height: 1, indent: 56),
-            _InfoRow(icon: Icons.store_outlined, label: 'Seller', value: order.sellerNursery!),
-          ],
-          const Divider(height: 1, indent: 56),
-          _InfoRow(icon: Icons.manage_accounts_outlined, label: 'Responsible', value: responsibleLabel),
-          if (dateStr.isNotEmpty) ...[
-            const Divider(height: 1, indent: 56),
-            _InfoRow(icon: Icons.calendar_today_outlined, label: 'Order Date', value: dateStr),
-          ],
-          if (order.notes?.isNotEmpty == true) ...[
-            const Divider(height: 1, indent: 56),
-            _InfoRow(icon: Icons.notes_outlined, label: 'Notes', value: order.notes!),
-          ],
-          if (order.cancelReason?.isNotEmpty == true) ...[
+          // Tappable header
+          InkWell(
+            onTap: _toggle,
+            borderRadius: AppRadius.cardRadius,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.cardPadding,
+                  vertical: AppSpacing.md),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                        color: AppColors.forest100, shape: BoxShape.circle),
+                    child: const Icon(Icons.info_outline_rounded,
+                        size: 17, color: AppColors.primaryMain),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text('Order Details', style: AppTypography.label),
+                  ),
+                  RotationTransition(
+                    turns: _turn,
+                    child: const Icon(Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.textMuted, size: 20),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Expandable content
+          if (_expanded) ...[
+            const Divider(height: 1, color: AppColors.border),
+            _InfoRow(
+                icon: Icons.person_outline_rounded,
+                label: 'Buyer',
+                value: buyerLabel),
+            if (o.sellerNursery != null) ...[
+              const Divider(height: 1, indent: 56),
+              _InfoRow(
+                  icon: Icons.store_outlined,
+                  label: 'Seller',
+                  value: o.sellerNursery!),
+            ],
             const Divider(height: 1, indent: 56),
             _InfoRow(
-                icon: Icons.cancel_outlined,
-                label: 'Cancel Reason',
-                value: order.cancelReason!,
-                valueColor: AppColors.red600),
+                icon: Icons.manage_accounts_outlined,
+                label: 'Responsible',
+                value: responsibleLabel),
+            if (dateStr.isNotEmpty) ...[
+              const Divider(height: 1, indent: 56),
+              _InfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Order Date',
+                  value: dateStr),
+            ],
+            if (o.notes?.isNotEmpty == true) ...[
+              const Divider(height: 1, indent: 56),
+              _InfoRow(
+                  icon: Icons.notes_outlined,
+                  label: 'Notes',
+                  value: o.notes!),
+            ],
+            if (o.cancelReason?.isNotEmpty == true) ...[
+              const Divider(height: 1, indent: 56),
+              _InfoRow(
+                  icon: Icons.cancel_outlined,
+                  label: 'Cancel Reason',
+                  value: o.cancelReason!,
+                  valueColor: AppColors.red600),
+            ],
           ],
         ],
       ),

@@ -104,6 +104,22 @@ class ApiClient {
     }
   }
 
+  Future<T> patch<T>(
+    String path, {
+    dynamic data,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final response = await dio.patch(path, data: data);
+      return fromJson != null ? fromJson(response.data) : response.data as T;
+    } on DioException catch (e) {
+      throw NetworkExceptions.fromDioException(e);
+    } catch (e) {
+      AppLogger.e('Unexpected error on PATCH $path', e);
+      throw const UnknownError();
+    }
+  }
+
   Future<dynamic> uploadFile(
     String path, {
     required File file,

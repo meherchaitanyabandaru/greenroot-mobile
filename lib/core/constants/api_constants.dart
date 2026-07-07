@@ -133,6 +133,19 @@ abstract class ApiConstants {
   static String removeNurseryManager(int nurseryId, int userId) =>
       '$v1/nurseries/$nurseryId/managers/$userId';
 
+  // Storage
+  static const String storagePresign = '$v1/storage/presign';
+
+  // Local Market
+  static const String marketAds = '$v1/market/ads';
+  static const String marketMyAds = '$v1/market/ads/mine';
+  static const String marketSavedAds = '$v1/market/ads/saved';
+  static const String marketEnquiries = '$v1/market/enquiries';
+  static String marketAdById(int id) => '$v1/market/ads/$id';
+  static String marketAdAction(int id, String action) => '$v1/market/ads/$id/$action';
+  static String marketEnquiryById(int id) => '$v1/market/enquiries/$id';
+  static String marketEnquiryAction(int id, String action) => '$v1/market/enquiries/$id/$action';
+
   // Plant Sourcing Network
   static String sourcingMembership(int nurseryId) =>
       '$v1/nurseries/$nurseryId/sourcing-membership';
