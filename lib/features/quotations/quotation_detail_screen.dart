@@ -244,25 +244,45 @@ class _QuotationDetailScreenState
   }
 
   Future<void> _convertToOrder(Quotation q) async {
-    final orderId = await showModalBottomSheet<int>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Convert to Order', style: AppTypography.h3),
+        content: Text(
+          'Create a new order from ${q.quotationCode}?\nThe order will be created in PENDING status.',
+          style: AppTypography.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Convert'),
+          ),
+        ],
       ),
-      builder: (_) => _OrderPickerSheet(quotation: q),
     );
-    if (orderId == null || !mounted) return;
+    if (confirmed != true || !mounted) return;
     setState(() => _converting = true);
     try {
-      await ref.read(quotationRepositoryProvider).convertToOrder(q.id, orderId: orderId);
+      final updated = await ref.read(quotationRepositoryProvider).convertToOrder(q.id);
       if (mounted) {
         ref.invalidate(quotationDetailProvider(widget.quotationId));
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Quotation converted to order'),
+          content: Text('Order created successfully'),
           backgroundColor: AppColors.primaryMain,
         ));
+        if (updated.convertedOrderId != null) {
+          context.push('/orders/${updated.convertedOrderId}');
+        }
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -1620,114 +1640,6 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
                                 subtitle: Text(m.mobile, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                                 trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
                                 onTap: () => Navigator.pop(context, m.userId),
-                              );
-                            },
-                          ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Order picker bottom sheet ──────────────────────────────────────────────────
-
-class _OrderPickerSheet extends StatefulWidget {
-  final Quotation quotation;
-  const _OrderPickerSheet({required this.quotation});
-
-  @override
-  State<_OrderPickerSheet> createState() => _OrderPickerSheetState();
-}
-
-class _OrderPickerSheetState extends State<_OrderPickerSheet> {
-  List<Order>? _orders;
-  bool _loading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  static const _linkableStatuses = {'PENDING', 'CONFIRMED', 'LOADING'};
-
-  Future<void> _load() async {
-    try {
-      final repo = OrderRepository(ApiClient.instance);
-      final (orders, _) = await repo.listOrders(
-        nurseryId: widget.quotation.nurseryId,
-        perPage: 100,
-      );
-      if (mounted) {
-        setState(() {
-          _orders = orders
-              .where((o) => _linkableStatuses.contains(o.status))
-              .toList();
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (_, ctrl) => Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
-            child: Row(children: [
-              Expanded(child: Text('Select Order to Link', style: AppTypography.h3)),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ]),
-          ),
-          const Divider(height: 1, color: AppColors.border),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryMain))
-                : _error != null
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text('Failed to load orders',
-                            style: AppTypography.body.copyWith(color: AppColors.red600)),
-                        TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
-                            child: const Text('Retry')),
-                      ]))
-                    : _orders == null || _orders!.isEmpty
-                        ? Center(child: Text('No active orders to link (need PENDING, CONFIRMED or LOADING)',
-                              style: AppTypography.body.copyWith(color: AppColors.textMuted)))
-                        : ListView.separated(
-                            controller: ctrl,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
-                            itemCount: _orders!.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
-                            itemBuilder: (_, i) {
-                              final o = _orders![i];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                title: Text(o.orderNumber, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                                subtitle: Text(
-                                  '${o.status}  ·  ₹${o.totalAmount.toStringAsFixed(0)}',
-                                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                                ),
-                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
-                                onTap: () => Navigator.pop(context, o.id),
                               );
                             },
                           ),

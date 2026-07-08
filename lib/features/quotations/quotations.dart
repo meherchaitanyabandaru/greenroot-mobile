@@ -265,10 +265,9 @@ class QuotationRepository {
     );
   }
 
-  Future<Quotation> convertToOrder(int id, {required int orderId}) async {
+  Future<Quotation> convertToOrder(int id) async {
     return _client.post(
       ApiConstants.quotationConvert(id),
-      data: {'order_id': orderId},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);

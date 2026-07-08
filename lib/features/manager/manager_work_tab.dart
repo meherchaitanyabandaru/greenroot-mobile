@@ -612,34 +612,41 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
   }
 
   Future<void> _convert() async {
-    final ctrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Convert to Order', style: AppTypography.h3),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Order ID'),
-          autofocus: true,
+        content: Text(
+          'Create a new order from ${widget.quotation.quotationCode}?\nThe order will be created in PENDING status.',
+          style: AppTypography.body,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Convert')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Convert'),
+          ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
-    final orderId = int.tryParse(ctrl.text.trim());
-    if (orderId == null) return;
     setState(() => _acting = true);
     try {
       final q = await ref
           .read(quotationRepositoryProvider)
-          .convertToOrder(widget.quotation.id, orderId: orderId);
+          .convertToOrder(widget.quotation.id);
       ref.read(_mgrQuotationProvider.notifier).load();
       if (mounted) {
-        _snack('Converted to order', AppColors.primaryMain);
+        _snack('Order created successfully', AppColors.primaryMain);
         if (q.convertedOrderId != null) context.push('/orders/${q.convertedOrderId}');
       }
     } on AppError catch (e) {
