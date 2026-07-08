@@ -19,6 +19,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/trade_status_chip.dart';
+import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
 
@@ -52,6 +53,19 @@ final _buyerOrderProvider =
   (ref) => _BuyerOrderNotifier(ref.watch(orderRepositoryProvider)),
 );
 
+class _BuyerDispatchNotifier extends PagedNotifier<Dispatch> {
+  _BuyerDispatchNotifier(DispatchRepository repo)
+      : super(
+          fetch: (p, pp) => repo.listDispatches(page: p, perPage: pp),
+          idOf: (d) => d.id,
+        );
+}
+
+final _buyerDispatchProvider = StateNotifierProvider.autoDispose<
+    _BuyerDispatchNotifier, PagedState<Dispatch>>(
+  (ref) => _BuyerDispatchNotifier(ref.watch(dispatchRepositoryProvider)),
+);
+
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
@@ -70,10 +84,11 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
     Future.microtask(() {
       ref.read(_buyerQuotationProvider.notifier).load();
       ref.read(_buyerOrderProvider.notifier).load();
+      ref.read(_buyerDispatchProvider.notifier).load();
     });
   }
 
@@ -87,6 +102,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
   Widget build(BuildContext context) {
     ref.watch(_buyerQuotationProvider);
     ref.watch(_buyerOrderProvider);
+    ref.watch(_buyerDispatchProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -108,6 +124,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
           tabs: const [
             Tab(text: 'Quotations'),
             Tab(text: 'Orders'),
+            Tab(text: 'Deliveries'),
           ],
         ),
       ),
@@ -116,6 +133,7 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
         children: const [
           _OffersTab(),
           _OrdersTab(),
+          _DeliveriesTab(),
         ],
       ),
     );
@@ -540,7 +558,7 @@ class _RejectReasonSheetState extends State<_RejectReasonSheet> {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — ORDERS (Dispatch info lives in Order Detail screen)
+// TAB 2 — ORDERS
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _OrdersTab extends ConsumerWidget {
@@ -787,6 +805,187 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                         child: const Text('Cancel Order'),
                       ),
                     ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB 3 — DELIVERIES  (dispatches scoped to buyer's orders)
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _DeliveriesTab extends ConsumerWidget {
+  const _DeliveriesTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final paged = ref.watch(_buyerDispatchProvider);
+
+    if (paged.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (paged.error != null && paged.items.isEmpty) {
+      return ErrorState(
+        error: paged.error,
+        onRetry: () => ref.read(_buyerDispatchProvider.notifier).load(),
+      );
+    }
+
+    if (paged.items.isEmpty) {
+      return const EmptyState(
+        icon: Icons.local_shipping_outlined,
+        title: 'No active deliveries',
+        subtitle:
+            'Once a nursery dispatches your order, it will appear here — tap to track the driver live.',
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primaryMain,
+      onRefresh: () => ref.read(_buyerDispatchProvider.notifier).load(),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+          vertical: AppSpacing.lg,
+        ),
+        itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (context, i) {
+          if (i == paged.items.length) {
+            ref.read(_buyerDispatchProvider.notifier).loadMore();
+            return const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return _DispatchCard(dispatch: paged.items[i]);
+        },
+      ),
+    );
+  }
+}
+
+class _DispatchCard extends StatelessWidget {
+  final Dispatch dispatch;
+  const _DispatchCard({required this.dispatch});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dispatch;
+    final dateFmt = DateFormat('d MMM yyyy');
+    final date = DateTime.tryParse(d.dispatchDate ?? d.createdAt)?.toLocal();
+    final isInTransit =
+        d.status == 'DISPATCHED' || d.status == 'IN_TRANSIT';
+
+    return GestureDetector(
+      onTap: () => context.push('/dispatches/${d.id}/track'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isInTransit ? AppColors.primaryMain : AppColors.border,
+            width: isInTransit ? 1.5 : 1.0,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    d.dispatchNumber ?? d.dispatchCode,
+                    style: AppTypography.h4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TradeStatusChip(status: d.status, kind: TradeChipKind.dispatch),
+              ],
+            ),
+            if (d.orderNumber?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  const Icon(Icons.receipt_long_outlined,
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Order ${d.orderNumber}',
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                if (d.vehicleNumber?.isNotEmpty == true) ...[
+                  const Icon(Icons.local_shipping_outlined,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    d.vehicleNumber!,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                ],
+                if (date != null) ...[
+                  const Icon(Icons.calendar_today_outlined,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    dateFmt.format(date),
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+                const Spacer(),
+                if (isInTransit)
+                  Row(
+                    children: [
+                      Text(
+                        'Track Live',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right,
+                          size: 16, color: AppColors.primaryMain),
+                    ],
+                  ),
+              ],
+            ),
+            if (d.driverName?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    d.driverName!,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ],
           ],
         ),

@@ -475,11 +475,17 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/dispatches/:id/track',
-      builder: (_, state) => DispatchTrackingScreen(
-        dispatchId: int.parse(state.pathParameters['id']!),
-        title: state.uri.queryParameters['title'],
-        isDriver: state.uri.queryParameters['driver'] == 'true',
-      ),
+      builder: (_, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        if (state.uri.queryParameters['driver'] == 'true') {
+          return DispatchTrackingScreen(
+            dispatchId: id,
+            title: state.uri.queryParameters['title'],
+            isDriver: true,
+          );
+        }
+        return BuyerDeliveryTrackingScreen(dispatchId: id);
+      },
     ),
     GoRoute(
       path: '/dispatches/:id/buyer-track',
