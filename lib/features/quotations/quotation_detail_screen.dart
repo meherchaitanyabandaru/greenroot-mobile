@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
@@ -17,6 +18,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../orders/orders.dart';
 import 'quotations.dart';
 
 // ── Nursery address fetch ──────────────────────────────────────────────────────
@@ -63,17 +65,21 @@ class _QuotationDetailScreenState
   bool _deleting = false;
   bool _exporting = false;
   bool _buyerActing = false;
+  bool _approving = false;
+  bool _recalling = false;
+  bool _converting = false;
+  bool _assigning = false;
 
   Future<void> _buyerAccept(Quotation q) async {
     setState(() => _buyerActing = true);
     try {
       await ref.read(quotationRepositoryProvider).acceptQuotation(q.id);
       if (mounted) {
-        ref.invalidate(quotationDetailProvider(widget.quotationId));
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation accepted'),
           backgroundColor: AppColors.primaryMain,
         ));
+        context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -115,11 +121,11 @@ class _QuotationDetailScreenState
     try {
       await ref.read(quotationRepositoryProvider).rejectQuotation(q.id, reason: reason);
       if (mounted) {
-        ref.invalidate(quotationDetailProvider(widget.quotationId));
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation rejected'),
           backgroundColor: AppColors.red600,
         ));
+        context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -128,6 +134,143 @@ class _QuotationDetailScreenState
       }
     } finally {
       if (mounted) setState(() => _buyerActing = false);
+    }
+  }
+
+  Future<void> _approve(Quotation q) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Send to Customer'),
+        content: Text('Send ${q.quotationCode} to the customer for review?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryMain, foregroundColor: Colors.white),
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _approving = true);
+    try {
+      await ref.read(quotationRepositoryProvider).approveQuotation(q.id);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quotation sent to customer'),
+          backgroundColor: AppColors.primaryMain,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _approving = false);
+    }
+  }
+
+  Future<void> _recall(Quotation q) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recall Quotation'),
+        content: Text('Pull back ${q.quotationCode} to draft for editing?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.amber600, foregroundColor: Colors.white),
+            child: const Text('Recall'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _recalling = true);
+    try {
+      await ref.read(quotationRepositoryProvider).recallQuotation(q.id);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quotation recalled to draft'),
+          backgroundColor: AppColors.amber600,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _recalling = false);
+    }
+  }
+
+  Future<void> _assignManager(Quotation q) async {
+    if (q.nurseryId == null) return;
+    final managerUserId = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _ManagerPickerSheet(nurseryId: q.nurseryId!),
+    );
+    if (managerUserId == null || !mounted) return;
+    setState(() => _assigning = true);
+    try {
+      await ref.read(quotationRepositoryProvider).assignManager(q.id, managerUserId: managerUserId);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Manager assigned'),
+          backgroundColor: AppColors.primaryMain,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _assigning = false);
+    }
+  }
+
+  Future<void> _convertToOrder(Quotation q) async {
+    final orderId = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _OrderPickerSheet(quotation: q),
+    );
+    if (orderId == null || !mounted) return;
+    setState(() => _converting = true);
+    try {
+      await ref.read(quotationRepositoryProvider).convertToOrder(q.id, orderId: orderId);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quotation converted to order'),
+          backgroundColor: AppColors.primaryMain,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _converting = false);
     }
   }
 
@@ -164,31 +307,105 @@ class _QuotationDetailScreenState
     }
   }
 
-  Future<void> _exportPdf(Quotation q) async {
+  // Shared: build PDF bytes + filename
+  Future<(List<int>, String)> _buildPdfBytes(Quotation q) async {
+    String? nurseryAddress;
+    if (q.nurseryId != null) {
+      nurseryAddress = await _fetchNurseryAddress(q.nurseryId!);
+    }
+    final session = ref.read(sessionProvider);
+    final downloadedBy =
+        session.user?.name ?? session.user?.mobile ?? 'GreenRoot User';
+    final doc = _buildProfessionalPdf(
+      q: q,
+      nurseryAddress: nurseryAddress,
+      downloadedBy: downloadedBy,
+    );
+    return (await doc.save(), '${q.quotationCode}.pdf');
+  }
+
+  Future<void> _downloadPdf(Quotation q) async {
     setState(() => _exporting = true);
     try {
-      String? nurseryAddress;
-      if (q.nurseryId != null) {
-        nurseryAddress = await _fetchNurseryAddress(q.nurseryId!);
+      final (bytes, filename) = await _buildPdfBytes(q);
+      if (kIsWeb) {
+        final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
+        await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Saved to Documents: $filename')),
+          );
+        }
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Download failed: $e'),
+              backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 
-      final session = ref.read(sessionProvider);
-      final downloadedBy = session.user?.name ?? session.user?.mobile ?? 'GreenRoot User';
+  Future<void> _shareViaWhatsApp(Quotation q) async {
+    setState(() => _exporting = true);
+    try {
+      final (bytes, filename) = await _buildPdfBytes(q);
+      if (kIsWeb) {
+        // Download PDF first, then open WhatsApp Web with pre-filled message
+        final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
+        await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
+        final msg = Uri.encodeComponent(
+          'Quotation ${q.quotationCode}'
+          '${q.nurseryName != null ? " from ${q.nurseryName}" : ""}'
+          ' — PDF downloaded to your device.',
+        );
+        await launchUrl(
+          Uri.parse('https://wa.me/?text=$msg'),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          text:
+              'Quotation ${q.quotationCode}'
+              '${q.nurseryName != null ? " from ${q.nurseryName}" : ""}',
+          subject: q.quotationCode,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('WhatsApp share failed: $e'),
+              backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 
-      final doc = _buildProfessionalPdf(
-        q: q,
-        nurseryAddress: nurseryAddress,
-        downloadedBy: downloadedBy,
-      );
-
-      final bytes = await doc.save();
-
+  Future<void> _sharePdf(Quotation q) async {
+    setState(() => _exporting = true);
+    try {
+      final (bytes, filename) = await _buildPdfBytes(q);
       if (kIsWeb) {
         final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
         await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
       } else {
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/${q.quotationCode}.pdf');
+        final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
         await Share.shareXFiles(
           [XFile(file.path, mimeType: 'application/pdf')],
@@ -199,7 +416,7 @@ class _QuotationDetailScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('PDF export failed: $e'),
+              content: Text('Share failed: $e'),
               backgroundColor: AppColors.red600),
         );
       }
@@ -245,11 +462,13 @@ class _QuotationDetailScreenState
   Widget _buildScaffold(Quotation q) {
     final caps = ref.watch(sessionProvider).capabilities;
     final isBuyerView = !caps.canSell;
-    final canDelete = caps.isNurseryOwner || caps.isManager;
-    final buyerCanAct = isBuyerView &&
-        (q.status == 'CUSTOMER_SENT' ||
-            q.status == 'APPROVED' ||
-            q.status == 'SENT');
+    // Business rule: only the nursery owner may delete a quotation.
+    final canDelete = caps.isNurseryOwner;
+    final isManagerOnly = caps.isManager && !caps.isNurseryOwner;
+    // Quotations are editable only while in a DRAFT status.
+    final isEditable = q.status == 'INTERNAL_DRAFT' || q.status == 'CUSTOMER_DRAFT';
+    final buyerCanAct = isBuyerView && q.status == 'CUSTOMER_SENT';
+    final isBusy = _deleting || _exporting || _buyerActing || _approving || _recalling || _converting || _assigning;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -260,7 +479,7 @@ class _QuotationDetailScreenState
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
-          if (_deleting || _exporting || _buyerActing)
+          if (isBusy)
             const Padding(
               padding: EdgeInsets.only(right: 16),
               child: SizedBox(
@@ -270,24 +489,25 @@ class _QuotationDetailScreenState
                       strokeWidth: 2, color: AppColors.primaryMain)),
             )
           else if (!isBuyerView) ...[
-            // Edit
-            IconButton(
-              tooltip: 'Edit',
-              icon: const Icon(Icons.edit_outlined, size: 20),
-              onPressed: () async {
-                final edited = await context.push<bool>(
-                    '/quotations/${q.id}/edit',
-                    extra: q);
-                if (edited == true && mounted) {
-                  ref.invalidate(quotationDetailProvider(widget.quotationId));
-                }
-              },
-            ),
+            // Edit — only available in DRAFT statuses
+            if (isEditable)
+              IconButton(
+                tooltip: 'Edit',
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () async {
+                  final edited = await context.push<bool>(
+                      '/quotations/${q.id}/edit',
+                      extra: q);
+                  if (edited == true && mounted) {
+                    ref.invalidate(quotationDetailProvider(widget.quotationId));
+                  }
+                },
+              ),
             // More options
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, size: 20),
               onSelected: (v) async {
-                if (v == 'pdf') await _exportPdf(q);
+                if (v == 'pdf') await _downloadPdf(q);
                 if (v == 'delete') await _confirmDelete(q);
               },
               itemBuilder: (_) => [
@@ -353,12 +573,41 @@ class _QuotationDetailScreenState
                           .copyWith(color: AppColors.textMuted)),
                 ]),
               ],
+              if (q.assignedManagerName != null) ...[
+                const SizedBox(height: 2),
+                Row(children: [
+                  const Icon(Icons.manage_accounts_outlined,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 4),
+                  Text(q.assignedManagerName!,
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary)),
+                ]),
+              ],
+              if (q.validUntil != null && q.status == 'CUSTOMER_SENT') ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  Icon(
+                    Icons.schedule,
+                    size: 13,
+                    color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${q.isExpired ? "Expired" : "Valid until"}: ${q.validUntil!.day} ${_monthAbbr(q.validUntil!.month)} ${q.validUntil!.year}',
+                    style: AppTypography.caption.copyWith(
+                      color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                      fontWeight: q.isExpired ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ]),
+              ],
             ]),
           ),
           const SizedBox(height: AppSpacing.sm),
 
           // Recipient
-          if (q.recipientName != null || q.recipientMobile != null) ...[
+          if (q.recipientName != null || q.recipientMobile != null || (isManagerOnly && !q.isInternal)) ...[
             _InfoCard(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,6 +624,15 @@ class _QuotationDetailScreenState
                       Text(q.recipientMobile!,
                           style: AppTypography.bodySmall
                               .copyWith(color: AppColors.textMuted)),
+                    ],
+                    if (isManagerOnly && q.recipientName == null && q.recipientMobile == null && !q.isInternal) ...[
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        const Icon(Icons.lock_outline, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 6),
+                        Text('Customer details are not visible to managers',
+                            style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                      ]),
                     ],
                   ]),
             ),
@@ -513,7 +771,7 @@ class _QuotationDetailScreenState
             const SizedBox(height: AppSpacing.sm),
           ],
 
-          // Buyer action buttons (Accept / Reject)
+          // ── Buyer actions ───────────────────────────────────────────────
           if (buyerCanAct) ...[
             Row(children: [
               Expanded(
@@ -547,22 +805,146 @@ class _QuotationDetailScreenState
                 ),
               ),
             ]),
-          ] else ...[
-            ElevatedButton.icon(
-              onPressed: _exporting ? null : () => _exportPdf(q),
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('Download PDF'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                minimumSize: const Size(double.infinity, 48),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9)),
+            const SizedBox(height: 8),
+          ]
+
+          // ── Seller status-based actions ─────────────────────────────────
+          else if (!isBuyerView) ...[
+            if (q.status == 'CUSTOMER_DRAFT') ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _approving ? null : () => _approve(q),
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: const Text('Send to Customer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else if (q.status == 'CUSTOMER_SENT') ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _recalling ? null : () => _recall(q),
+                  icon: const Icon(Icons.undo_rounded, size: 18),
+                  label: const Text('Recall to Draft'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.amber600,
+                    side: const BorderSide(color: AppColors.amber600),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else if (q.status == 'CUSTOMER_ACCEPTED') ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _converting ? null : () => _convertToOrder(q),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text('Convert to Order'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            // Owner-only: assign or reassign manager on any non-terminal quotation
+            if (canDelete &&
+                !['CONVERTED', 'CUSTOMER_REJECTED'].contains(q.status) &&
+                q.nurseryId != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _assigning ? null : () => _assignManager(q),
+                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  label: Text(q.assignedManagerUserId != null
+                      ? 'Reassign Manager'
+                      : 'Assign Manager'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryMain,
+                    side: const BorderSide(color: AppColors.primaryMain),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+
+          // ── PDF share row — always visible ──────────────────────────────
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _exporting ? null : () => _downloadPdf(q),
+                icon: const Icon(Icons.download_rounded, size: 16),
+                label: const Text('Download PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  fixedSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9)),
+                ),
               ),
             ),
-          ],
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _exporting ? null : () => _shareViaWhatsApp(q),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9)),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icons/whatsapp.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: _exporting ? null : () => _sharePdf(q),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9)),
+                ),
+                child: const Icon(Icons.ios_share_rounded, size: 22),
+              ),
+            ),
+          ]),
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),
@@ -597,9 +979,8 @@ pw.Document _buildProfessionalPdf({
       _body(bold: bold, color: color, size: 8);
 
   final createdDt = DateTime.tryParse(q.createdAt)?.toLocal() ?? DateTime.now();
-  final validUntil = createdDt.add(const Duration(days: 15));
-  final validUntilStr =
-      '${validUntil.day} ${_monthAbbr(validUntil.month)} ${validUntil.year} (15 Days)';
+  final validUntil = q.validUntil ?? createdDt.add(const Duration(days: 15));
+  final validUntilStr = '${validUntil.day} ${_monthAbbr(validUntil.month)} ${validUntil.year}';
 
   final doc = pw.Document(
     title: q.quotationCode,
@@ -1140,6 +1521,221 @@ pw.Widget _pdfSignatureBlock(
       ],
     ),
   );
+}
+
+// ── Manager picker bottom sheet ───────────────────────────────────────────────
+
+class _ManagerPickerSheet extends StatefulWidget {
+  final int nurseryId;
+  const _ManagerPickerSheet({required this.nurseryId});
+
+  @override
+  State<_ManagerPickerSheet> createState() => _ManagerPickerSheetState();
+}
+
+class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
+  List<NurseryManager>? _managers;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final managers = await ApiClient.instance.get<List<NurseryManager>>(
+        ApiConstants.nurseryManagers(widget.nurseryId),
+        fromJson: (json) {
+          final map = json as Map<String, dynamic>;
+          final list = map['managers'] as List<dynamic>? ??
+              map['users'] as List<dynamic>? ??
+              [];
+          return list
+              .cast<Map<String, dynamic>>()
+              .map(NurseryManager.fromJson)
+              .toList();
+        },
+      );
+      if (mounted) setState(() { _managers = managers; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (_, ctrl) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+            child: Row(children: [
+              Expanded(child: Text('Assign Manager', style: AppTypography.h3)),
+              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ]),
+          ),
+          const Divider(height: 1, color: AppColors.border),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryMain))
+                : _error != null
+                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Text('Failed to load managers',
+                            style: AppTypography.body.copyWith(color: AppColors.red600)),
+                        TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
+                            child: const Text('Retry')),
+                      ]))
+                    : _managers == null || _managers!.isEmpty
+                        ? Center(child: Text('No managers in this nursery',
+                              style: AppTypography.body.copyWith(color: AppColors.textMuted)))
+                        : ListView.separated(
+                            controller: ctrl,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+                            itemCount: _managers!.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                            itemBuilder: (_, i) {
+                              final m = _managers![i];
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.forest100,
+                                  child: Text(m.name.isNotEmpty ? m.name[0].toUpperCase() : '?',
+                                      style: AppTypography.body.copyWith(
+                                          color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                                ),
+                                title: Text(m.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                                subtitle: Text(m.mobile, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                                onTap: () => Navigator.pop(context, m.userId),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Order picker bottom sheet ──────────────────────────────────────────────────
+
+class _OrderPickerSheet extends StatefulWidget {
+  final Quotation quotation;
+  const _OrderPickerSheet({required this.quotation});
+
+  @override
+  State<_OrderPickerSheet> createState() => _OrderPickerSheetState();
+}
+
+class _OrderPickerSheetState extends State<_OrderPickerSheet> {
+  List<Order>? _orders;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  static const _linkableStatuses = {'PENDING', 'CONFIRMED', 'LOADING'};
+
+  Future<void> _load() async {
+    try {
+      final repo = OrderRepository(ApiClient.instance);
+      final (orders, _) = await repo.listOrders(
+        nurseryId: widget.quotation.nurseryId,
+        perPage: 100,
+      );
+      if (mounted) {
+        setState(() {
+          _orders = orders
+              .where((o) => _linkableStatuses.contains(o.status))
+              .toList();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, ctrl) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+            child: Row(children: [
+              Expanded(child: Text('Select Order to Link', style: AppTypography.h3)),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ]),
+          ),
+          const Divider(height: 1, color: AppColors.border),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryMain))
+                : _error != null
+                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Text('Failed to load orders',
+                            style: AppTypography.body.copyWith(color: AppColors.red600)),
+                        TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
+                            child: const Text('Retry')),
+                      ]))
+                    : _orders == null || _orders!.isEmpty
+                        ? Center(child: Text('No active orders to link (need PENDING, CONFIRMED or LOADING)',
+                              style: AppTypography.body.copyWith(color: AppColors.textMuted)))
+                        : ListView.separated(
+                            controller: ctrl,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+                            itemCount: _orders!.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                            itemBuilder: (_, i) {
+                              final o = _orders![i];
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                title: Text(o.orderNumber, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                                subtitle: Text(
+                                  '${o.status}  ·  ₹${o.totalAmount.toStringAsFixed(0)}',
+                                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                                ),
+                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                                onTap: () => Navigator.pop(context, o.id),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Helper widgets ─────────────────────────────────────────────────────────────

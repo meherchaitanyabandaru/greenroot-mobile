@@ -612,15 +612,35 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
   }
 
   Future<void> _convert() async {
+    final ctrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Convert to Order', style: AppTypography.h3),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Order ID'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Convert')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final orderId = int.tryParse(ctrl.text.trim());
+    if (orderId == null) return;
     setState(() => _acting = true);
     try {
-      final order = await ref
+      final q = await ref
           .read(quotationRepositoryProvider)
-          .convertToOrder(widget.quotation.id);
+          .convertToOrder(widget.quotation.id, orderId: orderId);
       ref.read(_mgrQuotationProvider.notifier).load();
       if (mounted) {
-        _snack('Converted to order ${order.orderNumber}', AppColors.primaryMain);
-        context.push('/orders/${order.id}');
+        _snack('Converted to order', AppColors.primaryMain);
+        if (q.convertedOrderId != null) context.push('/orders/${q.convertedOrderId}');
       }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);

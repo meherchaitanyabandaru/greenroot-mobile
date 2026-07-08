@@ -188,11 +188,8 @@ class _QuotationCard extends ConsumerStatefulWidget {
 class _QuotationCardState extends ConsumerState<_QuotationCard> {
   bool _acting = false;
 
-  bool get _canRespond => const {
-        'APPROVED',
-        'SENT',
-        'CUSTOMER_SENT',
-      }.contains(widget.quotation.status);
+  bool get _canRespond =>
+      widget.quotation.status == 'CUSTOMER_SENT' && !widget.quotation.isExpired;
 
   Future<void> _accept() async {
     setState(() => _acting = true);
@@ -271,7 +268,12 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
     final date = DateTime.tryParse(q.createdAt)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/quotations/${q.id}'),
+      onTap: () async {
+        final changed = await context.push<bool>('/quotations/${q.id}');
+        if (changed == true && mounted) {
+          ref.read(_buyerQuotationProvider.notifier).load();
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -298,6 +300,19 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.red100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('Expired',
+                        style: AppTypography.caption.copyWith(
+                            color: AppColors.red600, fontWeight: FontWeight.w700, fontSize: 10)),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
               ],
             ),
@@ -317,6 +332,26 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                       style: AppTypography.bodySmall
                           .copyWith(color: AppColors.textSecondary),
                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (q.validUntil != null && q.status == 'CUSTOMER_SENT') ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '${q.isExpired ? "Expired" : "Valid until"}: ${DateFormat("d MMM yyyy").format(q.validUntil!)}',
+                    style: AppTypography.caption.copyWith(
+                      color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                      fontWeight: q.isExpired ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ],

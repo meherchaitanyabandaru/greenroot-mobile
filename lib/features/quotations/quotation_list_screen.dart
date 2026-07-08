@@ -6,6 +6,7 @@ import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'quotation_create_screen.dart';
 import 'quotations.dart';
 
@@ -72,28 +73,16 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     return items;
   }
 
-  Future<void> _delete(Quotation q) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Quotation'),
-        content: Text('Delete ${q.quotationCode}? This cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
+  // Raw delete — no dialog. Used after swipe confirmation.
+  Future<void> _doDelete(Quotation q) async {
     try {
       await ref.read(quotationRepositoryProvider).deleteQuotation(q.id);
       ref.read(quotationListProvider.notifier).remove(q.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Quotation deleted'), backgroundColor: AppColors.primaryMain),
+          const SnackBar(
+              content: Text('Quotation deleted'),
+              backgroundColor: AppColors.primaryMain),
         );
       }
     } on AppError catch (e) {
@@ -105,11 +94,35 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     }
   }
 
+  // With confirm dialog — used by ⋮ menu.
+  Future<void> _delete(Quotation q) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Quotation'),
+        content: Text('Delete ${q.quotationCode}? This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    await _doDelete(q);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quotationListProvider);
     final paged = state.paged;
     final activeStatus = state.statusFilter;
+    final caps = ref.watch(sessionProvider).capabilities;
+    final canDelete = caps.isNurseryOwner;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -281,6 +294,16 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
               }
 
               final q = (item as _QuotationEntry).quotation;
+              final card = _QuotationCard(
+                quotation: q,
+                canDelete: canDelete,
+                onTap: () async {
+                  final edited = await context.push<bool>('/quotations/${q.id}');
+                  if (edited == true) ref.read(quotationListProvider.notifier).load();
+                },
+                onDelete: () => _delete(q),
+              );
+              if (!canDelete) return card;
               return Dismissible(
                 key: ValueKey(q.id),
                 direction: DismissDirection.endToStart,
@@ -321,14 +344,8 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                   );
                   return confirm ?? false;
                 },
-                onDismissed: (_) => _delete(q),
-                child: _QuotationCard(
-                  quotation: q,
-                  onTap: () async {
-                    final edited = await context.push<bool>('/quotations/${q.id}');
-                    if (edited == true) ref.read(quotationListProvider.notifier).load();
-                  },
-                ),
+                onDismissed: (_) => _doDelete(q),
+                child: card,
               );
             },
           ),
@@ -342,8 +359,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
 class _QuotationCard extends StatelessWidget {
   final Quotation quotation;
+  final bool canDelete;
   final VoidCallback onTap;
-  const _QuotationCard({required this.quotation, required this.onTap});
+  final VoidCallback onDelete;
+  const _QuotationCard({required this.quotation, required this.canDelete, required this.onTap, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -400,6 +419,21 @@ class _QuotationCard extends StatelessWidget {
                           ),
                         ),
                       _StatusChip(status: quotation.status, quotationType: quotation.quotationType),
+                      if (quotation.isExpired && quotation.status == 'CUSTOMER_SENT') ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.red100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('Expired',
+                              style: AppTypography.caption.copyWith(
+                                  color: AppColors.red600,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 9)),
+                        ),
+                      ],
                     ]),
                     const SizedBox(height: 2),
                     if (quotation.recipientName != null)
@@ -424,8 +458,26 @@ class _QuotationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
+              if (canDelete)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
+                  padding: EdgeInsets.zero,
+                  onSelected: (v) {
+                    if (v == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        const Icon(Icons.delete_outline, color: AppColors.red600, size: 18),
+                        const SizedBox(width: 10),
+                        Text('Delete',
+                            style: AppTypography.body
+                                .copyWith(color: AppColors.red600)),
+                      ]),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

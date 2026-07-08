@@ -66,8 +66,8 @@ Future<QuotationTypeChoice?> showQuotationTypeDialog(BuildContext context) {
           _TypeOption(
             icon: Icons.request_quote_outlined,
             iconColor: AppColors.primaryMain,
-            title: 'Customer Quotation',
-            subtitle: 'Prepare and share with a customer',
+            title: 'Quotation',
+            subtitle: 'Prepare and share with customer',
             onTap: () => Navigator.pop(ctx, QuotationTypeChoice.customer),
           ),
 
@@ -102,8 +102,9 @@ class _TypeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
             Container(
@@ -122,11 +123,12 @@ class _TypeOption extends StatelessWidget {
                 children: [
                   Text(title, style: AppTypography.label),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                  Text(subtitle,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
           ],
         ),
       ),
@@ -322,7 +324,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       );
     }
 
-    final typeLabel = _isInternal ? 'Internal Quotation' : 'Customer Quotation';
+    final typeLabel = _isInternal ? 'Internal Quotation' : 'Quotation';
     final title = _isEdit ? 'Edit Quotation' : typeLabel;
 
     return Scaffold(
@@ -512,7 +514,7 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isInternal ? AppColors.textSecondary : AppColors.primaryMain;
     final bg    = isInternal ? AppColors.border : AppColors.forest100;
-    final label = isInternal ? 'Internal Quotation' : 'Customer Quotation';
+    final label = isInternal ? 'Internal Quotation' : 'Quotation';
     final icon  = isInternal ? Icons.folder_outlined : Icons.request_quote_outlined;
 
     return Container(

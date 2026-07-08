@@ -52,12 +52,16 @@ class Quotation {
   final int? nurseryId;
   final String? nurseryName;
   final String? nurseryPhone;
+  final int? assignedManagerUserId;
+  final String? assignedManagerName;
+  final int? convertedOrderId;
   final int? buyerNurseryId;
   final String? recipientName;
   final String? recipientMobile;
   final String? notes;
   final double totalAmount;
   final String status;
+  final DateTime? validUntil;
   final String createdAt;
   final List<QuotationItem> items;
 
@@ -70,17 +74,24 @@ class Quotation {
     this.nurseryId,
     this.nurseryName,
     this.nurseryPhone,
+    this.assignedManagerUserId,
+    this.assignedManagerName,
+    this.convertedOrderId,
     this.buyerNurseryId,
     this.recipientName,
     this.recipientMobile,
     this.notes,
     required this.totalAmount,
     required this.status,
+    this.validUntil,
     required this.createdAt,
     required this.items,
   });
 
   bool get isInternal => quotationType == 'INTERNAL';
+
+  bool get isExpired =>
+      validUntil != null && DateTime.now().isAfter(validUntil!);
 
   factory Quotation.fromJson(Map<String, dynamic> j) => Quotation(
         id: (j['id'] as num).toInt(),
@@ -91,12 +102,20 @@ class Quotation {
         nurseryId: j['nursery_id'] != null ? (j['nursery_id'] as num).toInt() : null,
         nurseryName: j['nursery_name'] as String?,
         nurseryPhone: j['nursery_phone'] as String?,
+        assignedManagerUserId: j['assigned_manager_user_id'] != null
+            ? (j['assigned_manager_user_id'] as num).toInt()
+            : null,
+        assignedManagerName: j['assigned_manager_name'] as String?,
+        convertedOrderId: j['converted_order_id'] != null ? (j['converted_order_id'] as num).toInt() : null,
         buyerNurseryId: j['buyer_nursery_id'] != null ? (j['buyer_nursery_id'] as num).toInt() : null,
         recipientName: j['recipient_name'] as String?,
         recipientMobile: j['recipient_mobile'] as String?,
         notes: j['notes'] as String?,
         totalAmount: (j['total_amount'] as num).toDouble(),
         status: j['status'] as String,
+        validUntil: j['valid_until'] != null
+            ? DateTime.tryParse(j['valid_until'] as String)?.toLocal()
+            : null,
         createdAt: j['created_at'] as String,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => QuotationItem.fromJson(e as Map<String, dynamic>))
@@ -236,12 +255,23 @@ class QuotationRepository {
     );
   }
 
-  Future<Order> convertToOrder(int id) async {
+  Future<Quotation> recallQuotation(int id) async {
     return _client.post(
-      ApiConstants.quotationConvert(id),
+      ApiConstants.quotationRecall(id),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
-        return Order.fromJson(d['order'] as Map<String, dynamic>);
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Quotation> convertToOrder(int id, {required int orderId}) async {
+    return _client.post(
+      ApiConstants.quotationConvert(id),
+      data: {'order_id': orderId},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
       },
     );
   }
@@ -279,6 +309,17 @@ class QuotationRepository {
     return _client.post(
       '${ApiConstants.quotationById(id)}/buyer-reject',
       data: {if (reason?.isNotEmpty == true) 'reason': reason},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Quotation> assignManager(int id, {required int managerUserId}) async {
+    return _client.post(
+      ApiConstants.quotationAssignManager(id),
+      data: {'manager_user_id': managerUserId},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
@@ -398,7 +439,7 @@ final quotationListProvider =
 });
 
 final quotationDetailProvider =
-    FutureProvider.family<Quotation, int>((ref, id) async {
+    FutureProvider.autoDispose.family<Quotation, int>((ref, id) async {
   return ref.watch(quotationRepositoryProvider).getQuotation(id);
 });
 
