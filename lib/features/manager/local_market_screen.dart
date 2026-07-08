@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'local_market_providers.dart';
+import 'top_items_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _mkGreen    = Color(0xFF00A86B);
@@ -30,6 +32,7 @@ const _stArchivedBg  = Color(0xFFE2E8F0);
 const _cardShadow = BoxShadow(
   color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 2),
 );
+const _heartRed = Color(0xFFED4956);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -200,10 +203,12 @@ class LocalMarketScreen extends ConsumerWidget {
     final items = [
       (Icons.grid_view_rounded, 'Browse', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _BrowseScreen()))),
-      (Icons.favorite_outline_rounded, 'Saved', () => Navigator.of(context)
+      (Icons.favorite_rounded, 'Saved', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _SavedAdsScreen()))),
       (Icons.add_business_outlined, 'My Ads', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _MyAdsScreen()))),
+      (Icons.workspace_premium_rounded, 'Top Items', () => Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const TopItemsScreen()))),
       (Icons.chat_bubble_outline_rounded, 'Enquiries', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _EnquiriesScreen()))),
     ];
@@ -211,9 +216,12 @@ class LocalMarketScreen extends ConsumerWidget {
       color: _mkCard,
       padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
       child: Row(
-        children: items
-            .map((e) => Expanded(child: _QuickActionTile(e.$1, e.$2, e.$3)))
-            .toList(),
+        children: items.map((e) => Expanded(
+          child: _QuickActionTile(
+            e.$1, e.$2, e.$3,
+            iconColor: e.$2 == 'Saved' ? _heartRed : null,
+          ),
+        )).toList(),
       ),
     );
   }
@@ -224,10 +232,12 @@ class _QuickActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _QuickActionTile(this.icon, this.label, this.onTap);
+  final Color? iconColor;
+  const _QuickActionTile(this.icon, this.label, this.onTap, {this.iconColor});
 
   @override
   Widget build(BuildContext context) {
+    final color = iconColor ?? _mkGreen;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -242,7 +252,7 @@ class _QuickActionTile extends StatelessWidget {
                   color: _mkLight,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: _mkGreen.withValues(alpha: 0.18))),
-              child: Icon(icon, color: _mkGreen, size: 26),
+              child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(height: 7),
             Text(label,
@@ -818,6 +828,8 @@ class _CardPhoto extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
+    final myNurseryId = ref.watch(sessionProvider.select((s) => s?.capabilities.ownedNurseryId));
+    final effectiveIsOwn = isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
 
     return Stack(children: [
       Container(
@@ -843,10 +855,10 @@ class _CardPhoto extends ConsumerWidget {
           ),
         ),
       ),
-      if (isOwn)
+      if (effectiveIsOwn)
         Positioned(
             top: 10, left: 10, child: _StatusChip(status: ad.status)),
-      if (!isOwn && _isNewAd(ad))
+      if (!effectiveIsOwn && _isNewAd(ad))
         Positioned(
           top: 10, left: 10,
           child: Container(
@@ -882,7 +894,7 @@ class _CardPhoto extends ConsumerWidget {
                     color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
           ),
         ),
-      if (!isOwn)
+      if (!effectiveIsOwn)
         Positioned(
           top: 8, right: 8,
           child: GestureDetector(
@@ -895,9 +907,9 @@ class _CardPhoto extends ConsumerWidget {
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
               ),
               child: Icon(
-                isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 size: 18,
-                color: isSaved ? _mkGreen : _mkTextSecondary,
+                color: isSaved ? _heartRed : _mkTextSecondary,
               ),
             ),
           ),
@@ -1308,6 +1320,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   Widget build(BuildContext context) {
     final ad = widget.ad;
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
+    final myNurseryId = ref.watch(sessionProvider.select((s) => s?.capabilities.ownedNurseryId));
+    final effectiveIsOwn = widget.isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
 
     return Scaffold(
       backgroundColor: _mkBg,
@@ -1320,11 +1334,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
             foregroundColor: _mkTextPrimary,
             surfaceTintColor: Colors.transparent,
             actions: [
-              if (!widget.isOwn) ...[
+              if (!effectiveIsOwn) ...[
                 IconButton(
                   icon: Icon(
-                    isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                    color: isSaved ? _mkGreen : _mkTextPrimary,
+                    isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isSaved ? _heartRed : _mkTextPrimary,
                   ),
                   onPressed: () => ref.read(toggleSaveProvider(ad.id).notifier).toggle(),
                 ),
@@ -1333,7 +1347,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   onPressed: () => _showMoreSheet(context, ad),
                 ),
               ],
-              if (widget.isOwn)
+              if (effectiveIsOwn)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(
@@ -1559,7 +1573,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
       ),
-      bottomNavigationBar: widget.isOwn
+      bottomNavigationBar: effectiveIsOwn
           ? null
           : SafeArea(
               child: Container(
@@ -3070,7 +3084,7 @@ class _MarketSettingsScreen extends StatefulWidget {
 
 class _MarketSettingsState extends State<_MarketSettingsScreen> {
   bool _marketActive = true;
-  bool _showPhone = false;
+  bool _showPhone = true;
   bool _autoRenew = false;
   bool _notifyEnquiries = true;
   bool _notifyExpiry = true;

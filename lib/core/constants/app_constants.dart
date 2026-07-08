@@ -4,6 +4,7 @@ abstract class AppConstants {
   static const String keyRefreshToken = 'gr_refresh_token';
   static const String keyUserId       = 'gr_user_id';
   static const String keyActiveRole   = 'gr_active_role';
+  static const String keyTermsAgreed  = 'gr_terms_agreed';
 
   // API timeouts
   static const int connectTimeoutMs = 15000;

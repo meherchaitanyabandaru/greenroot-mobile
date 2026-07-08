@@ -157,19 +157,21 @@ lib/
 
 ## Pending Work (Priority Order)
 
-### 1. Nursery Approval Status Screen
-- BRD B.3 — no pending approval screen
-- After nursery submission: show status, submitted date, admin comments
-- Splash routing must check nursery status on bootstrap
+### 1. Nursery Approval Status Screen ✅
+- BRD B.3 — ~~no pending approval screen~~ — **DONE**
+- Pending screen now shows submitted date from nursery `created_at`
+- Rejected screen now shows `rejection_reason` from API + `rejected_at` date
+- API workspace response now includes `nursery_status` inline (eliminates separate status call)
+- Splash routing uses workspace status with fallback to `/nurseries/owned`
 
 ### 2. Splash Smart Routing
 - Currently: authenticated → `/home` (no further checks)
-- BRD rules: incomplete profile → `/create-profile`; no activity selected → start-activity screen; pending nursery → approval screen
+- BRD rules: incomplete profile → `/create-profile`; no activity selected → start-activity screen; pending nursery → approval screen (done)
 - "Select Starting Activity" screen not yet built
 
-### 3. Sign-up Screen Polish
-- Current login screen says "Welcome back" but handles both new + existing users via OTP
-- Needs: T&C checkbox, Privacy Policy checkbox, label polish for new users
+### 3. Sign-up Screen Polish ✅
+- Login screen already says "Welcome to GreenRoot" (handles new + existing users)
+- T&C + Privacy Policy checkbox added — must be checked to enable Send OTP
 
 ---
 
@@ -178,7 +180,7 @@ lib/
 | Missing API | Required By | Workaround |
 |---|---|---|
 | `GET /nurseries/{id}/customers` | Customer list in members screen | Use invites list (CUSTOMER_INVITE accepted) |
-| Nursery `PENDING`/`APPROVED`/`REJECTED` status in `/me/workspaces` response | Splash routing + approval status screen | Check nursery detail separately |
+| ~~Nursery status in `/me/workspaces` response~~ | ~~Splash routing + approval status screen~~ | **Fixed** — `nursery_status` now inline in workspace |
 
 ---
 

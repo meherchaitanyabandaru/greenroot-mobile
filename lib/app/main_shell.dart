@@ -125,7 +125,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         screen: LocalMarketScreen(),
         icon: Icons.storefront_outlined,
         activeIcon: Icons.storefront_rounded,
-        label: 'Local Market',
+        label: 'Market',
       ),
       profile,
     ];
@@ -151,7 +151,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         screen: LocalMarketScreen(),
         icon: Icons.store_mall_directory_outlined,
         activeIcon: Icons.store_mall_directory_rounded,
-        label: 'Local Market',
+        label: 'Market',
       ),
       profile,
     ];

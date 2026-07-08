@@ -66,6 +66,15 @@ class SecureStorageService {
     AppLogger.i('Session cleared');
   }
 
+  // ── Terms Agreement ─────────────────────────────────────────────────────────
+  static Future<void> saveTermsAgreed() =>
+      _write(AppConstants.keyTermsAgreed, 'true');
+
+  static Future<bool> hasAgreedToTerms() async {
+    final val = await _read(AppConstants.keyTermsAgreed);
+    return val == 'true';
+  }
+
   // ── Private helpers ─────────────────────────────────────────────────────────
   static Future<void> _write(String key, String value) async {
     try {

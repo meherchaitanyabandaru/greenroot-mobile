@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -20,6 +21,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey    = GlobalKey<FormState>();
   final _mobileCtrl = TextEditingController();
   String? _mobileError;
+  bool _agreedToTerms = false;
+  bool _termsAlreadyAccepted = false; // true = returning user, hide checkbox
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTermsStatus();
+  }
+
+  Future<void> _loadTermsStatus() async {
+    final agreed = await SecureStorageService.hasAgreedToTerms();
+    if (!mounted) return;
+    setState(() {
+      _termsAlreadyAccepted = agreed;
+      _agreedToTerms = agreed;
+    });
+  }
 
   @override
   void dispose() {
@@ -29,7 +47,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _requestOtp() async {
     setState(() => _mobileError = null);
+    if (!_agreedToTerms) {
+      setState(() => _mobileError = 'Please agree to the Terms & Conditions and Privacy Policy');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
+    if (!_termsAlreadyAccepted) {
+      await SecureStorageService.saveTermsAgreed();
+    }
 
     await ref.read(otpSendProvider.notifier).sendOtp(_mobileCtrl.text.trim());
     final state = ref.read(otpSendProvider);
@@ -125,6 +150,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.x2l),
+
+                // T&C + Privacy Policy consent — shown only on first login
+                if (!_termsAlreadyAccepted) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _agreedToTerms,
+                          onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+                          activeColor: AppColors.primaryMain,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+                          child: RichText(
+                            text: TextSpan(
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textSecondary),
+                              children: [
+                                const TextSpan(text: 'I agree to the '),
+                                TextSpan(
+                                  text: 'Terms & Conditions',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.primaryMain,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.primaryMain,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.x2l),
+                ],
 
                 AppButton(
                   label: 'Send OTP',

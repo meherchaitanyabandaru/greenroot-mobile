@@ -65,7 +65,6 @@ class OwnerHome extends ConsumerWidget {
       children: [
         // Quick actions
         _OwnerActionGrid(
-          onTopItems: () => context.push('/nursery/top-items'),
           onConnections: () => context.push('/connections'),
         ),
       ],
@@ -391,11 +390,9 @@ class _QuotationAlertCard extends StatelessWidget {
 // ── Quick-action grid ─────────────────────────────────────────────────────────
 
 class _OwnerActionGrid extends StatelessWidget {
-  final VoidCallback onTopItems;
   final VoidCallback onConnections;
 
   const _OwnerActionGrid({
-    required this.onTopItems,
     required this.onConnections,
   });
 
@@ -403,15 +400,6 @@ class _OwnerActionGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: _ActionCell(
-            icon: Icons.eco_outlined,
-            label: 'My Top Items',
-            color: AppColors.primaryMain,
-            onTap: onTopItems,
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: _ActionCell(
             icon: Icons.people_outline_rounded,

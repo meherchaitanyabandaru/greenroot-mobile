@@ -5,20 +5,58 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
-class NurseryRejectedScreen extends ConsumerWidget {
+class NurseryRejectedScreen extends ConsumerStatefulWidget {
   const NurseryRejectedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionProvider);
+  ConsumerState<NurseryRejectedScreen> createState() =>
+      _NurseryRejectedScreenState();
+}
 
-    Future<void> logout() async {
-      await ref.read(sessionProvider.notifier).logout();
-      if (!context.mounted) return;
-      context.go('/login');
-    }
+class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
+  String? _rejectionReason;
+  DateTime? _rejectedAt;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNurseryDetails();
+  }
+
+  Future<void> _loadNurseryDetails() async {
+    final data = await ref.read(authRepositoryProvider).getOwnedNursery();
+    if (!mounted) return;
+    setState(() {
+      _rejectionReason = data?['rejection_reason'] as String?;
+      final rejectedRaw = data?['rejected_at'] as String?;
+      _rejectedAt = rejectedRaw != null
+          ? DateTime.tryParse(rejectedRaw)?.toLocal()
+          : null;
+      _loaded = true;
+    });
+  }
+
+  Future<void> _logout() async {
+    await ref.read(sessionProvider.notifier).logout();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = ref.watch(sessionProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -29,7 +67,7 @@ class NurseryRejectedScreen extends ConsumerWidget {
         title: const Text('Application Status', style: AppTypography.h3),
         actions: [
           IconButton(
-            onPressed: logout,
+            onPressed: _logout,
             icon: const Icon(Icons.logout_rounded, color: AppColors.red600),
             tooltip: 'Sign Out',
           ),
@@ -64,9 +102,8 @@ class NurseryRejectedScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Unfortunately, your nursery registration was not approved at this time. You may resubmit with updated information.',
-                style:
-                    AppTypography.body.copyWith(color: AppColors.textSecondary),
+                'Unfortunately, your nursery registration was not approved. Please review the reason below and resubmit.',
+                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
 
@@ -96,6 +133,12 @@ class NurseryRejectedScreen extends ConsumerWidget {
                               style: AppTypography.body
                                   .copyWith(fontWeight: FontWeight.w600),
                             ),
+                            if (_rejectedAt != null)
+                              Text(
+                                'Rejected on ${_formatDate(_rejectedAt!)}',
+                                style: AppTypography.caption.copyWith(
+                                    color: AppColors.textMuted),
+                              ),
                           ],
                         ),
                       ),
@@ -118,7 +161,44 @@ class NurseryRejectedScreen extends ConsumerWidget {
                 ),
               ],
 
-              const SizedBox(height: AppSpacing.x3l),
+              // Rejection reason — shown when available
+              if (_loaded && _rejectionReason?.isNotEmpty == true) ...[
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.red50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.red600.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded,
+                              color: AppColors.red600, size: 16),
+                          const SizedBox(width: 6),
+                          Text('Reason for rejection',
+                              style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.red700,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _rejectionReason!,
+                        style: AppTypography.body
+                            .copyWith(color: AppColors.red700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: AppSpacing.x2l),
 
               // What to do next info
               Container(
@@ -144,9 +224,9 @@ class NurseryRejectedScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    _Tip('Update your nursery information and resubmit.'),
+                    _Tip('Address the reason mentioned above and resubmit.'),
                     _Tip('Contact GreenRoot support for more details.'),
-                    _Tip('Ensure your contact details are accurate.'),
+                    _Tip('Ensure your contact details and documents are accurate.'),
                   ],
                 ),
               ),
@@ -160,7 +240,7 @@ class NurseryRejectedScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               TextButton(
-                onPressed: logout,
+                onPressed: _logout,
                 child: Text(
                   'Sign Out',
                   style: AppTypography.button

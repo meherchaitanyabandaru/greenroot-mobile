@@ -29,7 +29,7 @@ import '../features/driver/trip_preview_screen.dart';
 import '../features/inventory/inventory_add_screen.dart';
 import '../features/inventory/inventory_detail_screen.dart';
 import '../features/inventory/inventory_list_screen.dart';
-import '../features/top_items/top_items_screen.dart';
+import '../features/manager/top_items_screen.dart';
 import '../features/requests/request_list_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';

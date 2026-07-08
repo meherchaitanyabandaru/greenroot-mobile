@@ -4,17 +4,20 @@ class Workspace {
   final String type;
   final int? nurseryId;
   final String? nurseryName;
+  final String? nurseryStatus;
 
   const Workspace({
     required this.type,
     this.nurseryId,
     this.nurseryName,
+    this.nurseryStatus,
   });
 
   factory Workspace.fromJson(Map<String, dynamic> json) => Workspace(
         type: json['type'] as String? ?? 'PERSONAL',
         nurseryId: (json['nursery_id'] as num?)?.toInt(),
         nurseryName: json['nursery_name'] as String?,
+        nurseryStatus: json['nursery_status'] as String?,
       );
 
   bool get isBusinessWorkspace => type != 'PERSONAL';

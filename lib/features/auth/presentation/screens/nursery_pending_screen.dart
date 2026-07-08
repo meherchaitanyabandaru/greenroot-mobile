@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
 class NurseryPendingScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,22 @@ class NurseryPendingScreen extends ConsumerStatefulWidget {
 
 class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
   bool _refreshing = false;
+  DateTime? _submittedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNurseryDetails();
+  }
+
+  Future<void> _loadNurseryDetails() async {
+    final data = await ref.read(authRepositoryProvider).getOwnedNursery();
+    if (!mounted) return;
+    final createdAtRaw = data?['created_at'] as String?;
+    if (createdAtRaw != null) {
+      setState(() => _submittedAt = DateTime.tryParse(createdAtRaw)?.toLocal());
+    }
+  }
 
   Future<void> _refresh() async {
     setState(() => _refreshing = true);
@@ -36,6 +53,14 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
     await ref.read(sessionProvider.notifier).logout();
     if (!mounted) return;
     context.go('/login');
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   @override
@@ -83,11 +108,37 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Your nursery registration is currently being reviewed by the GreenRoot team. You\'ll be notified once a decision is made.',
-                style:
-                    AppTypography.body.copyWith(color: AppColors.textSecondary),
+                'Your nursery registration is being reviewed by the GreenRoot team. You\'ll be notified once a decision is made.',
+                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
+
+              if (_submittedAt != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 14, color: AppColors.textMuted),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Submitted on ${_formatDate(_submittedAt!)}',
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: AppSpacing.x3l),
 
               // Steps
@@ -95,7 +146,9 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
                 icon: Icons.check_circle_rounded,
                 iconColor: AppColors.primaryMain,
                 title: 'Application Submitted',
-                subtitle: 'Your nursery details have been received.',
+                subtitle: _submittedAt != null
+                    ? 'Received on ${_formatDate(_submittedAt!)}'
+                    : 'Your nursery details have been received.',
               ),
               const SizedBox(height: AppSpacing.md),
               _StatusStep(

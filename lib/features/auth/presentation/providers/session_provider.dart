@@ -98,11 +98,11 @@ class SessionNotifier extends StateNotifier<SessionState> {
               ? storedActiveRole
               : null;
 
-      // Fetch nursery status separately for pending/rejected routing
+      // Use nursery_status from workspace response (API v2); fallback to separate call for older API builds
       String? ownedNurseryStatus;
-      final hasOwnedNursery = workspaces.any((w) => w.type == 'OWNED_NURSERY');
-      if (hasOwnedNursery) {
-        ownedNurseryStatus = await _repo.getOwnedNurseryStatus();
+      final ownedWorkspace = workspaces.where((w) => w.type == 'OWNED_NURSERY').firstOrNull;
+      if (ownedWorkspace != null) {
+        ownedNurseryStatus = ownedWorkspace.nurseryStatus ?? await _repo.getOwnedNurseryStatus();
       }
 
       state = SessionState(
