@@ -12,7 +12,7 @@ import 'quotations.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
 
-enum QuotationTypeChoice { internal, customer, directOrder }
+enum QuotationTypeChoice { internal, customer }
 
 // ── Item row data model ────────────────────────────────────────────────────────
 
@@ -70,14 +70,7 @@ Future<QuotationTypeChoice?> showQuotationTypeDialog(BuildContext context) {
             subtitle: 'Prepare and share with a customer',
             onTap: () => Navigator.pop(ctx, QuotationTypeChoice.customer),
           ),
-          const Divider(height: 1, color: AppColors.border),
-          _TypeOption(
-            icon: Icons.shopping_cart_outlined,
-            iconColor: AppColors.blue600,
-            title: 'Direct Order',
-            subtitle: 'Skip quotation — create an order immediately',
-            onTap: () => Navigator.pop(ctx, QuotationTypeChoice.directOrder),
-          ),
+
         ],
       ),
       actions: [
@@ -227,12 +220,6 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       return;
     }
 
-    if (choice == QuotationTypeChoice.directOrder) {
-      context.pop();
-      context.push('/orders/create');
-      return;
-    }
-
     setState(() {
       _quotationType = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
     });
@@ -363,14 +350,6 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                 controller: _scrollCtrl,
                 padding: const EdgeInsets.all(AppSpacing.screenPadding),
                 children: [
-                  // Type badge
-                  _TypeBadge(isInternal: _isInternal),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Price caution
-                  _CautionBanner(),
-                  const SizedBox(height: AppSpacing.md),
-
                   // Error
                   if (_error != null) ...[
                     Container(
@@ -425,42 +404,10 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                     const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // Internal note
-                  if (_isInternal) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F9FF),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFBAE6FD)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.info_outline, color: Color(0xFF0284C7), size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Internal quotations are not shared with customers. '
-                              'You can attach a customer and convert this to a Customer Quotation later.',
-                              style: AppTypography.caption.copyWith(color: const Color(0xFF0369A1)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
                   // Items header
                   Row(children: [
-                    Text('Plant Items', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                    Text('Items', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
                     const Spacer(),
-                    Text(
-                      '${_items.length} item${_items.length == 1 ? '' : 's'}',
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
                     GestureDetector(
                       onTap: _addItem,
                       child: Row(children: [
@@ -493,16 +440,11 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
                   // Notes
                   const SizedBox(height: AppSpacing.md),
-                  Text(
-                    _isInternal ? 'Internal Notes (optional)' : 'Notes (optional)',
-                    style: AppTypography.label.copyWith(color: AppColors.textSecondary),
-                  ),
+                  Text('Notes', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _notesCtrl,
-                    decoration: _inputDec(_isInternal
-                        ? 'Internal planning notes, plant requirements...'
-                        : 'Delivery instructions, special requirements...'),
+                    decoration: _inputDec('Add notes...'),
                     maxLines: 3,
                     minLines: 2,
                   ),
@@ -520,15 +462,8 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Estimated Total', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
-                    Text('₹${_grandTotal.toStringAsFixed(2)}',
-                        style: AppTypography.h3.copyWith(color: AppColors.primaryMain)),
-                  ],
-                ),
+                Text('₹${_grandTotal.toStringAsFixed(2)}',
+                    style: AppTypography.h3.copyWith(color: AppColors.primaryMain)),
                 const Spacer(),
                 SizedBox(
                   width: 130,

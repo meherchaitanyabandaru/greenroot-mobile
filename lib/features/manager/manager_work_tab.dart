@@ -40,12 +40,69 @@ final _mgrOrderProvider =
   (ref) => _MgrOrderNotifier(ref.watch(orderRepositoryProvider)),
 );
 
-class _MgrQuotationNotifier extends PagedNotifier<Quotation> {
-  _MgrQuotationNotifier(QuotationRepository repo)
-      : super(
-          fetch: (p, pp) => repo.listQuotations(page: p, perPage: pp),
-          idOf: (q) => q.id,
-        );
+class _MgrQuotationNotifier extends StateNotifier<PagedState<Quotation>> {
+  final QuotationRepository _repo;
+  String _search = '';
+  String? _status;
+  int _page = 0;
+
+  _MgrQuotationNotifier(this._repo) : super(PagedState.initial());
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final (items, pagination) = await _repo.listQuotations(
+        page: 1, perPage: 20, search: _search, status: _status,
+      );
+      _page = 1;
+      state = PagedState(
+        items: items,
+        isLoading: false,
+        isLoadingMore: false,
+        hasMore: pagination.hasMore,
+      );
+    } on AppError catch (e) {
+      state = state.copyWith(isLoading: false, error: e);
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final (items, pagination) = await _repo.listQuotations(
+        page: _page + 1, perPage: 20, search: _search, status: _status,
+      );
+      _page++;
+      state = state.copyWith(
+        items: [...state.items, ...items],
+        isLoadingMore: false,
+        hasMore: pagination.hasMore,
+      );
+    } on AppError {
+      state = state.copyWith(isLoadingMore: false);
+    }
+  }
+
+  void setSearch(String q) {
+    _search = q;
+    load();
+  }
+
+  void setStatusFilter(String? status) {
+    _status = status;
+    load();
+  }
+
+  void removeItem(int id) {
+    state = state.copyWith(items: state.items.where((q) => q.id != id).toList());
+  }
+
+  void updateItem(Quotation updated) {
+    state = state.copyWith(
+      items: state.items.map((q) => q.id == updated.id ? updated : q).toList(),
+    );
+  }
 }
 
 final _mgrQuotationProvider = StateNotifierProvider.autoDispose<
@@ -107,16 +164,16 @@ class _ManagerWorkTabState extends ConsumerState<ManagerWorkTab>
           indicatorColor: AppColors.primaryMain,
           indicatorWeight: 2.5,
           tabs: const [
-            Tab(text: 'Orders'),
             Tab(text: 'Quotations'),
+            Tab(text: 'Orders'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabs,
         children: const [
-          _MgrOrdersTab(),
           _MgrQuotationsTab(),
+          _MgrOrdersTab(),
         ],
       ),
     );
@@ -270,14 +327,77 @@ class _MgrOrderCard extends ConsumerWidget {
 // TAB 2 — QUOTATIONS
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _MgrQuotationsTab extends ConsumerWidget {
+class _MgrQuotationsTab extends ConsumerStatefulWidget {
   const _MgrQuotationsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_MgrQuotationsTab> createState() => _MgrQuotationsTabState();
+}
+
+class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
+  final _searchCtrl = TextEditingController();
+  String? _activeStatus;
+
+  static const _statusOptions = [
+    (label: 'All', value: null),
+    (label: 'Internal', value: 'INTERNAL_DRAFT'),
+    (label: 'Draft', value: 'CUSTOMER_DRAFT'),
+    (label: 'Sent', value: 'CUSTOMER_SENT'),
+    (label: 'Accepted', value: 'CUSTOMER_ACCEPTED'),
+    (label: 'Rejected', value: 'CUSTOMER_REJECTED'),
+    (label: 'Converted', value: 'CONVERTED'),
+  ];
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete(Quotation q) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Quotation'),
+        content: Text('Delete ${q.quotationCode}? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    try {
+      await ref.read(quotationRepositoryProvider).deleteQuotation(q.id);
+      ref.read(_mgrQuotationProvider.notifier).removeItem(q.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Quotation deleted'),
+            backgroundColor: AppColors.primaryMain,
+          ),
+        );
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final paged = ref.watch(_mgrQuotationProvider);
 
-    if (paged.isLoading) {
+    if (paged.isLoading && paged.items.isEmpty) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.primaryMain));
     }
@@ -287,31 +407,176 @@ class _MgrQuotationsTab extends ConsumerWidget {
         onRetry: () => ref.read(_mgrQuotationProvider.notifier).load(),
       );
     }
-    if (paged.items.isEmpty) {
-      return const EmptyState(
-        icon: Icons.request_quote_outlined,
-        title: 'No quotations yet',
-        subtitle: 'Quotations you create for buyers will appear here.',
-      );
-    }
-    return RefreshIndicator(
-      color: AppColors.primaryMain,
-      onRefresh: () => ref.read(_mgrQuotationProvider.notifier).load(),
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg),
-        itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, i) {
-          if (i == paged.items.length) {
-            ref.read(_mgrQuotationProvider.notifier).loadMore();
-            return const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return _MgrQuotationCard(quotation: paged.items[i]);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final created = await context.push<bool>('/quotations/create');
+          if (created == true) ref.read(_mgrQuotationProvider.notifier).load();
         },
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New Quotation'),
+        backgroundColor: AppColors.primaryMain,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
+      body: Column(
+        children: [
+          // ── Search bar ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => ref.read(_mgrQuotationProvider.notifier).setSearch(v),
+              decoration: InputDecoration(
+                hintText: 'Search quotations…',
+                hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          ref.read(_mgrQuotationProvider.notifier).setSearch('');
+                        },
+                      )
+                    : null,
+                isDense: true,
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primaryMain),
+                ),
+              ),
+            ),
+          ),
+          // ── Status filter chips ─────────────────────────────────────────
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              itemCount: _statusOptions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final opt = _statusOptions[i];
+                final isSelected = _activeStatus == opt.value;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _activeStatus = opt.value);
+                    ref.read(_mgrQuotationProvider.notifier).setStatusFilter(opt.value);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primaryMain : AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primaryMain : AppColors.border,
+                      ),
+                    ),
+                    child: Text(
+                      opt.label,
+                      style: AppTypography.caption.copyWith(
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          // ── List ────────────────────────────────────────────────────────
+          Expanded(
+            child: paged.items.isEmpty && !paged.isLoading
+                ? const EmptyState(
+                    icon: Icons.request_quote_outlined,
+                    title: 'No quotations yet',
+                    subtitle: 'Tap + to create your first quotation.',
+                  )
+                : RefreshIndicator(
+                    color: AppColors.primaryMain,
+                    onRefresh: () => ref.read(_mgrQuotationProvider.notifier).load(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPadding, AppSpacing.sm,
+                          AppSpacing.screenPadding, 100),
+                      itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
+                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, i) {
+                        if (i == paged.items.length) {
+                          ref.read(_mgrQuotationProvider.notifier).loadMore();
+                          return const Padding(
+                            padding: EdgeInsets.all(AppSpacing.lg),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final q = paged.items[i];
+                        return Dismissible(
+                          key: ValueKey(q.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.red600,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.delete_outline, color: Colors.white, size: 22),
+                                SizedBox(height: 2),
+                                Text('Delete',
+                                    style: TextStyle(color: Colors.white, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          confirmDismiss: (_) async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Quotation'),
+                                content: Text(
+                                    'Delete ${q.quotationCode}? This cannot be undone.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: Text('Delete',
+                                        style: TextStyle(color: AppColors.red600)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            return confirm ?? false;
+                          },
+                          onDismissed: (_) => _delete(q),
+                          child: _MgrQuotationCard(quotation: q),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }

@@ -33,10 +33,28 @@ class QuotationListScreen extends ConsumerStatefulWidget {
 }
 
 class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
+  final _searchCtrl = TextEditingController();
+
+  static const _statusOptions = [
+    (label: 'All', value: null),
+    (label: 'Internal', value: 'INTERNAL_DRAFT'),
+    (label: 'Draft', value: 'CUSTOMER_DRAFT'),
+    (label: 'Sent', value: 'CUSTOMER_SENT'),
+    (label: 'Accepted', value: 'CUSTOMER_ACCEPTED'),
+    (label: 'Rejected', value: 'CUSTOMER_REJECTED'),
+    (label: 'Converted', value: 'CONVERTED'),
+  ];
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(quotationListProvider.notifier).load());
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   List<_ListItem> _buildGrouped(List<Quotation> quotations) {
@@ -91,6 +109,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(quotationListProvider);
     final paged = state.paged;
+    final activeStatus = state.statusFilter;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -99,15 +118,89 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(96),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => ref.read(quotationListProvider.notifier).setSearch(v),
+                  decoration: InputDecoration(
+                    hintText: 'Search quotations…',
+                    hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                    suffixIcon: state.search.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              ref.read(quotationListProvider.notifier).setSearch('');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    filled: true,
+                    fillColor: AppColors.background,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.primaryMain),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  itemCount: _statusOptions.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (_, i) {
+                    final opt = _statusOptions[i];
+                    final isSelected = activeStatus == opt.value;
+                    return GestureDetector(
+                      onTap: () => ref.read(quotationListProvider.notifier).setStatusFilter(opt.value),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primaryMain : AppColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primaryMain : AppColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          opt.label,
+                          style: AppTypography.caption.copyWith(
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final choice = await showQuotationTypeDialog(context);
           if (choice == null || !context.mounted) return;
-          if (choice == QuotationTypeChoice.directOrder) {
-            context.push('/orders/create');
-            return;
-          }
           final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
           final created = await context.push<bool>('/quotations/create?type=$type');
           if (created == true) ref.read(quotationListProvider.notifier).load();

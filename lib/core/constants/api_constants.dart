@@ -22,8 +22,6 @@ abstract class ApiConstants {
   static const String plantSizes = '$v1/plants/sizes';
   static String plantById(int id) => '$v1/plants/$id';
   static String plantCareGuide(int id) => '$v1/plants/$id/care-guide';
-  static String plantNamesByLang({required String ids, required String lang}) =>
-      '$v1/plants/names?ids=$ids&lang=$lang';
 
   // Nurseries
   static const String nurseries = '$v1/nurseries';

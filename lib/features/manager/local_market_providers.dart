@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -232,20 +233,226 @@ Future<String> uploadAdPhoto(XFile file) async {
   return fileUrl;
 }
 
-// ── Browse / Search ───────────────────────────────────────────
+// ── Latest Ads (home screen) ──────────────────────────────────
 
-/// Family key is the plant_name search query ('' = no filter, shows latest).
-final filteredAdsProvider =
-    FutureProvider.family<List<MarketAd>, String>((ref, q) async {
-  final params = <String, String>{'per_page': '50'};
-  if (q.isNotEmpty) params['plant_name'] = q;
+final latestAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
   final data = await ApiClient.instance.get<Map<String, dynamic>>(
     ApiConstants.marketAds,
-    queryParameters: params,
+    queryParameters: {'per_page': '6', 'page': '1'},
   );
-  final ads = (data['ads'] as List?) ?? [];
-  return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
+  return (data['ads'] as List?)
+          ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      [];
 });
+
+// ── Browse / Search / Sort / Pagination ──────────────────────
+
+enum MarketSort {
+  newest('newest', 'Newest First'),
+  priceAsc('price_asc', 'Price: Low to High'),
+  priceDesc('price_desc', 'Price: High to Low'),
+  popular('popular', 'Most Popular');
+
+  const MarketSort(this.value, this.label);
+  final String value;
+  final String label;
+}
+
+class BrowseAdsState {
+  final List<MarketAd> ads;
+  final int total;
+  final int nextPage;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final String query;
+  final MarketSort sort;
+  final String? error;
+  final String? category;
+  final double? minPrice;
+  final double? maxPrice;
+
+  const BrowseAdsState({
+    this.ads = const [],
+    this.total = 0,
+    this.nextPage = 1,
+    this.isLoading = true,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.query = '',
+    this.sort = MarketSort.newest,
+    this.error,
+    this.category,
+    this.minPrice,
+    this.maxPrice,
+  });
+
+  int get activeFilterCount =>
+      (category != null ? 1 : 0) +
+      (minPrice != null ? 1 : 0) +
+      (maxPrice != null ? 1 : 0);
+
+  BrowseAdsState copyWith({
+    List<MarketAd>? ads,
+    int? total,
+    int? nextPage,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    String? query,
+    MarketSort? sort,
+    String? error,
+    bool clearError = false,
+    String? category,
+    bool clearCategory = false,
+    double? minPrice,
+    bool clearMinPrice = false,
+    double? maxPrice,
+    bool clearMaxPrice = false,
+  }) =>
+      BrowseAdsState(
+        ads: ads ?? this.ads,
+        total: total ?? this.total,
+        nextPage: nextPage ?? this.nextPage,
+        isLoading: isLoading ?? this.isLoading,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasMore: hasMore ?? this.hasMore,
+        query: query ?? this.query,
+        sort: sort ?? this.sort,
+        error: clearError ? null : (error ?? this.error),
+        category: clearCategory ? null : (category ?? this.category),
+        minPrice: clearMinPrice ? null : (minPrice ?? this.minPrice),
+        maxPrice: clearMaxPrice ? null : (maxPrice ?? this.maxPrice),
+      );
+}
+
+class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
+  Timer? _debounce;
+  static const _perPage = 20;
+
+  BrowseAdsNotifier() : super(const BrowseAdsState()) {
+    _load();
+  }
+
+  void onQueryChanged(String q) {
+    _debounce?.cancel();
+    state = BrowseAdsState(
+      query: q,
+      sort: state.sort,
+      category: state.category,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+    );
+    _debounce = Timer(const Duration(milliseconds: 400), _load);
+  }
+
+  void setSort(MarketSort sort) {
+    if (sort == state.sort) return;
+    state = BrowseAdsState(
+      query: state.query,
+      sort: sort,
+      category: state.category,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+    );
+    _load();
+  }
+
+  void setFilters({String? category, double? minPrice, double? maxPrice}) {
+    state = BrowseAdsState(
+      query: state.query,
+      sort: state.sort,
+      category: category,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+    );
+    _load();
+  }
+
+  Future<void> refresh() {
+    state = BrowseAdsState(
+      query: state.query,
+      sort: state.sort,
+      category: state.category,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+    );
+    return _load();
+  }
+
+  Future<void> loadMore() {
+    if (state.isLoadingMore || !state.hasMore || state.isLoading) {
+      return Future.value();
+    }
+    state = state.copyWith(isLoadingMore: true);
+    return _load();
+  }
+
+  Future<void> _load() async {
+    final q = state.query;
+    final sort = state.sort;
+    final page = state.nextPage;
+    final category = state.category;
+    final minPrice = state.minPrice;
+    final maxPrice = state.maxPrice;
+
+    try {
+      final params = <String, String>{
+        'per_page': '$_perPage',
+        'page': '$page',
+        if (q.isNotEmpty) 'q': q,
+        if (sort != MarketSort.newest) 'sort': sort.value,
+        if (category != null) 'category': category,
+        if (minPrice != null) 'min_price': minPrice.toStringAsFixed(0),
+        if (maxPrice != null) 'max_price': maxPrice.toStringAsFixed(0),
+      };
+
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiConstants.marketAds,
+        queryParameters: params,
+      );
+
+      final fetched = (data['ads'] as List?)
+              ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final total = (data['total'] as num?)?.toInt() ?? 0;
+      final combined = page == 1 ? fetched : [...state.ads, ...fetched];
+
+      state = BrowseAdsState(
+        ads: combined,
+        total: total,
+        nextPage: page + 1,
+        isLoading: false,
+        isLoadingMore: false,
+        hasMore: combined.length < total,
+        query: q,
+        sort: sort,
+        category: category,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isLoadingMore: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+}
+
+final browseAdsProvider =
+    StateNotifierProvider<BrowseAdsNotifier, BrowseAdsState>(
+  (ref) => BrowseAdsNotifier(),
+);
 
 // ── My Ads ────────────────────────────────────────────────────
 
@@ -508,7 +715,7 @@ class _AdActionNotifier extends StateNotifier<AsyncValue<void>> {
         ApiConstants.marketAdAction(adId, action),
       );
       _ref.invalidate(myAdsProvider);
-      _ref.invalidate(filteredAdsProvider(''));
+      _ref.invalidate(latestAdsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);

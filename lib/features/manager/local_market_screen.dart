@@ -7,7 +7,7 @@ import '../../core/theme/app_typography.dart';
 import 'local_market_providers.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _mkGreen  = Color(0xFF00A86B);
+const _mkGreen    = Color(0xFF00A86B);
 const _mkDark   = Color(0xFF047857);
 const _mkLight  = Color(0xFFD1FAE5);
 const _mkBg     = Color(0xFFF0FDF4);
@@ -16,22 +16,31 @@ const _mkBorder = Color(0xFFE2E8F0);
 const _mkTextPrimary   = Color(0xFF0F172A);
 const _mkTextSecondary = Color(0xFF64748B);
 
-const _stPublished  = Color(0xFF16A34A);
+const _stPublished   = Color(0xFF16A34A);
 const _stPublishedBg = Color(0xFFDCFCE7);
-const _stDraft      = Color(0xFF64748B);
-const _stDraftBg    = Color(0xFFF1F5F9);
-const _stPaused     = Color(0xFFF59E0B);
-const _stPausedBg   = Color(0xFFFEF3C7);
-const _stExpired    = Color(0xFFDC2626);
-const _stExpiredBg  = Color(0xFFFEE2E2);
-const _stArchived   = Color(0xFF334155);
-const _stArchivedBg = Color(0xFFE2E8F0);
+const _stDraft       = Color(0xFF64748B);
+const _stDraftBg     = Color(0xFFF1F5F9);
+const _stPaused      = Color(0xFFF59E0B);
+const _stPausedBg    = Color(0xFFFEF3C7);
+const _stExpired     = Color(0xFFDC2626);
+const _stExpiredBg   = Color(0xFFFEE2E2);
+const _stArchived    = Color(0xFF334155);
+const _stArchivedBg  = Color(0xFFE2E8F0);
 
 const _cardShadow = BoxShadow(
   color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 2),
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+bool _isNewAd(MarketAd ad) {
+  final published = ad.publishedAt ?? ad.createdAt;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final adDay = DateTime(published.year, published.month, published.day);
+  return today.difference(adDay).inDays <= 1;
+}
+
 String _timeAgo(DateTime dt) {
   final d = DateTime.now().difference(dt);
   if (d.inDays >= 1) return '${d.inDays}d ago';
@@ -45,7 +54,7 @@ String _daysLeft(DateTime? exp) {
   return d > 0 ? '$d days left' : 'Expired';
 }
 
-InputDecoration _inputDec(String hint, {int? maxLen}) => InputDecoration(
+InputDecoration _inputDec(String hint) => InputDecoration(
   hintText: hint,
   hintStyle: TextStyle(color: _mkTextSecondary.withValues(alpha: 0.6), fontSize: 14),
   filled: true,
@@ -66,7 +75,7 @@ class LocalMarketScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final latestAsync = ref.watch(filteredAdsProvider(''));
+    final latestAsync = ref.watch(latestAdsProvider);
 
     return Scaffold(
       backgroundColor: _mkBg,
@@ -106,18 +115,11 @@ class LocalMarketScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         color: _mkGreen,
-        onRefresh: () async => ref.invalidate(filteredAdsProvider('')),
+        onRefresh: () async => ref.invalidate(latestAdsProvider),
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _HomeSearchBar(context)),
             SliverToBoxAdapter(child: _HomeQuickActions(context)),
-            SliverToBoxAdapter(child: _HomeCategories(context)),
-            SliverToBoxAdapter(
-              child: latestAsync.maybeWhen(
-                data: (ads) => _HomeNearbyNurseries(context, ads),
-                orElse: () => const SizedBox.shrink(),
-              ),
-            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
@@ -134,7 +136,7 @@ class LocalMarketScreen extends ConsumerWidget {
               error: (e, _) => SliverToBoxAdapter(
                 child: _ErrorState(
                     message: e.toString(),
-                    onRetry: () => ref.invalidate(filteredAdsProvider(''))),
+                    onRetry: () => ref.invalidate(latestAdsProvider)),
               ),
               data: (ads) {
                 if (ads.isEmpty) {
@@ -183,7 +185,7 @@ class LocalMarketScreen extends ConsumerWidget {
             const Icon(Icons.search_rounded, color: _mkGreen, size: 20),
             const SizedBox(width: 10),
             Expanded(
-              child: Text('Search plants, nurseries...',
+              child: Text('Search plants...',
                   style: AppTypography.body.copyWith(
                       color: _mkTextSecondary.withValues(alpha: 0.7))),
             ),
@@ -198,7 +200,7 @@ class LocalMarketScreen extends ConsumerWidget {
     final items = [
       (Icons.grid_view_rounded, 'Browse', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _BrowseScreen()))),
-      (Icons.bookmark_outline_rounded, 'Saved', () => Navigator.of(context)
+      (Icons.favorite_outline_rounded, 'Saved', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _SavedAdsScreen()))),
       (Icons.add_business_outlined, 'My Ads', () => Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const _MyAdsScreen()))),
@@ -216,144 +218,6 @@ class LocalMarketScreen extends ConsumerWidget {
     );
   }
 
-  Widget _HomeCategories(BuildContext context) {
-    const cats = [
-      (Icons.apple_rounded, 'Fruit\nPlants', Color(0xFFFFF7ED), Color(0xFFEA580C)),
-      (Icons.local_florist_rounded, 'Flower\nPlants', Color(0xFFFDF2F8), Color(0xFFDB2777)),
-      (Icons.forest_rounded, 'Forest\nPlants', Color(0xFFF0FDF4), Color(0xFF15803D)),
-      (Icons.spa_rounded, 'Ornamentals', Color(0xFFEFF6FF), Color(0xFF2563EB)),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _SectionHeader(
-            title: 'Categories',
-            actionLabel: 'View All',
-            onAction: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const _BrowseScreen())),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 108,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemCount: cats.length,
-            itemBuilder: (_, i) {
-              final (icon, name, bg, fg) = cats[i];
-              return GestureDetector(
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) =>
-                        _BrowseScreen(initialCategory: name.replaceAll('\n', ' ')))),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                      child: Icon(icon, color: fg, size: 28),
-                    ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: 72,
-                      child: Text(name,
-                          style: AppTypography.caption.copyWith(
-                              color: _mkTextPrimary, fontWeight: FontWeight.w600),
-                          textAlign: TextAlign.center),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _HomeNearbyNurseries(BuildContext context, List<MarketAd> ads) {
-    final seen = <int>{};
-    final nurseries =
-        ads.where((a) => seen.add(a.nurseryId)).take(6).toList();
-    if (nurseries.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _SectionHeader(title: 'Nearby Nurseries'),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 74,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemCount: nurseries.length,
-            itemBuilder: (_, i) {
-              final ad = nurseries[i];
-              return Container(
-                width: 190,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _mkCard,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _mkBorder),
-                  boxShadow: const [_cardShadow],
-                ),
-                child: Row(children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: const BoxDecoration(color: _mkLight, shape: BoxShape.circle),
-                    child: Center(
-                      child: Text(
-                        ad.nurseryName.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                            color: _mkGreen, fontWeight: FontWeight.w800, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(children: [
-                          if (ad.nurseryVerified)
-                            const Padding(
-                              padding: EdgeInsets.only(right: 3),
-                              child: Icon(Icons.verified_rounded, size: 12, color: _mkGreen),
-                            ),
-                          Expanded(
-                            child: Text(ad.nurseryName,
-                                style: AppTypography.label.copyWith(
-                                    color: _mkTextPrimary, fontWeight: FontWeight.w700),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis),
-                          ),
-                        ]),
-                        Text('Nearby',
-                            style: AppTypography.caption
-                                .copyWith(color: _mkTextSecondary)),
-                      ],
-                    ),
-                  ),
-                ]),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _QuickActionTile extends StatelessWidget {
@@ -397,9 +261,8 @@ class _QuickActionTile extends StatelessWidget {
 
 class _BrowseScreen extends ConsumerStatefulWidget {
   final bool autoFocus;
-  final String? initialCategory;
 
-  const _BrowseScreen({this.autoFocus = false, this.initialCategory});
+  const _BrowseScreen({this.autoFocus = false});
 
   @override
   ConsumerState<_BrowseScreen> createState() => _BrowseScreenState();
@@ -408,20 +271,25 @@ class _BrowseScreen extends ConsumerStatefulWidget {
 class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
   final _searchCtrl = TextEditingController();
   late final FocusNode _focus;
-  String _query = '';
-  String? _cat;
-
-  static const _cats = ['All', 'Fruit', 'Flower', 'Forest', 'Ornamental'];
+  late final ScrollController _scroll;
 
   @override
   void initState() {
     super.initState();
     _focus = FocusNode();
-    if (widget.initialCategory != null) {
-      _cat = widget.initialCategory!.split(' ').first;
-    }
-    if (widget.autoFocus) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+    _scroll = ScrollController()..addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Restore search text from provider state
+      final q = ref.read(browseAdsProvider).query;
+      if (_searchCtrl.text != q) _searchCtrl.text = q;
+      if (widget.autoFocus) _focus.requestFocus();
+    });
+  }
+
+  void _onScroll() {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
+      ref.read(browseAdsProvider.notifier).loadMore();
     }
   }
 
@@ -429,22 +297,214 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
   void dispose() {
     _searchCtrl.dispose();
     _focus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  List<MarketAd> _filter(List<MarketAd> ads) {
-    if (_cat == null || _cat == 'All') return ads;
-    final f = _cat!.toLowerCase();
-    return ads.where((a) {
-      final cat = (a.categoryName ?? '').toLowerCase();
-      final plant = a.plantName.toLowerCase();
-      return cat.contains(f) || plant.contains(f) || a.title.toLowerCase().contains(f);
-    }).toList();
+  void _showFilterSheet() {
+    final browse = ref.read(browseAdsProvider);
+    String? selCat = browse.category;
+    final minCtrl = TextEditingController(
+      text: browse.minPrice != null ? browse.minPrice!.toStringAsFixed(0) : '',
+    );
+    final maxCtrl = TextEditingController(
+      text: browse.maxPrice != null ? browse.maxPrice!.toStringAsFixed(0) : '',
+    );
+    const cats = ['Fruit Plants', 'Flower Plants', 'Forest Plants', 'Ornamentals'];
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _mkCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                        color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                Text('Filter Ads', style: AppTypography.h4.copyWith(
+                    color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 20),
+                const Text('Category',
+                    style: TextStyle(
+                        color: _mkTextSecondary, fontSize: 12,
+                        fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: [
+                    _catChip('All', selCat == null, () => setS(() => selCat = null)),
+                    for (final c in cats)
+                      _catChip(c, selCat == c, () => setS(() => selCat = c)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text('Price Range (₹ per unit)',
+                    style: TextStyle(
+                        color: _mkTextSecondary, fontSize: 12,
+                        fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(child: TextField(
+                      controller: minCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDec('Min price'))),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('–',
+                        style: TextStyle(color: _mkTextSecondary, fontSize: 18)),
+                  ),
+                  Expanded(child: TextField(
+                      controller: maxCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDec('Max price'))),
+                ]),
+                const SizedBox(height: 24),
+                Row(children: [
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _mkTextSecondary,
+                      side: const BorderSide(color: _mkBorder),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                    onPressed: () {
+                      setS(() => selCat = null);
+                      minCtrl.clear();
+                      maxCtrl.clear();
+                    },
+                    child: const Text('Clear All'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _mkGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      onPressed: () {
+                        final min = double.tryParse(minCtrl.text.trim());
+                        final max = double.tryParse(maxCtrl.text.trim());
+                        ref.read(browseAdsProvider.notifier).setFilters(
+                              category: selCat,
+                              minPrice: min,
+                              maxPrice: max,
+                            );
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Apply Filters',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _catChip(String label, bool selected, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? _mkGreen : _mkCard,
+            border: Border.all(
+                color: selected ? _mkGreen : _mkBorder, width: 1.5),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                color: selected ? Colors.white : _mkTextPrimary,
+                fontSize: 13,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.w400,
+              )),
+        ),
+      );
+
+  void _showSortSheet() {
+    final notifier = ref.read(browseAdsProvider.notifier);
+    final currentSort = ref.read(browseAdsProvider).sort;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _mkCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                    color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('Sort by',
+                  style: AppTypography.h4.copyWith(
+                      color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+            ),
+            for (final s in MarketSort.values)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(s.label,
+                    style: TextStyle(
+                        color: currentSort == s ? _mkGreen : _mkTextPrimary,
+                        fontWeight: currentSort == s
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        fontSize: 15)),
+                trailing: currentSort == s
+                    ? const Icon(Icons.check_rounded, color: _mkGreen, size: 20)
+                    : null,
+                onTap: () {
+                  notifier.setSort(s);
+                  Navigator.of(context).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final adsAsync = ref.watch(filteredAdsProvider(_query));
+    final browse = ref.watch(browseAdsProvider);
+
+    final filterCount = browse.activeFilterCount;
+    final hasFilters = filterCount > 0;
 
     return Scaffold(
       backgroundColor: _mkBg,
@@ -454,93 +514,210 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         foregroundColor: _mkTextPrimary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(105),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: TextField(
-                  controller: _searchCtrl,
-                  focusNode: _focus,
-                  onChanged: (q) => setState(() => _query = q),
-                  decoration: _inputDec('Search plants, nurseries...').copyWith(
-                    prefixIcon: const Icon(Icons.search_rounded, color: _mkGreen, size: 20),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _query = '');
-                            })
-                        : null,
-                    filled: true,
-                    fillColor: _mkBg,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+        actions: [
+          IconButton(
+            tooltip: 'Filters',
+            onPressed: _showFilterSheet,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.tune_rounded,
+                    color: hasFilters ? _mkGreen : _mkTextSecondary),
+                if (hasFilters)
+                  Positioned(
+                    top: -4, right: -4,
+                    child: Container(
+                      width: 16, height: 16,
+                      decoration: const BoxDecoration(
+                          color: _mkGreen, shape: BoxShape.circle),
+                      alignment: Alignment.center,
+                      child: Text('$filterCount',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800)),
+                    ),
                   ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.sort_rounded,
+                color: browse.sort != MarketSort.newest
+                    ? _mkGreen
+                    : _mkTextSecondary),
+            tooltip: 'Sort',
+            onPressed: _showSortSheet,
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(hasFilters ? 101 : 57),
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: TextField(
+                controller: _searchCtrl,
+                focusNode: _focus,
+                onChanged: (q) =>
+                    ref.read(browseAdsProvider.notifier).onQueryChanged(q),
+                decoration: _inputDec('Search plants...').copyWith(
+                  prefixIcon:
+                      const Icon(Icons.search_rounded, color: _mkGreen, size: 20),
+                  suffixIcon: browse.query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            ref
+                                .read(browseAdsProvider.notifier)
+                                .onQueryChanged('');
+                          })
+                      : null,
+                  filled: true,
+                  fillColor: _mkBg,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
                 ),
               ),
-              SizedBox(
-                height: 44,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemCount: _cats.length,
-                  itemBuilder: (_, i) {
-                    final c = _cats[i];
-                    final sel = (c == 'All' && _cat == null) || _cat == c;
-                    return ChoiceChip(
-                      label: Text(c,
-                          style: TextStyle(
-                              color: sel ? Colors.white : _mkTextSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
-                      selected: sel,
-                      onSelected: (_) => setState(() => _cat = c == 'All' ? null : c),
-                      selectedColor: _mkGreen,
-                      backgroundColor: _mkCard,
-                      side: BorderSide(color: sel ? _mkGreen : _mkBorder),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      showCheckmark: false,
-                    );
-                  },
-                ),
+            ),
+            if (hasFilters) _activeFilterChips(browse),
+            const Divider(height: 1, color: _mkBorder),
+          ]),
+        ),
+      ),
+      body: _buildBody(browse),
+    );
+  }
+
+  Widget _activeFilterChips(BrowseAdsState browse) {
+    final notifier = ref.read(browseAdsProvider.notifier);
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (browse.category != null)
+            _activeChip(browse.category!, onRemove: () => notifier.setFilters(
+              category: null,
+              minPrice: browse.minPrice,
+              maxPrice: browse.maxPrice,
+            )),
+          if (browse.minPrice != null || browse.maxPrice != null)
+            _activeChip(
+              '₹${browse.minPrice?.toStringAsFixed(0) ?? '0'}'
+              '–'
+              '${browse.maxPrice != null ? '₹${browse.maxPrice!.toStringAsFixed(0)}' : '∞'}',
+              onRemove: () => notifier.setFilters(
+                category: browse.category,
+                minPrice: null,
+                maxPrice: null,
               ),
-              const Divider(height: 1, color: _mkBorder),
-            ],
+            ),
+          TextButton(
+            onPressed: () => notifier.setFilters(),
+            style: TextButton.styleFrom(
+              foregroundColor: _mkTextSecondary,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Clear All',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activeChip(String label, {required VoidCallback onRemove}) =>
+      Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: _mkLight,
+          border: Border.all(color: _mkGreen.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    color: _mkDark,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onRemove,
+              child: const Icon(Icons.close_rounded,
+                  size: 14, color: _mkDark),
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildBody(BrowseAdsState browse) {
+    if (browse.isLoading) return const _SkeletonList();
+
+    if (browse.error != null && browse.ads.isEmpty) {
+      return _ErrorState(
+        message: browse.error!,
+        onRetry: () => ref.read(browseAdsProvider.notifier).refresh(),
+      );
+    }
+
+    if (browse.ads.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.search_off_rounded,
+        title: 'No results',
+        subtitle: 'Try a different search term',
+      );
+    }
+
+    return Column(children: [
+      Container(
+        color: _mkCard,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(children: [
+          Text(
+            '${browse.total} result${browse.total == 1 ? '' : 's'}',
+            style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+          ),
+          const Spacer(),
+          Text(
+            browse.sort.label,
+            style: AppTypography.caption
+                .copyWith(color: _mkGreen, fontWeight: FontWeight.w600),
+          ),
+        ]),
+      ),
+      const Divider(height: 1, color: _mkBorder),
+      Expanded(
+        child: RefreshIndicator(
+          color: _mkGreen,
+          backgroundColor: _mkCard,
+          onRefresh: () => ref.read(browseAdsProvider.notifier).refresh(),
+          child: ListView.separated(
+            controller: _scroll,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding, vertical: 16),
+            itemCount: browse.ads.length + (browse.isLoadingMore ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            itemBuilder: (_, i) {
+              if (i == browse.ads.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                      child: CircularProgressIndicator(
+                          color: _mkGreen, strokeWidth: 2)),
+                );
+              }
+              return _BrowseAdCard(ad: browse.ads[i]);
+            },
           ),
         ),
       ),
-      body: adsAsync.when(
-        loading: () => const _SkeletonList(),
-        error: (e, _) => _ErrorState(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(filteredAdsProvider(_query))),
-        data: (ads) {
-          final filtered = _filter(ads);
-          if (filtered.isEmpty) {
-            return const _EmptyState(
-              icon: Icons.search_off_rounded,
-              title: 'No results',
-              subtitle: 'Try a different search term or category',
-            );
-          }
-          return RefreshIndicator(
-            color: _mkGreen,
-            backgroundColor: _mkCard,
-            onRefresh: () async => ref.invalidate(filteredAdsProvider(_query)),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPadding, vertical: 16),
-              itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (_, i) => _BrowseAdCard(ad: filtered[i]),
-            ),
-          );
-        },
-      ),
-    );
+    ]);
   }
 }
 
@@ -669,6 +846,28 @@ class _CardPhoto extends ConsumerWidget {
       if (isOwn)
         Positioned(
             top: 10, left: 10, child: _StatusChip(status: ad.status)),
+      if (!isOwn && _isNewAd(ad))
+        Positioned(
+          top: 10, left: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _mkGreen,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 6, offset: const Offset(0, 1)),
+              ],
+            ),
+            child: const Text('NEW',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0)),
+          ),
+        ),
       if (ad.photos.length > 1)
         Positioned(
           bottom: 10, right: 10,
@@ -778,7 +977,7 @@ class _MyAdsScreen extends ConsumerStatefulWidget {
 class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
   String _filter = 'All';
 
-  static const _filters = ['All', 'Published', 'Draft', 'Paused', 'Expired', 'Archived'];
+  static const _filters = ['All', 'Live', 'Drafts', 'Closed'];
 
   @override
   Widget build(BuildContext context) {
@@ -827,14 +1026,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
             message: e.toString(),
             onRetry: () => ref.invalidate(myAdsProvider)),
         data: (all) {
-          final counts = {
-            'All': all.length,
-            for (final f in _filters.skip(1))
-              f: all.where((a) => a.status == f.toUpperCase()).length,
+          List<MarketAd> _forTab(String tab) => switch (tab) {
+            'Live'   => all.where((a) => a.status == 'PUBLISHED' || a.status == 'PAUSED').toList(),
+            'Drafts' => all.where((a) => a.status == 'DRAFT').toList(),
+            'Closed' => all.where((a) => a.status == 'EXPIRED' || a.status == 'ARCHIVED').toList(),
+            _        => all,
           };
-          final ads = _filter == 'All'
-              ? all
-              : all.where((a) => a.status == _filter.toUpperCase()).toList();
+          final counts = {for (final f in _filters) f: _forTab(f).length};
+          final ads = _forTab(_filter);
 
           return Column(children: [
             Container(
@@ -1121,7 +1320,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
             foregroundColor: _mkTextPrimary,
             surfaceTintColor: Colors.transparent,
             actions: [
-              if (!widget.isOwn)
+              if (!widget.isOwn) ...[
                 IconButton(
                   icon: Icon(
                     isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
@@ -1129,6 +1328,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   ),
                   onPressed: () => ref.read(toggleSaveProvider(ad.id).notifier).toggle(),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  onPressed: () => _showMoreSheet(context, ad),
+                ),
+              ],
               if (widget.isOwn)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -1363,42 +1567,23 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                 decoration: const BoxDecoration(
                     color: _mkCard,
                     border: Border(top: BorderSide(color: _mkBorder))),
-                child: Row(children: [
-                  Expanded(
-                    flex: 1,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _mkGreen,
-                        side: const BorderSide(color: _mkGreen),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      icon: const Icon(Icons.phone_outlined, size: 18),
-                      label: const Text('Call',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
-                      onPressed: () {},
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _mkGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
+                    icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                    label: const Text('Send Enquiry',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    onPressed: () => _showEnquirySheet(context, ad),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _mkGreen,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      icon: const Icon(Icons.mail_outline_rounded, size: 18),
-                      label: const Text('Send Enquiry',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                      onPressed: () => _showEnquirySheet(context, ad),
-                    ),
-                  ),
-                ]),
+                ),
               ),
             ),
     );
@@ -1412,6 +1597,170 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
           Text(label, style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
         ],
       );
+
+  void _showMoreSheet(BuildContext context, MarketAd ad) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _mkCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                    color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.flag_outlined, color: _stExpired),
+                title: const Text('Report this ad',
+                    style: TextStyle(
+                        color: _stExpired, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showReportSheet(context, ad);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReportSheet(BuildContext context, MarketAd ad) {
+    // Keys are API codes; values are display labels
+    const reasons = {
+      'SPAM':        'Spam or misleading',
+      'FRAUD':       'Fake listing / fraud',
+      'WRONG_PLANT': 'Wrong plant / misleading info',
+      'DUPLICATE':   'Duplicate listing',
+      'OTHER':       'Other',
+    };
+    String? selected;
+    final notesCtrl = TextEditingController();
+    bool submitting = false;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _mkCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, 12, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                      color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              Row(children: [
+                const Icon(Icons.flag_outlined, color: _stExpired, size: 20),
+                const SizedBox(width: 8),
+                Text('Report Ad',
+                    style: AppTypography.h4.copyWith(
+                        color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+              ]),
+              const SizedBox(height: 4),
+              Text('Help us understand the issue',
+                  style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+              const SizedBox(height: 12),
+              for (final entry in reasons.entries)
+                RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(entry.value,
+                      style: TextStyle(
+                          color: _mkTextPrimary,
+                          fontWeight: selected == entry.key
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          fontSize: 14)),
+                  value: entry.key,
+                  groupValue: selected,
+                  activeColor: _mkGreen,
+                  onChanged: (v) => setS(() => selected = v),
+                ),
+              if (selected == 'OTHER') ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 2,
+                  decoration: _inputDec('Add details (optional)'),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _stExpired,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: selected == null || submitting
+                      ? null
+                      : () async {
+                          setS(() => submitting = true);
+                          try {
+                            final notes = notesCtrl.text.trim();
+                            await ref.read(reportAdProvider(ad.id).notifier).report(
+                                  selected!,
+                                  notes: notes.isEmpty ? null : notes,
+                                );
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Report submitted. Thank you.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setS(() => submitting = false);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: _stExpired,
+                                behavior: SnackBarBehavior.floating,
+                              ));
+                            }
+                          }
+                        },
+                  child: submitting
+                      ? const SizedBox(
+                          height: 18, width: 18,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Text('Submit Report',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showEnquirySheet(BuildContext context, MarketAd ad) {
     final msgCtrl = TextEditingController();
@@ -3006,8 +3355,7 @@ class _ErrorState extends StatelessWidget {
 class _SkeletonBox extends StatelessWidget {
   final double width;
   final double height;
-  final double radius;
-  const _SkeletonBox({required this.width, required this.height, this.radius = 8});
+  const _SkeletonBox({required this.width, required this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -3015,7 +3363,7 @@ class _SkeletonBox extends StatelessWidget {
       width: width, height: height,
       decoration: BoxDecoration(
         color: _mkBorder,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

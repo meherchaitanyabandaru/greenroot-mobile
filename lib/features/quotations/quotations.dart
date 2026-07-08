@@ -140,10 +140,17 @@ class QuotationRepository {
   Future<(List<Quotation>, ApiPagination)> listQuotations({
     int page = 1,
     int perPage = 20,
+    String? search,
+    String? status,
   }) async {
     return _client.get(
       ApiConstants.quotations,
-      queryParameters: {'page': page, 'per_page': perPage},
+      queryParameters: {
+        'page': page,
+        'per_page': perPage,
+        if (search?.isNotEmpty == true) 'search': search,
+        if (status?.isNotEmpty == true) 'status': status,
+      },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         final items = (d['quotations'] as List<dynamic>)
@@ -288,9 +295,26 @@ final quotationRepositoryProvider = Provider<QuotationRepository>(
 
 class QuotationListState {
   final PagedState<Quotation> paged;
-  const QuotationListState({required this.paged});
-  QuotationListState copyWith({PagedState<Quotation>? paged}) =>
-      QuotationListState(paged: paged ?? this.paged);
+  final String search;
+  final String? statusFilter;
+
+  const QuotationListState({
+    required this.paged,
+    this.search = '',
+    this.statusFilter,
+  });
+
+  QuotationListState copyWith({
+    PagedState<Quotation>? paged,
+    String? search,
+    String? statusFilter,
+    bool clearStatus = false,
+  }) =>
+      QuotationListState(
+        paged: paged ?? this.paged,
+        search: search ?? this.search,
+        statusFilter: clearStatus ? null : (statusFilter ?? this.statusFilter),
+      );
 }
 
 class QuotationListNotifier extends StateNotifier<QuotationListState> {
@@ -301,11 +325,17 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
       : super(QuotationListState(paged: PagedState.initial()));
 
   Future<void> load() async {
+    final search = state.search;
+    final status = state.statusFilter;
     state = state.copyWith(
       paged: state.paged.copyWith(isLoading: true, clearError: true),
     );
     try {
-      final (items, pagination) = await _repo.listQuotations(page: 1);
+      final (items, pagination) = await _repo.listQuotations(
+        page: 1,
+        search: search,
+        status: status,
+      );
       _page = 1;
       state = state.copyWith(
         paged: PagedState(
@@ -325,8 +355,11 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
     if (state.paged.isLoadingMore || !state.paged.hasMore) return;
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
-      final (items, pagination) =
-          await _repo.listQuotations(page: _page + 1);
+      final (items, pagination) = await _repo.listQuotations(
+        page: _page + 1,
+        search: state.search,
+        status: state.statusFilter,
+      );
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
@@ -338,6 +371,16 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
     } on AppError {
       state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: false));
     }
+  }
+
+  void setSearch(String q) {
+    state = state.copyWith(search: q);
+    load();
+  }
+
+  void setStatusFilter(String? status) {
+    state = state.copyWith(statusFilter: status, clearStatus: status == null);
+    load();
   }
 
   void remove(int id) {
