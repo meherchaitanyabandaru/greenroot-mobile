@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/onboarding_progress.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -83,7 +84,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.x4l),
+                const SizedBox(height: AppSpacing.x2l),
+
+                const OnboardingProgress(currentStep: 1),
+                const SizedBox(height: AppSpacing.x2l),
 
                 // Logo
                 Container(
@@ -108,6 +112,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: AppSpacing.x2l),
 
                 const Text('Welcome to GreenRoot', style: AppTypography.h1),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Buy. Sell. Deliver. All in one app.',
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.primaryMain,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Enter your mobile number to sign in or create an account.',

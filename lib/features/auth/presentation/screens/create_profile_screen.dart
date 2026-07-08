@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/onboarding_progress.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/models/user_models.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -82,8 +83,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
 
       if (!mounted) return;
 
-      // New user — show activity selection screen once before home.
-      context.go('/select-activity');
+      context.go('/account-ready');
     } on AppError catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -103,7 +103,10 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.x4l),
+                const SizedBox(height: AppSpacing.x2l),
+
+                const OnboardingProgress(currentStep: 3),
+                const SizedBox(height: AppSpacing.x2l),
 
                 Container(
                   width: 52,

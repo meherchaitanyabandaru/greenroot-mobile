@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
+import '../features/auth/presentation/screens/account_ready_screen.dart';
 import '../features/auth/presentation/screens/create_profile_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
 import '../features/profile/about_screen.dart';
@@ -194,6 +195,9 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/create-profile',
         builder: (_, __) => const CreateProfileScreen()),
+    GoRoute(
+        path: '/account-ready',
+        builder: (_, __) => const AccountReadyScreen()),
     GoRoute(
         path: '/edit-profile',
         builder: (_, __) => const EditProfileScreen()),

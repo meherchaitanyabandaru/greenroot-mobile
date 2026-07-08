@@ -32,7 +32,7 @@ class RoleSwitcherSheet extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Text('Switch Role', style: AppTypography.h3),
+                const Text('Switch Workspace', style: AppTypography.h3),
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -44,7 +44,7 @@ class RoleSwitcherSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Select which role to use',
+              'Select a workspace',
               style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.x2l),

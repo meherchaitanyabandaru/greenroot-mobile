@@ -285,7 +285,7 @@ class _AppDrawer extends StatelessWidget {
                 if (onSwitchRole != null)
                   _DrawerActionTile(
                     icon: Icons.swap_horiz_rounded,
-                    label: 'Switch Role',
+                    label: 'Switch Workspace',
                     onTap: onSwitchRole!,
                   ),
               ],
