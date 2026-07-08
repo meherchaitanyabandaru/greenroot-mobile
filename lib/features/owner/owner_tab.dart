@@ -21,6 +21,7 @@ import '../../core/widgets/error_state.dart';
 import '../../core/widgets/seller_order_card_actions.dart';
 import '../../core/widgets/trade_status_chip.dart';
 import '../orders/orders.dart';
+import '../quotations/quotation_create_screen.dart';
 import '../quotations/quotations.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -67,11 +68,15 @@ class OwnerTab extends ConsumerStatefulWidget {
 class _OwnerTabState extends ConsumerState<OwnerTab>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
+  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(() {
+      if (_tabs.index != _tabIndex) setState(() => _tabIndex = _tabs.index);
+    });
     Future.microtask(() {
       ref.read(_sellerOrderProvider.notifier).load();
       ref.read(_sellerQuotationProvider.notifier).load();
@@ -84,6 +89,14 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
     super.dispose();
   }
 
+  Future<void> _createQuotation() async {
+    final choice = await showQuotationTypeDialog(context);
+    if (choice == null || !mounted) return;
+    final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
+    final created = await context.push<bool>('/quotations/create?type=$type');
+    if (created == true) ref.read(_sellerQuotationProvider.notifier).load();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(_sellerOrderProvider);
@@ -91,6 +104,16 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: _tabIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: _createQuotation,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('New Quotation'),
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              elevation: 2,
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
@@ -149,7 +172,7 @@ class _SellerQuotationsTab extends ConsumerWidget {
       return const EmptyState(
         icon: Icons.request_quote_outlined,
         title: 'No quotations yet',
-        subtitle: 'Quotations you send to buyers will appear here.',
+        subtitle: 'Tap New Quotation to create your first one.',
       );
     }
 
@@ -320,6 +343,21 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                       overflow: TextOverflow.ellipsis),
                 ),
                 TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
+                if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.red100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('Expired',
+                        style: AppTypography.caption.copyWith(
+                            color: AppColors.red600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10)),
+                  ),
+                ],
               ],
             ),
             if (q.recipientName?.isNotEmpty == true) ...[
