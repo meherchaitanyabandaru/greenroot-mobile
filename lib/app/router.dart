@@ -6,6 +6,8 @@ import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/auth/presentation/screens/account_ready_screen.dart';
 import '../features/auth/presentation/screens/create_profile_screen.dart';
+import '../features/subscriptions/subscription_screen.dart';
+import '../features/subscriptions/subscription_payment_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
 import '../features/profile/about_screen.dart';
 import '../features/profile/help_support_screen.dart';
@@ -198,6 +200,14 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/account-ready',
         builder: (_, __) => const AccountReadyScreen()),
+    GoRoute(
+        path: '/subscription',
+        builder: (_, __) => const SubscriptionScreen()),
+    GoRoute(
+        path: '/subscription/payment',
+        builder: (_, state) => SubscriptionPaymentScreen(
+            subscriptionId:
+                int.tryParse(state.uri.queryParameters['subId'] ?? '') ?? 0)),
     GoRoute(
         path: '/edit-profile',
         builder: (_, __) => const EditProfileScreen()),

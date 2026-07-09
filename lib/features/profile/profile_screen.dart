@@ -24,6 +24,12 @@ class ProfileScreen extends ConsumerWidget {
         label: 'Edit Profile',
         onTap: () => context.push('/edit-profile'),
       ),
+      if (caps.isNurseryOwner)
+        _SettingsTile(
+          icon: Icons.workspace_premium_rounded,
+          label: 'Subscription',
+          onTap: () => context.push('/subscription'),
+        ),
       if (caps.isDriverOnly)
         _SettingsTile(
           icon: Icons.route_outlined,

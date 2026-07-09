@@ -1,0 +1,515 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/errors/app_error.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_button.dart';
+import 'subscription_datasource.dart';
+import 'subscription_models.dart';
+import 'subscription_provider.dart';
+
+class SubscriptionPaymentScreen extends ConsumerStatefulWidget {
+  final int subscriptionId;
+  const SubscriptionPaymentScreen({super.key, required this.subscriptionId});
+
+  @override
+  ConsumerState<SubscriptionPaymentScreen> createState() =>
+      _SubscriptionPaymentScreenState();
+}
+
+class _SubscriptionPaymentScreenState
+    extends ConsumerState<SubscriptionPaymentScreen> {
+  String _billingCycle = 'MONTHLY';
+  String _paymentMethod = 'UPI';
+  bool _paying = false;
+
+  double get _basePrice => _billingCycle == 'YEARLY' ? 4999.0 : 499.0;
+  double get _gst => _basePrice * 0.18;
+  double get _total => _basePrice + _gst;
+
+  @override
+  Widget build(BuildContext context) {
+    final plansAsync = ref.watch(subscriptionPlansProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Upgrade Plan', style: AppTypography.h3),
+      ),
+      body: plansAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+            child: Text(e is AppError ? e.message : e.toString())),
+        data: (plans) {
+          final standard = plans
+              .where((p) => p.planCode == 'STANDARD' && p.isActive)
+              .firstOrNull;
+          return _PaymentBody(
+            plan: standard,
+            billingCycle: _billingCycle,
+            paymentMethod: _paymentMethod,
+            basePrice: _basePrice,
+            gst: _gst,
+            total: _total,
+            paying: _paying,
+            onCycleChanged: (v) => setState(() => _billingCycle = v),
+            onMethodChanged: (v) => setState(() => _paymentMethod = v),
+            onPay: _pay,
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _pay() async {
+    setState(() => _paying = true);
+    try {
+      final ds = SubscriptionRemoteDataSource(ApiClient.instance);
+      final updated = await ds.renewSubscription(
+        subscriptionId: widget.subscriptionId,
+        billingCycle: _billingCycle,
+        paymentMethod: _paymentMethod,
+        provider: 'razorpay_mock',
+        providerOrderId:
+            'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
+      );
+      ref.invalidate(subscriptionProvider);
+      if (mounted) _showSuccess(updated);
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.red600,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _paying = false);
+    }
+  }
+
+  void _showSuccess(SubscriptionModel sub) {
+    showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _SuccessSheet(
+        sub: sub,
+        onDone: () {
+          Navigator.pop(ctx);
+          context.pop(); // back to subscription screen
+        },
+      ),
+    );
+  }
+}
+
+// ── Payment body ──────────────────────────────────────────────────────────────
+
+class _PaymentBody extends StatelessWidget {
+  final SubscriptionPlan? plan;
+  final String billingCycle;
+  final String paymentMethod;
+  final double basePrice;
+  final double gst;
+  final double total;
+  final bool paying;
+  final ValueChanged<String> onCycleChanged;
+  final ValueChanged<String> onMethodChanged;
+  final VoidCallback onPay;
+
+  const _PaymentBody({
+    required this.plan,
+    required this.billingCycle,
+    required this.paymentMethod,
+    required this.basePrice,
+    required this.gst,
+    required this.total,
+    required this.paying,
+    required this.onCycleChanged,
+    required this.onMethodChanged,
+    required this.onPay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      children: [
+        // ── Plan info ──────────────────────────────────────────────────────
+        _SectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('STANDARD',
+                        style: TextStyle(
+                          color: AppColors.primaryMain,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        )),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(plan?.planName ?? 'Standard Plan',
+                  style: AppTypography.h3),
+              const SizedBox(height: 4),
+              Text(
+                plan?.description ??
+                    'Full platform access for nursery owners.',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // ── Billing cycle ──────────────────────────────────────────────────
+        Text('Billing Cycle', style: AppTypography.h4),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            _CycleChip(
+              label: 'Monthly',
+              sublabel: '₹499/mo',
+              selected: billingCycle == 'MONTHLY',
+              onTap: () => onCycleChanged('MONTHLY'),
+            ),
+            const SizedBox(width: 12),
+            _CycleChip(
+              label: 'Yearly',
+              sublabel: '₹4,999/yr',
+              badge: 'Save 17%',
+              selected: billingCycle == 'YEARLY',
+              onTap: () => onCycleChanged('YEARLY'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.x2l),
+
+        // ── Payment method ─────────────────────────────────────────────────
+        Text('Payment Method', style: AppTypography.h4),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            for (final m in ['UPI', 'CARD', 'CASH'])
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(m),
+                  selected: paymentMethod == m,
+                  onSelected: (_) => onMethodChanged(m),
+                  selectedColor: AppColors.primaryLight,
+                  labelStyle: TextStyle(
+                    color: paymentMethod == m
+                        ? AppColors.primaryMain
+                        : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.x2l),
+
+        // ── GST breakdown ──────────────────────────────────────────────────
+        Text('Price Breakdown', style: AppTypography.h4),
+        const SizedBox(height: AppSpacing.sm),
+        _SectionCard(
+          child: Column(
+            children: [
+              _PriceLine(
+                  label: 'Base Price',
+                  value: '₹${basePrice.toStringAsFixed(2)}'),
+              const SizedBox(height: 8),
+              _PriceLine(
+                  label: 'GST @ 18% (SAC 997331)',
+                  value: '₹${gst.toStringAsFixed(2)}',
+                  secondary: true),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(color: AppColors.border, height: 1),
+              ),
+              _PriceLine(
+                label: 'Total',
+                value: '₹${total.toStringAsFixed(2)}',
+                bold: true,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.x3l),
+
+        // ── Pay button ─────────────────────────────────────────────────────
+        AppButton(
+          label: 'Pay ₹${total.toStringAsFixed(2)} Securely',
+          onPressed: paying ? null : onPay,
+          isLoading: paying,
+          trailingIcon: Icons.lock_outline_rounded,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.security_rounded,
+                  size: 13, color: AppColors.textMuted),
+              const SizedBox(width: 4),
+              Text('Secured via Razorpay · GST Invoice provided',
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textMuted)),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.x3l),
+      ],
+    );
+  }
+}
+
+class _CycleChip extends StatelessWidget {
+  final String label;
+  final String sublabel;
+  final String? badge;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CycleChip({
+    required this.label,
+    required this.sublabel,
+    this.badge,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color:
+                selected ? AppColors.primaryLight : AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primaryMain
+                  : AppColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.primaryMain
+                            : AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      )),
+                  if (badge != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryMain,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(badge!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(sublabel,
+                  style: AppTypography.caption.copyWith(
+                    color: selected
+                        ? AppColors.primaryMain
+                        : AppColors.textSecondary,
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PriceLine extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool secondary;
+  final bool bold;
+
+  const _PriceLine({
+    required this.label,
+    required this.value,
+    this.secondary = false,
+    this.bold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final style = bold
+        ? AppTypography.body.copyWith(fontWeight: FontWeight.w800, fontSize: 16)
+        : secondary
+            ? AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary)
+            : AppTypography.body;
+
+    return Row(
+      children: [
+        Expanded(child: Text(label, style: style)),
+        Text(value, style: style),
+      ],
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+  const _SectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: child,
+      );
+}
+
+// ── Success sheet ─────────────────────────────────────────────────────────────
+
+class _SuccessSheet extends StatelessWidget {
+  final SubscriptionModel sub;
+  final VoidCallback onDone;
+  const _SuccessSheet({required this.sub, required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat('d MMM yyyy', 'en_IN');
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.x2l),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryMain,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded,
+                  color: Colors.white, size: 40),
+            ),
+            const SizedBox(height: AppSpacing.x2l),
+            const Text('Payment Successful!', style: AppTypography.h2,
+                textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Your ${sub.planName} subscription is now active.',
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.x2l),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.forest100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  _SuccessRow(
+                      label: 'Code', value: sub.subscriptionCode),
+                  const SizedBox(height: 6),
+                  _SuccessRow(label: 'Plan', value: sub.planName),
+                  const SizedBox(height: 6),
+                  if (sub.endDate != null)
+                    _SuccessRow(
+                        label: 'Valid Until',
+                        value: fmt.format(sub.endDate!)),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.x2l),
+            AppButton(
+              label: 'Done',
+              onPressed: onDone,
+              trailingIcon: Icons.arrow_forward_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuccessRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _SuccessRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Text(label,
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary)),
+          const Spacer(),
+          Text(value,
+              style: AppTypography.bodySmall
+                  .copyWith(fontWeight: FontWeight.w700)),
+        ],
+      );
+}
+

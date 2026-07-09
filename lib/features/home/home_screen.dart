@@ -19,6 +19,7 @@ import '../notifications/notifications.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
 import '../requests/requests.dart';
+import '../subscriptions/trial_banner_widget.dart';
 
 final _operationsHomeProvider =
     FutureProvider.autoDispose<_OperationsHomeData>((ref) async {
@@ -109,6 +110,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               _GreetingBlock(caps: caps, firstName: session.user?.firstName),
               const SizedBox(height: 20),
+              const TrialExpiryBanner(),
               if (caps.isDriverOnly)
                 const _DriverHome()
               else if (caps.isNurseryOwner)
