@@ -28,19 +28,34 @@ class SubscriptionRemoteDataSource {
     required String paymentMethod,
     String provider = 'razorpay_mock',
     String? providerOrderId,
+    String? promoCode,
   }) async {
-    final body = {
+    final body = <String, dynamic>{
       'billing_cycle': billingCycle,
       'payment_method': paymentMethod,
       'provider': provider,
       'provider_order_id':
           providerOrderId ?? 'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
+      if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
     };
     final res = await _client.post(
         '/api/v1/subscriptions/$subscriptionId/renew', data: body);
     final sub = res['subscription'] as Map<String, dynamic>?;
     if (sub == null) throw ServerError(500, 'Invalid response from server');
     return SubscriptionModel.fromJson(sub);
+  }
+
+  Future<Map<String, dynamic>> validatePromo({
+    required String promoCode,
+    required String planCode,
+    required String billingCycle,
+  }) async {
+    final res = await _client.post('/api/v1/subscription-promos/validate', data: {
+      'promo_code': promoCode,
+      'plan_code': planCode,
+      'billing_cycle': billingCycle,
+    });
+    return (res['validation'] as Map<String, dynamic>?) ?? {};
   }
 
   Future<SubscriptionModel> cancelSubscription(

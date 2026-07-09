@@ -98,8 +98,12 @@ class SubscriptionPlan {
   final String planCode;
   final String planName;
   final String? description;
-  final double? monthlyPrice;
+  final double? sixMonthPrice;
   final double? yearlyPrice;
+  final double? mrpSixMonthPrice;
+  final double? mrpYearlyPrice;
+  final int? maxManagers;
+  final Map<String, dynamic>? features;
   final bool isActive;
 
   const SubscriptionPlan({
@@ -107,22 +111,41 @@ class SubscriptionPlan {
     required this.planCode,
     required this.planName,
     this.description,
-    this.monthlyPrice,
+    this.sixMonthPrice,
     this.yearlyPrice,
+    this.mrpSixMonthPrice,
+    this.mrpYearlyPrice,
+    this.maxManagers,
+    this.features,
     required this.isActive,
   });
 
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> j) => SubscriptionPlan(
-        id: (j['id'] as num).toInt(),
-        planCode: j['plan_code'] as String,
-        planName: j['plan_name'] as String,
-        description: j['description'] as String?,
-        monthlyPrice: j['monthly_price'] != null
-            ? (j['monthly_price'] as num).toDouble()
-            : null,
-        yearlyPrice: j['yearly_price'] != null
-            ? (j['yearly_price'] as num).toDouble()
-            : null,
-        isActive: j['is_active'] as bool? ?? true,
-      );
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> j) {
+    final features = j['features'] as Map<String, dynamic>?;
+    return SubscriptionPlan(
+      id: (j['id'] as num).toInt(),
+      planCode: j['plan_code'] as String,
+      planName: j['plan_name'] as String,
+      description: j['description'] as String?,
+      sixMonthPrice: (j['six_month_price'] as num?)?.toDouble(),
+      yearlyPrice: (j['yearly_price'] as num?)?.toDouble(),
+      mrpSixMonthPrice: (features?['mrp_six_month'] as num?)?.toDouble(),
+      mrpYearlyPrice: (features?['mrp_yearly'] as num?)?.toDouble(),
+      maxManagers: (j['max_managers'] as num?)?.toInt(),
+      features: features,
+      isActive: j['is_active'] as bool? ?? true,
+    );
+  }
+
+  int get sixMonthDiscountPct {
+    if (sixMonthPrice == null || mrpSixMonthPrice == null || mrpSixMonthPrice! <= 0) return 0;
+    if (sixMonthPrice! >= mrpSixMonthPrice!) return 0;
+    return ((mrpSixMonthPrice! - sixMonthPrice!) / mrpSixMonthPrice! * 100).round();
+  }
+
+  int get yearlyDiscountPct {
+    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0) return 0;
+    if (yearlyPrice! >= mrpYearlyPrice!) return 0;
+    return ((mrpYearlyPrice! - yearlyPrice!) / mrpYearlyPrice! * 100).round();
+  }
 }
