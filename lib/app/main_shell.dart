@@ -8,15 +8,15 @@ import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/buying/buying_screen.dart';
 import '../features/dispatches/dispatches.dart';
-import '../features/driver/driver_home_screen.dart';
-import '../features/driver/driver_trips_screen.dart';
+import '../features/drivers/driver_home_screen.dart';
+import '../features/drivers/driver_trips_screen.dart';
 import '../core/widgets/qr_scanner_screen.dart';
-import '../features/driver/trip_preview_screen.dart';
+import '../features/drivers/trip_preview_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/selling/selling_screen.dart';
-import '../features/manager/local_market_screen.dart';
+import '../features/market/local_market_screen.dart';
 
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);

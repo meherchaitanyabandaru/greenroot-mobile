@@ -129,7 +129,7 @@ class RequestRepository {
       queryParameters: params,
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
-        final items = (d['requests'] as List<dynamic>)
+        final items = (d['plant_requests'] as List<dynamic>)
             .map((e) => PlantRequest.fromJson(e as Map<String, dynamic>))
             .toList();
         final pagination =
