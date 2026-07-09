@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +11,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/card_downloader.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../auth/data/models/capabilities_model.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -68,40 +73,78 @@ class SubscriptionScreen extends ConsumerWidget {
 
 // ── Membership Card ───────────────────────────────────────────────────────────
 
-class _MembershipCard extends ConsumerWidget {
+class _MembershipCard extends ConsumerStatefulWidget {
   final String planLabel;
   final String? validUntil; // null → shows 'Lifetime'
 
   const _MembershipCard({required this.planLabel, this.validUntil});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_MembershipCard> createState() => _MembershipCardState();
+}
+
+class _MembershipCardState extends ConsumerState<_MembershipCard> {
+  final _cardKey = GlobalKey();
+  bool _downloading = false;
+
+  Future<void> _downloadCard() async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      final boundary = _cardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = Uint8List.view(byteData.buffer);
+      final session = ref.read(sessionProvider);
+      final code = session.user?.userCode ?? 'membership';
+      await downloadCardImage(bytes, 'greenroot-$code.png');
+    } catch (_) {
+      // silently fail — download unavailable on this platform
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final name = session.user?.name ?? 'GreenRoot Member';
     final userCode = session.user?.userCode ?? '—';
 
-    return AspectRatio(
-      aspectRatio: 1.586,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0A2814), Color(0xFF16522A), Color(0xFF0C3518)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0A2814).withValues(alpha: 0.55),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
+    return Column(
+      children: [
+        // Card + download button row
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            RepaintBoundary(
+              key: _cardKey,
+              child: AspectRatio(
+                aspectRatio: 1.586,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0A2814), Color(0xFF16522A), Color(0xFF0C3518)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0A2814).withValues(alpha: 0.55),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      children: [
               // Watermark leaf
               Positioned(
                 top: -16,
@@ -355,7 +398,38 @@ class _MembershipCard extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),   // close RepaintBoundary
+
+    // Download button — floats over bottom-right of card, not captured in image
+    Positioned(
+      bottom: 10,
+      right: 10,
+      child: GestureDetector(
+        onTap: _downloadCard,
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.35),
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25), width: 0.5),
+          ),
+          child: _downloading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 1.5, color: Colors.white),
+                )
+              : const Icon(Icons.download_rounded,
+                  color: Colors.white, size: 16),
+        ),
+      ),
+    ),
+  ],         // close outer Stack children
+),           // close outer Stack
+],           // close Column children
+);           // close Column (return)
   }
 }
 
@@ -829,14 +903,6 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
           planLabel: sub.planName,
           validUntil: cardValidUntil,
         ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── Hero card ──────────────────────────────────────────────────────
-        _HeroCard(sub: sub),
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── Plan details ───────────────────────────────────────────────────
-        _PlanCard(sub: sub),
         const SizedBox(height: AppSpacing.lg),
 
         // ── What's included ────────────────────────────────────────────────
