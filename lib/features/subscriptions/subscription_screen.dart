@@ -315,7 +315,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                       const SizedBox(width: 5),
                                       Flexible(
                                         child: Text(
-                                          planLabel,
+                                          widget.planLabel,
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 11,
@@ -347,7 +347,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                         color: Color(0xFF90D87A)),
                                     const SizedBox(width: 5),
                                     Text(
-                                      validUntil ?? 'Lifetime',
+                                      widget.validUntil ?? 'Lifetime',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -394,11 +394,12 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    ),   // close RepaintBoundary
+            ],          // inner Stack children
+          ),            // inner Stack
+        ),              // ClipRRect
+      ),                // Container
+    ),                  // AspectRatio
+  ),                    // RepaintBoundary
 
     // Download button — floats over bottom-right of card, not captured in image
     Positioned(
