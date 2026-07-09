@@ -66,6 +66,327 @@ class SubscriptionScreen extends ConsumerWidget {
   }
 }
 
+// ── Membership Card ───────────────────────────────────────────────────────────
+
+class _MembershipCard extends ConsumerWidget {
+  final String planLabel;
+  final String? validUntil; // null → shows 'Lifetime'
+
+  const _MembershipCard({required this.planLabel, this.validUntil});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionProvider);
+    final name = session.user?.name ?? 'GreenRoot Member';
+    final userCode = session.user?.userCode ?? '—';
+
+    return AspectRatio(
+      aspectRatio: 1.586,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0A2814), Color(0xFF16522A), Color(0xFF0C3518)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0A2814).withValues(alpha: 0.55),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Watermark leaf
+              Positioned(
+                top: -16,
+                right: -8,
+                child: Opacity(
+                  opacity: 0.12,
+                  child: Icon(Icons.eco_rounded,
+                      size: 160, color: Colors.white),
+                ),
+              ),
+              // Flowing wave lines
+              Positioned.fill(
+                child: CustomPaint(painter: _CardWavesPainter()),
+              ),
+              // Card content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Top row: logo + NFC ──────────────────────────────────
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.eco_rounded,
+                            color: Color(0xFF76E07A), size: 22),
+                        const SizedBox(width: 6),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'GreenRoot',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                              ),
+                            ),
+                            Text(
+                              'Connect. Grow. Prosper.',
+                              style: TextStyle(
+                                color: Color(0xFF90D87A),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        const RotatedBox(
+                          quarterTurns: 1,
+                          child: Icon(Icons.wifi_rounded,
+                              color: Colors.white54, size: 20),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    // ── Data row: user info | subscription info ───────────────
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Left: user info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Avatar
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: const Color(0xFF76E07A),
+                                        width: 1.5),
+                                  ),
+                                  child: const Icon(Icons.person_rounded,
+                                      color: Color(0xFF76E07A), size: 18),
+                                ),
+                                const SizedBox(height: 7),
+                                const Text(
+                                  'USER NAME',
+                                  style: TextStyle(
+                                    color: Color(0xFF90D87A),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                    height: 0.5,
+                                    color: Colors.white24),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'USER ID',
+                                  style: TextStyle(
+                                    color: Color(0xFF90D87A),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  userCode,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Vertical divider
+                          Container(
+                            width: 0.5,
+                            margin: const EdgeInsets.symmetric(horizontal: 14),
+                            color: Colors.white24,
+                          ),
+
+                          // Right: subscription info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'SUBSCRIPTION TYPE',
+                                  style: TextStyle(
+                                    color: Color(0xFF90D87A),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2E7D32),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.verified_rounded,
+                                          size: 12, color: Color(0xFF76E07A)),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          planLabel,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                const Text(
+                                  'VALID UNTIL',
+                                  style: TextStyle(
+                                    color: Color(0xFF90D87A),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                        Icons.calendar_month_outlined,
+                                        size: 14,
+                                        color: Color(0xFF90D87A)),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      validUntil ?? 'Lifetime',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Bottom row ────────────────────────────────────────────
+                    Row(
+                      children: const [
+                        Text(
+                          'GREENROOT MEMBER',
+                          style: TextStyle(
+                            color: Color(0xFF8EE06A),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        Spacer(),
+                        Icon(Icons.park_rounded,
+                            size: 14, color: Color(0xFFCDAB41)),
+                        SizedBox(width: 5),
+                        Text(
+                          'GreenRoot',
+                          style: TextStyle(
+                            color: Color(0xFFDAA520),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardWavesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.045)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    void wave(double startX, double startY, double cpX, double cpY,
+        double endX, double endY) {
+      final p = Path()
+        ..moveTo(startX * size.width, startY * size.height)
+        ..quadraticBezierTo(cpX * size.width, cpY * size.height,
+            endX * size.width, endY * size.height);
+      canvas.drawPath(p, paint);
+    }
+
+    wave(0.45, 1.0, 0.70, 0.55, 1.0, 0.10);
+    wave(0.55, 1.0, 0.78, 0.60, 1.0, 0.28);
+    wave(0.65, 1.0, 0.82, 0.68, 1.0, 0.46);
+    wave(0.75, 1.0, 0.88, 0.75, 1.0, 0.62);
+    wave(0.85, 1.0, 0.92, 0.82, 1.0, 0.76);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 // ── Free access view (drivers & buyers) ──────────────────────────────────────
 
 enum _FreeRole { driver, buyer }
@@ -96,6 +417,13 @@ class _FreeView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        // Membership card
+        _MembershipCard(
+          planLabel: isDriver ? 'Driver Partner' : 'Marketplace Member',
+          validUntil: null,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+
         // Hero
         Container(
           width: double.infinity,
@@ -223,6 +551,13 @@ class _ManagerView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        // Membership card
+        _MembershipCard(
+          planLabel: 'Manager Access',
+          validUntil: nurseries.isNotEmpty ? 'Via ${nurseries.first.nurseryName ?? 'Nursery'}' : 'Active',
+        ),
+        const SizedBox(height: AppSpacing.xl),
+
         // Header card
         Container(
           width: double.infinity,
@@ -483,9 +818,19 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         sub.isTrial ||
         (sub.isActive && (sub.daysRemaining ?? 999) <= 30);
 
+    final fmt = DateFormat('d MMM yyyy');
+    final cardValidUntil = sub.endDate != null ? fmt.format(sub.endDate!) : null;
+
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        // ── Membership card ────────────────────────────────────────────────
+        _MembershipCard(
+          planLabel: sub.planName,
+          validUntil: cardValidUntil,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
         // ── Hero card ──────────────────────────────────────────────────────
         _HeroCard(sub: sub),
         const SizedBox(height: AppSpacing.lg),
