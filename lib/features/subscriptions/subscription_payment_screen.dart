@@ -141,31 +141,28 @@ class _SubscriptionPaymentScreenState
 
   Future<void> _pay() async {
     setState(() => _paying = true);
-    try {
-      final ds = SubscriptionRemoteDataSource(ApiClient.instance);
-      final updated = await ds.renewSubscription(
-        subscriptionId: widget.subscriptionId,
-        billingCycle: _billingCycle,
-        paymentMethod: _paymentMethod,
-        provider: 'razorpay_mock',
-        providerOrderId:
-            'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
-        promoCode: _promoValid ? _promoController.text.trim().toUpperCase() : null,
-      );
-      ref.invalidate(subscriptionProvider);
-      if (mounted) _showSuccess(updated);
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.red600,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _paying = false);
-    }
+    // DEV BYPASS: simulate payment and show success without gateway call.
+    // Replace this block with real Razorpay SDK when integrating payments.
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    setState(() => _paying = false);
+
+    final now = DateTime.now();
+    final endDate = _billingCycle == 'YEARLY'
+        ? now.add(const Duration(days: 365))
+        : now.add(const Duration(days: 180));
+    final mockSub = SubscriptionModel(
+      id: widget.subscriptionId,
+      subscriptionCode: 'SUB-DEV-${DateTime.now().millisecondsSinceEpoch}',
+      planCode: 'GROWTH',
+      planName: '🚀 Growth',
+      startDate: now,
+      endDate: endDate,
+      status: 'ACTIVE',
+      autoRenew: true,
+      daysRemaining: _billingCycle == 'YEARLY' ? 365 : 180,
+    );
+    _showSuccess(mockSub);
   }
 
   void _showSuccess(SubscriptionModel sub) {
