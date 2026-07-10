@@ -56,6 +56,7 @@ class Quotation {
   final int? convertedOrderId;
   final String? convertedOrderCode;
   final DateTime? convertedAt;
+  final int? customerUserId;
   final int? buyerNurseryId;
   final String? recipientName;
   final String? recipientMobile;
@@ -83,6 +84,7 @@ class Quotation {
     this.convertedOrderId,
     this.convertedOrderCode,
     this.convertedAt,
+    this.customerUserId,
     this.buyerNurseryId,
     this.recipientName,
     this.recipientMobile,
@@ -122,6 +124,9 @@ class Quotation {
         convertedOrderCode: j['converted_order_code'] as String?,
         convertedAt: j['converted_at'] != null
             ? DateTime.tryParse(j['converted_at'] as String)?.toLocal()
+            : null,
+        customerUserId: j['customer_user_id'] != null
+            ? (j['customer_user_id'] as num).toInt()
             : null,
         buyerNurseryId: j['buyer_nursery_id'] != null
             ? (j['buyer_nursery_id'] as num).toInt()
@@ -235,6 +240,7 @@ class QuotationRepository {
     required String quotationType, // 'INTERNAL' or 'CUSTOMER'
     int? nurseryId,
     int? assignedManagerUserId, // owner-only: pre-assign on creation
+    int? customerUserId,
     String? recipientName,
     String? recipientMobile,
     DateTime? validUntil,
@@ -246,6 +252,7 @@ class QuotationRepository {
       if (nurseryId != null) 'nursery_id': nurseryId,
       if (assignedManagerUserId != null)
         'assigned_manager_user_id': assignedManagerUserId,
+      if (customerUserId != null) 'customer_user_id': customerUserId,
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
       if (recipientMobile?.isNotEmpty == true)
         'recipient_mobile': recipientMobile,
@@ -266,6 +273,7 @@ class QuotationRepository {
 
   Future<Quotation> updateQuotation({
     required int id,
+    int? customerUserId,
     String? recipientName,
     String? recipientMobile,
     DateTime? validUntil,
@@ -273,6 +281,7 @@ class QuotationRepository {
     required List<QuotationItemRequest> items,
   }) async {
     final body = <String, dynamic>{
+      if (customerUserId != null) 'customer_user_id': customerUserId,
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
       if (recipientMobile?.isNotEmpty == true)
         'recipient_mobile': recipientMobile,
@@ -283,6 +292,28 @@ class QuotationRepository {
     };
     return _client.put(
       ApiConstants.quotationById(id),
+      data: body,
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Quotation> updateQuotationCustomer({
+    required int id,
+    int? customerUserId,
+    String? recipientName,
+    String? recipientMobile,
+  }) async {
+    final body = <String, dynamic>{
+      if (customerUserId != null) 'customer_user_id': customerUserId,
+      if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
+      if (recipientMobile?.isNotEmpty == true)
+        'recipient_mobile': recipientMobile,
+    };
+    return _client.put(
+      ApiConstants.quotationCustomer(id),
       data: body,
       fromJson: (data) {
         final d = data as Map<String, dynamic>;

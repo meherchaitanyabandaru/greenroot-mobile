@@ -572,6 +572,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     );
   }
 
+  Future<void> _callPhone(String phone) async {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return;
+    await launchUrl(Uri.parse('tel:$digits'));
+  }
+
   Widget _buildScaffold(Quotation q) {
     final caps = ref.watch(sessionProvider).capabilities;
     final isBuyerView = !caps.canSell;
@@ -933,19 +939,42 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 child: Row(children: [
                   Icon(
                     q.assignedManagerUserId != null
-                        ? Icons.assignment_ind_outlined
+                        ? Icons.person_outline_rounded
                         : Icons.edit_note_outlined,
                     size: 16,
                     color: AppColors.teal700,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    q.assignedManagerUserId != null
-                        ? 'Assigned to you by owner'
-                        : 'Created by you',
-                    style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.teal700, fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          q.assignedManagerUserId != null
+                              ? (q.createdByName ?? 'Owner')
+                              : 'Created by you',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.teal700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (q.assignedManagerUserId != null &&
+                            q.nurseryPhone != null)
+                          Text(
+                            q.nurseryPhone!,
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.textMuted),
+                          ),
+                      ],
+                    ),
                   ),
+                  if (q.assignedManagerUserId != null && q.nurseryPhone != null)
+                    IconButton(
+                      tooltip: 'Call owner',
+                      icon: const Icon(Icons.call_outlined,
+                          size: 18, color: AppColors.primaryMain),
+                      onPressed: () => _callPhone(q.nurseryPhone!),
+                    ),
                 ]),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -2100,7 +2129,7 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
                                 title: Text(m.name,
                                     style: AppTypography.body
                                         .copyWith(fontWeight: FontWeight.w600)),
-                                subtitle: Text(m.mobile,
+                                subtitle: Text(m.identityLabel,
                                     style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary)),
                                 trailing: const Icon(Icons.chevron_right,

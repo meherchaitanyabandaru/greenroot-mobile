@@ -10,7 +10,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plants.dart';
-import '../owner/owner_members_screen.dart' show NurseryManager;
+import '../owner/owner_members_screen.dart'
+    show NurseryCustomer, NurseryManager;
 import 'quotations.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
@@ -22,18 +23,24 @@ enum QuotationTypeChoice { internal, customer }
 class _ItemRow {
   int? plantId;
   String plantName = '';
-  final TextEditingController qtyCtrl   = TextEditingController();
+  final TextEditingController qtyCtrl = TextEditingController();
   final TextEditingController priceCtrl = TextEditingController();
-  final TextEditingController descCtrl  = TextEditingController();
+  final TextEditingController descCtrl = TextEditingController();
 
   _ItemRow();
 
   _ItemRow.fromItem(QuotationItem item) {
-    plantId   = item.plantId;
-    plantName = item.commonName?.isNotEmpty == true ? item.commonName! : item.scientificName;
-    qtyCtrl.text   = item.quantity % 1 == 0 ? item.quantity.toInt().toString() : item.quantity.toString();
-    priceCtrl.text = item.unitPrice % 1 == 0 ? item.unitPrice.toInt().toString() : item.unitPrice.toString();
-    descCtrl.text  = item.description ?? '';
+    plantId = item.plantId;
+    plantName = item.commonName?.isNotEmpty == true
+        ? item.commonName!
+        : item.scientificName;
+    qtyCtrl.text = item.quantity % 1 == 0
+        ? item.quantity.toInt().toString()
+        : item.quantity.toString();
+    priceCtrl.text = item.unitPrice % 1 == 0
+        ? item.unitPrice.toInt().toString()
+        : item.unitPrice.toString();
+    descCtrl.text = item.description ?? '';
   }
 
   void dispose() {
@@ -43,7 +50,8 @@ class _ItemRow {
   }
 
   double get lineTotal =>
-      (double.tryParse(qtyCtrl.text) ?? 0) * (double.tryParse(priceCtrl.text) ?? 0);
+      (double.tryParse(qtyCtrl.text) ?? 0) *
+      (double.tryParse(priceCtrl.text) ?? 0);
 }
 
 // ── Type-selection dialog ──────────────────────────────────────────────────────
@@ -53,7 +61,8 @@ Future<QuotationTypeChoice?> showQuotationTypeDialog(BuildContext context) {
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('What would you like to create?', style: AppTypography.h4),
+      title:
+          const Text('What would you like to create?', style: AppTypography.h4),
       contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -73,13 +82,14 @@ Future<QuotationTypeChoice?> showQuotationTypeDialog(BuildContext context) {
             subtitle: 'Prepare and share with customer',
             onTap: () => Navigator.pop(ctx, QuotationTypeChoice.customer),
           ),
-
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, null),
-          child: Text('Cancel', style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+          child: Text('Cancel',
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary)),
         ),
       ],
     ),
@@ -144,33 +154,40 @@ class _TypeOption extends StatelessWidget {
 class QuotationCreateScreen extends ConsumerStatefulWidget {
   /// null = create mode. If non-null, the type is fixed by the existing quotation.
   final Quotation? quotation;
+
   /// Pre-selected type (used when navigating from selling screen FAB).
   final String? initialType;
 
   const QuotationCreateScreen({super.key, this.quotation, this.initialType});
 
   @override
-  ConsumerState<QuotationCreateScreen> createState() => _QuotationCreateScreenState();
+  ConsumerState<QuotationCreateScreen> createState() =>
+      _QuotationCreateScreenState();
 }
 
 class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
-  final _formKey  = GlobalKey<FormState>();
-  final _nameCtrl   = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
   final _mobileCtrl = TextEditingController();
-  final _notesCtrl  = TextEditingController();
+  final _notesCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
   late List<_ItemRow> _items;
   bool _saving = false;
   String? _error;
   NurseryManager? _assignedManager; // owner-only pre-assignment
+  NurseryCustomer? _selectedCustomer;
   DateTime? _validUntil;
 
   // Type is determined once (from quotation, initialType, or dialog)
   String? _quotationType; // 'INTERNAL' or 'CUSTOMER'
 
-  bool get _isEdit   => widget.quotation != null;
+  bool get _isEdit => widget.quotation != null;
   bool get _isInternal => _quotationType == 'INTERNAL';
+  bool get _canEditContent =>
+      !_isEdit ||
+      widget.quotation!.status == 'INTERNAL_DRAFT' ||
+      widget.quotation!.status == 'CUSTOMER_DRAFT';
 
   @override
   void initState() {
@@ -178,14 +195,22 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
     if (_isEdit) {
       final q = widget.quotation!;
       _quotationType = q.quotationType;
-      _nameCtrl.text   = q.recipientName ?? '';
+      _nameCtrl.text = q.recipientName ?? '';
       _mobileCtrl.text = q.recipientMobile ?? '';
-      _notesCtrl.text  = q.notes ?? '';
-      _validUntil      = q.validUntil;
+      if (q.customerUserId != null) {
+        _selectedCustomer = NurseryCustomer(
+          userId: q.customerUserId!,
+          firstName: q.recipientName ?? '',
+          mobile: q.recipientMobile ?? '',
+        );
+      }
+      _notesCtrl.text = q.notes ?? '';
+      _validUntil = q.validUntil;
       _items = q.items.map(_ItemRow.fromItem).toList();
       if (_items.isEmpty) _items = [_ItemRow()];
     } else {
-      _quotationType = widget.initialType; // may be null → dialog shown in didChangeDependencies
+      _quotationType = widget
+          .initialType; // may be null → dialog shown in didChangeDependencies
       _items = [_ItemRow()];
     }
     for (final row in _items) {
@@ -229,7 +254,8 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
     }
 
     setState(() {
-      _quotationType = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
+      _quotationType =
+          choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
     });
   }
 
@@ -255,8 +281,69 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
   double get _grandTotal => _items.fold(0.0, (s, r) => s + r.lineTotal);
 
+  void _applyCustomer(NurseryCustomer customer) {
+    setState(() {
+      _selectedCustomer = customer;
+      _nameCtrl.text = customer.displayName == 'Customer'
+          ? _nameCtrl.text
+          : customer.displayName;
+      _mobileCtrl.text = customer.mobile;
+    });
+  }
+
+  Future<void> _pickCustomer(int nurseryId) async {
+    final picked = await showModalBottomSheet<NurseryCustomer>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _CustomerPickerSheet(nurseryId: nurseryId),
+    );
+    if (picked != null && mounted) _applyCustomer(picked);
+  }
+
   Future<void> _save() async {
     setState(() => _error = null);
+    final session = ref.read(sessionProvider);
+    final nurseryId = session.nurseryId;
+    final isOwner = session.capabilities.isNurseryOwner;
+    final repo = ref.read(quotationRepositoryProvider);
+
+    if (_isEdit && !_canEditContent) {
+      if (!isOwner) {
+        setState(() => _error = 'Quotation editing is locked');
+        return;
+      }
+      setState(() => _saving = true);
+      try {
+        await repo.updateQuotationCustomer(
+          id: widget.quotation!.id,
+          customerUserId:
+              _selectedCustomer?.userId ?? widget.quotation!.customerUserId,
+          recipientName:
+              _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          recipientMobile:
+              _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Customer updated'),
+            backgroundColor: AppColors.primaryMain,
+          ));
+          Navigator.of(context).pop(true);
+        }
+      } on AppError catch (e) {
+        if (mounted) setState(() => _error = e.message);
+      } catch (e) {
+        if (mounted) setState(() => _error = e.toString());
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+      return;
+    }
+
     if (!(_formKey.currentState?.validate() ?? false)) return;
     for (int i = 0; i < _items.length; i++) {
       if (_items[i].plantId == null) {
@@ -265,41 +352,47 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       }
     }
 
-    final session = ref.read(sessionProvider);
-    final nurseryId = session.nurseryId;
-    final isOwner = session.capabilities.isNurseryOwner;
     setState(() => _saving = true);
 
     try {
-      final itemRequests = _items.map((r) => QuotationItemRequest(
-        plantId:    r.plantId!,
-        description: r.descCtrl.text.trim().isEmpty ? null : r.descCtrl.text.trim(),
-        quantity:   double.parse(r.qtyCtrl.text.trim()),
-        unitPrice:  double.parse(r.priceCtrl.text.trim()),
-        totalPrice: r.lineTotal,
-      )).toList();
-
-      final repo = ref.read(quotationRepositoryProvider);
+      final itemRequests = _items
+          .map((r) => QuotationItemRequest(
+                plantId: r.plantId!,
+                description: r.descCtrl.text.trim().isEmpty
+                    ? null
+                    : r.descCtrl.text.trim(),
+                quantity: double.parse(r.qtyCtrl.text.trim()),
+                unitPrice: double.parse(r.priceCtrl.text.trim()),
+                totalPrice: r.lineTotal,
+              ))
+          .toList();
 
       if (_isEdit) {
         await repo.updateQuotation(
-          id:              widget.quotation!.id,
-          recipientName:   _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-          recipientMobile: _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
-          notes:           _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          validUntil:      _validUntil,
-          items:           itemRequests,
+          id: widget.quotation!.id,
+          customerUserId:
+              _selectedCustomer?.userId ?? widget.quotation!.customerUserId,
+          recipientName:
+              _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          recipientMobile:
+              _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          validUntil: _validUntil,
+          items: itemRequests,
         );
       } else {
         await repo.createQuotation(
-          quotationType:         _quotationType ?? 'CUSTOMER',
-          nurseryId:             nurseryId,
+          quotationType: _quotationType ?? 'CUSTOMER',
+          nurseryId: nurseryId,
           assignedManagerUserId: isOwner ? _assignedManager?.userId : null,
-          recipientName:         _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-          recipientMobile:       _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
-          notes:                 _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          validUntil:            _validUntil,
-          items:                 itemRequests,
+          customerUserId: _selectedCustomer?.userId,
+          recipientName:
+              _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          recipientMobile:
+              _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          validUntil: _validUntil,
+          items: itemRequests,
         );
       }
 
@@ -331,12 +424,29 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
         ),
-        body: const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+        body: const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryMain)),
       );
     }
 
     final typeLabel = _isInternal ? 'Internal Quotation' : 'Quotation';
     final title = _isEdit ? 'Edit Quotation' : typeLabel;
+    final session = ref.watch(sessionProvider);
+    final isOwner = session.capabilities.isNurseryOwner;
+    final nurseryId = session.nurseryId;
+    final showOwnerCustomerPicker =
+        !_isInternal && isOwner && nurseryId != null;
+    final showManualCustomerFields = !_isInternal && !_isEdit;
+    final customerNameText = _nameCtrl.text.trim();
+    final customerTitle = _selectedCustomer?.displayName ??
+        (customerNameText.isNotEmpty
+            ? customerNameText
+            : 'Select connected customer...');
+    final customerInitialSource =
+        _selectedCustomer?.displayName ?? customerNameText;
+    final customerInitial = customerInitialSource.isNotEmpty
+        ? customerInitialSource[0].toUpperCase()
+        : 'C';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -349,8 +459,15 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           TextButton(
             onPressed: _saving ? null : _save,
             child: _saving
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain))
-                : Text('Save', style: AppTypography.body.copyWith(color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primaryMain))
+                : Text('Save',
+                    style: AppTypography.body.copyWith(
+                        color: AppColors.primaryMain,
+                        fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -372,21 +489,104 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.red600),
                       ),
-                      child: Text(_error!, style: AppTypography.bodySmall.copyWith(color: AppColors.red600)),
+                      child: Text(_error!,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.red600)),
                     ),
                     const SizedBox(height: AppSpacing.md),
                   ],
 
                   // Customer section — only for CUSTOMER type
-                  if (!_isInternal) ...[
+                  if (showOwnerCustomerPicker) ...[
                     Text(
                       'Customer',
-                      style: AppTypography.label.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.label
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Connected customer for this nursery',
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    GestureDetector(
+                      onTap: () => _pickCustomer(nurseryId),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _selectedCustomer != null ||
+                                    _nameCtrl.text.trim().isNotEmpty ||
+                                    _mobileCtrl.text.trim().isNotEmpty
+                                ? AppColors.primaryMain
+                                : AppColors.border,
+                          ),
+                        ),
+                        child: Row(children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: AppColors.forest100,
+                            child: Text(
+                              customerInitial,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primaryMain,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  customerTitle,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: _selectedCustomer != null ||
+                                            _nameCtrl.text.trim().isNotEmpty
+                                        ? AppColors.textPrimary
+                                        : AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (_selectedCustomer != null)
+                                  Text(
+                                    _selectedCustomer!.identityLabel,
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  )
+                                else if (_mobileCtrl.text.trim().isNotEmpty)
+                                  Text(
+                                    _mobileCtrl.text.trim(),
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded,
+                              size: 18, color: AppColors.textMuted),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ] else if (showManualCustomerFields) ...[
+                    Text(
+                      'Customer',
+                      style: AppTypography.label
+                          .copyWith(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Required for customer quotations',
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Row(children: [
@@ -394,10 +594,12 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                         child: TextFormField(
                           controller: _nameCtrl,
                           decoration: _inputDec('Customer Name'),
+                          readOnly: !_canEditContent,
                           textInputAction: TextInputAction.next,
                           validator: (v) {
                             final mobile = _mobileCtrl.text.trim();
-                            if ((v == null || v.trim().isEmpty) && mobile.isEmpty) {
+                            if ((v == null || v.trim().isEmpty) &&
+                                mobile.isEmpty) {
                               return 'Required';
                             }
                             return null;
@@ -409,8 +611,11 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                         child: TextFormField(
                           controller: _mobileCtrl,
                           decoration: _inputDec('Mobile'),
+                          readOnly: !_canEditContent,
                           keyboardType: TextInputType.phone,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
                     ]),
@@ -419,76 +624,96 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
                   // Items header
                   Row(children: [
-                    Text('Items', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                    Text('Items',
+                        style: AppTypography.label
+                            .copyWith(color: AppColors.textSecondary)),
                     const Spacer(),
-                    GestureDetector(
-                      onTap: _addItem,
-                      child: Row(children: [
-                        const Icon(Icons.add_circle_outline, color: AppColors.primaryMain, size: 18),
-                        const SizedBox(width: 4),
-                        Text('Add Item', style: AppTypography.bodySmall.copyWith(color: AppColors.primaryMain, fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
+                    if (_canEditContent)
+                      GestureDetector(
+                        onTap: _addItem,
+                        child: Row(children: [
+                          const Icon(Icons.add_circle_outline,
+                              color: AppColors.primaryMain, size: 18),
+                          const SizedBox(width: 4),
+                          Text('Add Item',
+                              style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.primaryMain,
+                                  fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
                   ]),
                   const SizedBox(height: AppSpacing.sm),
 
                   // Items
                   ..._items.asMap().entries.map((e) => _ItemCard(
-                    key: ValueKey(e.key),
-                    row: e.value,
-                    index: e.key,
-                    total: _items.length,
-                    onRemove: () => _removeItem(e.key),
-                    onChanged: _onChanged,
-                    onPlantSelected: (id, name) {
-                      setState(() {
-                        e.value.plantId   = id;
-                        e.value.plantName = name;
-                      });
-                    },
-                  )),
+                        key: ValueKey(e.key),
+                        row: e.value,
+                        index: e.key,
+                        total: _items.length,
+                        readOnly: !_canEditContent,
+                        onRemove: () => _removeItem(e.key),
+                        onChanged: _onChanged,
+                        onPlantSelected: (id, name) {
+                          setState(() {
+                            e.value.plantId = id;
+                            e.value.plantName = name;
+                          });
+                        },
+                      )),
 
                   const SizedBox(height: AppSpacing.sm),
                   const Divider(color: AppColors.border),
 
                   // Notes
                   const SizedBox(height: AppSpacing.md),
-                  Text('Notes', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                  Text('Notes',
+                      style: AppTypography.label
+                          .copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _notesCtrl,
                     decoration: _inputDec('Add notes...'),
+                    readOnly: !_canEditContent,
                     maxLines: 3,
                     minLines: 2,
                   ),
 
                   // Valid Until
                   const SizedBox(height: AppSpacing.md),
-                  Text('Valid Until', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                  Text('Valid Until',
+                      style: AppTypography.label
+                          .copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text('Optional — defaults to 15 days after approval',
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted)),
                   const SizedBox(height: AppSpacing.sm),
                   GestureDetector(
-                    onTap: () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _validUntil ?? now.add(const Duration(days: 15)),
-                        firstDate: now,
-                        lastDate: now.add(const Duration(days: 365)),
-                      );
-                      if (picked != null) setState(() => _validUntil = picked);
-                    },
+                    onTap: !_canEditContent
+                        ? null
+                        : () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _validUntil ??
+                                  now.add(const Duration(days: 15)),
+                              firstDate: now,
+                              lastDate: now.add(const Duration(days: 365)),
+                            );
+                            if (picked != null)
+                              setState(() => _validUntil = picked);
+                          },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.border),
                       ),
                       child: Row(children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 16, color: AppColors.textMuted),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -496,14 +721,17 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                                 ? '${_validUntil!.day} ${_monthName(_validUntil!.month)} ${_validUntil!.year}'
                                 : 'Pick a date…',
                             style: AppTypography.body.copyWith(
-                              color: _validUntil != null ? AppColors.textPrimary : AppColors.textMuted,
+                              color: _validUntil != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
                             ),
                           ),
                         ),
-                        if (_validUntil != null)
+                        if (_validUntil != null && _canEditContent)
                           GestureDetector(
                             onTap: () => setState(() => _validUntil = null),
-                            child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                            child: const Icon(Icons.close,
+                                size: 16, color: AppColors.textMuted),
                           ),
                       ]),
                     ),
@@ -512,44 +740,58 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                   // Owner-only: optional manager assignment on create
                   if (!_isEdit) ...[
                     Builder(builder: (context) {
-                      final isOwner = ref.watch(sessionProvider).capabilities.isNurseryOwner;
-                      final nurseryId = ref.watch(sessionProvider).nurseryId;
-                      if (!isOwner || nurseryId == null) return const SizedBox.shrink();
+                      if (!isOwner || nurseryId == null)
+                        return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: AppSpacing.lg),
-                          Text('Assign to Manager', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                          Text('Assign to Manager',
+                              style: AppTypography.label
+                                  .copyWith(color: AppColors.textSecondary)),
                           const SizedBox(height: 4),
-                          Text('Optional — leave blank to keep private', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                          Text('Optional — leave blank to keep private',
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.textMuted)),
                           const SizedBox(height: AppSpacing.sm),
                           GestureDetector(
                             onTap: () async {
-                              final picked = await showModalBottomSheet<NurseryManager>(
+                              final picked =
+                                  await showModalBottomSheet<NurseryManager>(
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: AppColors.surface,
                                 shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                  borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16)),
                                 ),
-                                builder: (_) => _ManagerPickerSheetCreate(nurseryId: nurseryId),
+                                builder: (_) => _ManagerPickerSheetCreate(
+                                    nurseryId: nurseryId),
                               );
-                              if (picked != null) setState(() => _assignedManager = picked);
+                              if (picked != null)
+                                setState(() => _assignedManager = picked);
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: _assignedManager != null ? AppColors.primaryMain : AppColors.border,
+                                  color: _assignedManager != null
+                                      ? AppColors.primaryMain
+                                      : AppColors.border,
                                 ),
                               ),
                               child: Row(children: [
                                 Icon(
-                                  _assignedManager != null ? Icons.person_rounded : Icons.person_add_outlined,
+                                  _assignedManager != null
+                                      ? Icons.person_rounded
+                                      : Icons.person_add_outlined,
                                   size: 18,
-                                  color: _assignedManager != null ? AppColors.primaryMain : AppColors.textMuted,
+                                  color: _assignedManager != null
+                                      ? AppColors.primaryMain
+                                      : AppColors.textMuted,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
@@ -558,17 +800,22 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                                         ? (_assignedManager!.name ?? 'Manager')
                                         : 'Select manager...',
                                     style: AppTypography.bodySmall.copyWith(
-                                      color: _assignedManager != null ? AppColors.textPrimary : AppColors.textMuted,
+                                      color: _assignedManager != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textMuted,
                                     ),
                                   ),
                                 ),
                                 if (_assignedManager != null)
                                   GestureDetector(
-                                    onTap: () => setState(() => _assignedManager = null),
-                                    child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                                    onTap: () =>
+                                        setState(() => _assignedManager = null),
+                                    child: const Icon(Icons.close,
+                                        size: 16, color: AppColors.textMuted),
                                   )
                                 else
-                                  const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
+                                  const Icon(Icons.chevron_right_rounded,
+                                      size: 18, color: AppColors.textMuted),
                               ]),
                             ),
                           ),
@@ -584,15 +831,16 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
             // Fixed footer: total + save
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding, AppSpacing.md, AppSpacing.screenPadding, AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.lg),
               decoration: const BoxDecoration(
                 color: AppColors.surface,
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(children: [
                 Text('₹${_grandTotal.toStringAsFixed(2)}',
-                    style: AppTypography.h3.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.h3
+                        .copyWith(color: AppColors.primaryMain)),
                 const Spacer(),
                 SizedBox(
                   width: 130,
@@ -602,12 +850,18 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                       backgroundColor: AppColors.primaryMain,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     child: _saving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : Text(_isEdit ? 'Update' : 'Save Draft',
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ]),
@@ -619,21 +873,42 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
   }
 
   String _monthName(int m) => const [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ][m];
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ][m];
 
   InputDecoration _inputDec(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-    filled: true,
-    fillColor: AppColors.surface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primaryMain, width: 1.5)),
-    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.red600)),
-  );
+        hintText: hint,
+        hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+        filled: true,
+        fillColor: AppColors.surface,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide:
+                const BorderSide(color: AppColors.primaryMain, width: 1.5)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.red600)),
+      );
 }
 
 // ── Type badge ─────────────────────────────────────────────────────────────────
@@ -645,9 +920,10 @@ class _TypeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isInternal ? AppColors.textSecondary : AppColors.primaryMain;
-    final bg    = isInternal ? AppColors.border : AppColors.forest100;
+    final bg = isInternal ? AppColors.border : AppColors.forest100;
     final label = isInternal ? 'Internal Quotation' : 'Quotation';
-    final icon  = isInternal ? Icons.folder_outlined : Icons.request_quote_outlined;
+    final icon =
+        isInternal ? Icons.folder_outlined : Icons.request_quote_outlined;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -659,7 +935,9 @@ class _TypeBadge extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
-        Text(label, style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w700)),
+        Text(label,
+            style: AppTypography.caption
+                .copyWith(color: color, fontWeight: FontWeight.w700)),
       ]),
     );
   }
@@ -684,7 +962,8 @@ class _CautionBanner extends StatelessWidget {
           child: Text(
             'Note: GreenRoot does not set or verify any price rates. '
             'All prices shown are as entered by the owner/user.',
-            style: AppTypography.caption.copyWith(color: const Color(0xFF92400E)),
+            style:
+                AppTypography.caption.copyWith(color: const Color(0xFF92400E)),
           ),
         ),
       ]),
@@ -698,6 +977,7 @@ class _ItemCard extends ConsumerStatefulWidget {
   final _ItemRow row;
   final int index;
   final int total;
+  final bool readOnly;
   final VoidCallback onRemove;
   final VoidCallback onChanged;
   final void Function(int plantId, String plantName) onPlantSelected;
@@ -707,6 +987,7 @@ class _ItemCard extends ConsumerStatefulWidget {
     required this.row,
     required this.index,
     required this.total,
+    required this.readOnly,
     required this.onRemove,
     required this.onChanged,
     required this.onPlantSelected,
@@ -719,7 +1000,7 @@ class _ItemCard extends ConsumerStatefulWidget {
 class _ItemCardState extends ConsumerState<_ItemCard> {
   final _searchCtrl = TextEditingController();
   List<Plant> _results = [];
-  bool _searching  = false;
+  bool _searching = false;
   bool _showDropdown = false;
 
   @override
@@ -738,19 +1019,32 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
 
   Future<void> _search(String q) async {
     if (q.length < 2) {
-      setState(() { _results = []; _showDropdown = false; });
+      setState(() {
+        _results = [];
+        _showDropdown = false;
+      });
       return;
     }
     setState(() => _searching = true);
     try {
-      final (results, _) = await ref.read(plantRepositoryProvider)
+      final (results, _) = await ref
+          .read(plantRepositoryProvider)
           .listPlants(search: q, page: 1, perPage: 10);
-      if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; });
+      if (mounted)
+        setState(() {
+          _results = results;
+          _showDropdown = results.isNotEmpty;
+        });
     } catch (e) {
       if (mounted) {
-        setState(() { _results = []; _showDropdown = false; });
+        setState(() {
+          _results = [];
+          _showDropdown = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Plant search error: $e'), backgroundColor: AppColors.red600),
+          SnackBar(
+              content: Text('Plant search error: $e'),
+              backgroundColor: AppColors.red600),
         );
       }
     } finally {
@@ -759,20 +1053,27 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
   }
 
   InputDecoration _dec(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: AppTypography.caption.copyWith(color: AppColors.textMuted),
-    filled: true,
-    fillColor: AppColors.background,
-    isDense: true,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: const BorderSide(color: AppColors.border)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: const BorderSide(color: AppColors.border)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: const BorderSide(color: AppColors.primaryMain, width: 1.5)),
-  );
+        hintText: hint,
+        hintStyle: AppTypography.caption.copyWith(color: AppColors.textMuted),
+        filled: true,
+        fillColor: AppColors.background,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide: const BorderSide(color: AppColors.border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide: const BorderSide(color: AppColors.border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide:
+                const BorderSide(color: AppColors.primaryMain, width: 1.5)),
+      );
 
   @override
   Widget build(BuildContext context) {
-    final row        = widget.row;
+    final row = widget.row;
     final isSelected = row.plantId != null;
 
     return Container(
@@ -781,7 +1082,10 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isSelected ? AppColors.primaryMain.withValues(alpha: 0.4) : AppColors.border),
+        border: Border.all(
+            color: isSelected
+                ? AppColors.primaryMain.withValues(alpha: 0.4)
+                : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,49 +1093,71 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
           // Item header row
           Row(children: [
             Container(
-              width: 22, height: 22,
-              decoration: BoxDecoration(color: AppColors.forest100, borderRadius: BorderRadius.circular(4)),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                  color: AppColors.forest100,
+                  borderRadius: BorderRadius.circular(4)),
               child: Center(
                 child: Text('${widget.index + 1}',
-                    style: AppTypography.caption.copyWith(color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                    style: AppTypography.caption.copyWith(
+                        color: AppColors.primaryMain,
+                        fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 6),
             if (isSelected) ...[
               Expanded(
                 child: Text(row.plantName,
-                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryMain),
+                    style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryMain),
                     overflow: TextOverflow.ellipsis),
               ),
-              GestureDetector(
-                onTap: () {
-                  setState(() { _searchCtrl.clear(); _showDropdown = false; });
-                  row.plantId   = null;
-                  row.plantName = '';
-                  widget.onChanged();
-                },
-                child: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textMuted),
-              ),
+              if (!widget.readOnly)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _searchCtrl.clear();
+                      _showDropdown = false;
+                    });
+                    row.plantId = null;
+                    row.plantName = '';
+                    widget.onChanged();
+                  },
+                  child: const Icon(Icons.edit_outlined,
+                      size: 16, color: AppColors.textMuted),
+                ),
             ] else
-              Expanded(child: Text('Select plant', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted))),
+              Expanded(
+                  child: Text('Select plant',
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textMuted))),
             const SizedBox(width: 6),
-            if (widget.total > 1)
+            if (!widget.readOnly && widget.total > 1)
               GestureDetector(
                 onTap: widget.onRemove,
-                child: const Icon(Icons.remove_circle_outline, size: 18, color: AppColors.red600),
+                child: const Icon(Icons.remove_circle_outline,
+                    size: 18, color: AppColors.red600),
               ),
           ]),
 
           // Plant search
-          if (!isSelected) ...[
+          if (!isSelected && !widget.readOnly) ...[
             const SizedBox(height: 8),
             TextField(
               controller: _searchCtrl,
               decoration: _dec('Search plant name...').copyWith(
                 suffixIcon: _searching
-                    ? const Padding(padding: EdgeInsets.all(8),
-                        child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain)))
-                    : const Icon(Icons.search, size: 16, color: AppColors.textMuted),
+                    ? const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.primaryMain)))
+                    : const Icon(Icons.search,
+                        size: 16, color: AppColors.textMuted),
               ),
               style: AppTypography.bodySmall,
               onChanged: (val) {
@@ -848,25 +1174,39 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(color: AppColors.border),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 6, offset: const Offset(0, 2))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.07),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2))
+                  ],
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _results.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, color: AppColors.border),
                   itemBuilder: (_, i) {
                     final plant = _results[i];
                     return ListTile(
                       dense: true,
                       visualDensity: VisualDensity.compact,
-                      title: Text(plant.scientificName, style: AppTypography.bodySmall),
+                      title: Text(plant.scientificName,
+                          style: AppTypography.bodySmall),
                       subtitle: plant.commonName != null
-                          ? Text(plant.commonName!, style: AppTypography.caption.copyWith(color: AppColors.textMuted))
+                          ? Text(plant.commonName!,
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.textMuted))
                           : null,
                       onTap: () {
-                        final name = plant.commonName?.isNotEmpty == true ? plant.commonName! : plant.scientificName;
+                        final name = plant.commonName?.isNotEmpty == true
+                            ? plant.commonName!
+                            : plant.scientificName;
                         _searchCtrl.text = name;
-                        setState(() { _showDropdown = false; _results = []; });
+                        setState(() {
+                          _showDropdown = false;
+                          _results = [];
+                        });
                         widget.onPlantSelected(plant.id, name);
                       },
                     );
@@ -882,8 +1222,12 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
               child: TextFormField(
                 controller: row.qtyCtrl,
                 decoration: _dec('Qty'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                readOnly: widget.readOnly,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                ],
                 style: AppTypography.bodySmall,
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
@@ -897,8 +1241,12 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
               child: TextFormField(
                 controller: row.priceCtrl,
                 decoration: _dec('Unit Price ₹'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                readOnly: widget.readOnly,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                ],
                 style: AppTypography.bodySmall,
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
@@ -917,7 +1265,8 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
               ),
               child: Text(
                 '₹${row.lineTotal.toStringAsFixed(0)}',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.primaryMain, fontWeight: FontWeight.w700),
+                style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primaryMain, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -928,9 +1277,170 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
           TextField(
             controller: row.descCtrl,
             decoration: _dec('Description (optional)'),
+            readOnly: widget.readOnly,
             style: AppTypography.caption,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Customer picker bottom sheet ───────────────────────────────────────────────
+
+class _CustomerPickerSheet extends StatefulWidget {
+  final int nurseryId;
+  const _CustomerPickerSheet({required this.nurseryId});
+
+  @override
+  State<_CustomerPickerSheet> createState() => _CustomerPickerSheetState();
+}
+
+class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
+  List<NurseryCustomer>? _customers;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final customers = await ApiClient.instance.get<List<NurseryCustomer>>(
+        ApiConstants.nurseryCustomers(widget.nurseryId),
+        fromJson: (json) {
+          final list =
+              (json as Map<String, dynamic>)['customers'] as List<dynamic>? ??
+                  [];
+          return list
+              .cast<Map<String, dynamic>>()
+              .map(NurseryCustomer.fromJson)
+              .toList();
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _customers = customers;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.55,
+      minChildSize: 0.35,
+      maxChildSize: 0.9,
+      builder: (context, ctrl) => SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+              child: Row(children: [
+                Expanded(
+                    child: Text('Select Customer', style: AppTypography.h3)),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ]),
+            ),
+            const Divider(height: 1, color: AppColors.border),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: AppColors.primaryMain))
+                  : _error != null
+                      ? Center(
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                          Text('Failed to load customers',
+                              style: AppTypography.body
+                                  .copyWith(color: AppColors.red600)),
+                          TextButton(
+                            onPressed: _load,
+                            child: const Text('Retry'),
+                          ),
+                        ]))
+                      : _customers == null || _customers!.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No connected customers',
+                                style: AppTypography.body
+                                    .copyWith(color: AppColors.textMuted),
+                              ),
+                            )
+                          : ListView.separated(
+                              controller: ctrl,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.screenPadding,
+                                  vertical: AppSpacing.md),
+                              itemCount: _customers!.length,
+                              separatorBuilder: (_, __) => const Divider(
+                                  height: 1, color: AppColors.border),
+                              itemBuilder: (_, i) {
+                                final c = _customers![i];
+                                return ListTile(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.forest100,
+                                    child: Text(
+                                      c.displayName[0].toUpperCase(),
+                                      style: AppTypography.body.copyWith(
+                                        color: AppColors.primaryMain,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    c.displayName,
+                                    style: AppTypography.body
+                                        .copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: Text(
+                                    c.identityLabel,
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  trailing: const Icon(Icons.chevron_right,
+                                      size: 18, color: AppColors.textMuted),
+                                  onTap: () => Navigator.pop(context, c),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -943,7 +1453,8 @@ class _ManagerPickerSheetCreate extends StatefulWidget {
   const _ManagerPickerSheetCreate({required this.nurseryId});
 
   @override
-  State<_ManagerPickerSheetCreate> createState() => _ManagerPickerSheetCreateState();
+  State<_ManagerPickerSheetCreate> createState() =>
+      _ManagerPickerSheetCreateState();
 }
 
 class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
@@ -972,9 +1483,17 @@ class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
               .toList();
         },
       );
-      if (mounted) setState(() { _managers = managers; _loading = false; });
+      if (mounted)
+        setState(() {
+          _managers = managers;
+          _loading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
     }
   }
 
@@ -989,51 +1508,81 @@ class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
         children: [
           const SizedBox(height: 12),
           Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2)),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
             child: Row(children: [
               Expanded(child: Text('Assign Manager', style: AppTypography.h3)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context)),
             ]),
           ),
           const Divider(height: 1, color: AppColors.border),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryMain))
+                ? const Center(
+                    child:
+                        CircularProgressIndicator(color: AppColors.primaryMain))
                 : _error != null
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    ? Center(
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
                         Text('Failed to load managers',
-                            style: AppTypography.body.copyWith(color: AppColors.red600)),
+                            style: AppTypography.body
+                                .copyWith(color: AppColors.red600)),
                         TextButton(
-                            onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
+                            onPressed: () {
+                              setState(() {
+                                _loading = true;
+                                _error = null;
+                              });
+                              _load();
+                            },
                             child: const Text('Retry')),
                       ]))
                     : _managers == null || _managers!.isEmpty
-                        ? Center(child: Text('No managers in this nursery',
-                              style: AppTypography.body.copyWith(color: AppColors.textMuted)))
+                        ? Center(
+                            child: Text('No managers in this nursery',
+                                style: AppTypography.body
+                                    .copyWith(color: AppColors.textMuted)))
                         : ListView.separated(
                             controller: ctrl,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+                                horizontal: AppSpacing.screenPadding,
+                                vertical: AppSpacing.md),
                             itemCount: _managers!.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                            separatorBuilder: (_, __) => const Divider(
+                                height: 1, color: AppColors.border),
                             itemBuilder: (_, i) {
                               final m = _managers![i];
                               return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 leading: CircleAvatar(
                                   backgroundColor: AppColors.forest100,
                                   child: Text(
-                                      (m.name?.isNotEmpty == true) ? m.name![0].toUpperCase() : '?',
+                                      m.displayName.isNotEmpty
+                                          ? m.displayName[0].toUpperCase()
+                                          : '?',
                                       style: AppTypography.body.copyWith(
-                                          color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                                          color: AppColors.primaryMain,
+                                          fontWeight: FontWeight.w700)),
                                 ),
-                                title: Text(m.name ?? 'Manager', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                                subtitle: Text(m.mobile ?? '', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                                title: Text(m.displayName,
+                                    style: AppTypography.body
+                                        .copyWith(fontWeight: FontWeight.w600)),
+                                subtitle: Text(m.identityLabel,
+                                    style: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary)),
+                                trailing: const Icon(Icons.chevron_right,
+                                    size: 18, color: AppColors.textMuted),
                                 onTap: () => Navigator.pop(context, m),
                               );
                             },

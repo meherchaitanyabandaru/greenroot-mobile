@@ -50,13 +50,37 @@ class NurseryManager {
   final String name;
   final String mobile;
 
-  const NurseryManager({required this.userId, required this.name, required this.mobile});
+  const NurseryManager({
+    required this.userId,
+    required this.name,
+    required this.mobile,
+  });
 
-  factory NurseryManager.fromJson(Map<String, dynamic> j) => NurseryManager(
-        userId: (j['user_id'] as num).toInt(),
-        name: j['first_name'] as String? ?? 'Manager',
-        mobile: j['mobile'] as String? ?? '',
-      );
+  factory NurseryManager.fromJson(Map<String, dynamic> j) {
+    final explicitName = (j['name'] as String?)?.trim();
+    final firstName = (j['first_name'] as String?)?.trim();
+    final lastName = (j['last_name'] as String?)?.trim();
+    final fullName = [
+      if (firstName?.isNotEmpty == true) firstName,
+      if (lastName?.isNotEmpty == true) lastName,
+    ].join(' ').trim();
+
+    return NurseryManager(
+      userId: (j['user_id'] as num).toInt(),
+      name: explicitName?.isNotEmpty == true
+          ? explicitName!
+          : fullName.isNotEmpty
+              ? fullName
+              : 'Manager',
+      mobile: j['mobile'] as String? ?? '',
+    );
+  }
+
+  String get identityLabel {
+    final parts = <String>['User ID: $userId'];
+    if (mobile.isNotEmpty) parts.add(mobile);
+    return parts.join(' | ');
+  }
 }
 
 class Order {
@@ -124,8 +148,7 @@ class Order {
         loadingCompletedAt: j['loading_completed_at'] as String?,
         cancelledAt: j['cancelled_at'] as String?,
         cancelReason: j['cancel_reason'] as String?,
-        assignedManagerUserId:
-            (j['assigned_manager_user_id'] as num?)?.toInt(),
+        assignedManagerUserId: (j['assigned_manager_user_id'] as num?)?.toInt(),
         assignedManagerName: j['assigned_manager_name'] as String?,
         customerName: j['customer_name'] as String?,
       );
@@ -244,7 +267,8 @@ class OrderRepository {
     );
   }
 
-  Future<OrderItem> setLoadedQuantity(int orderId, int itemId, double qty) async {
+  Future<OrderItem> setLoadedQuantity(
+      int orderId, int itemId, double qty) async {
     return _client.put(
       ApiConstants.orderItemLoadedQuantity(orderId, itemId),
       data: {'loaded_quantity': qty},
@@ -368,7 +392,8 @@ class OrderListState {
   final String? statusFilter;
   final int? nurseryId;
 
-  const OrderListState({required this.paged, this.statusFilter, this.nurseryId});
+  const OrderListState(
+      {required this.paged, this.statusFilter, this.nurseryId});
 
   OrderListState copyWith({
     PagedState<Order>? paged,
@@ -399,7 +424,8 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
       paged: state.paged.copyWith(isLoading: true, clearError: true),
     );
     try {
-      final (items, pagination) = await _repo.listOrders(page: 1, status: sf, nurseryId: nid);
+      final (items, pagination) =
+          await _repo.listOrders(page: 1, status: sf, nurseryId: nid);
       _page = 1;
       state = state.copyWith(
         paged: PagedState(
@@ -420,7 +446,9 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
       final (items, pagination) = await _repo.listOrders(
-          page: _page + 1, status: state.statusFilter, nurseryId: state.nurseryId);
+          page: _page + 1,
+          status: state.statusFilter,
+          nurseryId: state.nurseryId);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
@@ -440,8 +468,7 @@ final orderListProvider =
   return OrderListNotifier(ref.watch(orderRepositoryProvider));
 });
 
-final orderDetailProvider =
-    FutureProvider.family<Order, int>((ref, id) async {
+final orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
   return ref.watch(orderRepositoryProvider).getOrder(id);
 });
 

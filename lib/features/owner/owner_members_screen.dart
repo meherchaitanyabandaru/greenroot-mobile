@@ -128,6 +128,23 @@ class NurseryManager {
           json['role'] as String? ?? json['role_code'] as String? ?? 'MANAGER',
     );
   }
+
+  String get displayName {
+    final trimmedName = name?.trim();
+    return trimmedName?.isNotEmpty == true ? trimmedName! : 'Manager';
+  }
+
+  String get identityLabel {
+    final parts = <String>['User ID: $userId'];
+    final trimmedMobile = mobile?.trim();
+    final trimmedEmail = email?.trim();
+    if (trimmedMobile?.isNotEmpty == true) {
+      parts.add(trimmedMobile!);
+    } else if (trimmedEmail?.isNotEmpty == true) {
+      parts.add(trimmedEmail!);
+    }
+    return parts.join(' | ');
+  }
 }
 
 class NurseryCustomer {
@@ -155,6 +172,23 @@ class NurseryCustomer {
           ? DateTime.tryParse(json['accepted_at'] as String)
           : null,
     );
+  }
+
+  String get displayName {
+    final trimmedName = firstName.trim();
+    return trimmedName.isNotEmpty ? trimmedName : 'Customer';
+  }
+
+  String get identityLabel {
+    final parts = <String>['User ID: $userId'];
+    final trimmedMobile = mobile.trim();
+    final trimmedEmail = email?.trim();
+    if (trimmedMobile.isNotEmpty) {
+      parts.add(trimmedMobile);
+    } else if (trimmedEmail?.isNotEmpty == true) {
+      parts.add(trimmedEmail!);
+    }
+    return parts.join(' | ');
   }
 }
 
@@ -441,8 +475,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                       customers: state.customers,
                       pendingInvites: state.invites
                           .where((i) =>
-                              i.inviteType == 'CUSTOMER_INVITE' &&
-                              i.isPending)
+                              i.inviteType == 'CUSTOMER_INVITE' && i.isPending)
                           .toList(),
                     ),
                   ],
@@ -580,9 +613,8 @@ class _CustomersTab extends ConsumerWidget {
               items: customers
                   .map((c) => _MemberItem(
                         name: c.firstName,
-                        subtitle: c.mobile.isNotEmpty
-                            ? c.mobile
-                            : (c.email ?? ''),
+                        subtitle:
+                            c.mobile.isNotEmpty ? c.mobile : (c.email ?? ''),
                         badge: 'CUSTOMER',
                         badgeColor: AppColors.forest600,
                         icon: Icons.shopping_bag_rounded,

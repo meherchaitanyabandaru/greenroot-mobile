@@ -109,6 +109,7 @@ abstract class ApiConstants {
   // Quotations
   static const String quotations = '$v1/quotations';
   static String quotationById(int id) => '$v1/quotations/$id';
+  static String quotationCustomer(int id) => '$v1/quotations/$id/customer';
   static String quotationSend(int id) => '$v1/quotations/$id/send';
   static String quotationApprove(int id) => '$v1/quotations/$id/approve';
   static String quotationRecall(int id) => '$v1/quotations/$id/recall';
