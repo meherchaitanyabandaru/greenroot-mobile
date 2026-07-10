@@ -278,7 +278,7 @@ class MarketRepository {
 }
 
 final marketRepositoryProvider = Provider<MarketRepository>(
-  (ref) => MarketRepository(ApiClient.instance),
+  (ref) => MarketRepository(ref.watch(apiClientProvider)),
 );
 
 // ── Photo Upload ──────────────────────────────────────────────

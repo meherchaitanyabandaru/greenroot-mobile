@@ -93,7 +93,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/models/pagination.dart' show ApiPagination;
-import '../../core/network/api_client.dart' show ApiClient;
+import '../../core/network/api_client.dart' show ApiClient, apiClientProvider;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -139,7 +139,7 @@ class Payment {
 // ── Repository ────────────────────────────────────────────────────────────────
 
 final paymentRepositoryProvider =
-    Provider((ref) => PaymentRepository(ApiClient.instance));
+    Provider((ref) => PaymentRepository(ref.watch(apiClientProvider)));
 
 class PaymentRepository {
   final ApiClient _api;

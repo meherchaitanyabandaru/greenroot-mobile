@@ -34,5 +34,5 @@ class StorageService {
 }
 
 final storageServiceProvider = Provider<StorageService>(
-  (ref) => StorageService(ApiClient.instance),
+  (ref) => StorageService(ref.watch(apiClientProvider)),
 );

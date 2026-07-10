@@ -4,7 +4,7 @@ import 'subscription_datasource.dart';
 import 'subscription_models.dart';
 
 final subscriptionDataSourceProvider = Provider<SubscriptionRemoteDataSource>(
-  (ref) => SubscriptionRemoteDataSource(ApiClient.instance),
+  (ref) => SubscriptionRemoteDataSource(ref.watch(apiClientProvider)),
 );
 
 /// Current user's active subscription (null if none).

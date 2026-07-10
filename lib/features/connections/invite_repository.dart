@@ -3,7 +3,8 @@ import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 
 class InviteRepository {
-  const InviteRepository();
+  final ApiClient _client;
+  const InviteRepository(this._client);
 
   Future<Map<String, dynamic>> sendInvite({
     required String inviteType,
@@ -11,7 +12,7 @@ class InviteRepository {
     required String? targetMobile,
     String? targetName,
   }) async {
-    final data = await ApiClient.instance.post<Map<String, dynamic>>(
+    final data = await _client.post<Map<String, dynamic>>(
       ApiConstants.invites,
       data: {
         'invite_type': inviteType,
@@ -25,5 +26,5 @@ class InviteRepository {
 }
 
 final inviteRepositoryProvider = Provider<InviteRepository>(
-  (ref) => const InviteRepository(),
+  (ref) => InviteRepository(ref.watch(apiClientProvider)),
 );

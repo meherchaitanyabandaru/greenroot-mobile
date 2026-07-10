@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
-import '../../core/network/api_client.dart' show ApiClient;
+import '../../core/network/api_client.dart' show ApiClient, apiClientProvider;
 import '../../core/services/geocoding/geocoding_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -134,7 +134,7 @@ const _indianStates = [
 // ── Repository ────────────────────────────────────────────────────────────────
 
 final userAddressRepositoryProvider =
-    Provider((ref) => UserAddressRepository(ApiClient.instance));
+    Provider((ref) => UserAddressRepository(ref.watch(apiClientProvider)));
 
 class UserAddressRepository {
   final ApiClient _api;

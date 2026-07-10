@@ -7,7 +7,7 @@ import '../../domain/rbac/roles.dart';
 
 // ── Repository provider ────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dataSource = AuthRemoteDataSource(ApiClient.instance);
+  final dataSource = AuthRemoteDataSource(ref.watch(apiClientProvider));
   return AuthRepository(dataSource);
 });
 
