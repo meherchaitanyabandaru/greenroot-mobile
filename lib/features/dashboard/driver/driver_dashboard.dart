@@ -7,7 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
 import '../../dispatches/dispatches.dart';
-import '../../driver/driver_trips_screen.dart';
+import '../../drivers/driver_trips_screen.dart';
 import '../shared/dashboard_card.dart';
 import '../shared/profile_tab.dart';
 import '../shared/role_shell.dart';

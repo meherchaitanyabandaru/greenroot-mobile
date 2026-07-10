@@ -10,7 +10,7 @@ import '../../dispatches/dispatch_list_screen.dart';
 import '../../inventory/inventory_list_screen.dart';
 import '../../orders/order_list_screen.dart';
 import '../../quotations/quotation_list_screen.dart';
-import '../../requests/request_list_screen.dart';
+import '../../plant_requests/request_list_screen.dart';
 import '../shared/dashboard_card.dart';
 import '../shared/profile_tab.dart';
 import '../shared/role_shell.dart';
