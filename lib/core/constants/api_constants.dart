@@ -132,6 +132,8 @@ abstract class ApiConstants {
       '$v1/nurseries/$nurseryId/managers';
   static String removeNurseryManager(int nurseryId, int userId) =>
       '$v1/nurseries/$nurseryId/managers/$userId';
+  static String nurseryCustomers(int nurseryId) =>
+      '$v1/nurseries/$nurseryId/customers';
 
   // Storage
   static const String storagePresign = '$v1/storage/presign';

@@ -31,6 +31,12 @@ class SplashScreen extends ConsumerStatefulWidget {
       context.go('/home/admin');
       return;
     }
+    // New user with no business role yet — prompt them to pick an activity.
+    if (session.mobileWorkspaces.isEmpty &&
+        !session.roles.hasAnyRole([AppRole.admin, AppRole.superAdmin])) {
+      context.go('/select-activity');
+      return;
+    }
     context.go('/home');
   }
 

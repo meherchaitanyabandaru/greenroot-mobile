@@ -130,6 +130,34 @@ class NurseryManager {
   }
 }
 
+class NurseryCustomer {
+  final int userId;
+  final String firstName;
+  final String mobile;
+  final String? email;
+  final DateTime? acceptedAt;
+
+  const NurseryCustomer({
+    required this.userId,
+    required this.firstName,
+    required this.mobile,
+    this.email,
+    this.acceptedAt,
+  });
+
+  factory NurseryCustomer.fromJson(Map<String, dynamic> json) {
+    return NurseryCustomer(
+      userId: (json['user_id'] as num).toInt(),
+      firstName: json['first_name'] as String? ?? '',
+      mobile: json['mobile'] as String? ?? '',
+      email: json['email'] as String?,
+      acceptedAt: json['accepted_at'] != null
+          ? DateTime.tryParse(json['accepted_at'] as String)
+          : null,
+    );
+  }
+}
+
 class NurseryInvite {
   final int id;
   final String uuid;
@@ -175,12 +203,14 @@ class MembersState {
   final bool isLoading;
   final List<NurseryManager> managers;
   final List<NurseryInvite> invites;
+  final List<NurseryCustomer> customers;
   final String? error;
 
   const MembersState({
     this.isLoading = false,
     this.managers = const [],
     this.invites = const [],
+    this.customers = const [],
     this.error,
   });
 
@@ -188,12 +218,14 @@ class MembersState {
     bool? isLoading,
     List<NurseryManager>? managers,
     List<NurseryInvite>? invites,
+    List<NurseryCustomer>? customers,
     String? error,
   }) =>
       MembersState(
         isLoading: isLoading ?? this.isLoading,
         managers: managers ?? this.managers,
         invites: invites ?? this.invites,
+        customers: customers ?? this.customers,
         error: error,
       );
 }
@@ -235,11 +267,24 @@ class MembersNotifier extends StateNotifier<MembersState> {
                 .toList();
           },
         ),
+        _client.get<List<NurseryCustomer>>(
+          ApiConstants.nurseryCustomers(nurseryId),
+          fromJson: (json) {
+            final list =
+                (json as Map<String, dynamic>)['customers'] as List<dynamic>? ??
+                    [];
+            return list
+                .cast<Map<String, dynamic>>()
+                .map(NurseryCustomer.fromJson)
+                .toList();
+          },
+        ),
       ]);
       state = state.copyWith(
         isLoading: false,
         managers: results[0] as List<NurseryManager>,
         invites: results[1] as List<NurseryInvite>,
+        customers: results[2] as List<NurseryCustomer>,
       );
     } on AppError catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
@@ -393,8 +438,11 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                     _CustomersTab(
                       nurseryId: widget.nurseryId,
                       nurseryName: widget.nurseryName,
-                      invites: state.invites
-                          .where((i) => i.inviteType == 'CUSTOMER_INVITE')
+                      customers: state.customers,
+                      pendingInvites: state.invites
+                          .where((i) =>
+                              i.inviteType == 'CUSTOMER_INVITE' &&
+                              i.isPending)
                           .toList(),
                     ),
                   ],
@@ -491,19 +539,18 @@ class _ManagersTab extends ConsumerWidget {
 class _CustomersTab extends ConsumerWidget {
   final int nurseryId;
   final String nurseryName;
-  final List<NurseryInvite> invites;
+  final List<NurseryCustomer> customers;
+  final List<NurseryInvite> pendingInvites;
 
   const _CustomersTab({
     required this.nurseryId,
     required this.nurseryName,
-    required this.invites,
+    required this.customers,
+    required this.pendingInvites,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pendingInvites = invites.where((i) => i.isPending).toList();
-    final acceptedInvites = invites.where((i) => i.isAccepted).toList();
-
     return RefreshIndicator(
       onRefresh: () => ref.read(membersProvider(nurseryId).notifier).load(),
       color: AppColors.primaryMain,
@@ -518,10 +565,10 @@ class _CustomersTab extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.x2l),
 
-          // Linked customers
+          // Linked customers (real user data from /nurseries/{id}/customers)
           const Text('Linked Customers', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
-          if (acceptedInvites.isEmpty)
+          if (customers.isEmpty)
             const EmptyState(
               icon: Icons.shopping_bag_outlined,
               title: 'No customers yet',
@@ -530,10 +577,12 @@ class _CustomersTab extends ConsumerWidget {
             )
           else
             _MemberList(
-              items: acceptedInvites
-                  .map((inv) => _MemberItem(
-                        name: inv.targetName ?? 'Customer',
-                        subtitle: inv.targetMobile ?? inv.targetEmail ?? '',
+              items: customers
+                  .map((c) => _MemberItem(
+                        name: c.firstName,
+                        subtitle: c.mobile.isNotEmpty
+                            ? c.mobile
+                            : (c.email ?? ''),
                         badge: 'CUSTOMER',
                         badgeColor: AppColors.forest600,
                         icon: Icons.shopping_bag_rounded,
