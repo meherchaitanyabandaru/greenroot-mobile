@@ -1731,7 +1731,7 @@ pw.Document _buildProfessionalPdf({
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                   child: pw.Text(
-                    '₹${item.unitPrice.toStringAsFixed(2)}',
+                    'Rs.${item.unitPrice.toStringAsFixed(2)}',
                     style: _body(size: 9.5),
                     textAlign: pw.TextAlign.right,
                   ),
@@ -1739,7 +1739,7 @@ pw.Document _buildProfessionalPdf({
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                   child: pw.Text(
-                    '₹${item.totalPrice.toStringAsFixed(2)}',
+                    'Rs.${item.totalPrice.toStringAsFixed(2)}',
                     style: _body(bold: true, size: 9.5, color: darkSlate),
                     textAlign: pw.TextAlign.right,
                   ),
@@ -1772,7 +1772,7 @@ pw.Document _buildProfessionalPdf({
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text('₹${q.totalAmount.toStringAsFixed(2)}',
+                pw.Text('Rs.${q.totalAmount.toStringAsFixed(2)}',
                     style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -2054,11 +2054,18 @@ pw.Widget _pdfVerificationFooter(
 }) {
   final validatedOnStr = _fmtDate(validatedAt);
   final qrData = verifyUrl ?? q.quotationCode;
+
+  // Extract the raw token from the verify URL for human-readable display.
+  // URL format: http://host/verify/{token}  — token is always the last segment.
+  final token = (verifyUrl != null && verifyUrl.contains('/verify/'))
+      ? verifyUrl.split('/verify/').last.trim()
+      : null;
+
   return pw.Column(children: [
     pw.Divider(color: borderGray, thickness: 0.5),
     pw.SizedBox(height: 8),
     pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.BarcodeWidget(
           barcode: pw.Barcode.qrCode(),
@@ -2083,10 +2090,30 @@ pw.Widget _pdfVerificationFooter(
                   style: body(bold: true, size: 9, color: darkSlate)),
               pw.SizedBox(height: 3),
               pw.Text('Created on: ${_fmt(q.createdAt)}', style: cap()),
+              if (token != null) ...[
+                pw.SizedBox(height: 5),
+                pw.Text('DOCUMENT HASH (Verification Token)',
+                    style: pw.TextStyle(
+                        fontSize: 6.5,
+                        fontWeight: pw.FontWeight.bold,
+                        color: green,
+                        letterSpacing: 0.5)),
+                pw.SizedBox(height: 2),
+                // Show the 64-char token in two rows of 32 for readability
+                pw.Text(
+                  token.length > 32 ? token.substring(0, 32) : token,
+                  style: pw.TextStyle(fontSize: 6.5, color: darkSlate),
+                ),
+                if (token.length > 32)
+                  pw.Text(
+                    token.substring(32),
+                    style: pw.TextStyle(fontSize: 6.5, color: darkSlate),
+                  ),
+              ],
               pw.SizedBox(height: 4),
               pw.Text(
-                'Digitally generated  ·  No physical signature required.',
-                style: pw.TextStyle(fontSize: 7.5, color: muted),
+                'Scan QR to verify online  ·  Digitally generated  ·  No signature required.',
+                style: pw.TextStyle(fontSize: 7, color: muted),
               ),
             ],
           ),
@@ -2396,10 +2423,11 @@ class _MenuOption extends StatelessWidget {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+// All timestamps in GreenRoot are displayed in IST (UTC+5:30), 12-hour with AM/PM.
 String _fmt(String iso) {
   try {
-    final dt = DateTime.parse(iso).toLocal();
-    return DateFormat('d MMM yyyy, HH:mm').format(dt);
+    final ist = DateTime.parse(iso).toUtc().add(const Duration(hours: 5, minutes: 30));
+    return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
   } catch (_) {
     return iso;
   }
@@ -2408,8 +2436,8 @@ String _fmt(String iso) {
 String _qty(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 
 String _fmtDate(DateTime dt) {
-  final d = dt.toLocal();
-  return '${d.day} ${_monthAbbr(d.month)} ${d.year}, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
+  return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
 }
 
 // Indian number-to-words (handles crores/lakhs/thousands)
