@@ -125,6 +125,12 @@ lib/
 | Invite types: MANAGER_INVITE, CUSTOMER_INVITE, DRIVER_INVITE, NURSERY_ONBOARDING_INVITE | ✅ |
 | Nursery registration screen (invite-only in V1) | ✅ |
 | Quotation list, create, detail | ✅ |
+| Quotation manager visibility scoping (private-default: manager sees own only) | ✅ |
+| Quotation list tabs: owner (All / Unassigned / Mine), manager (All / Created by Me / Assigned to Me) | ✅ |
+| Quotation list: assignment badge (Unassigned warning / assigned manager name) | ✅ |
+| Quotation detail: Assignment card for owner (assign / reassign / unassign) | ✅ |
+| Quotation detail: origin label for manager (created by you / assigned by owner) | ✅ |
+| Quotation create: optional manager pre-assignment picker (owner only) | ✅ |
 | Order list, create, detail | ✅ |
 | Dispatch list, detail, tracking | ✅ |
 | Plant request list, create, detail | ✅ |

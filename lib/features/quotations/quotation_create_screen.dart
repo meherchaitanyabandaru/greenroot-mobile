@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plants.dart';
+import '../owner/owner_members_screen.dart' show NurseryManager;
 import 'quotations.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
@@ -160,6 +163,8 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
   late List<_ItemRow> _items;
   bool _saving = false;
   String? _error;
+  NurseryManager? _assignedManager; // owner-only pre-assignment
+  DateTime? _validUntil;
 
   // Type is determined once (from quotation, initialType, or dialog)
   String? _quotationType; // 'INTERNAL' or 'CUSTOMER'
@@ -176,6 +181,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       _nameCtrl.text   = q.recipientName ?? '';
       _mobileCtrl.text = q.recipientMobile ?? '';
       _notesCtrl.text  = q.notes ?? '';
+      _validUntil      = q.validUntil;
       _items = q.items.map(_ItemRow.fromItem).toList();
       if (_items.isEmpty) _items = [_ItemRow()];
     } else {
@@ -259,7 +265,9 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       }
     }
 
-    final nurseryId = ref.read(sessionProvider).nurseryId;
+    final session = ref.read(sessionProvider);
+    final nurseryId = session.nurseryId;
+    final isOwner = session.capabilities.isNurseryOwner;
     setState(() => _saving = true);
 
     try {
@@ -279,16 +287,19 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           recipientName:   _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
           recipientMobile: _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
           notes:           _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          validUntil:      _validUntil,
           items:           itemRequests,
         );
       } else {
         await repo.createQuotation(
-          quotationType:   _quotationType ?? 'CUSTOMER',
-          nurseryId:       nurseryId,
-          recipientName:   _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-          recipientMobile: _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
-          notes:           _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          items:           itemRequests,
+          quotationType:         _quotationType ?? 'CUSTOMER',
+          nurseryId:             nurseryId,
+          assignedManagerUserId: isOwner ? _assignedManager?.userId : null,
+          recipientName:         _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          recipientMobile:       _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+          notes:                 _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          validUntil:            _validUntil,
+          items:                 itemRequests,
         );
       }
 
@@ -450,6 +461,122 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                     maxLines: 3,
                     minLines: 2,
                   ),
+
+                  // Valid Until
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Valid Until', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                  const SizedBox(height: 4),
+                  Text('Optional — defaults to 15 days after approval',
+                      style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                  const SizedBox(height: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _validUntil ?? now.add(const Duration(days: 15)),
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) setState(() => _validUntil = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _validUntil != null
+                                ? '${_validUntil!.day} ${_monthName(_validUntil!.month)} ${_validUntil!.year}'
+                                : 'Pick a date…',
+                            style: AppTypography.body.copyWith(
+                              color: _validUntil != null ? AppColors.textPrimary : AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                        if (_validUntil != null)
+                          GestureDetector(
+                            onTap: () => setState(() => _validUntil = null),
+                            child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                          ),
+                      ]),
+                    ),
+                  ),
+
+                  // Owner-only: optional manager assignment on create
+                  if (!_isEdit) ...[
+                    Builder(builder: (context) {
+                      final isOwner = ref.watch(sessionProvider).capabilities.isNurseryOwner;
+                      final nurseryId = ref.watch(sessionProvider).nurseryId;
+                      if (!isOwner || nurseryId == null) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: AppSpacing.lg),
+                          Text('Assign to Manager', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                          const SizedBox(height: 4),
+                          Text('Optional — leave blank to keep private', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                          const SizedBox(height: AppSpacing.sm),
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showModalBottomSheet<NurseryManager>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: AppColors.surface,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                ),
+                                builder: (_) => _ManagerPickerSheetCreate(nurseryId: nurseryId),
+                              );
+                              if (picked != null) setState(() => _assignedManager = picked);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _assignedManager != null ? AppColors.primaryMain : AppColors.border,
+                                ),
+                              ),
+                              child: Row(children: [
+                                Icon(
+                                  _assignedManager != null ? Icons.person_rounded : Icons.person_add_outlined,
+                                  size: 18,
+                                  color: _assignedManager != null ? AppColors.primaryMain : AppColors.textMuted,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _assignedManager != null
+                                        ? (_assignedManager!.name ?? 'Manager')
+                                        : 'Select manager...',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: _assignedManager != null ? AppColors.textPrimary : AppColors.textMuted,
+                                    ),
+                                  ),
+                                ),
+                                if (_assignedManager != null)
+                                  GestureDetector(
+                                    onTap: () => setState(() => _assignedManager = null),
+                                    child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                                  )
+                                else
+                                  const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
+                              ]),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+
                   const SizedBox(height: AppSpacing.x3l),
                 ],
               ),
@@ -490,6 +617,11 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       ),
     );
   }
+
+  String _monthName(int m) => const [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ][m];
 
   InputDecoration _inputDec(String hint) => InputDecoration(
     hintText: hint,
@@ -797,6 +929,115 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
             controller: row.descCtrl,
             decoration: _dec('Description (optional)'),
             style: AppTypography.caption,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Manager picker bottom sheet ────────────────────────────────────────────────
+
+class _ManagerPickerSheetCreate extends StatefulWidget {
+  final int nurseryId;
+  const _ManagerPickerSheetCreate({required this.nurseryId});
+
+  @override
+  State<_ManagerPickerSheetCreate> createState() => _ManagerPickerSheetCreateState();
+}
+
+class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
+  List<NurseryManager>? _managers;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final managers = await ApiClient.instance.get<List<NurseryManager>>(
+        ApiConstants.nurseryManagers(widget.nurseryId),
+        fromJson: (json) {
+          final map = json as Map<String, dynamic>;
+          final list = map['managers'] as List<dynamic>? ??
+              map['users'] as List<dynamic>? ??
+              [];
+          return list
+              .cast<Map<String, dynamic>>()
+              .map(NurseryManager.fromJson)
+              .toList();
+        },
+      );
+      if (mounted) setState(() { _managers = managers; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (_, ctrl) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+            child: Row(children: [
+              Expanded(child: Text('Assign Manager', style: AppTypography.h3)),
+              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ]),
+          ),
+          const Divider(height: 1, color: AppColors.border),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryMain))
+                : _error != null
+                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Text('Failed to load managers',
+                            style: AppTypography.body.copyWith(color: AppColors.red600)),
+                        TextButton(
+                            onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
+                            child: const Text('Retry')),
+                      ]))
+                    : _managers == null || _managers!.isEmpty
+                        ? Center(child: Text('No managers in this nursery',
+                              style: AppTypography.body.copyWith(color: AppColors.textMuted)))
+                        : ListView.separated(
+                            controller: ctrl,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+                            itemCount: _managers!.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                            itemBuilder: (_, i) {
+                              final m = _managers![i];
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.forest100,
+                                  child: Text(
+                                      (m.name?.isNotEmpty == true) ? m.name![0].toUpperCase() : '?',
+                                      style: AppTypography.body.copyWith(
+                                          color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                                ),
+                                title: Text(m.name ?? 'Manager', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                                subtitle: Text(m.mobile ?? '', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                                onTap: () => Navigator.pop(context, m),
+                              );
+                            },
+                          ),
           ),
         ],
       ),

@@ -112,6 +112,7 @@ abstract class ApiConstants {
   static String quotationRecall(int id) => '$v1/quotations/$id/recall';
   static String quotationConvert(int id) => '$v1/quotations/$id/convert-to-order';
   static String quotationAssignManager(int id) => '$v1/quotations/$id/assign-manager';
+  static String quotationRecordDownload(int id) => '$v1/quotations/$id/record-download';
 
   // Notifications
   static const String notifications = '$v1/notifications';

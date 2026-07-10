@@ -246,6 +246,43 @@ class _QuotationDetailScreenState
     }
   }
 
+  Future<void> _unassignManager(Quotation q) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Assignment'),
+        content: Text('Remove ${q.assignedManagerName ?? "this manager"} from ${q.quotationCode}? They will no longer see this quotation.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Remove', style: TextStyle(color: AppColors.red600)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    setState(() => _assigning = true);
+    try {
+      await ref.read(quotationRepositoryProvider).unassignManager(q.id);
+      if (mounted) {
+        ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ref.read(quotationListProvider.notifier).load();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Manager removed'),
+          backgroundColor: AppColors.primaryMain,
+        ));
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: AppColors.red600));
+      }
+    } finally {
+      if (mounted) setState(() => _assigning = false);
+    }
+  }
+
   Future<void> _convertToOrder(Quotation q) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -339,12 +376,28 @@ class _QuotationDetailScreenState
       nurseryAddress = await _fetchNurseryAddress(q.nurseryId!);
     }
     final session = ref.read(sessionProvider);
-    final downloadedBy =
+    final caps = session.capabilities;
+    final validatedBy =
         session.user?.name ?? session.user?.mobile ?? 'GreenRoot User';
+    final String validatedRole;
+    if (caps.isNurseryOwner) {
+      validatedRole = 'Nursery Owner';
+    } else if (caps.isManager) {
+      validatedRole = 'Nursery Manager';
+    } else {
+      validatedRole = 'GreenRoot User';
+    }
+    // Customer data masking: the API already strips recipient fields for managers.
+    // Pass this flag so the PDF shows an explicit protected notice instead of blank.
+    final isCustomerMasked = caps.isManager && !caps.isNurseryOwner;
+    final now = DateTime.now();
     final doc = _buildProfessionalPdf(
       q: q,
       nurseryAddress: nurseryAddress,
-      downloadedBy: downloadedBy,
+      validatedBy: validatedBy,
+      validatedRole: validatedRole,
+      validatedAt: now,
+      isCustomerMasked: isCustomerMasked,
     );
     return (await doc.save(), '${q.quotationCode}.pdf');
   }
@@ -353,6 +406,7 @@ class _QuotationDetailScreenState
     setState(() => _exporting = true);
     try {
       final (bytes, filename) = await _buildPdfBytes(q);
+      _recordDownload(q);
       if (kIsWeb) {
         final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
         await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
@@ -383,6 +437,7 @@ class _QuotationDetailScreenState
     setState(() => _exporting = true);
     try {
       final (bytes, filename) = await _buildPdfBytes(q);
+      _recordDownload(q);
       if (kIsWeb) {
         // Download PDF first, then open WhatsApp Web with pre-filled message
         final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
@@ -425,6 +480,7 @@ class _QuotationDetailScreenState
     setState(() => _exporting = true);
     try {
       final (bytes, filename) = await _buildPdfBytes(q);
+      _recordDownload(q);
       if (kIsWeb) {
         final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
         await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
@@ -448,6 +504,19 @@ class _QuotationDetailScreenState
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
+  }
+
+  // Fire-and-forget: record the PDF generation event in the audit log.
+  // Never fails the download if the API call errors.
+  void _recordDownload(Quotation q) {
+    final caps = ref.read(sessionProvider).capabilities;
+    final masked = caps.isManager && !caps.isNurseryOwner;
+    ApiClient.instance
+        .post(
+          ApiConstants.quotationRecordDownload(q.id),
+          data: {'masked': masked},
+        )
+        .ignore();
   }
 
   @override
@@ -492,6 +561,11 @@ class _QuotationDetailScreenState
     final isManagerOnly = caps.isManager && !caps.isNurseryOwner;
     // Quotations are editable only while in a DRAFT status.
     final isEditable = q.status == 'INTERNAL_DRAFT' || q.status == 'CUSTOMER_DRAFT';
+    // Exclusive-editor rule: when assigned, only the assignee may edit content.
+    // Owner can edit only if unassigned or assigned to themselves.
+    final myUserId = ref.watch(sessionProvider).user?.id;
+    final canEditContent = isEditable && !isBuyerView &&
+        (q.assignedManagerUserId == null || q.assignedManagerUserId == myUserId);
     final buyerCanAct = isBuyerView && q.status == 'CUSTOMER_SENT';
     final isBusy = _deleting || _exporting || _buyerActing || _approving || _recalling || _converting || _assigning;
 
@@ -514,19 +588,25 @@ class _QuotationDetailScreenState
                       strokeWidth: 2, color: AppColors.primaryMain)),
             )
           else if (!isBuyerView) ...[
-            // Edit — only available in DRAFT statuses
+            // Edit — only available in DRAFT statuses and when actor is the exclusive editor
             if (isEditable)
               IconButton(
-                tooltip: 'Edit',
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                onPressed: () async {
-                  final edited = await context.push<bool>(
-                      '/quotations/${q.id}/edit',
-                      extra: q);
-                  if (edited == true && mounted) {
-                    ref.invalidate(quotationDetailProvider(widget.quotationId));
-                  }
-                },
+                tooltip: canEditContent ? 'Edit' : 'Editing locked — only the assigned manager can edit',
+                icon: Icon(
+                  canEditContent ? Icons.edit_outlined : Icons.lock_outline,
+                  size: 20,
+                  color: canEditContent ? null : AppColors.textMuted,
+                ),
+                onPressed: canEditContent
+                    ? () async {
+                        final edited = await context.push<bool>(
+                            '/quotations/${q.id}/edit',
+                            extra: q);
+                        if (edited == true && mounted) {
+                          ref.invalidate(quotationDetailProvider(widget.quotationId));
+                        }
+                      }
+                    : null,
               ),
             // More options
             PopupMenuButton<String>(
@@ -598,17 +678,8 @@ class _QuotationDetailScreenState
                           .copyWith(color: AppColors.textMuted)),
                 ]),
               ],
-              if (q.assignedManagerName != null) ...[
-                const SizedBox(height: 2),
-                Row(children: [
-                  const Icon(Icons.manage_accounts_outlined,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(q.assignedManagerName!,
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textSecondary)),
-                ]),
-              ],
+              // Assignment display is shown as its own card below (owners) or origin label (managers)
+
               if (q.validUntil != null && q.status == 'CUSTOMER_SENT') ...[
                 const SizedBox(height: 4),
                 Row(children: [
@@ -630,6 +701,170 @@ class _QuotationDetailScreenState
             ]),
           ),
           const SizedBox(height: AppSpacing.sm),
+
+          // Converted-to-order banner
+          if (q.status == 'CONVERTED' && q.convertedOrderId != null) ...[
+            _InfoCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Icons.lock_rounded, size: 15, color: AppColors.primaryMain),
+                  const SizedBox(width: 6),
+                  Text('Converted to Order',
+                      style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.primaryMain, fontWeight: FontWeight.w700)),
+                ]),
+                const SizedBox(height: 8),
+                if (q.convertedOrderCode != null)
+                  GestureDetector(
+                    onTap: () => context.push('/orders/${q.convertedOrderId}'),
+                    child: Row(children: [
+                      const Icon(Icons.receipt_long_rounded, size: 14, color: AppColors.textSecondary),
+                      const SizedBox(width: 6),
+                      Text('Order: ',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                      Text(q.convertedOrderCode!,
+                          style: AppTypography.caption.copyWith(
+                              color: AppColors.primaryMain,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline)),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.primaryMain),
+                    ]),
+                  ),
+                if (q.convertedAt != null) ...[
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(Icons.schedule_rounded, size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Converted on ${_fmtDate(q.convertedAt!)}',
+                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                    ),
+                  ]),
+                ],
+              ]),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+
+          // Assignment card — owner sees full control; manager sees origin label
+          if (q.nurseryId != null && !['CONVERTED'].contains(q.status)) ...[
+            if (canDelete) ...[
+              _InfoCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Label('Assignment'),
+                    const SizedBox(height: 8),
+                    if (q.assignedManagerUserId == null) ...[
+                      Row(children: [
+                        const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.amber600),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Unassigned', style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.amber600, fontWeight: FontWeight.w700)),
+                              Text('No manager is handling this quotation',
+                                  style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                            ],
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _assigning ? null : () => _assignManager(q),
+                          icon: const Icon(Icons.person_add_outlined, size: 16),
+                          label: const Text('Assign to Manager'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryMain,
+                            side: const BorderSide(color: AppColors.primaryMain),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Row(children: [
+                        Container(
+                          width: 32, height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.teal100,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.person_rounded, size: 16, color: AppColors.teal700),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(q.assignedManagerName ?? 'Manager',
+                                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+                              Text('Assigned manager', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                            ],
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      Row(children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _assigning ? null : () => _assignManager(q),
+                            icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                            label: const Text('Reassign'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryMain,
+                              side: const BorderSide(color: AppColors.primaryMain),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _assigning ? null : () => _unassignManager(q),
+                            icon: const Icon(Icons.person_remove_outlined, size: 16),
+                            label: const Text('Unassign'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.red600,
+                              side: const BorderSide(color: AppColors.red600),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ] else if (isManagerOnly) ...[
+              // Manager: show origin label only — no controls
+              _InfoCard(
+                child: Row(children: [
+                  Icon(
+                    q.assignedManagerUserId != null ? Icons.assignment_ind_outlined : Icons.edit_note_outlined,
+                    size: 16,
+                    color: AppColors.teal700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    q.assignedManagerUserId != null
+                        ? 'Assigned to you by owner'
+                        : 'Created by you',
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.teal700, fontWeight: FontWeight.w600),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ],
 
           // Recipient
           if (q.recipientName != null || q.recipientMobile != null || (isManagerOnly && !q.isInternal)) ...[
@@ -796,6 +1031,49 @@ class _QuotationDetailScreenState
             const SizedBox(height: AppSpacing.sm),
           ],
 
+          // Rejection reason
+          if (q.status == 'CUSTOMER_REJECTED' && q.rejectionReason != null) ...[
+            _InfoCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(Icons.cancel_outlined, size: 15, color: AppColors.red600),
+                    const SizedBox(width: 6),
+                    _Label('Rejection Reason'),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(q.rejectionReason!, style: AppTypography.body.copyWith(color: AppColors.red600)),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+
+          // Exclusive-editor lock banner — shown to anyone who cannot edit content
+          if (isEditable && !isBuyerView && !canEditContent) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.amber600.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.amber600.withOpacity(0.3)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.lock_outline, size: 16, color: AppColors.amber600),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This quotation is assigned to ${q.assignedManagerName ?? "a manager"}. '
+                    'Only they can edit its content.',
+                    style: AppTypography.caption.copyWith(color: AppColors.amber600),
+                  ),
+                ),
+              ]),
+            ),
+          ],
+
           // ── Buyer actions ───────────────────────────────────────────────
           if (buyerCanAct) ...[
             Row(children: [
@@ -889,29 +1167,6 @@ class _QuotationDetailScreenState
               ),
               const SizedBox(height: 8),
             ],
-            // Owner-only: assign or reassign manager on any non-terminal quotation
-            if (canDelete &&
-                !['CONVERTED', 'CUSTOMER_REJECTED'].contains(q.status) &&
-                q.nurseryId != null) ...[
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _assigning ? null : () => _assignManager(q),
-                  icon: const Icon(Icons.person_add_outlined, size: 18),
-                  label: Text(q.assignedManagerUserId != null
-                      ? 'Reassign Manager'
-                      : 'Assign Manager'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryMain,
-                    side: const BorderSide(color: AppColors.primaryMain),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
           ],
 
           // ── PDF share row — always visible ──────────────────────────────
@@ -982,7 +1237,10 @@ class _QuotationDetailScreenState
 pw.Document _buildProfessionalPdf({
   required Quotation q,
   required String? nurseryAddress,
-  required String downloadedBy,
+  required String validatedBy,
+  required String validatedRole,
+  required DateTime validatedAt,
+  bool isCustomerMasked = false,
 }) {
   // Enterprise design tokens
   const green = PdfColor.fromInt(0xFF166534);
@@ -1136,21 +1394,39 @@ pw.Document _buildProfessionalPdf({
               child: pw.Container(
                 padding: const pw.EdgeInsets.all(14),
                 decoration: pw.BoxDecoration(
-                  color: lightGray,
+                  color: isCustomerMasked
+                      ? const PdfColor.fromInt(0xFFFFFBEB)
+                      : lightGray,
                   borderRadius: pw.BorderRadius.circular(4),
-                  border: pw.Border.all(color: borderGray, width: 0.5),
+                  border: pw.Border.all(
+                    color: isCustomerMasked
+                        ? const PdfColor.fromInt(0xFFFDE68A)
+                        : borderGray,
+                    width: 0.5,
+                  ),
                 ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text('TO', style: _cap(bold: true, color: muted)),
                     pw.SizedBox(height: 6),
-                    if (q.recipientName != null)
-                      pw.Text(q.recipientName!,
-                          style: _body(bold: true, size: 11, color: darkSlate)),
-                    if (q.recipientMobile != null) ...[
+                    if (isCustomerMasked) ...[
+                      pw.Text('********', style: _body(bold: true, size: 11, color: amber)),
                       pw.SizedBox(height: 3),
-                      pw.Text(q.recipientMobile!, style: _body(size: 8.5, color: muted)),
+                      pw.Text('**********', style: _body(size: 8.5, color: amber)),
+                      pw.SizedBox(height: 5),
+                      pw.Text(
+                        'Customer details protected.',
+                        style: pw.TextStyle(fontSize: 7.5, color: amber),
+                      ),
+                    ] else ...[
+                      if (q.recipientName != null)
+                        pw.Text(q.recipientName!,
+                            style: _body(bold: true, size: 11, color: darkSlate)),
+                      if (q.recipientMobile != null) ...[
+                        pw.SizedBox(height: 3),
+                        pw.Text(q.recipientMobile!, style: _body(size: 8.5, color: muted)),
+                      ],
                     ],
                   ],
                 ),
@@ -1322,7 +1598,8 @@ pw.Document _buildProfessionalPdf({
 
       // ── Verification ─────────────────────────────────────────────────────
       pw.SizedBox(height: 20),
-      _pdfSignatureBlock(q, darkSlate, green, muted, borderGray, lightGray, _body, _cap),
+      _pdfSignatureBlock(q, darkSlate, green, muted, borderGray, lightGray, _body, _cap,
+          validatedBy: validatedBy, validatedRole: validatedRole, validatedAt: validatedAt),
     ],
   ));
 
@@ -1489,8 +1766,12 @@ pw.Widget _pdfSignatureBlock(
   PdfColor borderGray,
   PdfColor lightGray,
   pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
-  pw.TextStyle Function({bool bold, PdfColor color}) cap,
-) {
+  pw.TextStyle Function({bool bold, PdfColor color}) cap, {
+  required String validatedBy,
+  required String validatedRole,
+  required DateTime validatedAt,
+}) {
+  final validatedOnStr = _fmtDate(validatedAt);
   return pw.Container(
     padding: const pw.EdgeInsets.all(12),
     decoration: pw.BoxDecoration(
@@ -1523,7 +1804,7 @@ pw.Widget _pdfSignatureBlock(
               pw.Text('Quote ID: ${q.quotationCode}',
                   style: body(bold: true, size: 8.5, color: darkSlate)),
               pw.SizedBox(height: 2),
-              pw.Text('Generated on: ${_fmt(q.createdAt)}', style: cap()),
+              pw.Text('Created on: ${_fmt(q.createdAt)}', style: cap()),
               pw.SizedBox(height: 3),
               pw.Text(
                 'Digitally generated  ·  No physical signature required.',
@@ -1536,11 +1817,15 @@ pw.Widget _pdfSignatureBlock(
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Text('PREPARED BY',
+            pw.Text('VALIDATED BY',
                 style: pw.TextStyle(fontSize: 6.5, color: muted)),
             pw.SizedBox(height: 3),
-            pw.Text(q.createdByName ?? '—',
-                style: body(size: 8.5, color: darkSlate)),
+            pw.Text(validatedBy,
+                style: body(bold: true, size: 8.5, color: darkSlate)),
+            pw.SizedBox(height: 1),
+            pw.Text(validatedRole, style: cap()),
+            pw.SizedBox(height: 1),
+            pw.Text(validatedOnStr, style: cap()),
           ],
         ),
       ],
@@ -1791,3 +2076,8 @@ String _fmt(String iso) {
 }
 
 String _qty(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
+
+String _fmtDate(DateTime dt) {
+  final d = dt.toLocal();
+  return '${d.day} ${_monthAbbr(d.month)} ${d.year}, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+}

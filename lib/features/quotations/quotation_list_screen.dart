@@ -6,6 +6,7 @@ import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'quotation_create_screen.dart';
 import 'quotations.dart';
@@ -94,6 +95,33 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     }
   }
 
+  void _showFilterSheet(BuildContext context, QuotationListState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _FilterSheet(
+        current: state,
+        onApply: (dateFrom, dateTo, amountMin, amountMax) {
+          ref.read(quotationListProvider.notifier).applyFilters(
+            dateFrom: dateFrom,
+            dateTo: dateTo,
+            amountMin: amountMin,
+            amountMax: amountMax,
+            clearDateFrom: dateFrom == null,
+            clearDateTo: dateTo == null,
+            clearAmountMin: amountMin == null,
+            clearAmountMax: amountMax == null,
+          );
+        },
+        onClear: () => ref.read(quotationListProvider.notifier).clearAllFilters(),
+      ),
+    );
+  }
+
   // With confirm dialog — used by ⋮ menu.
   Future<void> _delete(Quotation q) async {
     final confirm = await showDialog<bool>(
@@ -121,8 +149,26 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     final state = ref.watch(quotationListProvider);
     final paged = state.paged;
     final activeStatus = state.statusFilter;
-    final caps = ref.watch(sessionProvider).capabilities;
+    final session = ref.watch(sessionProvider);
+    final caps = session.capabilities;
     final canDelete = caps.isNurseryOwner;
+    final isOwner = caps.isNurseryOwner;
+    final isManagerOnly = caps.isManager && !caps.isNurseryOwner;
+
+    // Tab options differ by role
+    final tabOptions = isOwner
+        ? [
+            (label: 'All', tab: QuotationTab.all),
+            (label: 'Unassigned', tab: QuotationTab.unassigned),
+            (label: 'Mine', tab: QuotationTab.mine),
+          ]
+        : isManagerOnly
+            ? [
+                (label: 'All', tab: QuotationTab.all),
+                (label: 'Created by Me', tab: QuotationTab.createdByMe),
+                (label: 'Assigned to Me', tab: QuotationTab.assignedToMe),
+              ]
+            : <({String label, QuotationTab tab})>[];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -132,46 +178,121 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(96),
+          preferredSize: Size.fromHeight(tabOptions.isNotEmpty ? 132 : 96),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => ref.read(quotationListProvider.notifier).setSearch(v),
-                  decoration: InputDecoration(
-                    hintText: 'Search quotations…',
-                    hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
-                    suffixIcon: state.search.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close, size: 16),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              ref.read(quotationListProvider.notifier).setSearch('');
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                    filled: true,
-                    fillColor: AppColors.background,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        onChanged: (v) => ref.read(quotationListProvider.notifier).setSearch(v),
+                        decoration: InputDecoration(
+                          hintText: 'Search quotations…',
+                          hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                          suffixIcon: state.search.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.close, size: 16),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    ref.read(quotationListProvider.notifier).setSearch('');
+                                  },
+                                )
+                              : null,
+                          isDense: true,
+                          filled: true,
+                          fillColor: AppColors.background,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.primaryMain),
+                          ),
+                        ),
+                      ),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
+                    const SizedBox(width: 8),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          onPressed: () => _showFilterSheet(context, state),
+                          icon: const Icon(Icons.tune_rounded, size: 22),
+                          color: state.hasActiveFilters ? AppColors.primaryMain : AppColors.textSecondary,
+                          style: IconButton.styleFrom(
+                            backgroundColor: state.hasActiveFilters ? AppColors.forest100 : AppColors.background,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                color: state.hasActiveFilters ? AppColors.primaryMain : AppColors.border,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                        ),
+                        if (state.hasActiveFilters)
+                          Positioned(
+                            top: -2, right: -2,
+                            child: Container(
+                              width: 10, height: 10,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primaryMain,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.primaryMain),
-                    ),
-                  ),
+                  ],
                 ),
               ),
+              // Role-aware tab row
+              if (tabOptions.isNotEmpty)
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    itemCount: tabOptions.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (_, i) {
+                      final opt = tabOptions[i];
+                      final isSelected = state.tab == opt.tab;
+                      return GestureDetector(
+                        onTap: () => ref.read(quotationListProvider.notifier).setTab(opt.tab),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primaryMain : AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primaryMain : AppColors.border,
+                            ),
+                          ),
+                          child: Text(
+                            opt.label,
+                            style: AppTypography.caption.copyWith(
+                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              // Status filter row
               SizedBox(
                 height: 36,
                 child: ListView.separated(
@@ -357,7 +478,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
 // ── Quotation card ─────────────────────────────────────────────────────────────
 
-class _QuotationCard extends StatelessWidget {
+class _QuotationCard extends ConsumerWidget {
   final Quotation quotation;
   final bool canDelete;
   final VoidCallback onTap;
@@ -365,9 +486,12 @@ class _QuotationCard extends StatelessWidget {
   const _QuotationCard({required this.quotation, required this.canDelete, required this.onTap, required this.onDelete});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dt = DateTime.tryParse(quotation.createdAt)?.toLocal();
     final dateStr = dt != null ? DateFormat('d MMM yyyy').format(dt) : '';
+    final caps = ref.watch(sessionProvider).capabilities;
+    final isOwner = caps.isNurseryOwner;
+    final isUnassigned = quotation.assignedManagerUserId == null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -440,6 +564,24 @@ class _QuotationCard extends StatelessWidget {
                       Text('To: ${quotation.recipientName}',
                           style: AppTypography.caption
                               .copyWith(color: AppColors.textSecondary)),
+                    // Assignment label — owner sees assigned manager or unassigned warning
+                    if (isOwner) ...[
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        if (isUnassigned) ...[
+                          const Icon(Icons.warning_amber_rounded, size: 12, color: AppColors.amber600),
+                          const SizedBox(width: 3),
+                          Text('Unassigned',
+                              style: AppTypography.caption.copyWith(
+                                  color: AppColors.amber600, fontWeight: FontWeight.w600)),
+                        ] else ...[
+                          const Icon(Icons.person_outline_rounded, size: 12, color: AppColors.teal700),
+                          const SizedBox(width: 3),
+                          Text('→ ${quotation.assignedManagerName ?? 'Manager'}',
+                              style: AppTypography.caption.copyWith(color: AppColors.teal700)),
+                        ],
+                      ]),
+                    ],
                     Row(children: [
                       Text('₹${quotation.totalAmount.toStringAsFixed(2)}',
                           style: AppTypography.bodySmall.copyWith(
@@ -561,6 +703,228 @@ class _StatusChip extends StatelessWidget {
       child: Text(label,
           style: AppTypography.caption
               .copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10)),
+    );
+  }
+}
+
+// ── Filter bottom sheet ────────────────────────────────────────────────────────
+
+class _FilterSheet extends StatefulWidget {
+  final QuotationListState current;
+  final void Function(DateTime? dateFrom, DateTime? dateTo, double? amountMin, double? amountMax) onApply;
+  final VoidCallback onClear;
+
+  const _FilterSheet({required this.current, required this.onApply, required this.onClear});
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
+  final _minCtrl = TextEditingController();
+  final _maxCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _dateFrom = widget.current.dateFrom;
+    _dateTo   = widget.current.dateTo;
+    _minCtrl.text = widget.current.amountMin?.toStringAsFixed(0) ?? '';
+    _maxCtrl.text = widget.current.amountMax?.toStringAsFixed(0) ?? '';
+  }
+
+  @override
+  void dispose() {
+    _minCtrl.dispose();
+    _maxCtrl.dispose();
+    super.dispose();
+  }
+
+  String _fmtDate(DateTime d) => '${d.day} ${_monthName(d.month)} ${d.year}';
+
+  String _monthName(int m) => const [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ][m];
+
+  Future<void> _pickDate({required bool isFrom}) async {
+    final now = DateTime.now();
+    final initial = isFrom
+        ? (_dateFrom ?? now.subtract(const Duration(days: 30)))
+        : (_dateTo ?? now);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) setState(() => isFrom ? _dateFrom = picked : _dateTo = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Filters', style: AppTypography.h3),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onClear();
+                },
+                child: Text('Clear all', style: AppTypography.bodySmall.copyWith(color: AppColors.red600)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Date range
+          Text('Date Range', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: _DateTile(
+                label: 'From',
+                date: _dateFrom,
+                onTap: () => _pickDate(isFrom: true),
+                onClear: () => setState(() => _dateFrom = null),
+                fmtDate: _fmtDate,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _DateTile(
+                label: 'To',
+                date: _dateTo,
+                onTap: () => _pickDate(isFrom: false),
+                onClear: () => setState(() => _dateTo = null),
+                fmtDate: _fmtDate,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 16),
+
+          // Amount range
+          Text('Amount Range (₹)', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _minCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Min',
+                  hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                  isDense: true,
+                  filled: true,
+                  fillColor: AppColors.background,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primaryMain)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _maxCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Max',
+                  hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                  isDense: true,
+                  filled: true,
+                  fillColor: AppColors.background,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primaryMain)),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onApply(
+                  _dateFrom,
+                  _dateTo,
+                  double.tryParse(_minCtrl.text.trim()),
+                  double.tryParse(_maxCtrl.text.trim()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryMain,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Apply Filters'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DateTile extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+  final String Function(DateTime) fmtDate;
+
+  const _DateTile({
+    required this.label, required this.date, required this.onTap,
+    required this.onClear, required this.fmtDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: date != null ? AppColors.primaryMain : AppColors.border),
+        ),
+        child: Row(children: [
+          const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textMuted),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              date != null ? fmtDate(date!) : label,
+              style: AppTypography.caption.copyWith(
+                color: date != null ? AppColors.textPrimary : AppColors.textMuted,
+              ),
+            ),
+          ),
+          if (date != null)
+            GestureDetector(
+              onTap: onClear,
+              child: const Icon(Icons.close, size: 14, color: AppColors.textMuted),
+            ),
+        ]),
+      ),
     );
   }
 }

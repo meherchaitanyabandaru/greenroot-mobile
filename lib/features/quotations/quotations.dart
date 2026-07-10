@@ -55,10 +55,13 @@ class Quotation {
   final int? assignedManagerUserId;
   final String? assignedManagerName;
   final int? convertedOrderId;
+  final String? convertedOrderCode;
+  final DateTime? convertedAt;
   final int? buyerNurseryId;
   final String? recipientName;
   final String? recipientMobile;
   final String? notes;
+  final String? rejectionReason;
   final double totalAmount;
   final String status;
   final DateTime? validUntil;
@@ -77,10 +80,13 @@ class Quotation {
     this.assignedManagerUserId,
     this.assignedManagerName,
     this.convertedOrderId,
+    this.convertedOrderCode,
+    this.convertedAt,
     this.buyerNurseryId,
     this.recipientName,
     this.recipientMobile,
     this.notes,
+    this.rejectionReason,
     required this.totalAmount,
     required this.status,
     this.validUntil,
@@ -107,10 +113,15 @@ class Quotation {
             : null,
         assignedManagerName: j['assigned_manager_name'] as String?,
         convertedOrderId: j['converted_order_id'] != null ? (j['converted_order_id'] as num).toInt() : null,
+        convertedOrderCode: j['converted_order_code'] as String?,
+        convertedAt: j['converted_at'] != null
+            ? DateTime.tryParse(j['converted_at'] as String)?.toLocal()
+            : null,
         buyerNurseryId: j['buyer_nursery_id'] != null ? (j['buyer_nursery_id'] as num).toInt() : null,
         recipientName: j['recipient_name'] as String?,
         recipientMobile: j['recipient_mobile'] as String?,
         notes: j['notes'] as String?,
+        rejectionReason: j['rejection_reason'] as String?,
         totalAmount: (j['total_amount'] as num).toDouble(),
         status: j['status'] as String,
         validUntil: j['valid_until'] != null
@@ -161,6 +172,11 @@ class QuotationRepository {
     int perPage = 20,
     String? search,
     String? status,
+    bool unassignedOnly = false,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    double? amountMin,
+    double? amountMax,
   }) async {
     return _client.get(
       ApiConstants.quotations,
@@ -169,6 +185,11 @@ class QuotationRepository {
         'per_page': perPage,
         if (search?.isNotEmpty == true) 'search': search,
         if (status?.isNotEmpty == true) 'status': status,
+        if (unassignedOnly) 'unassigned': 'true',
+        if (dateFrom != null) 'date_from': '${dateFrom.year}-${dateFrom.month.toString().padLeft(2, '0')}-${dateFrom.day.toString().padLeft(2, '0')}',
+        if (dateTo != null) 'date_to': '${dateTo.year}-${dateTo.month.toString().padLeft(2, '0')}-${dateTo.day.toString().padLeft(2, '0')}',
+        if (amountMin != null) 'amount_min': amountMin.toString(),
+        if (amountMax != null) 'amount_max': amountMax.toString(),
       },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
@@ -195,16 +216,20 @@ class QuotationRepository {
   Future<Quotation> createQuotation({
     required String quotationType, // 'INTERNAL' or 'CUSTOMER'
     int? nurseryId,
+    int? assignedManagerUserId, // owner-only: pre-assign on creation
     String? recipientName,
     String? recipientMobile,
+    DateTime? validUntil,
     String? notes,
     required List<QuotationItemRequest> items,
   }) async {
     final body = <String, dynamic>{
       'quotation_type': quotationType,
       if (nurseryId != null) 'nursery_id': nurseryId,
+      if (assignedManagerUserId != null) 'assigned_manager_user_id': assignedManagerUserId,
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
       if (recipientMobile?.isNotEmpty == true) 'recipient_mobile': recipientMobile,
+      if (validUntil != null) 'valid_until': validUntil.toUtc().toIso8601String(),
       if (notes?.isNotEmpty == true) 'notes': notes,
       'items': items.map((i) => i.toJson()).toList(),
     };
@@ -222,12 +247,14 @@ class QuotationRepository {
     required int id,
     String? recipientName,
     String? recipientMobile,
+    DateTime? validUntil,
     String? notes,
     required List<QuotationItemRequest> items,
   }) async {
     final body = <String, dynamic>{
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
       if (recipientMobile?.isNotEmpty == true) 'recipient_mobile': recipientMobile,
+      if (validUntil != null) 'valid_until': validUntil.toUtc().toIso8601String(),
       if (notes?.isNotEmpty == true) 'notes': notes,
       'items': items.map((i) => i.toJson()).toList(),
     };
@@ -325,6 +352,16 @@ class QuotationRepository {
       },
     );
   }
+
+  Future<Quotation> unassignManager(int id) async {
+    return _client.delete(
+      ApiConstants.quotationAssignManager(id),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
+      },
+    );
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -333,27 +370,59 @@ final quotationRepositoryProvider = Provider<QuotationRepository>(
   (ref) => QuotationRepository(ApiClient.instance),
 );
 
+// Tab filter for the quotation list screen.
+// Owner: all / unassigned / mine.  Manager: all / created / assigned.
+enum QuotationTab { all, unassigned, mine, createdByMe, assignedToMe }
+
 class QuotationListState {
   final PagedState<Quotation> paged;
   final String search;
   final String? statusFilter;
+  final QuotationTab tab;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final double? amountMin;
+  final double? amountMax;
 
   const QuotationListState({
     required this.paged,
     this.search = '',
     this.statusFilter,
+    this.tab = QuotationTab.all,
+    this.dateFrom,
+    this.dateTo,
+    this.amountMin,
+    this.amountMax,
   });
+
+  bool get hasActiveFilters =>
+      statusFilter != null || dateFrom != null || dateTo != null ||
+      amountMin != null || amountMax != null;
 
   QuotationListState copyWith({
     PagedState<Quotation>? paged,
     String? search,
     String? statusFilter,
     bool clearStatus = false,
+    QuotationTab? tab,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    double? amountMin,
+    double? amountMax,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
+    bool clearAmountMin = false,
+    bool clearAmountMax = false,
   }) =>
       QuotationListState(
         paged: paged ?? this.paged,
         search: search ?? this.search,
         statusFilter: clearStatus ? null : (statusFilter ?? this.statusFilter),
+        tab: tab ?? this.tab,
+        dateFrom: clearDateFrom ? null : (dateFrom ?? this.dateFrom),
+        dateTo: clearDateTo ? null : (dateTo ?? this.dateTo),
+        amountMin: clearAmountMin ? null : (amountMin ?? this.amountMin),
+        amountMax: clearAmountMax ? null : (amountMax ?? this.amountMax),
       );
 }
 
@@ -365,16 +434,20 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
       : super(QuotationListState(paged: PagedState.initial()));
 
   Future<void> load() async {
-    final search = state.search;
-    final status = state.statusFilter;
+    final s = state;
     state = state.copyWith(
       paged: state.paged.copyWith(isLoading: true, clearError: true),
     );
     try {
       final (items, pagination) = await _repo.listQuotations(
         page: 1,
-        search: search,
-        status: status,
+        search: s.search,
+        status: s.statusFilter,
+        unassignedOnly: s.tab == QuotationTab.unassigned,
+        dateFrom: s.dateFrom,
+        dateTo: s.dateTo,
+        amountMin: s.amountMin,
+        amountMax: s.amountMax,
       );
       _page = 1;
       state = state.copyWith(
@@ -399,6 +472,11 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
         page: _page + 1,
         search: state.search,
         status: state.statusFilter,
+        unassignedOnly: state.tab == QuotationTab.unassigned,
+        dateFrom: state.dateFrom,
+        dateTo: state.dateTo,
+        amountMin: state.amountMin,
+        amountMax: state.amountMax,
       );
       _page++;
       state = state.copyWith(
@@ -420,6 +498,47 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
 
   void setStatusFilter(String? status) {
     state = state.copyWith(statusFilter: status, clearStatus: status == null);
+    load();
+  }
+
+  void setTab(QuotationTab tab) {
+    state = state.copyWith(tab: tab);
+    load();
+  }
+
+  void applyFilters({
+    String? statusFilter,
+    bool clearStatus = false,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    double? amountMin,
+    double? amountMax,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
+    bool clearAmountMin = false,
+    bool clearAmountMax = false,
+  }) {
+    state = state.copyWith(
+      statusFilter: statusFilter,
+      clearStatus: clearStatus,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      amountMin: amountMin,
+      amountMax: amountMax,
+      clearDateFrom: clearDateFrom,
+      clearDateTo: clearDateTo,
+      clearAmountMin: clearAmountMin,
+      clearAmountMax: clearAmountMax,
+    );
+    load();
+  }
+
+  void clearAllFilters() {
+    state = QuotationListState(
+      paged: state.paged,
+      search: state.search,
+      tab: state.tab,
+    );
     load();
   }
 
