@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -185,7 +186,22 @@ class _QrShareSheetState extends State<QrShareSheet> {
     setState(() => _sharing = true);
 
     try {
-      // Render QR card widget to image
+      if (kIsWeb) {
+        // Web: file sharing not available — copy invite code to clipboard
+        await Clipboard.setData(ClipboardData(text: widget.code));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invite code copied — share it with your contact'),
+              backgroundColor: AppColors.primaryMain,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Mobile: render QR card to image and share
       final boundary = _qrKey.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -193,7 +209,6 @@ class _QrShareSheetState extends State<QrShareSheet> {
           await image.toByteData(format: ui.ImageByteFormat.png);
       final bytes = byteData!.buffer.asUint8List();
 
-      // Save to temp file
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/greenroot_invite_qr.png');
       await file.writeAsBytes(bytes);
@@ -492,8 +507,10 @@ class _QrShareSheetState extends State<QrShareSheet> {
                     child: _ActionButton(
                       icon: _sharing
                           ? Icons.hourglass_top_rounded
-                          : Icons.image_rounded,
-                      label: _sharing ? 'Preparing...' : 'Share Image',
+                          : (kIsWeb ? Icons.copy_all_rounded : Icons.image_rounded),
+                      label: _sharing
+                          ? 'Preparing...'
+                          : (kIsWeb ? 'Copy Code' : 'Share Image'),
                       color: accent,
                       filled: true,
                       onTap: _sharing ? () {} : _shareImage,
