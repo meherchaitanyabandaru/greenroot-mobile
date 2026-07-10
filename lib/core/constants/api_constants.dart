@@ -122,6 +122,8 @@ abstract class ApiConstants {
   static String quotationDocuments(int id) => '$v1/quotations/$id/documents';
   static String quotationCurrentDocument(int id) =>
       '$v1/quotations/$id/documents/current';
+  static String quotationRenderedDocument(int id) =>
+      '$v1/quotations/$id/documents/render';
   static String quotationVerifyToken(int id) =>
       '$v1/quotations/$id/verify-token';
   static String quotationRevokeToken(int id) =>

@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:dio/dio.dart' show DioMediaType, FormData, MultipartFile;
+import 'package:dio/dio.dart' show Options, ResponseType;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,34 +19,6 @@ import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import 'quotations.dart';
-
-// ── Nursery address fetch ──────────────────────────────────────────────────────
-
-Future<String?> _fetchNurseryAddress(int nurseryId) async {
-  try {
-    final addresses = await ApiClient.instance.get<List<dynamic>>(
-      ApiConstants.nurseryAddresses(nurseryId),
-      fromJson: (data) =>
-          (data as Map<String, dynamic>)['addresses'] as List<dynamic>,
-    );
-    if (addresses.isEmpty) return null;
-    final raw = addresses.firstWhere(
-      (a) => (a as Map<String, dynamic>)['is_primary'] == true,
-      orElse: () => addresses.first,
-    ) as Map<String, dynamic>;
-    final parts = <String>[
-      if (raw['address_line1'] != null) raw['address_line1'] as String,
-      if (raw['address_line2'] != null) raw['address_line2'] as String,
-      if (raw['city'] != null) raw['city'] as String,
-      if (raw['state'] != null) raw['state'] as String,
-      if (raw['country'] != null) raw['country'] as String,
-      if (raw['postal_code'] != null) raw['postal_code'] as String,
-    ];
-    return parts.isNotEmpty ? parts.join(', ') : null;
-  } catch (_) {
-    return null;
-  }
-}
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -388,67 +358,28 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     }
   }
 
-  // Shared: build PDF bytes + filename
-  Future<(List<int>, String)> _buildPdfBytes(Quotation q) async {
-    String? nurseryAddress;
-    if (q.nurseryId != null) {
-      nurseryAddress = await _fetchNurseryAddress(q.nurseryId!);
-    }
-    final session = ref.read(sessionProvider);
-    final caps = session.capabilities;
-    final validatedBy =
-        session.user?.name ?? session.user?.mobile ?? 'GreenRoot User';
-    final String validatedRole;
-    if (caps.isNurseryOwner) {
-      validatedRole = 'Nursery Owner';
-    } else if (caps.isManager) {
-      validatedRole = 'Nursery Manager';
-    } else {
-      validatedRole = 'GreenRoot User';
-    }
-    // Customer data masking: the API already strips recipient fields for managers.
-    // Pass this flag so the PDF shows an explicit protected notice instead of blank.
-    final isCustomerMasked = caps.isManager && !caps.isNurseryOwner;
-    final now = DateTime.now();
-    // Fetch or create a cryptographically secure verification token for the QR code.
-    // Falls back to quotationCode if the API call fails (e.g. network error, draft state).
-    final verifyUrl = await _getOrCreateVerifyUrl(q);
-    final doc = _buildProfessionalPdf(
-      q: q,
-      nurseryAddress: nurseryAddress,
-      validatedBy: validatedBy,
-      validatedRole: validatedRole,
-      validatedAt: now,
-      isCustomerMasked: isCustomerMasked,
-      verifyUrl: verifyUrl,
+  Future<(List<int>, String)> _downloadPdfFromApi(Quotation q) async {
+    final response = await ApiClient.instance.dio.get<List<int>>(
+      ApiConstants.quotationRenderedDocument(q.id),
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf'},
+      ),
     );
-    return (await doc.save(), '${q.quotationCode}.pdf');
-  }
-
-  // Returns the full verification URL for the QR code (e.g. http://localhost:4040/verify/{token}).
-  // Creates the token server-side if it doesn't exist yet.
-  // Non-fatal: returns quotationCode as fallback if the API call fails.
-  Future<String> _getOrCreateVerifyUrl(Quotation q) async {
-    try {
-      final resp = await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.quotationVerifyToken(q.id),
-        fromJson: (j) => j as Map<String, dynamic>,
-      );
-      final url = resp['verify_url'] as String?;
-      if (url != null && url.isNotEmpty) return url;
-    } catch (_) {}
-    return q.quotationCode; // legacy fallback
+    final bytes = List<int>.from(response.data ?? const <int>[]);
+    final filename = _filenameFromDisposition(
+          response.headers.value('content-disposition'),
+        ) ??
+        '${q.quotationCode}.pdf';
+    return (bytes, filename);
   }
 
   Future<void> _downloadPdf(Quotation q) async {
     setState(() => _exporting = true);
     try {
-      final (bytes, filename) = await _buildPdfBytes(q);
-      _recordDownload(q);
+      final (bytes, filename) = await _downloadPdfFromApi(q);
       if (kIsWeb) {
-        final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
-        await launchUrl(Uri.parse(dataUrl),
-            mode: LaunchMode.externalApplication);
+        await _openWebPdf(bytes);
       } else {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/$filename');
@@ -475,14 +406,9 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   Future<void> _shareViaWhatsApp(Quotation q) async {
     setState(() => _exporting = true);
     try {
-      final (bytes, filename) = await _buildPdfBytes(q);
-      _recordDownload(q);
+      final (bytes, filename) = await _downloadPdfFromApi(q);
       if (kIsWeb) {
-        // Upload to get official URL, fall back to base64 data URL if upload fails.
-        final presignedUrl = await _uploadPdfToApi(q, bytes, filename);
-        final pdfUrl = presignedUrl ??
-            'data:application/pdf;base64,${base64Encode(bytes)}';
-        await launchUrl(Uri.parse(pdfUrl), mode: LaunchMode.externalApplication);
+        await _openWebPdf(bytes);
         final msg = Uri.encodeComponent(
           'Quotation ${q.quotationCode}'
           '${q.nurseryName != null ? " from ${q.nurseryName}" : ""}'
@@ -493,8 +419,6 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
           mode: LaunchMode.externalApplication,
         );
       } else {
-        // Upload in the background; share from local file immediately.
-        _uploadPdfToApi(q, bytes, filename).ignore();
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
@@ -521,17 +445,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   Future<void> _sharePdf(Quotation q) async {
     setState(() => _exporting = true);
     try {
-      final (bytes, filename) = await _buildPdfBytes(q);
-      _recordDownload(q);
+      final (bytes, filename) = await _downloadPdfFromApi(q);
       if (kIsWeb) {
-        // Upload to get official URL, fall back to base64 data URL if upload fails.
-        final presignedUrl = await _uploadPdfToApi(q, bytes, filename);
-        final pdfUrl = presignedUrl ??
-            'data:application/pdf;base64,${base64Encode(bytes)}';
-        await launchUrl(Uri.parse(pdfUrl), mode: LaunchMode.externalApplication);
+        await _openWebPdf(bytes);
       } else {
-        // Upload in the background; share from local file immediately.
-        _uploadPdfToApi(q, bytes, filename).ignore();
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
@@ -553,38 +470,15 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     }
   }
 
-  // Fire-and-forget: record the PDF generation event in the audit log.
-  // Never fails the download if the API call errors.
-  void _recordDownload(Quotation q) {
-    final caps = ref.read(sessionProvider).capabilities;
-    final masked = caps.isManager && !caps.isNurseryOwner;
-    ApiClient.instance.post(
-      ApiConstants.quotationRecordDownload(q.id),
-      data: {'masked': masked},
-    ).ignore();
+  Future<void> _openWebPdf(List<int> bytes) async {
+    final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
+    await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
   }
 
-  // Upload the PDF bytes to the API for official storage in MinIO.
-  // Returns the presigned GET URL on success, or null on failure (non-fatal).
-  // On idempotent calls (quotation unchanged) the API returns the existing URL.
-  Future<String?> _uploadPdfToApi(Quotation q, List<int> bytes, String filename) async {
-    try {
-      final formData = FormData.fromMap({
-        'pdf': MultipartFile.fromBytes(
-          bytes,
-          filename: filename,
-          contentType: DioMediaType.parse('application/pdf'),
-        ),
-      });
-      final resp = await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.quotationDocuments(q.id),
-        data: formData,
-        fromJson: (j) => j as Map<String, dynamic>,
-      );
-      return resp['download_url'] as String?;
-    } catch (_) {
-      return null;
-    }
+  String? _filenameFromDisposition(String? disposition) {
+    if (disposition == null || disposition.isEmpty) return null;
+    final match = RegExp(r'filename="?([^";]+)"?').firstMatch(disposition);
+    return match?.group(1);
   }
 
   @override
@@ -1417,738 +1311,6 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   }
 }
 
-// ── Professional PDF builder ──────────────────────────────────────────────────
-
-pw.Document _buildProfessionalPdf({
-  required Quotation q,
-  required String? nurseryAddress,
-  required String validatedBy,
-  required String validatedRole,
-  required DateTime validatedAt,
-  bool isCustomerMasked = false,
-  String? verifyUrl, // verification URL encoded in QR; falls back to quotationCode
-}) {
-  // Enterprise design tokens
-  const green = PdfColor.fromInt(0xFF166534);
-  const darkSlate = PdfColor.fromInt(0xFF1F2937);
-  const muted = PdfColor.fromInt(0xFF6B7280);
-  const lightGray = PdfColor.fromInt(0xFFF8FAFC);
-  const borderGray = PdfColor.fromInt(0xFFE5E7EB);
-  const amber = PdfColor.fromInt(0xFFD97706);
-  const amberLight = PdfColor.fromInt(0xFFFEF3C7);
-
-  pw.TextStyle _body(
-          {bool bold = false, PdfColor color = darkSlate, double size = 10}) =>
-      pw.TextStyle(
-        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-        fontSize: size,
-        color: color,
-      );
-
-  pw.TextStyle _cap({bool bold = false, PdfColor color = muted}) =>
-      _body(bold: bold, color: color, size: 8);
-
-  final createdDt = DateTime.tryParse(q.createdAt)?.toLocal() ?? DateTime.now();
-  final validUntil = q.validUntil ?? createdDt.add(const Duration(days: 15));
-  final validUntilStr =
-      '${validUntil.day} ${_monthAbbr(validUntil.month)} ${validUntil.year}';
-
-  final doc = pw.Document(
-    title: q.quotationCode,
-    author: q.nurseryName ?? 'GreenRoot',
-    creator: 'GreenRoot Platform',
-  );
-
-  doc.addPage(pw.MultiPage(
-    pageFormat: PdfPageFormat.a4,
-    margin: const pw.EdgeInsets.symmetric(horizontal: 44, vertical: 36),
-    header: (context) => context.pageNumber > 1
-        ? _pdfContinuationHeader(q, _body, _cap)
-        : _pdfHeader(
-            q,
-            nurseryAddress,
-            _body,
-            _cap,
-            validUntilStr: validUntilStr,
-          ),
-    footer: (context) => _pdfVerificationFooter(
-      context,
-      q: q,
-      validatedBy: validatedBy,
-      validatedRole: validatedRole,
-      validatedAt: validatedAt,
-      body: _body,
-      cap: _cap,
-      muted: muted,
-      borderGray: borderGray,
-      green: green,
-      darkSlate: darkSlate,
-      verifyUrl: verifyUrl,
-    ),
-    build: (context) => [
-      pw.SizedBox(height: 16),
-
-      // ── Internal notice ──────────────────────────────────────────────────
-      if (q.isInternal) ...[
-        pw.Container(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: pw.BoxDecoration(
-            color: const PdfColor.fromInt(0xFFF0FFF4),
-            borderRadius: pw.BorderRadius.circular(4),
-            border: pw.Border.all(
-                color: const PdfColor.fromInt(0xFFBBF7D0), width: 0.5),
-          ),
-          child: pw.Text(
-            'INTERNAL PLANNING DOCUMENT  ·  Not intended for external distribution.',
-            style: pw.TextStyle(
-                fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: green),
-          ),
-        ),
-        pw.SizedBox(height: 12),
-      ],
-
-      // ── FROM / TO ────────────────────────────────────────────────────────
-      if (q.isInternal)
-        pw.Container(
-          padding: const pw.EdgeInsets.all(16),
-          decoration: pw.BoxDecoration(
-            color: lightGray,
-            borderRadius: pw.BorderRadius.circular(4),
-            border: pw.Border.all(color: borderGray, width: 0.5),
-          ),
-          child: pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('NURSERY', style: _cap(bold: true, color: green)),
-                    pw.SizedBox(height: 6),
-                    if (q.nurseryName != null)
-                      pw.Text(q.nurseryName!,
-                          style: _body(bold: true, size: 11, color: darkSlate)),
-                    if (nurseryAddress != null) ...[
-                      pw.SizedBox(height: 3),
-                      pw.Text(nurseryAddress,
-                          style: _body(size: 8.5, color: muted)),
-                    ],
-                    if (q.nurseryPhone != null) ...[
-                      pw.SizedBox(height: 2),
-                      pw.Text(q.nurseryPhone!,
-                          style: _body(size: 8.5, color: muted)),
-                    ],
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 16),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Text('PREPARED BY',
-                      style: pw.TextStyle(fontSize: 6.5, color: muted)),
-                  pw.SizedBox(height: 4),
-                  pw.Text(q.createdByName ?? '—',
-                      style: _body(size: 9, color: darkSlate)),
-                ],
-              ),
-            ],
-          ),
-        )
-      else
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(14),
-                decoration: pw.BoxDecoration(
-                  color: lightGray,
-                  borderRadius: pw.BorderRadius.circular(4),
-                  border: pw.Border.all(color: borderGray, width: 0.5),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('FROM', style: _cap(bold: true, color: green)),
-                    pw.SizedBox(height: 6),
-                    if (q.nurseryName != null)
-                      pw.Text(q.nurseryName!,
-                          style: _body(bold: true, size: 11, color: darkSlate)),
-                    if (nurseryAddress != null) ...[
-                      pw.SizedBox(height: 3),
-                      pw.Text(nurseryAddress,
-                          style: _body(size: 8.5, color: muted)),
-                    ],
-                    if (q.nurseryPhone != null) ...[
-                      pw.SizedBox(height: 2),
-                      pw.Text(q.nurseryPhone!,
-                          style: _body(size: 8.5, color: muted)),
-                    ],
-                    pw.SizedBox(height: 8),
-                    pw.Text('PREPARED BY',
-                        style: pw.TextStyle(fontSize: 6.5, color: muted)),
-                    pw.SizedBox(height: 2),
-                    pw.Text(q.createdByName ?? '—',
-                        style: _body(size: 8.5, color: darkSlate)),
-                  ],
-                ),
-              ),
-            ),
-            pw.SizedBox(width: 12),
-            pw.Expanded(
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(14),
-                decoration: pw.BoxDecoration(
-                  color: isCustomerMasked
-                      ? const PdfColor.fromInt(0xFFFFFBEB)
-                      : lightGray,
-                  borderRadius: pw.BorderRadius.circular(4),
-                  border: pw.Border.all(
-                    color: isCustomerMasked
-                        ? const PdfColor.fromInt(0xFFFDE68A)
-                        : borderGray,
-                    width: 0.5,
-                  ),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('TO', style: _cap(bold: true, color: muted)),
-                    pw.SizedBox(height: 6),
-                    if (isCustomerMasked) ...[
-                      pw.Text('********',
-                          style: _body(bold: true, size: 11, color: amber)),
-                      pw.SizedBox(height: 3),
-                      pw.Text('**********',
-                          style: _body(size: 8.5, color: amber)),
-                      pw.SizedBox(height: 5),
-                      pw.Text(
-                        'Customer details protected.',
-                        style: pw.TextStyle(fontSize: 7.5, color: amber),
-                      ),
-                    ] else ...[
-                      if (q.recipientName != null)
-                        pw.Text(q.recipientName!,
-                            style:
-                                _body(bold: true, size: 11, color: darkSlate)),
-                      if (q.recipientMobile != null) ...[
-                        pw.SizedBox(height: 3),
-                        pw.Text(q.recipientMobile!,
-                            style: _body(size: 8.5, color: muted)),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-
-      pw.SizedBox(height: 18),
-
-      // ── Items table — pw.Table for proper multi-page row breaks ─────────
-      pw.Table(
-        border: pw.TableBorder.all(color: borderGray, width: 0.5),
-        columnWidths: const {
-          0: pw.FixedColumnWidth(22),
-          1: pw.FlexColumnWidth(4),
-          2: pw.FixedColumnWidth(65),
-          3: pw.FixedColumnWidth(48),
-          4: pw.FixedColumnWidth(88),
-          5: pw.FixedColumnWidth(88),
-        },
-        children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: green),
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('#', style: _cap(bold: true, color: PdfColors.white)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('PLANT / ITEM', style: _cap(bold: true, color: PdfColors.white)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('SIZE', style: _cap(bold: true, color: PdfColors.white)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('QTY', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('UNIT PRICE', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                child: pw.Text('AMOUNT', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
-              ),
-            ],
-          ),
-          ...q.items.asMap().entries.map((e) {
-            final i = e.key;
-            final item = e.value;
-            return pw.TableRow(
-              decoration: pw.BoxDecoration(color: i.isEven ? PdfColors.white : lightGray),
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Text('${i + 1}', style: _cap()),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(item.scientificName,
-                          style: _body(bold: true, size: 9.5, color: darkSlate)),
-                      if (item.commonName != null)
-                        pw.Text(item.commonName!,
-                            style: _body(size: 8, color: muted)),
-                    ],
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Text(
-                    item.description?.isNotEmpty == true ? item.description! : '-',
-                    style: _cap(),
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Text(
-                    item.quantity % 1 == 0
-                        ? item.quantity.toInt().toString()
-                        : item.quantity.toString(),
-                    style: _body(size: 9.5),
-                    textAlign: pw.TextAlign.right,
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Text(
-                    'Rs.${item.unitPrice.toStringAsFixed(2)}',
-                    style: _body(size: 9.5),
-                    textAlign: pw.TextAlign.right,
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                  child: pw.Text(
-                    'Rs.${item.totalPrice.toStringAsFixed(2)}',
-                    style: _body(bold: true, size: 9.5, color: darkSlate),
-                    textAlign: pw.TextAlign.right,
-                  ),
-                ),
-              ],
-            );
-          }),
-        ],
-      ),
-      pw.SizedBox(height: 10),
-
-      // Grand total — strongest visual element, always on the final page
-      pw.Container(
-        padding: const pw.EdgeInsets.fromLTRB(12, 14, 12, 14),
-        decoration: pw.BoxDecoration(
-          color: const PdfColor.fromInt(0xFFF0FFF4),
-          borderRadius: pw.BorderRadius.circular(4),
-          border: pw.Border.all(color: green, width: 0.75),
-        ),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text('GRAND TOTAL',
-                style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: green,
-                    letterSpacing: 0.8)),
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end,
-              children: [
-                pw.Text('Rs.${q.totalAmount.toStringAsFixed(2)}',
-                    style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                        color: darkSlate)),
-                pw.SizedBox(height: 3),
-                pw.Text(
-                  '(${_amountInWords(q.totalAmount)})',
-                  style: pw.TextStyle(fontSize: 7.5, color: muted),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-
-      // ── Notes ────────────────────────────────────────────────────────────
-      if (q.notes != null) ...[
-        pw.SizedBox(height: 16),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(12),
-          decoration: pw.BoxDecoration(
-            color: lightGray,
-            borderRadius: pw.BorderRadius.circular(4),
-            border: pw.Border.all(color: borderGray, width: 0.5),
-          ),
-          child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('NOTES', style: _cap(bold: true)),
-                pw.SizedBox(height: 4),
-                pw.Text(q.notes!, style: _body(size: 9.5)),
-              ]),
-        ),
-      ],
-
-      // ── Disclaimer ───────────────────────────────────────────────────────
-      pw.SizedBox(height: 16),
-      pw.Container(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: pw.BoxDecoration(
-          color: amberLight,
-          borderRadius: pw.BorderRadius.circular(4),
-          border: pw.Border.all(color: amber, width: 0.5),
-        ),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text('!  ', style: _body(bold: true, color: amber, size: 8)),
-            pw.Expanded(
-                child: pw.Text(
-              'Prices subject to availability. '
-              'All prices are provided by the issuing nursery.',
-              style: _body(size: 7.5, color: amber),
-            )),
-          ],
-        ),
-      ),
-
-    ],
-  ));
-
-  return doc;
-}
-
-String _monthAbbr(int m) => const [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ][m];
-
-pw.Widget _pdfHeader(
-  Quotation q,
-  String? nurseryAddress,
-  pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
-  pw.TextStyle Function({bool bold, PdfColor color}) cap, {
-  required String validUntilStr,
-}) {
-  const darkSlate = PdfColor.fromInt(0xFF1F2937);
-  const muted = PdfColor.fromInt(0xFF6B7280);
-  const borderGray = PdfColor.fromInt(0xFFE5E7EB);
-  const green = PdfColor.fromInt(0xFF166534);
-
-  final typeLabel = q.isInternal ? 'INTERNAL QUOTATION' : 'QUOTATION';
-
-  return pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      // Thin forest-green accent bar
-      pw.Container(height: 3, color: green),
-      pw.SizedBox(height: 16),
-      pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Left — nursery is the primary entity
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  q.nurseryName ?? 'Nursery',
-                  style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                      color: darkSlate),
-                ),
-                if (q.nurseryPhone != null) ...[
-                  pw.SizedBox(height: 3),
-                  pw.Text(q.nurseryPhone!,
-                      style: body(color: muted, size: 8.5)),
-                ],
-                if (q.createdByName != null) ...[
-                  pw.SizedBox(height: 3),
-                  pw.Text('Owner: ${q.createdByName!}',
-                      style: body(bold: true, size: 8.5, color: darkSlate)),
-                ],
-                if (nurseryAddress != null) ...[
-                  pw.SizedBox(height: 2),
-                  pw.Text(nurseryAddress, style: body(color: muted, size: 7.5)),
-                ],
-                pw.SizedBox(height: 9),
-                // Quotation type — outlined badge, secondary
-                pw.Container(
-                  padding:
-                      const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: green, width: 0.75),
-                    borderRadius: pw.BorderRadius.circular(3),
-                  ),
-                  child: pw.Text(typeLabel,
-                      style: pw.TextStyle(
-                          fontSize: 7,
-                          fontWeight: pw.FontWeight.bold,
-                          color: green)),
-                ),
-              ],
-            ),
-          ),
-          // Right — quotation metadata
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text('QUOTATION',
-                  softWrap: false,
-                  style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
-                      color: muted,
-                      letterSpacing: 1.2)),
-              pw.SizedBox(height: 4),
-              pw.Text(q.quotationCode,
-                  style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                      color: darkSlate)),
-              pw.SizedBox(height: 12),
-              _headerMeta('Date', _fmt(q.createdAt),
-                  labelColor: muted, valueColor: darkSlate),
-              pw.SizedBox(height: 4),
-              _headerMeta('Valid Until', validUntilStr,
-                  labelColor: muted,
-                  valueColor: const PdfColor.fromInt(0xFFEA580C)),
-            ],
-          ),
-        ],
-      ),
-      pw.SizedBox(height: 14),
-      pw.Divider(color: borderGray, thickness: 0.5),
-    ],
-  );
-}
-
-pw.Widget _pdfContinuationHeader(
-  Quotation q,
-  pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
-  pw.TextStyle Function({bool bold, PdfColor color}) cap,
-) {
-  const green = PdfColor.fromInt(0xFF166534);
-  const darkSlate = PdfColor.fromInt(0xFF1F2937);
-  const muted = PdfColor.fromInt(0xFF6B7280);
-  const borderGray = PdfColor.fromInt(0xFFE5E7EB);
-
-  return pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      pw.Container(height: 3, color: green),
-      pw.SizedBox(height: 8),
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(q.quotationCode,
-              style: pw.TextStyle(
-                  fontSize: 10, fontWeight: pw.FontWeight.bold, color: darkSlate)),
-          pw.Text('continued',
-              style: pw.TextStyle(
-                  fontSize: 7.5, color: muted, fontStyle: pw.FontStyle.italic)),
-        ],
-      ),
-      pw.SizedBox(height: 6),
-      pw.Container(
-        decoration: const pw.BoxDecoration(color: green),
-        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        child: pw.Row(children: [
-          pw.SizedBox(
-              width: 22,
-              child: pw.Text('#', style: cap(bold: true, color: PdfColors.white))),
-          pw.Expanded(
-              flex: 4,
-              child: pw.Text('PLANT / ITEM',
-                  style: cap(bold: true, color: PdfColors.white))),
-          pw.SizedBox(
-              width: 65,
-              child: pw.Text('SIZE', style: cap(bold: true, color: PdfColors.white))),
-          pw.SizedBox(
-              width: 48,
-              child: pw.Text('QTY',
-                  softWrap: false,
-                  style: cap(bold: true, color: PdfColors.white),
-                  textAlign: pw.TextAlign.right)),
-          pw.SizedBox(
-              width: 88,
-              child: pw.Text('UNIT PRICE',
-                  softWrap: false,
-                  style: cap(bold: true, color: PdfColors.white),
-                  textAlign: pw.TextAlign.right)),
-          pw.SizedBox(
-              width: 88,
-              child: pw.Text('AMOUNT',
-                  softWrap: false,
-                  style: cap(bold: true, color: PdfColors.white),
-                  textAlign: pw.TextAlign.right)),
-        ]),
-      ),
-      pw.SizedBox(height: 4),
-      pw.Divider(color: borderGray, thickness: 0.5),
-    ],
-  );
-}
-
-pw.Widget _headerMeta(
-  String label,
-  String value, {
-  required PdfColor labelColor,
-  required PdfColor valueColor,
-}) {
-  return pw.Row(
-    mainAxisSize: pw.MainAxisSize.min,
-    children: [
-      pw.Text('$label  ', style: pw.TextStyle(fontSize: 8, color: labelColor)),
-      pw.Text(value,
-          style: pw.TextStyle(
-              fontSize: 8, color: valueColor, fontWeight: pw.FontWeight.bold)),
-    ],
-  );
-}
-
-pw.Widget _pdfVerificationFooter(
-  pw.Context context, {
-  required Quotation q,
-  required String validatedBy,
-  required String validatedRole,
-  required DateTime validatedAt,
-  required pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
-  required pw.TextStyle Function({bool bold, PdfColor color}) cap,
-  required PdfColor muted,
-  required PdfColor borderGray,
-  required PdfColor green,
-  required PdfColor darkSlate,
-  String? verifyUrl, // QR encodes verify URL when available; falls back to quotationCode
-}) {
-  final validatedOnStr = _fmtDate(validatedAt);
-  final qrData = verifyUrl ?? q.quotationCode;
-
-  // Extract the raw token from the verify URL for human-readable display.
-  // URL format: http://host/verify/{token}  — token is always the last segment.
-  final token = (verifyUrl != null && verifyUrl.contains('/verify/'))
-      ? verifyUrl.split('/verify/').last.trim()
-      : null;
-
-  return pw.Column(children: [
-    pw.Divider(color: borderGray, thickness: 0.5),
-    pw.SizedBox(height: 8),
-    pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.BarcodeWidget(
-          barcode: pw.Barcode.qrCode(),
-          data: qrData,
-          width: 70,
-          height: 70,
-          color: darkSlate,
-        ),
-        pw.SizedBox(width: 14),
-        pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('DOCUMENT VERIFICATION',
-                  style: pw.TextStyle(
-                      fontSize: 7,
-                      fontWeight: pw.FontWeight.bold,
-                      color: muted,
-                      letterSpacing: 0.8)),
-              pw.SizedBox(height: 5),
-              pw.Text('Quote ID: ${q.quotationCode}',
-                  style: body(bold: true, size: 9, color: darkSlate)),
-              pw.SizedBox(height: 3),
-              pw.Text('Created on: ${_fmt(q.createdAt)}', style: cap()),
-              if (token != null) ...[
-                pw.SizedBox(height: 5),
-                pw.Text('DOCUMENT HASH (Verification Token)',
-                    style: pw.TextStyle(
-                        fontSize: 6.5,
-                        fontWeight: pw.FontWeight.bold,
-                        color: green,
-                        letterSpacing: 0.5)),
-                pw.SizedBox(height: 2),
-                // Show the 64-char token in two rows of 32 for readability
-                pw.Text(
-                  token.length > 32 ? token.substring(0, 32) : token,
-                  style: pw.TextStyle(fontSize: 6.5, color: darkSlate),
-                ),
-                if (token.length > 32)
-                  pw.Text(
-                    token.substring(32),
-                    style: pw.TextStyle(fontSize: 6.5, color: darkSlate),
-                  ),
-              ],
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'Scan QR to verify online  ·  Digitally generated  ·  No signature required.',
-                style: pw.TextStyle(fontSize: 7, color: muted),
-              ),
-            ],
-          ),
-        ),
-        pw.SizedBox(width: 14),
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            pw.Text('VALIDATED BY',
-                style: pw.TextStyle(
-                    fontSize: 6.5, color: muted, letterSpacing: 0.5)),
-            pw.SizedBox(height: 4),
-            pw.Text(validatedBy,
-                style: body(bold: true, size: 10, color: darkSlate)),
-            pw.SizedBox(height: 2),
-            pw.Text(validatedRole, style: cap()),
-            pw.SizedBox(height: 2),
-            pw.Text(validatedOnStr, style: cap()),
-            pw.SizedBox(height: 8),
-            pw.Text(
-                'Page ${context.pageNumber} of ${context.pagesCount}',
-                style: cap(bold: true, color: muted)),
-          ],
-        ),
-      ],
-    ),
-    pw.SizedBox(height: 5),
-    pw.Text(
-      'GreenRoot  ·  Nursery Management Platform  ·  All quotation information is provided by the issuing nursery.',
-      style: pw.TextStyle(fontSize: 6, color: muted),
-      textAlign: pw.TextAlign.center,
-    ),
-  ]);
-}
-
 // ── Manager picker bottom sheet ───────────────────────────────────────────────
 
 class _ManagerPickerSheet extends StatefulWidget {
@@ -2426,7 +1588,8 @@ class _MenuOption extends StatelessWidget {
 // All timestamps in GreenRoot are displayed in IST (UTC+5:30), 12-hour with AM/PM.
 String _fmt(String iso) {
   try {
-    final ist = DateTime.parse(iso).toUtc().add(const Duration(hours: 5, minutes: 30));
+    final ist =
+        DateTime.parse(iso).toUtc().add(const Duration(hours: 5, minutes: 30));
     return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
   } catch (_) {
     return iso;
@@ -2435,58 +1598,23 @@ String _fmt(String iso) {
 
 String _qty(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 
+String _monthAbbr(int month) => const [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ][month];
+
 String _fmtDate(DateTime dt) {
   final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
   return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
-}
-
-// Indian number-to-words (handles crores/lakhs/thousands)
-String _numberToWords(int n) {
-  if (n == 0) return 'Zero';
-  const ones = [
-    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen',
-  ];
-  const tens = [
-    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty',
-    'Sixty', 'Seventy', 'Eighty', 'Ninety',
-  ];
-  var words = '';
-  if (n >= 10000000) {
-    words += '${_numberToWords(n ~/ 10000000)} Crore ';
-    n %= 10000000;
-  }
-  if (n >= 100000) {
-    words += '${_numberToWords(n ~/ 100000)} Lakh ';
-    n %= 100000;
-  }
-  if (n >= 1000) {
-    words += '${_numberToWords(n ~/ 1000)} Thousand ';
-    n %= 1000;
-  }
-  if (n >= 100) {
-    words += '${ones[n ~/ 100]} Hundred ';
-    n %= 100;
-  }
-  if (n >= 20) {
-    words += '${tens[n ~/ 10]} ';
-    n %= 10;
-  }
-  if (n > 0) words += '${ones[n]} ';
-  return words.trim();
-}
-
-String _amountInWords(double amount) {
-  final totalPaise = (amount * 100).round();
-  final rupees = totalPaise ~/ 100;
-  final paise = totalPaise % 100;
-  if (rupees == 0 && paise == 0) return 'Zero Rupees Only';
-  var result = '';
-  if (rupees > 0) result = '${_numberToWords(rupees)} Rupees';
-  if (paise > 0) {
-    if (result.isNotEmpty) result += ' and ';
-    result += '${_numberToWords(paise)} Paise';
-  }
-  return '$result Only';
 }
