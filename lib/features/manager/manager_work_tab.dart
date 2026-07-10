@@ -673,7 +673,10 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
     final date = DateTime.tryParse(q.createdAt)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/quotations/${q.id}'),
+      onTap: () async {
+        final changed = await context.push<bool>('/quotations/${q.id}');
+        if (changed == true && mounted) ref.read(_mgrQuotationProvider.notifier).load();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
