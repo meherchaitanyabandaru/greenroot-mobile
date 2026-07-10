@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart' show DioMediaType, FormData, MultipartFile;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -409,6 +410,9 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     // Pass this flag so the PDF shows an explicit protected notice instead of blank.
     final isCustomerMasked = caps.isManager && !caps.isNurseryOwner;
     final now = DateTime.now();
+    // Fetch or create a cryptographically secure verification token for the QR code.
+    // Falls back to quotationCode if the API call fails (e.g. network error, draft state).
+    final verifyUrl = await _getOrCreateVerifyUrl(q);
     final doc = _buildProfessionalPdf(
       q: q,
       nurseryAddress: nurseryAddress,
@@ -416,8 +420,24 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       validatedRole: validatedRole,
       validatedAt: now,
       isCustomerMasked: isCustomerMasked,
+      verifyUrl: verifyUrl,
     );
     return (await doc.save(), '${q.quotationCode}.pdf');
+  }
+
+  // Returns the full verification URL for the QR code (e.g. http://localhost:4040/verify/{token}).
+  // Creates the token server-side if it doesn't exist yet.
+  // Non-fatal: returns quotationCode as fallback if the API call fails.
+  Future<String> _getOrCreateVerifyUrl(Quotation q) async {
+    try {
+      final resp = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiConstants.quotationVerifyToken(q.id),
+        fromJson: (j) => j as Map<String, dynamic>,
+      );
+      final url = resp['verify_url'] as String?;
+      if (url != null && url.isNotEmpty) return url;
+    } catch (_) {}
+    return q.quotationCode; // legacy fallback
   }
 
   Future<void> _downloadPdf(Quotation q) async {
@@ -458,10 +478,11 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       final (bytes, filename) = await _buildPdfBytes(q);
       _recordDownload(q);
       if (kIsWeb) {
-        // Download PDF first, then open WhatsApp Web with pre-filled message
-        final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
-        await launchUrl(Uri.parse(dataUrl),
-            mode: LaunchMode.externalApplication);
+        // Upload to get official URL, fall back to base64 data URL if upload fails.
+        final presignedUrl = await _uploadPdfToApi(q, bytes, filename);
+        final pdfUrl = presignedUrl ??
+            'data:application/pdf;base64,${base64Encode(bytes)}';
+        await launchUrl(Uri.parse(pdfUrl), mode: LaunchMode.externalApplication);
         final msg = Uri.encodeComponent(
           'Quotation ${q.quotationCode}'
           '${q.nurseryName != null ? " from ${q.nurseryName}" : ""}'
@@ -472,6 +493,8 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
           mode: LaunchMode.externalApplication,
         );
       } else {
+        // Upload in the background; share from local file immediately.
+        _uploadPdfToApi(q, bytes, filename).ignore();
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
@@ -501,10 +524,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       final (bytes, filename) = await _buildPdfBytes(q);
       _recordDownload(q);
       if (kIsWeb) {
-        final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
-        await launchUrl(Uri.parse(dataUrl),
-            mode: LaunchMode.externalApplication);
+        // Upload to get official URL, fall back to base64 data URL if upload fails.
+        final presignedUrl = await _uploadPdfToApi(q, bytes, filename);
+        final pdfUrl = presignedUrl ??
+            'data:application/pdf;base64,${base64Encode(bytes)}';
+        await launchUrl(Uri.parse(pdfUrl), mode: LaunchMode.externalApplication);
       } else {
+        // Upload in the background; share from local file immediately.
+        _uploadPdfToApi(q, bytes, filename).ignore();
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
@@ -535,6 +562,29 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       ApiConstants.quotationRecordDownload(q.id),
       data: {'masked': masked},
     ).ignore();
+  }
+
+  // Upload the PDF bytes to the API for official storage in MinIO.
+  // Returns the presigned GET URL on success, or null on failure (non-fatal).
+  // On idempotent calls (quotation unchanged) the API returns the existing URL.
+  Future<String?> _uploadPdfToApi(Quotation q, List<int> bytes, String filename) async {
+    try {
+      final formData = FormData.fromMap({
+        'pdf': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: DioMediaType.parse('application/pdf'),
+        ),
+      });
+      final resp = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiConstants.quotationDocuments(q.id),
+        data: formData,
+        fromJson: (j) => j as Map<String, dynamic>,
+      );
+      return resp['download_url'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -1376,6 +1426,7 @@ pw.Document _buildProfessionalPdf({
   required String validatedRole,
   required DateTime validatedAt,
   bool isCustomerMasked = false,
+  String? verifyUrl, // verification URL encoded in QR; falls back to quotationCode
 }) {
   // Enterprise design tokens
   const green = PdfColor.fromInt(0xFF166534);
@@ -1411,19 +1462,28 @@ pw.Document _buildProfessionalPdf({
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4,
     margin: const pw.EdgeInsets.symmetric(horizontal: 44, vertical: 36),
-    header: (context) => _pdfHeader(
-      q,
-      nurseryAddress,
-      _body,
-      _cap,
-      validUntilStr: validUntilStr,
-    ),
-    footer: (context) => _pdfFooter(
+    header: (context) => context.pageNumber > 1
+        ? _pdfContinuationHeader(q, _body, _cap)
+        : _pdfHeader(
+            q,
+            nurseryAddress,
+            _body,
+            _cap,
+            validUntilStr: validUntilStr,
+          ),
+    footer: (context) => _pdfVerificationFooter(
       context,
-      muted,
-      borderGray,
-      green,
-      _cap,
+      q: q,
+      validatedBy: validatedBy,
+      validatedRole: validatedRole,
+      validatedAt: validatedAt,
+      body: _body,
+      cap: _cap,
+      muted: muted,
+      borderGray: borderGray,
+      green: green,
+      darkSlate: darkSlate,
+      verifyUrl: verifyUrl,
     ),
     build: (context) => [
       pw.SizedBox(height: 16),
@@ -1587,123 +1647,145 @@ pw.Document _buildProfessionalPdf({
 
       pw.SizedBox(height: 18),
 
-      // ── Items table ──────────────────────────────────────────────────────
-      pw.Container(
-        decoration: pw.BoxDecoration(
-          borderRadius: pw.BorderRadius.circular(4),
-          border: pw.Border.all(color: borderGray, width: 0.5),
-        ),
-        child: pw.Column(children: [
-          pw.Container(
-            decoration: const pw.BoxDecoration(
-              color: green,
-              borderRadius: pw.BorderRadius.only(
-                  topLeft: pw.Radius.circular(4),
-                  topRight: pw.Radius.circular(4)),
-            ),
-            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            child: pw.Row(children: [
-              pw.SizedBox(
-                  width: 22,
-                  child: pw.Text('#',
-                      style: _cap(bold: true, color: PdfColors.white))),
-              pw.Expanded(
-                  flex: 4,
-                  child: pw.Text('PLANT / ITEM',
-                      style: _cap(bold: true, color: PdfColors.white))),
-              pw.SizedBox(
-                  width: 72,
-                  child: pw.Text('SIZE',
-                      style: _cap(bold: true, color: PdfColors.white))),
-              pw.SizedBox(
-                  width: 36,
-                  child: pw.Text('QTY',
-                      style: _cap(bold: true, color: PdfColors.white),
-                      textAlign: pw.TextAlign.right)),
-              pw.SizedBox(
-                  width: 70,
-                  child: pw.Text('UNIT PRICE',
-                      style: _cap(bold: true, color: PdfColors.white),
-                      textAlign: pw.TextAlign.right)),
-              pw.SizedBox(
-                  width: 70,
-                  child: pw.Text('AMOUNT',
-                      style: _cap(bold: true, color: PdfColors.white),
-                      textAlign: pw.TextAlign.right)),
-            ]),
+      // ── Items table — pw.Table for proper multi-page row breaks ─────────
+      pw.Table(
+        border: pw.TableBorder.all(color: borderGray, width: 0.5),
+        columnWidths: const {
+          0: pw.FixedColumnWidth(22),
+          1: pw.FlexColumnWidth(4),
+          2: pw.FixedColumnWidth(65),
+          3: pw.FixedColumnWidth(48),
+          4: pw.FixedColumnWidth(88),
+          5: pw.FixedColumnWidth(88),
+        },
+        children: [
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: green),
+            children: [
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('#', style: _cap(bold: true, color: PdfColors.white)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('PLANT / ITEM', style: _cap(bold: true, color: PdfColors.white)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('SIZE', style: _cap(bold: true, color: PdfColors.white)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('QTY', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('UNIT PRICE', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                child: pw.Text('AMOUNT', style: _cap(bold: true, color: PdfColors.white), textAlign: pw.TextAlign.right),
+              ),
+            ],
           ),
           ...q.items.asMap().entries.map((e) {
             final i = e.key;
             final item = e.value;
-            return pw.Container(
-              color: i.isEven ? PdfColors.white : lightGray,
-              padding:
-                  const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.SizedBox(
-                      width: 22, child: pw.Text('${i + 1}', style: _cap())),
-                  pw.Expanded(
-                    flex: 4,
-                    child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(item.scientificName,
-                              style: _body(
-                                  bold: true, size: 9.5, color: darkSlate)),
-                          if (item.commonName != null)
-                            pw.Text(item.commonName!, style: _cap()),
-                        ]),
+            return pw.TableRow(
+              decoration: pw.BoxDecoration(color: i.isEven ? PdfColors.white : lightGray),
+              children: [
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Text('${i + 1}', style: _cap()),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(item.scientificName,
+                          style: _body(bold: true, size: 9.5, color: darkSlate)),
+                      if (item.commonName != null)
+                        pw.Text(item.commonName!,
+                            style: _body(size: 8, color: muted)),
+                    ],
                   ),
-                  pw.SizedBox(
-                      width: 72,
-                      child: pw.Text(item.description ?? '—', style: _cap())),
-                  pw.SizedBox(
-                      width: 36,
-                      child: pw.Text(
-                          item.quantity % 1 == 0
-                              ? item.quantity.toInt().toString()
-                              : item.quantity.toString(),
-                          style: _body(size: 9.5),
-                          textAlign: pw.TextAlign.right)),
-                  pw.SizedBox(
-                      width: 70,
-                      child: pw.Text('Rs. ${item.unitPrice.toStringAsFixed(2)}',
-                          style: _body(size: 9.5),
-                          textAlign: pw.TextAlign.right)),
-                  pw.SizedBox(
-                      width: 70,
-                      child: pw.Text(
-                          'Rs. ${item.totalPrice.toStringAsFixed(2)}',
-                          style: _body(bold: true, size: 9.5, color: darkSlate),
-                          textAlign: pw.TextAlign.right)),
-                ],
-              ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Text(
+                    item.description?.isNotEmpty == true ? item.description! : '-',
+                    style: _cap(),
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Text(
+                    item.quantity % 1 == 0
+                        ? item.quantity.toInt().toString()
+                        : item.quantity.toString(),
+                    style: _body(size: 9.5),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Text(
+                    '₹${item.unitPrice.toStringAsFixed(2)}',
+                    style: _body(size: 9.5),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  child: pw.Text(
+                    '₹${item.totalPrice.toStringAsFixed(2)}',
+                    style: _body(bold: true, size: 9.5, color: darkSlate),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+              ],
             );
           }),
-          // Grand total — clean, spacious
-          pw.Divider(color: borderGray, thickness: 0.5, height: 0),
-          pw.Padding(
-            padding: const pw.EdgeInsets.fromLTRB(10, 16, 10, 16),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        ],
+      ),
+      pw.SizedBox(height: 10),
+
+      // Grand total — strongest visual element, always on the final page
+      pw.Container(
+        padding: const pw.EdgeInsets.fromLTRB(12, 14, 12, 14),
+        decoration: pw.BoxDecoration(
+          color: const PdfColor.fromInt(0xFFF0FFF4),
+          borderRadius: pw.BorderRadius.circular(4),
+          border: pw.Border.all(color: green, width: 0.75),
+        ),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('GRAND TOTAL',
+                style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: green,
+                    letterSpacing: 0.8)),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text('GRAND TOTAL',
+                pw.Text('₹${q.totalAmount.toStringAsFixed(2)}',
                     style: pw.TextStyle(
-                        fontSize: 9,
-                        fontWeight: pw.FontWeight.bold,
-                        color: green,
-                        letterSpacing: 0.5)),
-                pw.Text('Rs. ${q.totalAmount.toStringAsFixed(2)}',
-                    style: pw.TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
                         color: darkSlate)),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '(${_amountInWords(q.totalAmount)})',
+                  style: pw.TextStyle(fontSize: 7.5, color: muted),
+                ),
               ],
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
 
       // ── Notes ────────────────────────────────────────────────────────────
@@ -1749,13 +1831,6 @@ pw.Document _buildProfessionalPdf({
         ),
       ),
 
-      // ── Verification ─────────────────────────────────────────────────────
-      pw.SizedBox(height: 20),
-      _pdfSignatureBlock(
-          q, darkSlate, green, muted, borderGray, lightGray, _body, _cap,
-          validatedBy: validatedBy,
-          validatedRole: validatedRole,
-          validatedAt: validatedAt),
     ],
   ));
 
@@ -1818,6 +1893,11 @@ pw.Widget _pdfHeader(
                   pw.Text(q.nurseryPhone!,
                       style: body(color: muted, size: 8.5)),
                 ],
+                if (q.createdByName != null) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text('Owner: ${q.createdByName!}',
+                      style: body(bold: true, size: 8.5, color: darkSlate)),
+                ],
                 if (nurseryAddress != null) ...[
                   pw.SizedBox(height: 2),
                   pw.Text(nurseryAddress, style: body(color: muted, size: 7.5)),
@@ -1845,6 +1925,7 @@ pw.Widget _pdfHeader(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text('QUOTATION',
+                  softWrap: false,
                   style: pw.TextStyle(
                       fontSize: 8,
                       fontWeight: pw.FontWeight.bold,
@@ -1853,25 +1934,88 @@ pw.Widget _pdfHeader(
               pw.SizedBox(height: 4),
               pw.Text(q.quotationCode,
                   style: pw.TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
                       color: darkSlate)),
-              pw.SizedBox(height: 10),
+              pw.SizedBox(height: 12),
               _headerMeta('Date', _fmt(q.createdAt),
                   labelColor: muted, valueColor: darkSlate),
-              pw.SizedBox(height: 3),
+              pw.SizedBox(height: 4),
               _headerMeta('Valid Until', validUntilStr,
-                  labelColor: muted, valueColor: darkSlate),
-              if (q.createdByName != null) ...[
-                pw.SizedBox(height: 3),
-                _headerMeta('Prepared By', q.createdByName!,
-                    labelColor: muted, valueColor: darkSlate),
-              ],
+                  labelColor: muted,
+                  valueColor: const PdfColor.fromInt(0xFFEA580C)),
             ],
           ),
         ],
       ),
       pw.SizedBox(height: 14),
+      pw.Divider(color: borderGray, thickness: 0.5),
+    ],
+  );
+}
+
+pw.Widget _pdfContinuationHeader(
+  Quotation q,
+  pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
+  pw.TextStyle Function({bool bold, PdfColor color}) cap,
+) {
+  const green = PdfColor.fromInt(0xFF166534);
+  const darkSlate = PdfColor.fromInt(0xFF1F2937);
+  const muted = PdfColor.fromInt(0xFF6B7280);
+  const borderGray = PdfColor.fromInt(0xFFE5E7EB);
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Container(height: 3, color: green),
+      pw.SizedBox(height: 8),
+      pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(q.quotationCode,
+              style: pw.TextStyle(
+                  fontSize: 10, fontWeight: pw.FontWeight.bold, color: darkSlate)),
+          pw.Text('continued',
+              style: pw.TextStyle(
+                  fontSize: 7.5, color: muted, fontStyle: pw.FontStyle.italic)),
+        ],
+      ),
+      pw.SizedBox(height: 6),
+      pw.Container(
+        decoration: const pw.BoxDecoration(color: green),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: pw.Row(children: [
+          pw.SizedBox(
+              width: 22,
+              child: pw.Text('#', style: cap(bold: true, color: PdfColors.white))),
+          pw.Expanded(
+              flex: 4,
+              child: pw.Text('PLANT / ITEM',
+                  style: cap(bold: true, color: PdfColors.white))),
+          pw.SizedBox(
+              width: 65,
+              child: pw.Text('SIZE', style: cap(bold: true, color: PdfColors.white))),
+          pw.SizedBox(
+              width: 48,
+              child: pw.Text('QTY',
+                  softWrap: false,
+                  style: cap(bold: true, color: PdfColors.white),
+                  textAlign: pw.TextAlign.right)),
+          pw.SizedBox(
+              width: 88,
+              child: pw.Text('UNIT PRICE',
+                  softWrap: false,
+                  style: cap(bold: true, color: PdfColors.white),
+                  textAlign: pw.TextAlign.right)),
+          pw.SizedBox(
+              width: 88,
+              child: pw.Text('AMOUNT',
+                  softWrap: false,
+                  style: cap(bold: true, color: PdfColors.white),
+                  textAlign: pw.TextAlign.right)),
+        ]),
+      ),
+      pw.SizedBox(height: 4),
       pw.Divider(color: borderGray, thickness: 0.5),
     ],
   );
@@ -1894,64 +2038,33 @@ pw.Widget _headerMeta(
   );
 }
 
-pw.Widget _pdfFooter(
-  pw.Context context,
-  PdfColor muted,
-  PdfColor borderGray,
-  PdfColor green,
-  pw.TextStyle Function({bool bold, PdfColor color}) cap,
-) {
-  return pw.Column(children: [
-    pw.Divider(color: borderGray, thickness: 0.5),
-    pw.SizedBox(height: 5),
-    pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text('Powered by GreenRoot  ·  www.greenroot.app',
-            style: cap(color: muted)),
-        pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
-            style: cap(color: muted)),
-      ],
-    ),
-    pw.SizedBox(height: 4),
-    pw.Text(
-      'GreenRoot provides quotation management software only. '
-      'All quotation information is provided by the issuing nursery.',
-      style: pw.TextStyle(fontSize: 6, color: muted),
-      textAlign: pw.TextAlign.center,
-    ),
-  ]);
-}
-
-pw.Widget _pdfSignatureBlock(
-  Quotation q,
-  PdfColor darkSlate,
-  PdfColor green,
-  PdfColor muted,
-  PdfColor borderGray,
-  PdfColor lightGray,
-  pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
-  pw.TextStyle Function({bool bold, PdfColor color}) cap, {
+pw.Widget _pdfVerificationFooter(
+  pw.Context context, {
+  required Quotation q,
   required String validatedBy,
   required String validatedRole,
   required DateTime validatedAt,
+  required pw.TextStyle Function({bool bold, PdfColor color, double size}) body,
+  required pw.TextStyle Function({bool bold, PdfColor color}) cap,
+  required PdfColor muted,
+  required PdfColor borderGray,
+  required PdfColor green,
+  required PdfColor darkSlate,
+  String? verifyUrl, // QR encodes verify URL when available; falls back to quotationCode
 }) {
   final validatedOnStr = _fmtDate(validatedAt);
-  return pw.Container(
-    padding: const pw.EdgeInsets.all(12),
-    decoration: pw.BoxDecoration(
-      color: lightGray,
-      borderRadius: pw.BorderRadius.circular(4),
-      border: pw.Border.all(color: borderGray, width: 0.5),
-    ),
-    child: pw.Row(
+  final qrData = verifyUrl ?? q.quotationCode;
+  return pw.Column(children: [
+    pw.Divider(color: borderGray, thickness: 0.5),
+    pw.SizedBox(height: 8),
+    pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
         pw.BarcodeWidget(
           barcode: pw.Barcode.qrCode(),
-          data: q.quotationCode,
-          width: 48,
-          height: 48,
+          data: qrData,
+          width: 70,
+          height: 70,
           color: darkSlate,
         ),
         pw.SizedBox(width: 14),
@@ -1961,19 +2074,19 @@ pw.Widget _pdfSignatureBlock(
             children: [
               pw.Text('DOCUMENT VERIFICATION',
                   style: pw.TextStyle(
-                      fontSize: 6.5,
+                      fontSize: 7,
                       fontWeight: pw.FontWeight.bold,
                       color: muted,
                       letterSpacing: 0.8)),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 5),
               pw.Text('Quote ID: ${q.quotationCode}',
-                  style: body(bold: true, size: 8.5, color: darkSlate)),
-              pw.SizedBox(height: 2),
-              pw.Text('Created on: ${_fmt(q.createdAt)}', style: cap()),
+                  style: body(bold: true, size: 9, color: darkSlate)),
               pw.SizedBox(height: 3),
+              pw.Text('Created on: ${_fmt(q.createdAt)}', style: cap()),
+              pw.SizedBox(height: 4),
               pw.Text(
                 'Digitally generated  ·  No physical signature required.',
-                style: pw.TextStyle(fontSize: 7, color: muted),
+                style: pw.TextStyle(fontSize: 7.5, color: muted),
               ),
             ],
           ),
@@ -1983,19 +2096,30 @@ pw.Widget _pdfSignatureBlock(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
             pw.Text('VALIDATED BY',
-                style: pw.TextStyle(fontSize: 6.5, color: muted)),
-            pw.SizedBox(height: 3),
+                style: pw.TextStyle(
+                    fontSize: 6.5, color: muted, letterSpacing: 0.5)),
+            pw.SizedBox(height: 4),
             pw.Text(validatedBy,
-                style: body(bold: true, size: 8.5, color: darkSlate)),
-            pw.SizedBox(height: 1),
+                style: body(bold: true, size: 10, color: darkSlate)),
+            pw.SizedBox(height: 2),
             pw.Text(validatedRole, style: cap()),
-            pw.SizedBox(height: 1),
+            pw.SizedBox(height: 2),
             pw.Text(validatedOnStr, style: cap()),
+            pw.SizedBox(height: 8),
+            pw.Text(
+                'Page ${context.pageNumber} of ${context.pagesCount}',
+                style: cap(bold: true, color: muted)),
           ],
         ),
       ],
     ),
-  );
+    pw.SizedBox(height: 5),
+    pw.Text(
+      'GreenRoot  ·  Nursery Management Platform  ·  All quotation information is provided by the issuing nursery.',
+      style: pw.TextStyle(fontSize: 6, color: muted),
+      textAlign: pw.TextAlign.center,
+    ),
+  ]);
 }
 
 // ── Manager picker bottom sheet ───────────────────────────────────────────────
@@ -2286,4 +2410,55 @@ String _qty(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 String _fmtDate(DateTime dt) {
   final d = dt.toLocal();
   return '${d.day} ${_monthAbbr(d.month)} ${d.year}, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+}
+
+// Indian number-to-words (handles crores/lakhs/thousands)
+String _numberToWords(int n) {
+  if (n == 0) return 'Zero';
+  const ones = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen',
+  ];
+  const tens = [
+    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty',
+    'Sixty', 'Seventy', 'Eighty', 'Ninety',
+  ];
+  var words = '';
+  if (n >= 10000000) {
+    words += '${_numberToWords(n ~/ 10000000)} Crore ';
+    n %= 10000000;
+  }
+  if (n >= 100000) {
+    words += '${_numberToWords(n ~/ 100000)} Lakh ';
+    n %= 100000;
+  }
+  if (n >= 1000) {
+    words += '${_numberToWords(n ~/ 1000)} Thousand ';
+    n %= 1000;
+  }
+  if (n >= 100) {
+    words += '${ones[n ~/ 100]} Hundred ';
+    n %= 100;
+  }
+  if (n >= 20) {
+    words += '${tens[n ~/ 10]} ';
+    n %= 10;
+  }
+  if (n > 0) words += '${ones[n]} ';
+  return words.trim();
+}
+
+String _amountInWords(double amount) {
+  final totalPaise = (amount * 100).round();
+  final rupees = totalPaise ~/ 100;
+  final paise = totalPaise % 100;
+  if (rupees == 0 && paise == 0) return 'Zero Rupees Only';
+  var result = '';
+  if (rupees > 0) result = '${_numberToWords(rupees)} Rupees';
+  if (paise > 0) {
+    if (result.isNotEmpty) result += ' and ';
+    result += '${_numberToWords(paise)} Paise';
+  }
+  return '$result Only';
 }

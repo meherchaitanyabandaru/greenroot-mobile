@@ -38,20 +38,24 @@ class UserProfile {
     return parts.isEmpty ? null : parts.join(' ');
   }
 
+  bool get hasRealFirstName =>
+      firstName?.trim().isNotEmpty == true &&
+      firstName!.trim().toLowerCase() != 'greenroot';
+
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     final u = json['user'] as Map<String, dynamic>? ?? json;
     return UserProfile(
-      id:              u['id']                as int,
-      userCode:        u['user_code']         as String?,
-      firstName:       u['first_name']        as String?,
-      lastName:        u['last_name']         as String?,
-      gender:          u['gender']            as String?,
-      mobile:          u['mobile']            as String?,
-      mobileVerified:  u['mobile_verified']   as bool? ?? false,
-      email:           u['email']             as String?,
-      emailVerified:   u['email_verified']    as bool? ?? false,
+      id: u['id'] as int,
+      userCode: u['user_code'] as String?,
+      firstName: u['first_name'] as String?,
+      lastName: u['last_name'] as String?,
+      gender: u['gender'] as String?,
+      mobile: u['mobile'] as String?,
+      mobileVerified: u['mobile_verified'] as bool? ?? false,
+      email: u['email'] as String?,
+      emailVerified: u['email_verified'] as bool? ?? false,
       profileImageUrl: u['profile_image_url'] as String?,
-      status:          u['status']            as String?,
+      status: u['status'] as String?,
       createdAt: u['created_at'] != null
           ? DateTime.tryParse(u['created_at'] as String)
           : null,
@@ -87,7 +91,7 @@ class UserProfile {
   /// True when the user has completed their full profile.
   /// firstName + lastName + gender must all be set.
   bool get isProfileComplete =>
-      (firstName?.isNotEmpty ?? false) &&
+      hasRealFirstName &&
       (lastName?.isNotEmpty ?? false) &&
       (gender?.isNotEmpty ?? false);
 
@@ -114,9 +118,9 @@ class UserRole {
   });
 
   factory UserRole.fromJson(Map<String, dynamic> json) => UserRole(
-        id:          json['id']           as int,
-        role:        json['code']         as String,  // API returns 'code', not 'role'
-        nurseryId:   json['nursery_id']   as int?,
+        id: json['id'] as int,
+        role: json['code'] as String, // API returns 'code', not 'role'
+        nurseryId: json['nursery_id'] as int?,
         nurseryName: json['nursery_name'] as String?,
       );
 }
@@ -129,7 +133,9 @@ class UserRolesResponse {
   factory UserRolesResponse.fromJson(Map<String, dynamic> json) {
     final list = json['roles'] as List<dynamic>? ?? [];
     return UserRolesResponse(
-      roles: list.map((e) => UserRole.fromJson(e as Map<String, dynamic>)).toList(),
+      roles: list
+          .map((e) => UserRole.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

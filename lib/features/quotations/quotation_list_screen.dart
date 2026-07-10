@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -6,9 +7,10 @@ import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../auth/domain/rbac/roles.dart';
+import '../../core/widgets/empty_state.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'quotation_create_screen.dart';
+import 'quotation_pins.dart';
 import 'quotations.dart';
 
 // ── Grouped list item types ────────────────────────────────────────────────────
@@ -19,6 +21,8 @@ class _MonthHeader extends _ListItem {
   final String label;
   _MonthHeader(this.label);
 }
+
+class _PinnedHeader extends _ListItem {}
 
 class _QuotationEntry extends _ListItem {
   final Quotation quotation;
@@ -74,16 +78,34 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     return items;
   }
 
+  List<_ListItem> _buildItems(List<Quotation> all, Set<int> pinnedIds) {
+    final pinned = all.where((q) => pinnedIds.contains(q.id)).toList();
+    final rest = all.where((q) => !pinnedIds.contains(q.id)).toList();
+    final items = <_ListItem>[];
+    if (pinned.isNotEmpty) {
+      items.add(_PinnedHeader());
+      for (final q in pinned) items.add(_QuotationEntry(q));
+    }
+    items.addAll(_buildGrouped(rest));
+    return items;
+  }
+
   // Raw delete — no dialog. Used after swipe confirmation.
   Future<void> _doDelete(Quotation q) async {
     try {
       await ref.read(quotationRepositoryProvider).deleteQuotation(q.id);
       ref.read(quotationListProvider.notifier).remove(q.id);
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Quotation deleted'),
-              backgroundColor: AppColors.primaryMain),
+          SnackBar(
+            content: Row(children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
+              Text('${q.quotationCode} deleted'),
+            ]),
+            backgroundColor: AppColors.primaryMain,
+          ),
         );
       }
     } on AppError catch (e) {
@@ -124,6 +146,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
   // With confirm dialog — used by ⋮ menu.
   Future<void> _delete(Quotation q) async {
+    HapticFeedback.mediumImpact();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -149,6 +172,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     final state = ref.watch(quotationListProvider);
     final paged = state.paged;
     final activeStatus = state.statusFilter;
+    final pinnedIds = ref.watch(quotationPinsProvider);
     final session = ref.watch(sessionProvider);
     final caps = session.capabilities;
     final canDelete = caps.isNurseryOwner;
@@ -269,7 +293,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                       final opt = tabOptions[i];
                       final isSelected = state.tab == opt.tab;
                       return GestureDetector(
-                        onTap: () => ref.read(quotationListProvider.notifier).setTab(opt.tab),
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(quotationListProvider.notifier).setTab(opt.tab);
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -304,7 +331,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                     final opt = _statusOptions[i];
                     final isSelected = activeStatus == opt.value;
                     return GestureDetector(
-                      onTap: () => ref.read(quotationListProvider.notifier).setStatusFilter(opt.value),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(quotationListProvider.notifier).setStatusFilter(opt.value);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -344,34 +374,41 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
       ),
       body: Builder(builder: (_) {
         if (paged.isLoading) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primaryMain));
+          return const _QuotationSkeletonList();
         }
         if (paged.error != null) {
-          return Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('Failed to load', style: AppTypography.body.copyWith(color: AppColors.red600)),
-              const SizedBox(height: 8),
-              TextButton(
-                  onPressed: () => ref.read(quotationListProvider.notifier).load(),
-                  child: const Text('Retry')),
-            ]),
+          final isNetwork = paged.error is NetworkError;
+          return EmptyState(
+            icon: isNetwork ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
+            title: isNetwork ? 'No internet connection' : 'Could not load',
+            subtitle: isNetwork
+                ? 'Check your connection and try again'
+                : paged.error!.message,
+            actionLabel: 'Retry',
+            onAction: () => ref.read(quotationListProvider.notifier).load(),
           );
         }
         if (paged.items.isEmpty) {
-          return Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.description_outlined,
-                  size: 64, color: AppColors.primaryMain.withValues(alpha: 0.3)),
-              const SizedBox(height: AppSpacing.md),
-              Text('No quotations yet', style: AppTypography.body.copyWith(color: AppColors.textMuted)),
-              const SizedBox(height: 4),
-              Text('Tap + to create your first quotation',
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
-            ]),
+          if (state.search.isNotEmpty || state.hasActiveFilters) {
+            return EmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'No results',
+              subtitle: 'Try adjusting your search or filters',
+              actionLabel: 'Clear filters',
+              onAction: () {
+                _searchCtrl.clear();
+                ref.read(quotationListProvider.notifier).clearAllFilters();
+              },
+            );
+          }
+          return const EmptyState(
+            icon: Icons.description_outlined,
+            title: 'No quotations yet',
+            subtitle: 'Tap + to create your first quotation',
           );
         }
 
-        final grouped = _buildGrouped(paged.items);
+        final grouped = _buildItems(paged.items, pinnedIds);
         final totalCount = grouped.length + (paged.hasMore ? 1 : 0);
 
         return RefreshIndicator(
@@ -401,6 +438,21 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
               final item = grouped[i];
 
+              if (item is _PinnedHeader) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 6),
+                  child: Row(children: [
+                    const Icon(Icons.push_pin_rounded, size: 13, color: AppColors.amber600),
+                    const SizedBox(width: 6),
+                    Text('Pinned',
+                        style: AppTypography.label.copyWith(
+                            color: AppColors.amber600, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Divider(color: AppColors.border)),
+                  ]),
+                );
+              }
+
               if (item is _MonthHeader) {
                 return Padding(
                   padding: const EdgeInsets.only(top: 16, bottom: 6),
@@ -415,16 +467,21 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
               }
 
               final q = (item as _QuotationEntry).quotation;
+              final isDraftStatus = ['CUSTOMER_DRAFT', 'INTERNAL_DRAFT'].contains(q.status);
+              final canDeleteThis = canDelete && isDraftStatus;
+              final isPinned = pinnedIds.contains(q.id);
               final card = _QuotationCard(
                 quotation: q,
-                canDelete: canDelete,
+                canDelete: canDeleteThis,
+                isPinned: isPinned,
                 onTap: () async {
                   final edited = await context.push<bool>('/quotations/${q.id}');
                   if (edited == true) ref.read(quotationListProvider.notifier).load();
                 },
                 onDelete: () => _delete(q),
+                onPin: () => ref.read(quotationPinsProvider.notifier).toggle(q.id),
               );
-              if (!canDelete) return card;
+              if (!canDeleteThis) return card;
               return Dismissible(
                 key: ValueKey(q.id),
                 direction: DismissDirection.endToStart,
@@ -481,9 +538,18 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 class _QuotationCard extends ConsumerWidget {
   final Quotation quotation;
   final bool canDelete;
+  final bool isPinned;
   final VoidCallback onTap;
   final VoidCallback onDelete;
-  const _QuotationCard({required this.quotation, required this.canDelete, required this.onTap, required this.onDelete});
+  final VoidCallback onPin;
+  const _QuotationCard({
+    required this.quotation,
+    required this.canDelete,
+    required this.isPinned,
+    required this.onTap,
+    required this.onDelete,
+    required this.onPin,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -502,20 +568,87 @@ class _QuotationCard extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: AppColors.surface,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            builder: (_) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ListTile(
+                    leading: Icon(
+                      isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                      color: AppColors.amber600,
+                    ),
+                    title: Text(isPinned ? 'Unpin' : 'Pin quotation',
+                        style: AppTypography.body),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onPin();
+                    },
+                  ),
+                  if (canDelete)
+                    ListTile(
+                      leading: const Icon(Icons.delete_outline, color: AppColors.red600),
+                      title: Text('Delete',
+                          style: AppTypography.body.copyWith(color: AppColors.red600)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        onDelete();
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.forest100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.description_outlined,
-                    color: AppColors.primaryMain, size: 18),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.forest100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.description_outlined,
+                        color: AppColors.primaryMain, size: 18),
+                  ),
+                  if (isPinned)
+                    Positioned(
+                      top: -4, right: -4,
+                      child: Container(
+                        width: 16, height: 16,
+                        decoration: const BoxDecoration(
+                          color: AppColors.amber600,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.push_pin_rounded,
+                            size: 9, color: Colors.white),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -600,26 +733,38 @@ class _QuotationCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (canDelete)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
-                  padding: EdgeInsets.zero,
-                  onSelected: (v) {
-                    if (v == 'delete') onDelete();
-                  },
-                  itemBuilder: (_) => [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
+                padding: EdgeInsets.zero,
+                onSelected: (v) {
+                  if (v == 'pin') onPin();
+                  if (v == 'delete') onDelete();
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'pin',
+                    child: Row(children: [
+                      Icon(
+                        isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                        color: AppColors.amber600, size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(isPinned ? 'Unpin' : 'Pin',
+                          style: AppTypography.body),
+                    ]),
+                  ),
+                  if (canDelete)
                     PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
                         const Icon(Icons.delete_outline, color: AppColors.red600, size: 18),
                         const SizedBox(width: 10),
                         Text('Delete',
-                            style: AppTypography.body
-                                .copyWith(color: AppColors.red600)),
+                            style: AppTypography.body.copyWith(color: AppColors.red600)),
                       ]),
                     ),
-                  ],
-                ),
+                ],
+              ),
             ],
           ),
         ),
@@ -703,6 +848,99 @@ class _StatusChip extends StatelessWidget {
       child: Text(label,
           style: AppTypography.caption
               .copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10)),
+    );
+  }
+}
+
+// ── Skeleton list ─────────────────────────────────────────────────────────────
+
+class _QuotationSkeletonList extends StatefulWidget {
+  const _QuotationSkeletonList();
+
+  @override
+  State<_QuotationSkeletonList> createState() => _QuotationSkeletonListState();
+}
+
+class _QuotationSkeletonListState extends State<_QuotationSkeletonList>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Widget _box({required double w, required double h, double radius = 6}) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: Color.lerp(AppColors.border, AppColors.background, _anim.value),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+
+  Widget _card() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          _box(w: 38, h: 38, radius: 8),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  _box(w: 140, h: 12),
+                  const Spacer(),
+                  _box(w: 52, h: 18, radius: 4),
+                ]),
+                const SizedBox(height: 7),
+                _box(w: 100, h: 10),
+                const SizedBox(height: 7),
+                Row(children: [
+                  _box(w: 72, h: 10),
+                  const Spacer(),
+                  _box(w: 60, h: 10),
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 100),
+      physics: const NeverScrollableScrollPhysics(),
+      children: List.generate(6, (_) => _card()),
     );
   }
 }

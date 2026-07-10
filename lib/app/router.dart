@@ -46,9 +46,11 @@ import '../features/orders/order_detail_screen.dart';
 import '../features/orders/order_loading_screen.dart';
 import '../features/orders/order_list_screen.dart';
 import '../features/plants/plant_detail_screen.dart';
+import '../features/quotations/quotation_by_token_screen.dart';
 import '../features/quotations/quotation_create_screen.dart';
 import '../features/quotations/quotation_detail_screen.dart';
 import '../features/quotations/quotation_list_screen.dart';
+import '../features/quotations/quotation_verification_screen.dart';
 import '../features/quotations/quotations.dart';
 import '../features/plant_requests/request_create_screen.dart';
 import '../features/owner/owner_members_screen.dart';
@@ -161,7 +163,9 @@ String? _buyerGuard(BuildContext context, GoRouterState state) {
 const _publicPaths = {'/login', '/otp', '/'};
 
 bool _isPublic(String path) =>
-    _publicPaths.contains(path) || path.startsWith('/invite');
+    _publicPaths.contains(path) ||
+    path.startsWith('/invite') ||
+    path.startsWith('/verify/');
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -250,6 +254,13 @@ final appRouter = GoRouter(
       path: '/invite/:uuid',
       builder: (_, state) =>
           InviteAcceptScreen(preloadedUUID: state.pathParameters['uuid']),
+    ),
+
+    // ── Public QR verification (no auth required) ─────────────────────────────
+    GoRoute(
+      path: '/verify/:token',
+      builder: (_, state) =>
+          QuotationVerificationScreen(token: state.pathParameters['token']!),
     ),
 
     // ── Unified home shell (Phase 4) ─────────────────────────────────────────
@@ -427,6 +438,12 @@ final appRouter = GoRouter(
         final type = state.uri.queryParameters['type'];
         return QuotationCreateScreen(initialType: type);
       },
+    ),
+    // Static segment — must be listed BEFORE /quotations/:id to win routing
+    GoRoute(
+      path: '/quotations/by-token/:token',
+      builder: (_, state) =>
+          QuotationByTokenScreen(token: state.pathParameters['token']!),
     ),
     GoRoute(
       path: '/quotations/:id',

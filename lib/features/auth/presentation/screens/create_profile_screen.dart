@@ -16,12 +16,13 @@ class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
 
   @override
-  ConsumerState<CreateProfileScreen> createState() => _CreateProfileScreenState();
+  ConsumerState<CreateProfileScreen> createState() =>
+      _CreateProfileScreenState();
 }
 
 class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
-  final _formKey  = GlobalKey<FormState>();
-  final _nameCtrl  = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   bool _isLoading = false;
   String? _error;
@@ -39,7 +40,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
         return;
       }
       // Pre-fill whatever is already saved
-      if (user.firstName?.isNotEmpty == true) {
+      if (user.hasRealFirstName) {
         final full = [user.firstName, user.lastName]
             .whereType<String>()
             .where((s) => s.isNotEmpty)
@@ -61,19 +62,24 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       final fullName = _nameCtrl.text.trim();
       final spaceIdx = fullName.indexOf(' ');
-      final firstName = spaceIdx == -1 ? fullName : fullName.substring(0, spaceIdx);
-      final lastName  = spaceIdx == -1 ? null : fullName.substring(spaceIdx + 1).trim();
+      final firstName =
+          spaceIdx == -1 ? fullName : fullName.substring(0, spaceIdx);
+      final lastName =
+          spaceIdx == -1 ? null : fullName.substring(spaceIdx + 1).trim();
 
       final repo = ref.read(authRepositoryProvider);
       final updated = await repo.updateProfile(
         UpdateProfileRequest(
           firstName: firstName,
-          lastName:  lastName?.isEmpty == true ? null : lastName,
+          lastName: lastName?.isEmpty == true ? null : lastName,
           email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         ),
       );
@@ -102,10 +108,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: AppSpacing.x2l),
-
                 const OnboardingProgress(currentStep: 3),
                 const SizedBox(height: AppSpacing.x2l),
-
                 Container(
                   width: 52,
                   height: 52,
@@ -120,15 +124,14 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.x2l),
-
                 const Text('Complete your profile', style: AppTypography.h1),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Just a few details to get you started.',
-                  style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.body
+                      .copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.x3l),
-
                 AppTextField(
                   label: 'Full Name',
                   hint: 'Enter your full name',
@@ -143,7 +146,6 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
-
                 AppTextField(
                   label: 'Email (optional)',
                   hint: 'you@example.com',
@@ -160,17 +162,15 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                     return null;
                   },
                 ),
-
                 if (_error != null) ...[
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     _error!,
-                    style: AppTypography.caption.copyWith(color: AppColors.errorText),
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.errorText),
                   ),
                 ],
-
                 const SizedBox(height: AppSpacing.x3l),
-
                 AppButton(
                   label: 'Get Started',
                   onPressed: _save,

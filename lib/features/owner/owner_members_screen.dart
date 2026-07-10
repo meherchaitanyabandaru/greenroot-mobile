@@ -104,6 +104,8 @@ class NurseryManager {
   final int id;
   final int userId;
   final String? name;
+  final String? lastName;
+  final String? fullName;
   final String? mobile;
   final String? email;
   final String role;
@@ -112,16 +114,23 @@ class NurseryManager {
     required this.id,
     required this.userId,
     this.name,
+    this.lastName,
+    this.fullName,
     this.mobile,
     this.email,
     required this.role,
   });
 
   factory NurseryManager.fromJson(Map<String, dynamic> json) {
+    final firstName = json['first_name'] as String?;
+    final lastName = json['last_name'] as String?;
+    final fullName = json['full_name'] as String?;
     return NurseryManager(
       id: (json['id'] as num).toInt(),
       userId: (json['user_id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? json['full_name'] as String?,
+      name: json['name'] as String? ?? fullName ?? firstName,
+      lastName: lastName,
+      fullName: fullName,
       mobile: json['mobile'] as String?,
       email: json['email'] as String?,
       role:
@@ -130,8 +139,14 @@ class NurseryManager {
   }
 
   String get displayName {
-    final trimmedName = name?.trim();
-    return trimmedName?.isNotEmpty == true ? trimmedName! : 'Manager';
+    final trimmedFullName = fullName?.trim();
+    if (trimmedFullName?.isNotEmpty == true) return trimmedFullName!;
+    final parts = [
+      if (name?.trim().isNotEmpty == true) name!.trim(),
+      if (lastName?.trim().isNotEmpty == true) lastName!.trim(),
+    ];
+    final combined = parts.join(' ').trim();
+    return combined.isNotEmpty ? combined : 'Manager';
   }
 
   String get identityLabel {
@@ -150,6 +165,8 @@ class NurseryManager {
 class NurseryCustomer {
   final int userId;
   final String firstName;
+  final String? lastName;
+  final String? fullName;
   final String mobile;
   final String? email;
   final DateTime? acceptedAt;
@@ -157,6 +174,8 @@ class NurseryCustomer {
   const NurseryCustomer({
     required this.userId,
     required this.firstName,
+    this.lastName,
+    this.fullName,
     required this.mobile,
     this.email,
     this.acceptedAt,
@@ -166,6 +185,8 @@ class NurseryCustomer {
     return NurseryCustomer(
       userId: (json['user_id'] as num).toInt(),
       firstName: json['first_name'] as String? ?? '',
+      lastName: json['last_name'] as String?,
+      fullName: json['full_name'] as String?,
       mobile: json['mobile'] as String? ?? '',
       email: json['email'] as String?,
       acceptedAt: json['accepted_at'] != null
@@ -175,6 +196,14 @@ class NurseryCustomer {
   }
 
   String get displayName {
+    final trimmedFullName = fullName?.trim();
+    if (trimmedFullName?.isNotEmpty == true) return trimmedFullName!;
+    final parts = [
+      if (firstName.trim().isNotEmpty) firstName.trim(),
+      if (lastName?.trim().isNotEmpty == true) lastName!.trim(),
+    ];
+    final combined = parts.join(' ').trim();
+    if (combined.isNotEmpty) return combined;
     final trimmedName = firstName.trim();
     return trimmedName.isNotEmpty ? trimmedName : 'Customer';
   }

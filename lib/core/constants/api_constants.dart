@@ -119,6 +119,16 @@ abstract class ApiConstants {
       '$v1/quotations/$id/assign-manager';
   static String quotationRecordDownload(int id) =>
       '$v1/quotations/$id/record-download';
+  static String quotationDocuments(int id) => '$v1/quotations/$id/documents';
+  static String quotationCurrentDocument(int id) =>
+      '$v1/quotations/$id/documents/current';
+  static String quotationVerifyToken(int id) =>
+      '$v1/quotations/$id/verify-token';
+  static String quotationRevokeToken(int id) =>
+      '$v1/quotations/$id/verify-token/revoke';
+  static String quotationByToken(String token) =>
+      '$v1/quotations/by-token/$token';
+  static String publicVerify(String token) => '$v1/verify/$token';
 
   // Notifications
   static const String notifications = '$v1/notifications';

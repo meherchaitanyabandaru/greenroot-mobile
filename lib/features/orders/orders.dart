@@ -57,7 +57,8 @@ class NurseryManager {
   });
 
   factory NurseryManager.fromJson(Map<String, dynamic> j) {
-    final explicitName = (j['name'] as String?)?.trim();
+    final explicitName =
+        ((j['full_name'] as String?) ?? (j['name'] as String?))?.trim();
     final firstName = (j['first_name'] as String?)?.trim();
     final lastName = (j['last_name'] as String?)?.trim();
     final fullName = [
