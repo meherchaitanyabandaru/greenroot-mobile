@@ -12,7 +12,7 @@ void main() {
   });
 
   test('AppConfig initialises with dev settings', () {
-    expect(AppConfig.apiBaseUrl, 'http://127.0.0.1:8080');
+    expect(AppConfig.apiBaseUrl, 'http://localhost:8080');
     expect(AppConfig.enableLogging, isTrue);
     expect(AppConfig.isDev, isTrue);
   });
