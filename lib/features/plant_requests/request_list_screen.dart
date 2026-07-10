@@ -55,7 +55,10 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
           ? FloatingActionButton(
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
-              onPressed: () => context.push('/requests/create'),
+              onPressed: () async {
+                final created = await context.push<bool>('/requests/create');
+                if (created == true && mounted) ref.read(requestListProvider.notifier).load(search: _searchCtrl.text);
+              },
               child: const Icon(Icons.add_rounded),
             )
           : null,
@@ -160,7 +163,10 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
                           ),
                           icon: const Icon(Icons.add_rounded),
                           label: const Text('New Request'),
-                          onPressed: () => context.push('/requests/create'),
+                          onPressed: () async {
+                            final created = await context.push<bool>('/requests/create');
+                            if (created == true && mounted) ref.read(requestListProvider.notifier).load(search: _searchCtrl.text);
+                          },
                         ),
                       ],
                     ],

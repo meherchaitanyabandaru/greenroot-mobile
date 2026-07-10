@@ -163,6 +163,7 @@ class _QuotationDetailScreenState
           content: Text('Quotation sent to customer'),
           backgroundColor: AppColors.primaryMain,
         ));
+        context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -200,6 +201,7 @@ class _QuotationDetailScreenState
           content: Text('Quotation recalled to draft'),
           backgroundColor: AppColors.amber600,
         ));
+        context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -228,6 +230,7 @@ class _QuotationDetailScreenState
       await ref.read(quotationRepositoryProvider).assignManager(q.id, managerUserId: managerUserId);
       if (mounted) {
         ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ref.read(quotationListProvider.notifier).load();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Manager assigned'),
           backgroundColor: AppColors.primaryMain,
@@ -276,6 +279,8 @@ class _QuotationDetailScreenState
       final updated = await ref.read(quotationRepositoryProvider).convertToOrder(q.id);
       if (mounted) {
         ref.invalidate(quotationDetailProvider(widget.quotationId));
+        ref.read(quotationListProvider.notifier).load();
+        ref.read(orderListProvider.notifier).load();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Order created successfully'),
           backgroundColor: AppColors.primaryMain,

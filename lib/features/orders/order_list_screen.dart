@@ -175,7 +175,10 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                           color: AppColors.surface,
                           borderRadius: AppRadius.cardRadius,
                           child: InkWell(
-                            onTap: () => context.push('/orders/${order.id}'),
+                            onTap: () async {
+                              await context.push('/orders/${order.id}');
+                              if (mounted) ref.read(orderListProvider.notifier).load(nurseryId: widget.nurseryId, statusFilter: widget.statusFilter);
+                            },
                             borderRadius: AppRadius.cardRadius,
                             child: Container(
                               padding: const EdgeInsets.all(AppSpacing.cardPadding),

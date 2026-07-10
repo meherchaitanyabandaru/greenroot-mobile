@@ -53,6 +53,7 @@ class ConnectionsScreen extends ConsumerWidget {
             targetMobile: result['mobile'],
             targetName: result['name'],
           );
+      ref.invalidate(ownerDashboardProvider);
       final uuid = invite['invite_uuid'] as String? ?? '';
       final expiresAt = invite['expires_at'] != null
           ? DateTime.tryParse(invite['expires_at'] as String)

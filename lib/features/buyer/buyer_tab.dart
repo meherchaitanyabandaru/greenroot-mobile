@@ -689,7 +689,10 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
     final date = DateTime.tryParse(o.orderDate)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/orders/${o.id}'),
+      onTap: () async {
+        await context.push('/orders/${o.id}');
+        if (mounted) ref.read(_buyerOrderProvider.notifier).load();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,

@@ -662,6 +662,7 @@ class _ToggleSaveNotifier extends StateNotifier<AsyncValue<void>> {
       final data = await _ref.read(marketRepositoryProvider).toggleSaveAd(adId);
       final saved = data['saved'] as bool;
       _ref.read(adSavedProvider(adId).notifier).state = saved;
+      _ref.invalidate(savedAdsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
@@ -756,6 +757,8 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
       );
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
+      _ref.invalidate(latestAdsProvider);
+      _ref.invalidate(browseAdsProvider);
       state = const AsyncValue.data(null);
       return adId;
     } catch (e, s) {
@@ -789,6 +792,9 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
         photos: photos,
       );
       _ref.invalidate(myAdsProvider);
+      _ref.invalidate(browseAdsProvider);
+      _ref.invalidate(savedAdsProvider);
+      _ref.invalidate(latestAdsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);

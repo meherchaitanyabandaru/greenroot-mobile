@@ -160,6 +160,7 @@ class _SubscriptionPaymentScreenState
       autoRenew: true,
       daysRemaining: _billingCycle == 'YEARLY' ? 365 : 180,
     );
+    ref.invalidate(subscriptionProvider);
     _showSuccess(mockSub);
   }
 

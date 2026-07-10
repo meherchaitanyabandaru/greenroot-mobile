@@ -54,7 +54,10 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ? FloatingActionButton(
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
-              onPressed: () => context.push('/inventory/add'),
+              onPressed: () async {
+                final added = await context.push<bool>('/inventory/add');
+                if (added == true && mounted) ref.read(inventoryListProvider.notifier).load();
+              },
               child: const Icon(Icons.add_rounded),
             )
           : null,

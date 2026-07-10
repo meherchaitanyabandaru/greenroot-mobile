@@ -244,7 +244,10 @@ class _MgrOrderCard extends ConsumerWidget {
     final date = DateTime.tryParse(o.orderDate)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/orders/${o.id}'),
+      onTap: () async {
+        await context.push('/orders/${o.id}');
+        if (context.mounted) ref.read(_mgrOrderProvider.notifier).load();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,

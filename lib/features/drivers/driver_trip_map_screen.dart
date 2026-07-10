@@ -339,6 +339,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           .read(dispatchRepositoryProvider)
           .acceptDispatch(widget.dispatchId);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(activeDriverTripProvider);
       _snack('Trip accepted! Waiting for nursery to load plants.');
     } on AppError catch (e) {
       _snack(e.message, isError: true);
@@ -360,6 +361,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       _startGpsPosting();
       await _postGps();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(activeDriverTripProvider);
       _snack('Journey started! GPS tracking active.');
     } on AppError catch (e) {
       _snack(e.message, isError: true);
