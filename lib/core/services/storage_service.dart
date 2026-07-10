@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
 import '../../features/auth/data/models/user_models.dart';
 
@@ -31,3 +32,7 @@ class StorageService {
     return UserProfile.fromJson(data);
   }
 }
+
+final storageServiceProvider = Provider<StorageService>(
+  (ref) => StorageService(ApiClient.instance),
+);

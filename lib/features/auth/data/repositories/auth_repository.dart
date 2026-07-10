@@ -175,4 +175,26 @@ class AuthRepository {
       return null;
     }
   }
+
+  Future<void> registerNursery({
+    required String name,
+    String? mobile,
+    String? email,
+    String? description,
+  }) async {
+    try {
+      await _remote.createNursery(
+        name: name,
+        mobile: mobile,
+        email: email,
+        description: description,
+      );
+      AppLogger.i('Nursery registration submitted: $name');
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('registerNursery error', e);
+      throw const UnknownError();
+    }
+  }
 }

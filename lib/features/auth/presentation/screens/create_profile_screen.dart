@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/errors/app_error.dart';
-import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/onboarding_progress.dart';
-import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/models/user_models.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
@@ -71,7 +69,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       final firstName = spaceIdx == -1 ? fullName : fullName.substring(0, spaceIdx);
       final lastName  = spaceIdx == -1 ? null : fullName.substring(spaceIdx + 1).trim();
 
-      final repo = AuthRepository(AuthRemoteDataSource(ApiClient.instance));
+      final repo = ref.read(authRepositoryProvider);
       final updated = await repo.updateProfile(
         UpdateProfileRequest(
           firstName: firstName,

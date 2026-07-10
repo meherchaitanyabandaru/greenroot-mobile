@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/errors/app_error.dart';
-import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -15,7 +14,6 @@ import '../../../../core/utils/card_downloader.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../auth/data/models/capabilities_model.dart';
 import '../auth/presentation/providers/session_provider.dart';
-import 'subscription_datasource.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 
@@ -982,7 +980,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
 
     setState(() => _cancelling = true);
     try {
-      final ds = SubscriptionRemoteDataSource(ApiClient.instance);
+      final ds = ref.read(subscriptionDataSourceProvider);
       await ds.cancelSubscription(widget.sub.id, null);
       if (mounted) {
         widget.onRefresh();

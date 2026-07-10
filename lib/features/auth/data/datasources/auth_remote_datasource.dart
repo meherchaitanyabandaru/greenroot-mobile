@@ -76,4 +76,22 @@ class AuthRemoteDataSource {
       return null;
     }
   }
+
+  Future<void> createNursery({
+    required String name,
+    String? mobile,
+    String? email,
+    String? description,
+  }) =>
+      _client.post(
+        ApiConstants.nurseries,
+        data: {
+          'name': name,
+          if (mobile != null && mobile.isNotEmpty) 'mobile': mobile,
+          if (email != null && email.isNotEmpty) 'email': email,
+          if (description != null && description.isNotEmpty)
+            'description': description,
+          'status': 'PENDING',
+        },
+      );
 }

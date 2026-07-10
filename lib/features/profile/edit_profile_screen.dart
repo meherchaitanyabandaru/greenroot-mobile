@@ -3,16 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
-import '../../core/network/api_client.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
-import '../auth/data/datasources/auth_remote_datasource.dart';
 import '../auth/data/models/user_models.dart';
-import '../auth/data/repositories/auth_repository.dart';
+import '../auth/presentation/providers/auth_provider.dart';
 import '../auth/presentation/providers/session_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -91,7 +89,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
       final fileName = 'avatar-${DateTime.now().millisecondsSinceEpoch}.$ext';
 
-      final updated = await StorageService(ApiClient.instance)
+      final updated = await ref.read(storageServiceProvider)
           .uploadAvatar(bytes, fileName, contentType);
 
       ref.read(sessionProvider.notifier).updateUser(updated);
@@ -115,7 +113,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final user = ref.read(sessionProvider).user;
       final lastName = _lastNameCtrl.text.trim();
       final email = _emailCtrl.text.trim();
-      final repo = AuthRepository(AuthRemoteDataSource(ApiClient.instance));
+      final repo = ref.read(authRepositoryProvider);
       final updated = await repo.updateProfile(
         UpdateProfileRequest(
           firstName: _firstNameCtrl.text.trim(),

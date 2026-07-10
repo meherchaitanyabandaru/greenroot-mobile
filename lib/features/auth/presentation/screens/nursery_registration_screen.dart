@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/errors/app_error.dart';
-import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -41,7 +42,9 @@ class _NurseryRegState {
 }
 
 class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
-  _NurseryRegNotifier() : super(const _NurseryRegState());
+  final AuthRepository _repo;
+
+  _NurseryRegNotifier(this._repo) : super(const _NurseryRegState());
 
   Future<void> submit({
     required String name,
@@ -51,16 +54,11 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await ApiClient.instance.post(
-        '/api/v1/nurseries',
-        data: {
-          'name': name,
-          if (mobile != null && mobile.isNotEmpty) 'mobile': mobile,
-          if (email != null && email.isNotEmpty) 'email': email,
-          if (description != null && description.isNotEmpty)
-            'description': description,
-          'status': 'PENDING',
-        },
+      await _repo.registerNursery(
+        name: name,
+        mobile: mobile,
+        email: email,
+        description: description,
       );
       state = state.copyWith(isLoading: false, success: true);
     } on ServerError catch (e) {
@@ -83,7 +81,7 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
 
 final _nurseryRegProvider =
     StateNotifierProvider.autoDispose<_NurseryRegNotifier, _NurseryRegState>(
-  (ref) => _NurseryRegNotifier(),
+  (ref) => _NurseryRegNotifier(ref.watch(authRepositoryProvider)),
 );
 
 // ── Screen ────────────────────────────────────────────────────────────────────

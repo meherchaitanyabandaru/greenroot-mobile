@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/errors/app_error.dart';
-import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
-import 'subscription_datasource.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 
@@ -60,7 +58,7 @@ class _SubscriptionPaymentScreenState
     if (code.isEmpty || plan == null) return;
     setState(() { _validatingPromo = true; _promoMessage = null; _promoValid = false; _promoSavings = null; });
     try {
-      final ds = SubscriptionRemoteDataSource(ApiClient.instance);
+      final ds = ref.read(subscriptionDataSourceProvider);
       final result = await ds.validatePromo(
         promoCode: code,
         planCode: plan.planCode,

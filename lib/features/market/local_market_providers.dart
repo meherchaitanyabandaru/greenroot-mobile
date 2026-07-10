@@ -161,8 +161,130 @@ class MarketEnquiry {
       );
 }
 
+// ── Repository ────────────────────────────────────────────────
+
+class MarketRepository {
+  final ApiClient _client;
+  const MarketRepository(this._client);
+
+  Future<Map<String, dynamic>> getAds(Map<String, String> params) =>
+      _client.get<Map<String, dynamic>>(
+        ApiConstants.marketAds,
+        queryParameters: params,
+      );
+
+  Future<Map<String, dynamic>> getMyAds() =>
+      _client.get<Map<String, dynamic>>(ApiConstants.marketMyAds);
+
+  Future<Map<String, dynamic>> getSavedAds() =>
+      _client.get<Map<String, dynamic>>(ApiConstants.marketSavedAds);
+
+  Future<Map<String, dynamic>> getEnquiries(Map<String, String> params) =>
+      _client.get<Map<String, dynamic>>(
+        ApiConstants.marketEnquiries,
+        queryParameters: params,
+      );
+
+  Future<Map<String, dynamic>> getEnquiryById(int id) =>
+      _client.get<Map<String, dynamic>>(ApiConstants.marketEnquiryById(id));
+
+  Future<Map<String, dynamic>> replyToEnquiry(int enquiryId, String body) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketEnquiryAction(enquiryId, 'reply'),
+        data: {'body': body},
+      );
+
+  Future<Map<String, dynamic>> toggleSaveAd(int adId) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketAdAction(adId, 'save'),
+      );
+
+  Future<void> sendEnquiry(int adId, String message, {int? qty}) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketAdAction(adId, 'enquiries'),
+        data: {'message': message, if (qty != null) 'quantity_needed': qty},
+      );
+
+  Future<void> reportAd(int adId, String reason, {String? notes}) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketAdAction(adId, 'report'),
+        data: {'reason': reason, if (notes != null) 'notes': notes},
+      );
+
+  Future<Map<String, dynamic>> createAd({
+    required String plantName,
+    required String title,
+    String? categoryName,
+    String? description,
+    int? quantity,
+    double? pricePerUnit,
+    String? sizeDescription,
+    List<String> photos = const [],
+  }) =>
+      _client.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
+        'plant_name': plantName,
+        'title': title,
+        if (categoryName != null) 'category_name': categoryName,
+        if (description != null) 'description': description,
+        if (quantity != null) 'quantity': quantity,
+        if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
+        if (sizeDescription != null) 'size_description': sizeDescription,
+        'photos': photos,
+      });
+
+  Future<void> updateAd(
+    int adId, {
+    String? plantName,
+    String? title,
+    String? categoryName,
+    String? description,
+    int? quantity,
+    double? pricePerUnit,
+    String? sizeDescription,
+    List<String>? photos,
+  }) =>
+      _client.patch<Map<String, dynamic>>(
+        ApiConstants.marketAdById(adId),
+        data: {
+          if (plantName != null) 'plant_name': plantName,
+          if (title != null) 'title': title,
+          if (categoryName != null) 'category_name': categoryName,
+          if (description != null) 'description': description,
+          if (quantity != null) 'quantity': quantity,
+          if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
+          if (sizeDescription != null) 'size_description': sizeDescription,
+          if (photos != null) 'photos': photos,
+        },
+      );
+
+  Future<void> performAdAction(int adId, String action) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketAdAction(adId, action),
+      );
+
+  Future<Map<String, dynamic>> presignUpload({
+    required String bucket,
+    required String fileName,
+    required String contentType,
+  }) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.storagePresign,
+        data: {
+          'bucket': bucket,
+          'file_name': fileName,
+          'content_type': contentType,
+        },
+      );
+}
+
+final marketRepositoryProvider = Provider<MarketRepository>(
+  (ref) => MarketRepository(ApiClient.instance),
+);
+
 // ── Photo Upload ──────────────────────────────────────────────
 
+// Raw Dio instance intentionally without auth headers — used only for S3
+// presigned PUT requests which must not include the Authorization header.
 final _rawDio = Dio();
 
 /// Resizes to max 1200px, draws "GreenRoot" watermark, encodes as JPEG q80.
@@ -201,18 +323,15 @@ Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
 int _bitmapTextWidth(img.BitmapFont font, String text) => text.codeUnits
     .fold<int>(0, (w, c) => w + (font.characters[c]?.xAdvance ?? 0));
 
-Future<String> uploadAdPhoto(XFile file) async {
+Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
   final rawBytes = await file.readAsBytes();
   final processed = await _processAdPhoto(rawBytes);
   const contentType = 'image/jpeg';
 
-  final presign = await ApiClient.instance.post<Map<String, dynamic>>(
-    ApiConstants.storagePresign,
-    data: {
-      'bucket': 'market-ads',
-      'file_name': '${file.name.split('.').first}.jpg',
-      'content_type': contentType,
-    },
+  final presign = await repo.presignUpload(
+    bucket: 'market-ads',
+    fileName: '${file.name.split('.').first}.jpg',
+    contentType: contentType,
   );
 
   final uploadUrl = presign['upload_url'] as String;
@@ -236,9 +355,8 @@ Future<String> uploadAdPhoto(XFile file) async {
 // ── Latest Ads (home screen) ──────────────────────────────────
 
 final latestAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
-  final data = await ApiClient.instance.get<Map<String, dynamic>>(
-    ApiConstants.marketAds,
-    queryParameters: {'per_page': '6', 'page': '1'},
+  final data = await ref.watch(marketRepositoryProvider).getAds(
+    {'per_page': '6', 'page': '1'},
   );
   return (data['ads'] as List?)
           ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
@@ -328,10 +446,11 @@ class BrowseAdsState {
 }
 
 class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
+  final MarketRepository _repo;
   Timer? _debounce;
   static const _perPage = 20;
 
-  BrowseAdsNotifier() : super(const BrowseAdsState()) {
+  BrowseAdsNotifier(this._repo) : super(const BrowseAdsState()) {
     _load();
   }
 
@@ -408,10 +527,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         if (maxPrice != null) 'max_price': maxPrice.toStringAsFixed(0),
       };
 
-      final data = await ApiClient.instance.get<Map<String, dynamic>>(
-        ApiConstants.marketAds,
-        queryParameters: params,
-      );
+      final data = await _repo.getAds(params);
 
       final fetched = (data['ads'] as List?)
               ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
@@ -451,14 +567,13 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
 
 final browseAdsProvider =
     StateNotifierProvider<BrowseAdsNotifier, BrowseAdsState>(
-  (ref) => BrowseAdsNotifier(),
+  (ref) => BrowseAdsNotifier(ref.watch(marketRepositoryProvider)),
 );
 
 // ── My Ads ────────────────────────────────────────────────────
 
 final myAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
-  final data =
-      await ApiClient.instance.get<Map<String, dynamic>>(ApiConstants.marketMyAds);
+  final data = await ref.watch(marketRepositoryProvider).getMyAds();
   final ads = (data['ads'] as List?) ?? [];
   return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
 });
@@ -466,8 +581,7 @@ final myAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
 // ── Saved Ads ─────────────────────────────────────────────────
 
 final savedAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
-  final data = await ApiClient.instance
-      .get<Map<String, dynamic>>(ApiConstants.marketSavedAds);
+  final data = await ref.watch(marketRepositoryProvider).getSavedAds();
   final ads = (data['ads'] as List?) ?? [];
   return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
 });
@@ -476,9 +590,8 @@ final savedAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
 
 final receivedEnquiriesProvider =
     FutureProvider<List<MarketEnquiry>>((ref) async {
-  final data = await ApiClient.instance.get<Map<String, dynamic>>(
-    ApiConstants.marketEnquiries,
-    queryParameters: {'direction': 'received', 'per_page': '50'},
+  final data = await ref.watch(marketRepositoryProvider).getEnquiries(
+    {'direction': 'received', 'per_page': '50'},
   );
   return (data['enquiries'] as List?)
           ?.map((e) => MarketEnquiry.fromJson(e as Map<String, dynamic>))
@@ -487,9 +600,8 @@ final receivedEnquiriesProvider =
 });
 
 final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
-  final data = await ApiClient.instance.get<Map<String, dynamic>>(
-    ApiConstants.marketEnquiries,
-    queryParameters: {'direction': 'sent', 'per_page': '50'},
+  final data = await ref.watch(marketRepositoryProvider).getEnquiries(
+    {'direction': 'sent', 'per_page': '50'},
   );
   return (data['enquiries'] as List?)
           ?.map((e) => MarketEnquiry.fromJson(e as Map<String, dynamic>))
@@ -499,8 +611,9 @@ final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
 
 final enquiryDetailProvider =
     FutureProvider.family<MarketEnquiry, int>((ref, id) async {
-  final data = await ApiClient.instance
-      .get<Map<String, dynamic>>(ApiConstants.marketEnquiryById(id));
+  final data = await ref
+      .watch(marketRepositoryProvider)
+      .getEnquiryById(id);
   return MarketEnquiry.fromJson(data['enquiry'] as Map<String, dynamic>);
 });
 
@@ -516,10 +629,7 @@ class _ReplyEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> reply(String body) async {
     state = const AsyncValue.loading();
     try {
-      await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.marketEnquiryAction(enquiryId, 'reply'),
-        data: {'body': body},
-      );
+      await _ref.read(marketRepositoryProvider).replyToEnquiry(enquiryId, body);
       _ref.invalidate(enquiryDetailProvider(enquiryId));
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
@@ -549,9 +659,7 @@ class _ToggleSaveNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> toggle() async {
     state = const AsyncValue.loading();
     try {
-      final data = await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.marketAdAction(adId, 'save'),
-      );
+      final data = await _ref.read(marketRepositoryProvider).toggleSaveAd(adId);
       final saved = data['saved'] as bool;
       _ref.read(adSavedProvider(adId).notifier).state = saved;
       state = const AsyncValue.data(null);
@@ -577,10 +685,7 @@ class _SendEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> send(String message, {int? qty}) async {
     state = const AsyncValue.loading();
     try {
-      await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.marketAdAction(adId, 'enquiries'),
-        data: {'message': message, if (qty != null) 'quantity_needed': qty},
-      );
+      await _ref.read(marketRepositoryProvider).sendEnquiry(adId, message, qty: qty);
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
       state = const AsyncValue.data(null);
@@ -600,16 +705,14 @@ final sendEnquiryProvider = StateNotifierProvider.family<_SendEnquiryNotifier,
 
 class _ReportNotifier extends StateNotifier<AsyncValue<void>> {
   final int adId;
+  final Ref _ref;
 
-  _ReportNotifier(this.adId, Ref _) : super(const AsyncValue.data(null));
+  _ReportNotifier(this.adId, this._ref) : super(const AsyncValue.data(null));
 
   Future<void> report(String reason, {String? notes}) async {
     state = const AsyncValue.loading();
     try {
-      await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.marketAdAction(adId, 'report'),
-        data: {'reason': reason, if (notes != null) 'notes': notes},
-      );
+      await _ref.read(marketRepositoryProvider).reportAd(adId, reason, notes: notes);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
@@ -641,17 +744,16 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final resp =
-          await ApiClient.instance.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
-        'plant_name': plantName,
-        'title': title,
-        if (categoryName != null) 'category_name': categoryName,
-        if (description != null) 'description': description,
-        if (quantity != null) 'quantity': quantity,
-        if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
-        if (sizeDescription != null) 'size_description': sizeDescription,
-        'photos': photos,
-      });
+      final resp = await _ref.read(marketRepositoryProvider).createAd(
+        plantName: plantName,
+        title: title,
+        categoryName: categoryName,
+        description: description,
+        quantity: quantity,
+        pricePerUnit: pricePerUnit,
+        sizeDescription: sizeDescription,
+        photos: photos,
+      );
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
       state = const AsyncValue.data(null);
@@ -675,18 +777,17 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await ApiClient.instance.patch<Map<String, dynamic>>(
-          ApiConstants.marketAdById(adId),
-          data: {
-            if (plantName != null) 'plant_name': plantName,
-            if (title != null) 'title': title,
-            if (categoryName != null) 'category_name': categoryName,
-            if (description != null) 'description': description,
-            if (quantity != null) 'quantity': quantity,
-            if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
-            if (sizeDescription != null) 'size_description': sizeDescription,
-            if (photos != null) 'photos': photos,
-          });
+      await _ref.read(marketRepositoryProvider).updateAd(
+        adId,
+        plantName: plantName,
+        title: title,
+        categoryName: categoryName,
+        description: description,
+        quantity: quantity,
+        pricePerUnit: pricePerUnit,
+        sizeDescription: sizeDescription,
+        photos: photos,
+      );
       _ref.invalidate(myAdsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
@@ -694,7 +795,6 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
       rethrow;
     }
   }
-
 }
 
 final postAdProvider =
@@ -711,9 +811,7 @@ class _AdActionNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> perform(int adId, String action) async {
     state = const AsyncValue.loading();
     try {
-      await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiConstants.marketAdAction(adId, action),
-      );
+      await _ref.read(marketRepositoryProvider).performAdAction(adId, action);
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
       state = const AsyncValue.data(null);

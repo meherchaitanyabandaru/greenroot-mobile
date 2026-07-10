@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/errors/app_error.dart';
-import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import 'invite_repository.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -47,17 +47,12 @@ class ConnectionsScreen extends ConsumerWidget {
     if (result == null || !context.mounted) return;
 
     try {
-      final body = <String, dynamic>{
-        'invite_type': inviteType,
-        'nursery_id': nurseryId,
-        'target_mobile': result['mobile'],
-        if ((result['name'] ?? '').isNotEmpty) 'target_name': result['name'],
-      };
-      final data = await ApiClient.instance.post<Map<String, dynamic>>(
-        '/api/v1/invites',
-        data: body,
-      );
-      final invite = (data['invite'] ?? data) as Map<String, dynamic>;
+      final invite = await ref.read(inviteRepositoryProvider).sendInvite(
+            inviteType: inviteType,
+            nurseryId: nurseryId,
+            targetMobile: result['mobile'],
+            targetName: result['name'],
+          );
       final uuid = invite['invite_uuid'] as String? ?? '';
       final expiresAt = invite['expires_at'] != null
           ? DateTime.tryParse(invite['expires_at'] as String)

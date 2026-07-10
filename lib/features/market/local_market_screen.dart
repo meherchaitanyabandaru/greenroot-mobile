@@ -2066,7 +2066,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   Future<List<String>> _uploadNew() async {
     final results = <String>[];
     for (final f in _pickedFiles) {
-      final url = await uploadAdPhoto(f);
+      final url = await uploadAdPhoto(f, ref.read(marketRepositoryProvider));
       results.add(url);
     }
     return results;
