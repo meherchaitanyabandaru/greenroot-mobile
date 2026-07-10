@@ -6,7 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'local_market_providers.dart';
-import 'top_items_screen.dart';
+import '../manager/top_items_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _mkGreen    = Color(0xFF00A86B);

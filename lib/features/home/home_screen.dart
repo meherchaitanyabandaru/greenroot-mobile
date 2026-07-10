@@ -14,11 +14,11 @@ import '../dashboard/owner/owner_dashboard_data.dart';
 import '../dispatches/dispatches.dart';
 import '../manager/manager_home.dart';
 import '../owner/owner_home.dart';
-import '../driver/trip_preview_screen.dart';
+import '../drivers/trip_preview_screen.dart';
 import '../notifications/notifications.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
-import '../requests/requests.dart';
+import '../plant_requests/requests.dart';
 import '../subscriptions/trial_banner_widget.dart';
 
 final _operationsHomeProvider =
