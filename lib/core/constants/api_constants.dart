@@ -66,7 +66,8 @@ abstract class ApiConstants {
 
   // Dispatches
   static const String dispatches = '$v1/dispatches';
-  static String dispatchesByOrder(int orderId) => '$v1/orders/$orderId/dispatches';
+  static String dispatchesByOrder(int orderId) =>
+      '$v1/orders/$orderId/dispatches';
   static String dispatchById(int id) => '$v1/dispatches/$id';
   static String dispatchStatus(int id) => '$v1/dispatches/$id/status';
   static String dispatchByCode(String code) => '$v1/dispatches/code/$code';
@@ -108,11 +109,15 @@ abstract class ApiConstants {
   // Quotations
   static const String quotations = '$v1/quotations';
   static String quotationById(int id) => '$v1/quotations/$id';
+  static String quotationSend(int id) => '$v1/quotations/$id/send';
   static String quotationApprove(int id) => '$v1/quotations/$id/approve';
   static String quotationRecall(int id) => '$v1/quotations/$id/recall';
-  static String quotationConvert(int id) => '$v1/quotations/$id/convert-to-order';
-  static String quotationAssignManager(int id) => '$v1/quotations/$id/assign-manager';
-  static String quotationRecordDownload(int id) => '$v1/quotations/$id/record-download';
+  static String quotationConvert(int id) =>
+      '$v1/quotations/$id/convert-to-order';
+  static String quotationAssignManager(int id) =>
+      '$v1/quotations/$id/assign-manager';
+  static String quotationRecordDownload(int id) =>
+      '$v1/quotations/$id/record-download';
 
   // Notifications
   static const String notifications = '$v1/notifications';
@@ -145,9 +150,11 @@ abstract class ApiConstants {
   static const String marketSavedAds = '$v1/market/ads/saved';
   static const String marketEnquiries = '$v1/market/enquiries';
   static String marketAdById(int id) => '$v1/market/ads/$id';
-  static String marketAdAction(int id, String action) => '$v1/market/ads/$id/$action';
+  static String marketAdAction(int id, String action) =>
+      '$v1/market/ads/$id/$action';
   static String marketEnquiryById(int id) => '$v1/market/enquiries/$id';
-  static String marketEnquiryAction(int id, String action) => '$v1/market/enquiries/$id/$action';
+  static String marketEnquiryAction(int id, String action) =>
+      '$v1/market/enquiries/$id/$action';
 
   // Plant Sourcing Network
   static String sourcingMembership(int nurseryId) =>

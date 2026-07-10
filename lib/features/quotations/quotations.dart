@@ -3,7 +3,6 @@ import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
-import '../orders/orders.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -65,6 +64,8 @@ class Quotation {
   final double totalAmount;
   final String status;
   final DateTime? validUntil;
+  final DateTime? sentAt;
+  final DateTime? customerRespondedAt;
   final String createdAt;
   final List<QuotationItem> items;
 
@@ -90,6 +91,8 @@ class Quotation {
     required this.totalAmount,
     required this.status,
     this.validUntil,
+    this.sentAt,
+    this.customerRespondedAt,
     required this.createdAt,
     required this.items,
   });
@@ -105,19 +108,24 @@ class Quotation {
         quotationType: j['quotation_type'] as String? ?? 'CUSTOMER',
         createdByUserId: (j['created_by_user_id'] as num).toInt(),
         createdByName: j['created_by_name'] as String?,
-        nurseryId: j['nursery_id'] != null ? (j['nursery_id'] as num).toInt() : null,
+        nurseryId:
+            j['nursery_id'] != null ? (j['nursery_id'] as num).toInt() : null,
         nurseryName: j['nursery_name'] as String?,
         nurseryPhone: j['nursery_phone'] as String?,
         assignedManagerUserId: j['assigned_manager_user_id'] != null
             ? (j['assigned_manager_user_id'] as num).toInt()
             : null,
         assignedManagerName: j['assigned_manager_name'] as String?,
-        convertedOrderId: j['converted_order_id'] != null ? (j['converted_order_id'] as num).toInt() : null,
+        convertedOrderId: j['converted_order_id'] != null
+            ? (j['converted_order_id'] as num).toInt()
+            : null,
         convertedOrderCode: j['converted_order_code'] as String?,
         convertedAt: j['converted_at'] != null
             ? DateTime.tryParse(j['converted_at'] as String)?.toLocal()
             : null,
-        buyerNurseryId: j['buyer_nursery_id'] != null ? (j['buyer_nursery_id'] as num).toInt() : null,
+        buyerNurseryId: j['buyer_nursery_id'] != null
+            ? (j['buyer_nursery_id'] as num).toInt()
+            : null,
         recipientName: j['recipient_name'] as String?,
         recipientMobile: j['recipient_mobile'] as String?,
         notes: j['notes'] as String?,
@@ -126,6 +134,12 @@ class Quotation {
         status: j['status'] as String,
         validUntil: j['valid_until'] != null
             ? DateTime.tryParse(j['valid_until'] as String)?.toLocal()
+            : null,
+        sentAt: j['sent_at'] != null
+            ? DateTime.tryParse(j['sent_at'] as String)?.toLocal()
+            : null,
+        customerRespondedAt: j['customer_responded_at'] != null
+            ? DateTime.tryParse(j['customer_responded_at'] as String)?.toLocal()
             : null,
         createdAt: j['created_at'] as String,
         items: (j['items'] as List<dynamic>?)
@@ -186,8 +200,12 @@ class QuotationRepository {
         if (search?.isNotEmpty == true) 'search': search,
         if (status?.isNotEmpty == true) 'status': status,
         if (unassignedOnly) 'unassigned': 'true',
-        if (dateFrom != null) 'date_from': '${dateFrom.year}-${dateFrom.month.toString().padLeft(2, '0')}-${dateFrom.day.toString().padLeft(2, '0')}',
-        if (dateTo != null) 'date_to': '${dateTo.year}-${dateTo.month.toString().padLeft(2, '0')}-${dateTo.day.toString().padLeft(2, '0')}',
+        if (dateFrom != null)
+          'date_from':
+              '${dateFrom.year}-${dateFrom.month.toString().padLeft(2, '0')}-${dateFrom.day.toString().padLeft(2, '0')}',
+        if (dateTo != null)
+          'date_to':
+              '${dateTo.year}-${dateTo.month.toString().padLeft(2, '0')}-${dateTo.day.toString().padLeft(2, '0')}',
         if (amountMin != null) 'amount_min': amountMin.toString(),
         if (amountMax != null) 'amount_max': amountMax.toString(),
       },
@@ -226,10 +244,13 @@ class QuotationRepository {
     final body = <String, dynamic>{
       'quotation_type': quotationType,
       if (nurseryId != null) 'nursery_id': nurseryId,
-      if (assignedManagerUserId != null) 'assigned_manager_user_id': assignedManagerUserId,
+      if (assignedManagerUserId != null)
+        'assigned_manager_user_id': assignedManagerUserId,
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
-      if (recipientMobile?.isNotEmpty == true) 'recipient_mobile': recipientMobile,
-      if (validUntil != null) 'valid_until': validUntil.toUtc().toIso8601String(),
+      if (recipientMobile?.isNotEmpty == true)
+        'recipient_mobile': recipientMobile,
+      if (validUntil != null)
+        'valid_until': validUntil.toUtc().toIso8601String(),
       if (notes?.isNotEmpty == true) 'notes': notes,
       'items': items.map((i) => i.toJson()).toList(),
     };
@@ -253,8 +274,10 @@ class QuotationRepository {
   }) async {
     final body = <String, dynamic>{
       if (recipientName?.isNotEmpty == true) 'recipient_name': recipientName,
-      if (recipientMobile?.isNotEmpty == true) 'recipient_mobile': recipientMobile,
-      if (validUntil != null) 'valid_until': validUntil.toUtc().toIso8601String(),
+      if (recipientMobile?.isNotEmpty == true)
+        'recipient_mobile': recipientMobile,
+      if (validUntil != null)
+        'valid_until': validUntil.toUtc().toIso8601String(),
       if (notes?.isNotEmpty == true) 'notes': notes,
       'items': items.map((i) => i.toJson()).toList(),
     };
@@ -273,8 +296,12 @@ class QuotationRepository {
   }
 
   Future<Quotation> approveQuotation(int id) async {
+    return sendToCustomer(id);
+  }
+
+  Future<Quotation> sendToCustomer(int id) async {
     return _client.post(
-      ApiConstants.quotationApprove(id),
+      ApiConstants.quotationSend(id),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
@@ -396,8 +423,11 @@ class QuotationListState {
   });
 
   bool get hasActiveFilters =>
-      statusFilter != null || dateFrom != null || dateTo != null ||
-      amountMin != null || amountMax != null;
+      statusFilter != null ||
+      dateFrom != null ||
+      dateTo != null ||
+      amountMin != null ||
+      amountMax != null;
 
   QuotationListState copyWith({
     PagedState<Quotation>? paged,
@@ -460,7 +490,8 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+        paged: state.paged.copyWith(isLoading: false, error: e),
+      );
     }
   }
 
@@ -587,7 +618,8 @@ class BuyingQuotationListNotifier extends StateNotifier<QuotationListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+        paged: state.paged.copyWith(isLoading: false, error: e),
+      );
     }
   }
 
