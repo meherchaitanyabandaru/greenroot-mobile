@@ -42,6 +42,30 @@ class AuthRepository {
     }
   }
 
+  /// Silently exchanges the stored refresh token for a new access + refresh token
+  /// pair. The new tokens are persisted to secure storage. Called at session
+  /// bootstrap so that any backend-side role changes (e.g. nursery approval) are
+  /// reflected in the JWT before the first role-gated API call is made.
+  ///
+  /// Errors are swallowed: if the refresh fails (network down, token expired) the
+  /// existing tokens stay in storage and bootstrap falls through to its normal
+  /// hasValidSession check which will push the user to login.
+  Future<void> silentRefreshToken() async {
+    try {
+      final existing = await SecureStorageService.getRefreshToken();
+      if (existing == null) return;
+      final response = await _remote.refreshToken(existing);
+      await SecureStorageService.saveSession(
+        accessToken:  response.accessToken,
+        refreshToken: response.refreshToken,
+        userId:       response.user.id,
+      );
+      AppLogger.i('Silent token refresh succeeded — roles updated in JWT');
+    } catch (e) {
+      AppLogger.w('Silent token refresh failed (continuing with existing token)', e);
+    }
+  }
+
   Future<void> logout() async {
     try {
       final refreshToken = await SecureStorageService.getRefreshToken();

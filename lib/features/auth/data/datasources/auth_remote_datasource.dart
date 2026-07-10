@@ -20,6 +20,12 @@ class AuthRemoteDataSource {
         fromJson: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
       );
 
+  Future<AuthResponse> refreshToken(String refreshToken) => _client.post(
+        ApiConstants.refreshToken,
+        data: RefreshTokenRequest(refreshToken: refreshToken).toJson(),
+        fromJson: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+      );
+
   Future<void> logout(String? refreshToken) => _client.post(
         ApiConstants.logout,
         data: LogoutRequest(refreshToken: refreshToken).toJson(),

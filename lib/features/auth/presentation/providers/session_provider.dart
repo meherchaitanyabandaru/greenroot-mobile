@@ -84,6 +84,12 @@ class SessionNotifier extends StateNotifier<SessionState> {
         return;
       }
 
+      // Silently refresh the JWT so any backend-side role changes (e.g. nursery
+      // approval granting NURSERY_OWNER) are reflected before role-gated API
+      // calls are made. Errors are swallowed — the existing token is used as
+      // fallback and login is triggered if it has also expired.
+      await _repo.silentRefreshToken();
+
       final user = await _repo.getCurrentUser();
       final workspaces = await _repo.getWorkspaces();
       final roles = await _repo.getUserRoles();
