@@ -9,8 +9,11 @@ import '../features/auth/presentation/screens/create_profile_screen.dart';
 import '../features/subscriptions/subscription_screen.dart';
 import '../features/subscriptions/subscription_payment_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
+import '../features/profile/complete_profile_screen.dart';
+import '../features/profile/profile_screen.dart';
 import '../features/profile/about_screen.dart';
 import '../features/profile/help_support_screen.dart';
+import '../features/profile/legal_document_screen.dart';
 import '../features/auth/presentation/screens/driver_registration_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/activity_select_screen.dart';
@@ -55,6 +58,8 @@ import '../features/quotations/quotations.dart';
 import '../features/plant_requests/request_create_screen.dart';
 import '../features/owner/owner_members_screen.dart';
 import '../features/owner/nursery_branding_screen.dart';
+import '../features/owner/nursery_profile_screen.dart';
+import '../features/auth/presentation/screens/account_suspended_screen.dart';
 import '../features/plant_requests/request_detail_screen.dart';
 import '../features/connections/connections_screen.dart';
 import '../features/sourcing/sourcing_screen.dart';
@@ -156,7 +161,8 @@ String? _sellerReadGuard(BuildContext context, GoRouterState state) {
 String? _buyerGuard(BuildContext context, GoRouterState state) {
   final caps = _capabilities(context);
   if (caps.isDriverOnly) return '/home';
-  if (caps.canSell) return '/home'; // owner or manager → blocked from buyer-only screens
+  if (caps.canSell)
+    return '/home'; // owner or manager → blocked from buyer-only screens
   return null;
 }
 
@@ -187,11 +193,19 @@ final appRouter = GoRouter(
       return '/login';
     }
 
+    // Account or nursery suspended — hard wall before any authenticated screen.
+    if (session.status == SessionStatus.suspended && path != '/account-suspended') {
+      return '/account-suspended';
+    }
+
     return null;
   },
   routes: [
     // ── Splash ──────────────────────────────────────────────────────────────
     GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+
+    // ── Suspension ──────────────────────────────────────────────────────────
+    GoRoute(path: '/account-suspended', builder: (_, __) => const AccountSuspendedScreen()),
 
     // ── Auth ────────────────────────────────────────────────────────────────
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
@@ -200,28 +214,56 @@ final appRouter = GoRouter(
       builder: (_, state) => OtpScreen(mobile: state.extra as String? ?? ''),
     ),
     GoRoute(
-        path: '/create-profile',
-        builder: (_, __) => const CreateProfileScreen()),
+      path: '/create-profile',
+      builder: (_, __) => const CreateProfileScreen(),
+    ),
     GoRoute(
-        path: '/account-ready',
-        builder: (_, __) => const AccountReadyScreen()),
+      path: '/account-ready',
+      builder: (_, __) => const AccountReadyScreen(),
+    ),
     GoRoute(
-        path: '/subscription',
-        builder: (_, __) => const SubscriptionScreen()),
+      path: '/subscription',
+      builder: (_, __) => const SubscriptionScreen(),
+    ),
     GoRoute(
-        path: '/subscription/payment',
-        builder: (_, state) => SubscriptionPaymentScreen(
-            subscriptionId:
-                int.tryParse(state.uri.queryParameters['subId'] ?? '') ?? 0)),
+      path: '/subscription/payment',
+      builder: (_, state) => SubscriptionPaymentScreen(
+        subscriptionId:
+            int.tryParse(state.uri.queryParameters['subId'] ?? '') ?? 0,
+      ),
+    ),
     GoRoute(
-        path: '/edit-profile',
-        builder: (_, __) => const EditProfileScreen()),
+      path: '/profile',
+      builder: (_, __) => const ProfileScreen(),
+    ),
     GoRoute(
-        path: '/help-support',
-        builder: (_, __) => const HelpSupportScreen()),
+      path: '/edit-profile',
+      builder: (_, __) => const EditProfileScreen(),
+    ),
     GoRoute(
-        path: '/about-greenroot',
-        builder: (_, __) => const AboutScreen()),
+      path: '/complete-profile',
+      builder: (_, __) => const CompleteProfileScreen(),
+    ),
+    GoRoute(
+      path: '/help-support',
+      builder: (_, __) => const HelpSupportScreen(),
+    ),
+    GoRoute(
+      path: '/about-greenroot',
+      builder: (_, __) => const AboutScreen(),
+    ),
+    GoRoute(
+      path: '/privacy-policy',
+      builder: (_, __) => const LegalDocumentScreen(
+        type: LegalDocumentType.privacyPolicy,
+      ),
+    ),
+    GoRoute(
+      path: '/terms-of-service',
+      builder: (_, __) => const LegalDocumentScreen(
+        type: LegalDocumentType.termsOfService,
+      ),
+    ),
 
     // Workspace selector — still reachable from profile or direct nav
     GoRoute(
@@ -344,6 +386,11 @@ final appRouter = GoRouter(
       path: '/my-addresses',
       redirect: _driverGuard,
       builder: (_, __) => const MyAddressesScreen(),
+    ),
+    GoRoute(
+      path: '/nursery/addresses',
+      redirect: _ownerGuard,
+      builder: (_, state) => MyAddressesScreen(nurseryId: state.extra as int),
     ),
     GoRoute(
       path: '/my-payments',
@@ -483,6 +530,12 @@ final appRouter = GoRouter(
       redirect: _ownerGuard,
       builder: (_, state) =>
           NurseryBrandingScreen(nurseryId: state.extra as int),
+    ),
+    GoRoute(
+      path: '/nursery/profile',
+      redirect: _ownerGuard,
+      builder: (_, state) =>
+          NurseryProfileScreen(nurseryId: state.extra as int),
     ),
 
     // ── Nursery Members Management ────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,9 +35,6 @@ class ProfileTabContent extends ConsumerWidget {
       caps: caps,
       nursery: nurseryAsync.valueOrNull,
       onEditProfile: () => context.push('/create-profile'),
-      onEditBranding: caps.primaryNurseryId != null
-          ? () => context.push('/nursery/branding', extra: caps.primaryNurseryId!)
-          : null,
       onRegisterDriver: () => context.push('/register/driver'),
     );
 
@@ -303,6 +301,18 @@ class ProfileTabContent extends ConsumerWidget {
           const SnackBar(content: Text('Account deleted. Goodbye.')),
         );
       }
+    } on DioException catch (e) {
+      if (!context.mounted) return;
+      final body = e.response?.data;
+      final code = (body is Map && body['error'] is Map)
+          ? (body['error'] as Map)['code'] as String?
+          : null;
+      final message = code == 'account_deletion_blocked'
+          ? 'Close or cancel your active orders, quotations, and nursery before deleting your account.'
+          : 'Failed to delete account. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+      );
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

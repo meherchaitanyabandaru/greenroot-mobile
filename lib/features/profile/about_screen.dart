@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -44,11 +45,15 @@ class AboutScreen extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              width: 2,),
+                            color: Colors.white.withValues(alpha: 0.4),
+                            width: 2,
+                          ),
                         ),
-                        child: const Icon(Icons.eco_rounded,
-                            color: Colors.white, size: 38,),
+                        child: const Icon(
+                          Icons.eco_rounded,
+                          color: Colors.white,
+                          size: 38,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -86,7 +91,9 @@ class AboutScreen extends StatelessWidget {
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6,),
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.forest100,
                         borderRadius: BorderRadius.circular(20),
@@ -117,12 +124,17 @@ class AboutScreen extends StatelessWidget {
                                 color: AppColors.forest100,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.flag_outlined,
-                                  color: AppColors.primaryMain, size: 20,),
+                              child: const Icon(
+                                Icons.flag_outlined,
+                                color: AppColors.primaryMain,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: AppSpacing.sm),
-                            const Text('Our Mission',
-                                style: AppTypography.h4,),
+                            const Text(
+                              'Our Mission',
+                              style: AppTypography.h4,
+                            ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -141,8 +153,10 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
 
                   // What we do
-                  const Text('What GreenRoot Does',
-                      style: AppTypography.h4,),
+                  const Text(
+                    'What GreenRoot Does',
+                    style: AppTypography.h4,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   const _FeatureTile(
                     icon: Icons.storefront_outlined,
@@ -189,8 +203,7 @@ class AboutScreen extends StatelessWidget {
                     iconColor: Color(0xFF00897B),
                     iconBg: Color(0xFFE0F2F1),
                     title: 'Team Management',
-                    body:
-                        'Owners invite managers (Gumastha) to their nursery. '
+                    body: 'Owners invite managers (Gumastha) to their nursery. '
                         'Managers handle day-to-day operations with full work access.',
                   ),
                   const SizedBox(height: AppSpacing.x2l),
@@ -219,24 +232,21 @@ class AboutScreen extends StatelessWidget {
                           icon: Icons.privacy_tip_outlined,
                           label: 'Privacy Policy',
                           value: 'greenroot.in/privacy',
-                          onTap: () =>
-                              _launch('https://www.greenroot.in/privacy'),
+                          onTap: () => context.push('/privacy-policy'),
                         ),
                         const Divider(height: 1, color: AppColors.border),
                         _LinkTile(
                           icon: Icons.gavel_rounded,
                           label: 'Terms of Service',
                           value: 'greenroot.in/terms',
-                          onTap: () =>
-                              _launch('https://www.greenroot.in/terms'),
+                          onTap: () => context.push('/terms-of-service'),
                         ),
                         const Divider(height: 1, color: AppColors.border),
                         _LinkTile(
                           icon: Icons.email_outlined,
                           label: 'Contact',
                           value: 'hello@greenroot.in',
-                          onTap: () =>
-                              _launch('mailto:hello@greenroot.in'),
+                          onTap: () => _launch('mailto:hello@greenroot.in'),
                         ),
                       ],
                     ),
@@ -247,8 +257,11 @@ class AboutScreen extends StatelessWidget {
                   Center(
                     child: Column(
                       children: [
-                        const Icon(Icons.eco_rounded,
-                            color: AppColors.primaryMain, size: 28,),
+                        const Icon(
+                          Icons.eco_rounded,
+                          color: AppColors.primaryMain,
+                          size: 28,
+                        ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           '© ${DateTime.now().year} GreenRoot Technologies Pvt. Ltd.',
@@ -294,8 +307,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding ??
-          const EdgeInsets.all(AppSpacing.cardPadding),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -343,13 +355,19 @@ class _FeatureTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: AppTypography.body
-                        .copyWith(fontWeight: FontWeight.w700),),
+                Text(
+                  title,
+                  style:
+                      AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 4),
-                Text(body,
-                    style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary, height: 1.55,),),
+                Text(
+                  body,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.55,
+                  ),
+                ),
               ],
             ),
           ),
@@ -365,10 +383,34 @@ class _RoleGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const roles = [
-      (Icons.shopping_bag_outlined, 'Buyers', 'Purchase plants from verified nurseries', AppColors.primaryMain, AppColors.forest100),
-      (Icons.local_florist_rounded, 'Nursery Owners', 'Manage inventory, orders & team', Color(0xFF7B1FA2), Color(0xFFF3E5F5)),
-      (Icons.manage_accounts_rounded, 'Managers', 'Handle daily nursery operations', AppColors.amber700, AppColors.amber100),
-      (Icons.local_shipping_outlined, 'Drivers', 'Deliver plants with live tracking', AppColors.blue600, Color(0xFFE3F2FD)),
+      (
+        Icons.shopping_bag_outlined,
+        'Buyers',
+        'Purchase plants from verified nurseries',
+        AppColors.primaryMain,
+        AppColors.forest100
+      ),
+      (
+        Icons.local_florist_rounded,
+        'Nursery Owners',
+        'Manage inventory, orders & team',
+        Color(0xFF7B1FA2),
+        Color(0xFFF3E5F5)
+      ),
+      (
+        Icons.manage_accounts_rounded,
+        'Managers',
+        'Handle daily nursery operations',
+        AppColors.amber700,
+        AppColors.amber100
+      ),
+      (
+        Icons.local_shipping_outlined,
+        'Drivers',
+        'Deliver plants with live tracking',
+        AppColors.blue600,
+        Color(0xFFE3F2FD)
+      ),
     ];
 
     return GridView.count(
@@ -377,7 +419,7 @@ class _RoleGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 1.35,
+      childAspectRatio: 0.95,
       children: roles
           .map(
             (r) => Container(
@@ -401,17 +443,23 @@ class _RoleGrid extends StatelessWidget {
                     child: Icon(r.$1, color: r.$4, size: 18),
                   ),
                   const SizedBox(height: 8),
-                  Text(r.$2,
-                      style: AppTypography.body
-                          .copyWith(fontWeight: FontWeight.w700),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,),
+                  Text(
+                    r.$2,
+                    style: AppTypography.body
+                        .copyWith(fontWeight: FontWeight.w700),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 3),
-                  Text(r.$3,
-                      style: AppTypography.caption.copyWith(
-                          color: AppColors.textSecondary, height: 1.4,),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,),
+                  Text(
+                    r.$3,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
@@ -442,7 +490,9 @@ class _LinkTile extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.md,),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             Icon(icon, size: 20, color: AppColors.primaryMain),
@@ -451,17 +501,24 @@ class _LinkTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: AppTypography.body
-                          .copyWith(fontWeight: FontWeight.w600),),
-                  Text(value,
-                      style: AppTypography.caption
-                          .copyWith(color: AppColors.textMuted),),
+                  Text(
+                    label,
+                    style: AppTypography.body
+                        .copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    value,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textMuted),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 14, color: AppColors.textMuted,),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppColors.textMuted,
+            ),
           ],
         ),
       ),

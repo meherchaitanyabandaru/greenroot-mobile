@@ -43,14 +43,11 @@ class NurserySetupPrompt extends ConsumerWidget {
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
           data: (nursery) {
-            final needsBranding = (nursery.logoUrl?.isEmpty ?? true) &&
-                (nursery.brandIconKey?.isEmpty ?? true);
             final needsAddress = nursery.addresses.isEmpty;
-            if (!needsBranding && !needsAddress) return const SizedBox.shrink();
+            if (!needsAddress) return const SizedBox.shrink();
 
             return _SetupPromptCard(
               nursery: nursery,
-              needsBranding: needsBranding,
               needsAddress: needsAddress,
               onDismiss: () => _dismiss(ref, nurseryId),
             );
@@ -69,13 +66,11 @@ class NurserySetupPrompt extends ConsumerWidget {
 
 class _SetupPromptCard extends StatelessWidget {
   final Nursery nursery;
-  final bool needsBranding;
   final bool needsAddress;
   final VoidCallback onDismiss;
 
   const _SetupPromptCard({
     required this.nursery,
-    required this.needsBranding,
     required this.needsAddress,
     required this.onDismiss,
   });
@@ -139,15 +134,6 @@ class _SetupPromptCard extends StatelessWidget {
           ),
           const Divider(height: 1, color: AppColors.border),
           // Checklist items
-          if (needsBranding)
-            _PromptItem(
-              icon: Icons.palette_outlined,
-              color: AppColors.purple500,
-              title: 'Add your nursery branding',
-              subtitle: 'Upload a logo or pick an icon and color',
-              onTap: () => context.push('/nursery/branding',
-                  extra: nursery.id),
-            ),
           if (needsAddress)
             _PromptItem(
               icon: Icons.location_on_outlined,

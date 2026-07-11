@@ -26,16 +26,16 @@ const _brandColors = [
 ];
 
 const _brandIconDefs = [
-  ('leaf',     'Leaf',     Icons.eco_rounded),
-  ('tree',     'Tree',     Icons.park_rounded),
-  ('flower',   'Flower',   Icons.local_florist_rounded),
+  ('leaf', 'Leaf', Icons.eco_rounded),
+  ('tree', 'Tree', Icons.park_rounded),
+  ('flower', 'Flower', Icons.local_florist_rounded),
   ('seedling', 'Seedling', Icons.grass_rounded),
-  ('pot',      'Pot',      Icons.yard_rounded),
-  ('cactus',   'Cactus',   Icons.spa_rounded),
-  ('palm',     'Palm',     Icons.filter_vintage_rounded),
-  ('bonsai',   'Bonsai',   Icons.nature_rounded),
-  ('herb',     'Herb',     Icons.energy_savings_leaf_rounded),
-  ('lotus',    'Lotus',    Icons.wb_sunny_rounded),
+  ('pot', 'Pot', Icons.yard_rounded),
+  ('cactus', 'Cactus', Icons.spa_rounded),
+  ('palm', 'Palm', Icons.filter_vintage_rounded),
+  ('bonsai', 'Bonsai', Icons.nature_rounded),
+  ('herb', 'Herb', Icons.energy_savings_leaf_rounded),
+  ('lotus', 'Lotus', Icons.wb_sunny_rounded),
 ];
 
 // ── Branding state ────────────────────────────────────────────────────────────
@@ -94,8 +94,8 @@ class NurseryBrandingScreen extends ConsumerWidget {
         elevation: 0,
       ),
       body: async.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryMain)),
         error: (err, _) => Center(
           child: Text(err.toString(), style: AppTypography.body),
         ),
@@ -215,8 +215,8 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             child: Text(_bs.error!,
-                style: AppTypography.caption
-                    .copyWith(color: AppColors.errorText)),
+                style:
+                    AppTypography.caption.copyWith(color: AppColors.errorText)),
           ),
         TabBar(
           controller: _tabs,
@@ -314,10 +314,7 @@ class _PreviewStrip extends StatelessWidget {
   }
 
   String _iconLabel(String key) =>
-      _brandIconDefs
-          .where((e) => e.$1 == key)
-          .map((e) => e.$2)
-          .firstOrNull ??
+      _brandIconDefs.where((e) => e.$1 == key).map((e) => e.$2).firstOrNull ??
       key;
 }
 
@@ -360,8 +357,7 @@ class _UploadTab extends StatelessWidget {
                       child: Image.network(
                         currentLogoUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const _PlaceholderLogo(),
+                        errorBuilder: (_, __, ___) => const _PlaceholderLogo(),
                       ),
                     )
                   : const _PlaceholderLogo(),
@@ -397,8 +393,8 @@ class _UploadTab extends StatelessWidget {
                 child: Text(
                   'Square images work best (at least 200×200 px). '
                   'Your logo appears on quotations and order documents.',
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.infoText),
+                  style:
+                      AppTypography.caption.copyWith(color: AppColors.infoText),
                 ),
               ),
             ],
@@ -417,8 +413,7 @@ class _PlaceholderLogo extends StatelessWidget {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.add_a_photo_rounded,
-            size: 40, color: AppColors.primaryMain),
+        Icon(Icons.add_a_photo_rounded, size: 40, color: AppColors.primaryMain),
         SizedBox(height: AppSpacing.sm),
         Text('Tap to upload', style: AppTypography.caption),
       ],
@@ -449,11 +444,12 @@ class _IconTab extends StatelessWidget {
         Text('Choose an icon', style: AppTypography.label),
         const SizedBox(height: AppSpacing.md),
         GridView.count(
-          crossAxisCount: 5,
+          crossAxisCount: MediaQuery.sizeOf(context).width < 380 ? 4 : 5,
+          childAspectRatio: 0.92,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpacing.md,
-          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
           children: _brandIconDefs.map((icon) {
             final isSelected = selectedKey == icon.$1;
             final bg = NurseryBrandingBadge.parseColor(selectedColor) ??
@@ -485,11 +481,13 @@ class _IconTab extends StatelessWidget {
                     Text(
                       icon.$2,
                       style: AppTypography.caption.copyWith(
-                        fontSize: 10,
+                        fontSize: 9,
                         color: isSelected
                             ? (fgLum ? Colors.black87 : Colors.white)
                             : AppColors.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -518,9 +516,8 @@ class _IconTab extends StatelessWidget {
                   color: color,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected
-                        ? AppColors.textPrimary
-                        : Colors.transparent,
+                    color:
+                        isSelected ? AppColors.textPrimary : Colors.transparent,
                     width: 3,
                   ),
                   boxShadow: isSelected

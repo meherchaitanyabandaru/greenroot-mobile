@@ -16,6 +16,7 @@ import '../../core/providers/paged_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/trade_status_chip.dart';
@@ -106,12 +107,8 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        titleSpacing: AppSpacing.screenPadding,
-        title: const Text('My Purchases', style: AppTypography.h2),
+      appBar: GreenRootAppBar(
+        title: 'My Purchases',
         bottom: TabBar(
           controller: _tabs,
           labelStyle: AppTypography.h4,

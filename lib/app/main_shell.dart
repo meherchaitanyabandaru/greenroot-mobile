@@ -16,7 +16,6 @@ import '../features/drivers/trip_preview_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications.dart';
 import '../features/nurseries/nurseries.dart';
-import '../features/profile/profile_screen.dart';
 import '../features/selling/selling_screen.dart';
 import '../features/market/local_market_screen.dart';
 
@@ -59,9 +58,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     final nurseryId = session.capabilities.primaryNurseryId;
     if (nurseryId != null) {
       try {
-        nursery = await ref
-            .read(nurseryRepositoryProvider)
-            .getNursery(nurseryId);
+        nursery =
+            await ref.read(nurseryRepositoryProvider).getNursery(nurseryId);
       } catch (_) {}
     }
 
@@ -72,18 +70,27 @@ class _MainShellState extends ConsumerState<MainShell> {
       user: session.user,
       caps: session.capabilities,
       nursery: nursery,
-      onEditProfile: () => context.push('/create-profile'),
-      onEditBranding: nurseryId != null
-          ? () => context.push('/nursery/branding', extra: nurseryId)
+      onEditProfile: () => context.push('/edit-profile'),
+      onEditAddress: nurseryId != null
+          ? () => context.push('/nursery/addresses', extra: nurseryId)
           : null,
-      onRegisterDriver: () => context.push('/register/driver'),
+        onRegisterDriver: () => context.push('/register/driver'),
     );
 
     final pct = completionPercent(items);
     if (!needsCompletionPrompt(items)) return;
 
     if (!mounted) return;
-    await showCompletionPrompt(context, ref, items: items, percent: pct);
+    await showCompletionPrompt(
+      context,
+      ref,
+      items: items,
+      percent: pct,
+      onCompleteNow: () {
+        if (!mounted) return;
+        context.push('/complete-profile');
+      },
+    );
   }
 
   @override
@@ -134,10 +141,10 @@ class _Tab {
 
 // ── Role → tab mapping ────────────────────────────────────────────────────────
 //
-// Owner   : Home | Buying | Selling | Local Market | Profile
-// Manager : Home | Work   | Local Market           | Profile
-// Driver  : Home | Driver            | Profile  (+ center QR scan)
-// Customer: Home | Buying            | Profile
+// Owner   : Home | Buying | Selling | Local Market
+// Manager : Home | Work   | Local Market
+// Driver  : Home | Driver  (+ center QR scan)
+// Customer: Home | Buying
 
 List<_Tab> _buildTabs(UserCapabilities caps) {
   const home = _Tab(
@@ -146,15 +153,9 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
     activeIcon: Icons.home_rounded,
     label: 'Home',
   );
-  const profile = _Tab(
-    screen: ProfileScreen(),
-    icon: Icons.person_outline_rounded,
-    activeIcon: Icons.person_rounded,
-    label: 'Profile',
-  );
 
   // ── Driver only (no nursery / manager role)
-  // Navigation: Home | Driver | Profile
+  // Navigation: Home | Driver  (+ center scan button in nav bar)
   if (caps.isDriverOnly) {
     return [
       const _Tab(
@@ -169,7 +170,6 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         activeIcon: Icons.route_rounded,
         label: 'Driver',
       ),
-      profile,
     ];
   }
 
@@ -189,7 +189,6 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         activeIcon: Icons.storefront_rounded,
         label: 'Market',
       ),
-      profile,
     ];
   }
 
@@ -215,7 +214,6 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         activeIcon: Icons.store_mall_directory_rounded,
         label: 'Market',
       ),
-      profile,
     ];
   }
 
@@ -228,15 +226,13 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
       activeIcon: Icons.shopping_bag_rounded,
       label: 'Buying',
     ),
-    profile,
   ];
 }
-
 
 // ── Bottom navigation bar ─────────────────────────────────────────────────────
 
 // ── Driver bottom nav with center scan action ─────────────────────────────────
-// Layout: Home | Driver | [Scan] | Profile
+// Layout: Home | [Scan] | Driver
 
 class _DriverBottomNav extends StatelessWidget {
   final List<_Tab> tabs;
@@ -251,7 +247,7 @@ class _DriverBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // tabs[0]=Home  tabs[1]=Driver  tabs[2]=Profile
+    // tabs[0]=Home  tabs[1]=Driver
     Future<void> scanQr() async {
       final code = await Navigator.of(context).push<String>(
         MaterialPageRoute(
@@ -293,6 +289,10 @@ class _DriverBottomNav extends StatelessWidget {
                   onTap: () => onSelected(0),
                 ),
               ),
+              // Center scan button
+              Expanded(
+                child: _CenterScanButton(onTap: scanQr),
+              ),
               // Trips
               Expanded(
                 child: _BottomNavItem(
@@ -300,19 +300,6 @@ class _DriverBottomNav extends StatelessWidget {
                   selected: selectedIndex == 1,
                   unreadCount: 0,
                   onTap: () => onSelected(1),
-                ),
-              ),
-              // Center scan button
-              Expanded(
-                child: _CenterScanButton(onTap: scanQr),
-              ),
-              // Profile
-              Expanded(
-                child: _BottomNavItem(
-                  tab: tabs[2],
-                  selected: selectedIndex == 2,
-                  unreadCount: 0,
-                  onTap: () => onSelected(2),
                 ),
               ),
             ],

@@ -21,18 +21,29 @@ List<CompletionItem> buildCompletionItems({
 
   // Navigation callbacks — null means no CTA shown on that row
   void Function()? onEditProfile,
-  void Function()? onEditBranding,
+  void Function()? onEditAddress,
+  void Function()? onEditNurseryProfile,
   void Function()? onRegisterDriver,
 }) {
   switch (role) {
     case AppRole.nurseryOwner:
-      return _ownerItems(user, caps, nursery,
-          onEditProfile: onEditProfile, onEditBranding: onEditBranding);
+      return _ownerItems(
+        user,
+        caps,
+        nursery,
+        onEditProfile: onEditProfile,
+        onEditAddress: onEditAddress,
+        onEditNurseryProfile: onEditNurseryProfile,
+      );
     case AppRole.manager:
       return _managerItems(user, caps, onEditProfile: onEditProfile);
     case AppRole.driver:
-      return _driverItems(user, caps,
-          onEditProfile: onEditProfile, onRegisterDriver: onRegisterDriver);
+      return _driverItems(
+        user,
+        caps,
+        onEditProfile: onEditProfile,
+        onRegisterDriver: onRegisterDriver,
+      );
     case AppRole.buyer:
       return _buyerItems(user, onEditProfile: onEditProfile);
     default:
@@ -52,17 +63,15 @@ bool needsCompletionPrompt(List<CompletionItem> items) =>
 
 /// NURSERY_OWNER — 8 items
 /// • name, last name, email, profile photo, gender        (5 personal)
-/// • nursery active, nursery address, nursery branding    (3 nursery)
+/// • nursery active, address, description                 (3 nursery)
 List<CompletionItem> _ownerItems(
   UserProfile? user,
   UserCapabilities caps,
   Nursery? nursery, {
   void Function()? onEditProfile,
-  void Function()? onEditBranding,
+  void Function()? onEditAddress,
+  void Function()? onEditNurseryProfile,
 }) {
-  final hasBranding = nursery != null &&
-      ((nursery.logoUrl?.isNotEmpty ?? false) ||
-          (nursery.brandIconKey?.isNotEmpty ?? false));
   final hasAddress = nursery != null && nursery.addresses.isNotEmpty;
   final hasDescription =
       nursery != null && (nursery.description?.isNotEmpty ?? false);
@@ -100,11 +109,12 @@ List<CompletionItem> _ownerItems(
     CompletionItem(
       label: 'Add nursery address',
       done: hasAddress,
+      onTap: onEditAddress,
     ),
     CompletionItem(
-      label: 'Set nursery branding (logo or icon)',
-      done: hasBranding,
-      onTap: onEditBranding,
+      label: 'Add nursery description',
+      done: hasDescription,
+      onTap: onEditNurseryProfile,
     ),
   ];
 }

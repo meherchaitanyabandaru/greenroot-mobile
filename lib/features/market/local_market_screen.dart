@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'local_market_providers.dart';
 import '../manager/top_items_screen.dart';
@@ -82,39 +83,21 @@ class LocalMarketScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: _mkBg,
-      appBar: AppBar(
-        titleSpacing: AppSpacing.screenPadding,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Local Market',
-                style: AppTypography.h3.copyWith(
-                    color: _mkTextPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20)),
-            Text('Nursery to nursery. Grow together.',
-                style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
-          ],
-        ),
-        toolbarHeight: 68,
-        backgroundColor: _mkCard,
-        foregroundColor: _mkTextPrimary,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: _mkBorder),
-        ),
-        actions: [
+      appBar: GreenRootAppBar(
+        title: 'Local Market',
+        subtitle: 'Nursery to nursery. Grow together.',
+        extraActions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: _mkTextSecondary),
             tooltip: 'Market Settings',
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const _MarketSettingsScreen())),
           ),
-          const SizedBox(width: 4),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _mkBorder),
+        ),
       ),
       body: RefreshIndicator(
         color: _mkGreen,

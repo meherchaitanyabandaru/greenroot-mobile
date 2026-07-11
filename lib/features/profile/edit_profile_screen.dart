@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
@@ -89,7 +91,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
       final fileName = 'avatar-${DateTime.now().millisecondsSinceEpoch}.$ext';
 
-      final updated = await ref.read(storageServiceProvider)
+      final updated = await ref
+          .read(storageServiceProvider)
           .uploadAvatar(bytes, fileName, contentType);
 
       ref.read(sessionProvider.notifier).updateUser(updated);
@@ -97,9 +100,40 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } on AppError catch (e) {
       if (mounted) setState(() => _imageError = e.message);
     } catch (_) {
-      if (mounted) setState(() => _imageError = 'Upload failed. Please try again.');
+      if (mounted) {
+        setState(() => _imageError = 'Upload failed. Please try again.');
+      }
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Future<void> _showSheet(_IdentityType type, String? current) async {
+    final updated = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ChangeIdentitySheet(
+        type: type,
+        currentValue: current,
+        updateProfile: (email) async {
+          final user = ref.read(sessionProvider).user;
+          final repo = ref.read(authRepositoryProvider);
+          final updated = await repo.updateProfile(UpdateProfileRequest(
+            firstName: user?.firstName ?? '',
+            lastName: user?.lastName,
+            email: email,
+            gender: user?.gender,
+            profileImageUrl: user?.profileImageUrl,
+          ));
+          ref.read(sessionProvider.notifier).updateUser(updated);
+        },
+      ),
+    );
+    if (updated != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(updated)),
+      );
     }
   }
 
@@ -118,6 +152,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         UpdateProfileRequest(
           firstName: _firstNameCtrl.text.trim(),
           lastName: lastName.isEmpty ? null : lastName,
+          // Don't send email if verified — identity change requires a verification flow.
           email: (user?.emailVerified == true)
               ? null
               : (email.isEmpty ? null : email),
@@ -143,14 +178,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     // When bootstrap completes and user data arrives, fill empty controllers.
     ref.listen<UserProfile?>(
       sessionProvider.select((s) => s.user),
-      (_, user) { if (user != null) _tryFill(); },
+      (_, user) {
+        if (user != null) _tryFill();
+      },
     );
 
     final user = session.user;
-    final firstNameLocked = user?.firstName?.isNotEmpty == true;
-    final lastNameLocked  = user?.lastName?.isNotEmpty == true;
-    final emailLocked     = user?.email?.isNotEmpty == true;
-    final genderLocked    = user?.gender?.isNotEmpty == true;
+    final emailLocked = user?.emailVerified == true;
 
     // Show spinner while bootstrap is still running.
     if (session.isLoading) {
@@ -159,7 +193,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.surface,
           elevation: 0,
-          title: const Text('Edit Profile', style: AppTypography.h3),
+          title: const Text('Personal Information', style: AppTypography.h3),
           foregroundColor: AppColors.textPrimary,
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -172,7 +206,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
-        title: const Text('Edit Profile', style: AppTypography.h3),
+        title: const Text('Personal Information', style: AppTypography.h3),
         foregroundColor: AppColors.textPrimary,
       ),
       body: SingleChildScrollView(
@@ -255,14 +289,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: AppSpacing.x2l),
 
-              // ── Account (locked) ──────────────────────────────────────────
+              // ── Account ───────────────────────────────────────────────────
               _sectionLabel('Account'),
               const SizedBox(height: AppSpacing.sm),
               _LockedField(
                 icon: Icons.phone_outlined,
                 label: 'Mobile Number',
                 value: user?.mobile ?? '—',
-                note: 'Verified via OTP',
+                note: 'Verified',
+                onChangeTap: () => _showSheet(_IdentityType.mobile, user?.mobile),
               ),
               const SizedBox(height: AppSpacing.sm),
               if (emailLocked)
@@ -270,7 +305,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   icon: Icons.email_outlined,
                   label: 'Email',
                   value: user!.email!,
-                  note: user.emailVerified ? 'Verified' : 'Set',
+                  note: 'Verified',
+                  onChangeTap: () => _showSheet(_IdentityType.email, user.email),
                 )
               else
                 AppTextField(
@@ -293,58 +329,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               // ── Personal details ──────────────────────────────────────────
               _sectionLabel('Personal Details'),
               const SizedBox(height: AppSpacing.sm),
-              if (firstNameLocked)
-                _LockedField(
-                  icon: Icons.person_outline_rounded,
-                  label: 'First Name',
-                  value: user!.firstName!,
-                  note: 'Set',
-                )
-              else
-                AppTextField(
-                  label: 'First Name',
-                  hint: 'Enter your first name',
-                  controller: _firstNameCtrl,
-                  textInputAction: TextInputAction.next,
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'First name is required';
-                    }
-                    return null;
-                  },
-                ),
+              AppTextField(
+                label: 'First Name',
+                hint: 'Enter your first name',
+                controller: _firstNameCtrl,
+                textInputAction: TextInputAction.next,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'First name is required';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: AppSpacing.sm),
-              if (lastNameLocked)
-                _LockedField(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Last Name',
-                  value: user!.lastName!,
-                  note: 'Set',
-                )
-              else
-                AppTextField(
-                  label: 'Last Name (optional)',
-                  hint: 'Enter your last name',
-                  controller: _lastNameCtrl,
-                  textInputAction: TextInputAction.done,
-                ),
+              AppTextField(
+                label: 'Last Name (optional)',
+                hint: 'Enter your last name',
+                controller: _lastNameCtrl,
+                textInputAction: TextInputAction.done,
+              ),
               const SizedBox(height: AppSpacing.x2l),
 
               // ── Gender ────────────────────────────────────────────────────
               _sectionLabel('Gender'),
               const SizedBox(height: AppSpacing.sm),
-              if (genderLocked)
-                _LockedField(
-                  icon: _genderIcon(user!.gender!),
-                  label: 'Gender',
-                  value: _genderLabel(user.gender!),
-                  note: 'Set',
-                )
-              else
-                _GenderDropdown(
-                  value: _gender,
-                  onChanged: (g) => setState(() => _gender = g),
-                ),
+              _GenderDropdown(
+                value: _gender,
+                onChanged: (g) => setState(() => _gender = g),
+              ),
 
               // ── Error ─────────────────────────────────────────────────────
               if (_error != null) ...[
@@ -379,21 +391,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ],
 
               const SizedBox(height: AppSpacing.x3l),
-              if (firstNameLocked && lastNameLocked && emailLocked && genderLocked)
-                Center(
-                  child: Text(
-                    'Profile is complete. You can still update your photo.',
-                    style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              else
-                AppButton(
-                  label: 'Save Changes',
-                  onPressed: _uploadingImage ? null : _save,
-                  isLoading: _isLoading,
-                  trailingIcon: Icons.check_rounded,
-                ),
+              AppButton(
+                label: 'Save Changes',
+                onPressed: _uploadingImage ? null : _save,
+                isLoading: _isLoading,
+                trailingIcon: Icons.check_rounded,
+              ),
               const SizedBox(height: AppSpacing.x3l),
             ],
           ),
@@ -405,7 +408,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget _buildAvatarContent(UserProfile? user) {
     // 1. Local bytes preview (just picked, session already updated)
     if (_pickedBytes != null) {
-      return Image.memory(_pickedBytes!, width: 96, height: 96, fit: BoxFit.cover);
+      return Image.memory(
+        _pickedBytes!,
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+      );
     }
     // 2. Network image from session
     final url = user?.profileImageUrl;
@@ -436,17 +444,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   static IconData _genderIcon(String g) {
     switch (g) {
-      case 'MALE': return Icons.male_rounded;
-      case 'FEMALE': return Icons.female_rounded;
-      default: return Icons.visibility_off_outlined;
+      case 'MALE':
+        return Icons.male_rounded;
+      case 'FEMALE':
+        return Icons.female_rounded;
+      default:
+        return Icons.visibility_off_outlined;
     }
   }
 
   static String _genderLabel(String g) {
     switch (g) {
-      case 'MALE': return 'Male';
-      case 'FEMALE': return 'Female';
-      default: return 'Prefer not to say';
+      case 'MALE':
+        return 'Male';
+      case 'FEMALE':
+        return 'Female';
+      default:
+        return 'Prefer not to say';
     }
   }
 }
@@ -458,12 +472,14 @@ class _LockedField extends StatelessWidget {
   final String label;
   final String value;
   final String note;
+  final VoidCallback? onChangeTap;
 
   const _LockedField({
     required this.icon,
     required this.label,
     required this.value,
     required this.note,
+    this.onChangeTap,
   });
 
   @override
@@ -496,30 +512,40 @@ class _LockedField extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style:
-                      AppTypography.caption.copyWith(color: AppColors.textMuted),
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(value, style: AppTypography.body),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Icon(
-                Icons.lock_outline_rounded,
-                size: 15,
-                color: AppColors.textMuted,
+          if (onChangeTap != null)
+            GestureDetector(
+              onTap: onChangeTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Change',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primaryHover,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                note,
-                style:
-                    AppTypography.caption.copyWith(color: AppColors.primaryMain),
-              ),
-            ],
-          ),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Icon(Icons.lock_outline_rounded, size: 15, color: AppColors.textMuted),
+                const SizedBox(height: 2),
+                Text(note, style: AppTypography.caption.copyWith(color: AppColors.primaryMain)),
+              ],
+            ),
         ],
       ),
     );
@@ -584,6 +610,393 @@ class _GenderDropdown extends StatelessWidget {
                 ),
               )
               .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Identity change flow ──────────────────────────────────────────────────────
+
+enum _IdentityType { mobile, email }
+
+class _ChangeIdentitySheet extends StatefulWidget {
+  final _IdentityType type;
+  final String? currentValue;
+  final Future<void> Function(String newValue)? updateProfile;
+
+  const _ChangeIdentitySheet({
+    required this.type,
+    this.currentValue,
+    this.updateProfile,
+  });
+
+  @override
+  State<_ChangeIdentitySheet> createState() => _ChangeIdentitySheetState();
+}
+
+class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
+  final _inputCtrl = TextEditingController();
+  final _otpCtrls = List.generate(6, (_) => TextEditingController());
+  final _otpNodes = List.generate(6, (_) => FocusNode());
+
+  int _step = 1;
+  bool _loading = false;
+  String? _error;
+  int _resendSeconds = 30;
+  Timer? _timer;
+
+  bool get _isMobile => widget.type == _IdentityType.mobile;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _inputCtrl.dispose();
+    for (final c in _otpCtrls) c.dispose();
+    for (final f in _otpNodes) f.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    setState(() => _resendSeconds = 30);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      if (_resendSeconds == 0) {
+        t.cancel();
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
+
+  String get _otp => _otpCtrls.map((c) => c.text).join();
+
+  void _clearOtp() {
+    for (final c in _otpCtrls) c.clear();
+    if (_otpNodes.isNotEmpty) _otpNodes.first.requestFocus();
+  }
+
+  bool _validateInput() {
+    final v = _inputCtrl.text.trim();
+    if (_isMobile) {
+      if (v.length != 10 || int.tryParse(v) == null) {
+        setState(() => _error = 'Enter a valid 10-digit mobile number');
+        return false;
+      }
+      if (v == widget.currentValue?.replaceAll(RegExp(r'\D'), '')) {
+        setState(() => _error = 'This is already your current number');
+        return false;
+      }
+    } else {
+      if (!v.contains('@') || !v.contains('.')) {
+        setState(() => _error = 'Enter a valid email address');
+        return false;
+      }
+      if (v == widget.currentValue) {
+        setState(() => _error = 'This is already your current email');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Future<void> _sendCode() async {
+    setState(() => _error = null);
+    if (!_validateInput()) return;
+    setState(() => _loading = true);
+    await Future.delayed(const Duration(milliseconds: 600)); // simulate send
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _step = 2;
+    });
+    _startTimer();
+    // Auto-focus first OTP box after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _otpNodes.isNotEmpty) _otpNodes.first.requestFocus();
+    });
+  }
+
+  Future<void> _verify() async {
+    if (_otp.length != 6) return;
+    setState(() { _loading = true; _error = null; });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    // Dev mock: only 123456 is valid
+    if (_otp != '123456') {
+      _clearOtp();
+      setState(() { _loading = false; _error = 'Incorrect code. Use 123456 in dev.'; });
+      return;
+    }
+
+    try {
+      if (!_isMobile && widget.updateProfile != null) {
+        await widget.updateProfile!(_inputCtrl.text.trim());
+      }
+      if (mounted) {
+        Navigator.of(context).pop(
+          _isMobile
+              ? 'Mobile number updated successfully.'
+              : 'Email updated successfully.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() { _loading = false; _error = 'Update failed. Please try again.'; });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.x2l,
+        AppSpacing.screenPadding,
+        AppSpacing.x2l + bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: _step == 1 ? _buildStep1() : _buildStep2(),
+    );
+  }
+
+  Widget _buildStep1() {
+    final hint = _isMobile ? 'New mobile number' : 'New email address';
+    final label = _isMobile ? 'Change Mobile Number' : 'Change Email';
+    final subtitle = _isMobile
+        ? 'We\'ll send a 6-digit verification code to your new number.'
+        : 'We\'ll send a 6-digit verification code to your new email.';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SheetHandle(),
+        const SizedBox(height: AppSpacing.lg),
+        Text(label, style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.xs),
+        Text(subtitle, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+        const SizedBox(height: AppSpacing.x2l),
+        TextField(
+          controller: _inputCtrl,
+          autofocus: true,
+          keyboardType: _isMobile ? TextInputType.phone : TextInputType.emailAddress,
+          inputFormatters: _isMobile ? [FilteringTextInputFormatter.digitsOnly] : [],
+          maxLength: _isMobile ? 10 : null,
+          style: AppTypography.body,
+          decoration: InputDecoration(
+            counterText: '',
+            labelText: hint,
+            filled: true,
+            fillColor: AppColors.background,
+            prefixText: _isMobile ? '+91 ' : null,
+            prefixStyle: AppTypography.body.copyWith(color: AppColors.textSecondary),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryMain, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+          ),
+          onSubmitted: (_) => _sendCode(),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(_error!, style: AppTypography.caption.copyWith(color: AppColors.errorText)),
+        ],
+        const SizedBox(height: AppSpacing.x2l),
+        SizedBox(
+          width: double.infinity,
+          height: AppSpacing.buttonHeight,
+          child: ElevatedButton(
+            onPressed: _loading ? null : _sendCode,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Text('Send Code'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep2() {
+    final destination = _isMobile ? '+91 ${_inputCtrl.text.trim()}' : _inputCtrl.text.trim();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SheetHandle(),
+        const SizedBox(height: AppSpacing.lg),
+        Text('Enter verification code', style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'We sent a 6-digit code to $destination',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.x2l),
+        // OTP boxes
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(6, (i) => _OtpBox(
+            controller: _otpCtrls[i],
+            focusNode: _otpNodes[i],
+            hasError: _error != null,
+            onChanged: (val) {
+              if (val.isNotEmpty && i < 5) _otpNodes[i + 1].requestFocus();
+              if (val.isNotEmpty && i == 5) _verify();
+            },
+            onBackspace: () {
+              if (i > 0) _otpNodes[i - 1].requestFocus();
+            },
+          )),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(_error!, style: AppTypography.caption.copyWith(color: AppColors.errorText)),
+        ],
+        const SizedBox(height: AppSpacing.x2l),
+        SizedBox(
+          width: double.infinity,
+          height: AppSpacing.buttonHeight,
+          child: ElevatedButton(
+            onPressed: (_otp.length == 6 && !_loading) ? _verify : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Text('Verify'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: _resendSeconds > 0
+              ? Text(
+                  'Resend code in ${_resendSeconds}s',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                )
+              : TextButton(
+                  onPressed: () {
+                    _clearOtp();
+                    _startTimer();
+                  },
+                  child: Text(
+                    'Resend Code',
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.primaryMain),
+                  ),
+                ),
+        ),
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() { _step = 1; _error = null; _clearOtp(); }),
+            child: Text(
+              'Change ${_isMobile ? 'number' : 'email'}',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.border,
+            borderRadius: BorderRadius.circular(99),
+          ),
+        ),
+      );
+}
+
+class _OtpBox extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool hasError;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onBackspace;
+
+  const _OtpBox({
+    required this.controller,
+    required this.focusNode,
+    required this.hasError,
+    required this.onChanged,
+    required this.onBackspace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 54,
+      child: KeyboardListener(
+        focusNode: FocusNode(),
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.backspace &&
+              controller.text.isEmpty) {
+            onBackspace();
+          }
+        },
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          maxLength: 1,
+          style: AppTypography.h3.copyWith(color: AppColors.textPrimary),
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(
+            counterText: '',
+            filled: true,
+            fillColor: AppColors.background,
+            contentPadding: EdgeInsets.zero,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: hasError ? AppColors.red500 : AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? AppColors.red500 : AppColors.primaryMain,
+                width: 1.5,
+              ),
+            ),
+          ),
           onChanged: onChanged,
         ),
       ),

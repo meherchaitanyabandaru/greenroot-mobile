@@ -9,7 +9,7 @@ import '../../domain/rbac/permission_service.dart';
 import '../../domain/rbac/roles.dart';
 import 'auth_provider.dart';
 
-enum SessionStatus { unknown, loading, authenticated, unauthenticated }
+enum SessionStatus { unknown, loading, authenticated, unauthenticated, suspended }
 
 class SessionState {
   final SessionStatus status;
@@ -56,6 +56,7 @@ class SessionState {
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
   bool get isLoading => status == SessionStatus.loading;
+  bool get isSuspended => status == SessionStatus.suspended;
 
   // V1 workspace helpers — PERSONAL is the default customer context, not a
   // selectable workspace. Only OWNED_NURSERY, MANAGER_NURSERY, DRIVER show.
@@ -79,17 +80,24 @@ class SessionNotifier extends StateNotifier<SessionState> {
     // not_member) immediately logs the user out instead of waiting for JWT expiry.
     try {
       ApiClient.authInterceptor.onMembershipRevoked = _onMembershipRevoked;
+      ApiClient.authInterceptor.onAccountSuspended = _onAccountSuspended;
     } catch (_) {
       // ApiClient not yet initialized in tests — safe to ignore.
     }
   }
 
   void _onMembershipRevoked() {
-    // Called from the Dio interceptor (possibly a non-UI thread). Schedule on
-    // the microtask queue so state updates happen on the correct isolate.
     Future.microtask(() async {
       if (state.status == SessionStatus.authenticated) {
         await logout();
+      }
+    });
+  }
+
+  void _onAccountSuspended() {
+    Future.microtask(() {
+      if (state.status == SessionStatus.authenticated) {
+        state = state.copyWith(status: SessionStatus.suspended);
       }
     });
   }

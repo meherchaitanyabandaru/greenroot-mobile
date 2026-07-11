@@ -5,9 +5,9 @@ import '../../app/main_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/qr_scanner_screen.dart';
 import '../../core/widgets/status_badge.dart';
-import '../../core/widgets/user_avatar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../buyer/buyer_home.dart';
 import '../dashboard/owner/owner_dashboard_data.dart';
@@ -93,22 +93,20 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.primaryMain,
-          onRefresh: () async {
-            await ref.read(sessionProvider.notifier).bootstrap();
-            ref.invalidate(_operationsHomeProvider);
-            ref.invalidate(_driverHomeProvider);
-            ref.invalidate(buyerHomeProvider);
-            ref.invalidate(notificationListProvider);
-          },
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
-            children: [
-              _TopHeader(caps: caps),
-              const SizedBox(height: 20),
-              _GreetingBlock(caps: caps, firstName: session.user?.firstName),
+      appBar: const GreenRootAppBar(),
+      body: RefreshIndicator(
+        color: AppColors.primaryMain,
+        onRefresh: () async {
+          await ref.read(sessionProvider.notifier).bootstrap();
+          ref.invalidate(_operationsHomeProvider);
+          ref.invalidate(_driverHomeProvider);
+          ref.invalidate(buyerHomeProvider);
+          ref.invalidate(notificationListProvider);
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+          children: [
+            _GreetingBlock(caps: caps, firstName: session.user?.firstName),
               const SizedBox(height: 20),
               const TrialExpiryBanner(),
               if (caps.isDriverOnly)
@@ -122,7 +120,6 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -220,87 +217,6 @@ class _DriverHome extends ConsumerWidget {
   }
 }
 
-
-class _TopHeader extends ConsumerWidget {
-  final dynamic caps;
-
-  const _TopHeader({required this.caps});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.eco_rounded, color: AppColors.primaryMain),
-                  const SizedBox(width: 4),
-                  Text(
-                    'GreenRoot',
-                    style: AppTypography.h2.copyWith(
-                      color: AppColors.primaryMain,
-                      height: 1,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                _headerSubtitle(caps),
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const _NotificationButton(),
-        const SizedBox(width: 8),
-        UserAvatar(
-          size: 46,
-          borderWidth: 1.5,
-          onTap: () => ref.read(mainTabIndexProvider.notifier).state = 99,
-        ),
-      ],
-    );
-  }
-}
-
-class _NotificationButton extends ConsumerStatefulWidget {
-  const _NotificationButton();
-
-  @override
-  ConsumerState<_NotificationButton> createState() =>
-      _NotificationButtonState();
-}
-
-class _NotificationButtonState extends ConsumerState<_NotificationButton> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationListProvider.notifier).load();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final unread = ref.watch(notificationListProvider).unreadCount;
-
-    return IconButton(
-      onPressed: () => context.push('/notifications'),
-      icon: Badge.count(
-        count: unread,
-        isLabelVisible: unread > 0,
-        child: const Icon(Icons.notifications_none_rounded),
-      ),
-      color: AppColors.textPrimary,
-    );
-  }
-}
 
 class _GreetingBlock extends StatelessWidget {
   final dynamic caps;
@@ -2012,20 +1928,6 @@ BoxDecoration _cardDecoration({Color bg = AppColors.surface}) => BoxDecoration(
         ),
       ],
     );
-
-String _headerSubtitle(caps) {
-  if (caps.isDriverOnly) return 'Delivering Green, On Time';
-  if (caps.isManager) return 'Manage. Deliver. Grow.';
-  if (caps.isNurseryOwner) return 'Your Plants, Your Business';
-  return 'Quality Plants. On Time.';
-}
-
-String _roleLabel(caps) {
-  if (caps.isDriverOnly) return 'Driver';
-  if (caps.isNurseryOwner) return 'Owner';
-  if (caps.isManager) return 'Manager';
-  return 'Customer';
-}
 
 IconData _roleIcon(caps) {
   if (caps.isDriverOnly) return Icons.local_shipping_outlined;

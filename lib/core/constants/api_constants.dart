@@ -28,6 +28,8 @@ abstract class ApiConstants {
   static const String myNurseries = '$v1/nurseries/mine';
   static String nurseryById(int id) => '$v1/nurseries/$id';
   static String nurseryAddresses(int id) => '$v1/nurseries/$id/addresses';
+  static String nurseryAddressById(int addressId) =>
+      '$v1/nurseries/addresses/$addressId';
 
   // Inventory
   static const String inventory = '$v1/inventory';

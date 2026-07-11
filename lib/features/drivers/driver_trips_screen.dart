@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import 'driver_trip_map_screen.dart';
@@ -43,11 +44,8 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('My Trips', style: AppTypography.h4),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
+      appBar: GreenRootAppBar(
+        title: 'My Trips',
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primaryMain,

@@ -19,7 +19,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey    = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _mobileCtrl = TextEditingController();
   String? _mobileError;
   bool _agreedToTerms = false;
@@ -49,7 +49,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _requestOtp() async {
     setState(() => _mobileError = null);
     if (!_agreedToTerms) {
-      setState(() => _mobileError = 'Please agree to the Terms & Conditions and Privacy Policy');
+      setState(() => _mobileError =
+          'Please agree to the Terms & Conditions and Privacy Policy');
       return;
     }
     if (!_formKey.currentState!.validate()) return;
@@ -173,41 +174,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _agreedToTerms,
-                          onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+                          onChanged: (v) =>
+                              setState(() => _agreedToTerms = v ?? false),
                           activeColor: AppColors.primaryMain,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4)),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
-                          child: RichText(
-                            text: TextSpan(
-                              style: AppTypography.bodySmall
-                                  .copyWith(color: AppColors.textSecondary),
-                              children: [
-                                const TextSpan(text: 'I agree to the '),
-                                TextSpan(
-                                  text: 'Terms & Conditions',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.primaryMain,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            InkWell(
+                              onTap: () => setState(
+                                () => _agreedToTerms = !_agreedToTerms,
+                              ),
+                              child: Text(
+                                'I agree to the ',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
-                                const TextSpan(text: ' and '),
-                                TextSpan(
-                                  text: 'Privacy Policy',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.primaryMain,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                            _AgreementLink(
+                              label: 'Terms & Conditions',
+                              onTap: () => context.push('/terms-of-service'),
+                            ),
+                            Text(
+                              ' and ',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            _AgreementLink(
+                              label: 'Privacy Policy',
+                              onTap: () => context.push('/privacy-policy'),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -235,6 +241,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgreementLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _AgreementLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: AppTypography.bodySmall.copyWith(
+          color: AppColors.primaryMain,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

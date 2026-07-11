@@ -128,7 +128,8 @@ class Nursery {
                 .toList() ??
             [],
         users: (j['users'] as List<dynamic>?)
-                ?.map((e) => NurseryUserLink.fromJson(e as Map<String, dynamic>))
+                ?.map(
+                    (e) => NurseryUserLink.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
         logoUrl: j['logo_url'] as String?,
@@ -226,6 +227,35 @@ class NurseryRepository {
         return Nursery.fromJson(d['nursery'] as Map<String, dynamic>);
       },
     );
+  }
+
+  Future<Nursery> updateProfile(
+    int nurseryId, {
+    required String name,
+    String? mobile,
+    String? email,
+    String? website,
+    String? description,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'mobile': mobile?.trim(),
+      'email': email?.trim(),
+      'website': website?.trim(),
+      'description': description?.trim(),
+    };
+    return _client.put(
+      ApiConstants.nurseryById(nurseryId),
+      data: body,
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Nursery.fromJson(d['nursery'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<void> deleteNursery(int nurseryId) async {
+    await _client.delete(ApiConstants.nurseryById(nurseryId));
   }
 }
 

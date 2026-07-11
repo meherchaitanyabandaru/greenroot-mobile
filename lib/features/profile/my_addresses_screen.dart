@@ -120,15 +120,42 @@ class AddressFormData {
 // ── Indian states ─────────────────────────────────────────────────────────────
 
 const _indianStates = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
-  'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
-  'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra',
-  'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman and Nicobar Islands', 'Chandigarh',
-  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
-  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
 ];
 
 // ── Repository ────────────────────────────────────────────────────────────────
@@ -167,12 +194,48 @@ class UserAddressRepository {
   Future<void> deleteAddress(int id) async {
     await _api.delete(ApiConstants.userAddressById(id));
   }
+
+  Future<List<UserAddress>> listNurseryAddresses(int nurseryId) async {
+    final res = await _api.get(ApiConstants.nurseryAddresses(nurseryId));
+    final list = res['addresses'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => UserAddress.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<UserAddress> addNurseryAddress(
+    int nurseryId,
+    AddressFormData form,
+  ) async {
+    final res = await _api.post(
+      ApiConstants.nurseryAddresses(nurseryId),
+      data: form.toJson(),
+    );
+    return UserAddress.fromJson(res['address'] as Map<String, dynamic>);
+  }
+
+  Future<UserAddress> updateNurseryAddress(
+    int id,
+    AddressFormData form,
+  ) async {
+    final res = await _api.put(
+      ApiConstants.nurseryAddressById(id),
+      data: form.toJson(),
+    );
+    return UserAddress.fromJson(res['address'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteNurseryAddress(int id) async {
+    await _api.delete(ApiConstants.nurseryAddressById(id));
+  }
 }
 
 // ── My Addresses screen ───────────────────────────────────────────────────────
 
 class MyAddressesScreen extends ConsumerStatefulWidget {
-  const MyAddressesScreen({super.key});
+  final int? nurseryId;
+
+  const MyAddressesScreen({super.key, this.nurseryId});
 
   @override
   ConsumerState<MyAddressesScreen> createState() => _MyAddressesScreenState();
@@ -190,13 +253,17 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final userId = ref.read(sessionProvider).user?.id;
       if (userId == null) throw Exception('Not logged in');
-      final list = await ref
-          .read(userAddressRepositoryProvider)
-          .listAddresses(userId);
+      final repo = ref.read(userAddressRepositoryProvider);
+      final list = widget.nurseryId == null
+          ? await repo.listAddresses(userId)
+          : await repo.listNurseryAddresses(widget.nurseryId!);
       if (mounted) setState(() => _addresses = list);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -237,10 +304,14 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
             if (userId == null) return;
             final repo = ref.read(userAddressRepositoryProvider);
             if (existing == null) {
-              final addr = await repo.addAddress(userId, form);
+              final addr = widget.nurseryId == null
+                  ? await repo.addAddress(userId, form)
+                  : await repo.addNurseryAddress(widget.nurseryId!, form);
               if (mounted) setState(() => _addresses = [..._addresses, addr]);
             } else {
-              final addr = await repo.updateAddress(existing.id, form);
+              final addr = widget.nurseryId == null
+                  ? await repo.updateAddress(existing.id, form)
+                  : await repo.updateNurseryAddress(existing.id, form);
               if (mounted) {
                 setState(() => _addresses = _addresses
                     .map((a) => a.id == existing.id ? addr : a)
@@ -272,7 +343,13 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
     );
     if (ok != true || !mounted) return;
     try {
-      await ref.read(userAddressRepositoryProvider).deleteAddress(a.id);
+      if (widget.nurseryId == null) {
+        await ref.read(userAddressRepositoryProvider).deleteAddress(a.id);
+      } else {
+        await ref
+            .read(userAddressRepositoryProvider)
+            .deleteNurseryAddress(a.id);
+      }
       if (mounted) setState(() => _addresses.removeWhere((x) => x.id == a.id));
     } on AppError catch (e) {
       if (mounted) {
@@ -291,7 +368,10 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
-        title: const Text('My Addresses', style: AppTypography.h3),
+        title: Text(
+          widget.nurseryId == null ? 'My Addresses' : 'Nursery Addresses',
+          style: AppTypography.h3,
+        ),
         foregroundColor: AppColors.textPrimary,
       ),
       body: _loading
@@ -376,9 +456,8 @@ class _AddressListView extends StatelessWidget {
             onRefresh: onRefresh,
             color: AppColors.primaryMain,
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding, AppSpacing.md,
-                  AppSpacing.screenPadding, AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
               itemCount: addresses.length,
               itemBuilder: (_, i) => _AddressCard(
                 address: addresses[i],
@@ -390,7 +469,8 @@ class _AddressListView extends StatelessWidget {
         ),
         Padding(
           padding: EdgeInsets.fromLTRB(
-              AppSpacing.screenPadding, AppSpacing.sm,
+              AppSpacing.screenPadding,
+              AppSpacing.sm,
               AppSpacing.screenPadding,
               MediaQuery.of(context).padding.bottom + AppSpacing.md),
           child: _AddButton(onTap: onAdd),
@@ -412,10 +492,15 @@ class _AddressCard extends StatelessWidget {
 
   IconData get _icon {
     switch (address.addressType?.toUpperCase()) {
-      case 'HOME': return Icons.home_outlined;
-      case 'WORK': case 'OFFICE': return Icons.business_outlined;
-      case 'FARM': return Icons.agriculture_outlined;
-      default: return Icons.location_on_outlined;
+      case 'HOME':
+        return Icons.home_outlined;
+      case 'WORK':
+      case 'OFFICE':
+        return Icons.business_outlined;
+      case 'FARM':
+        return Icons.agriculture_outlined;
+      default:
+        return Icons.location_on_outlined;
     }
   }
 
@@ -437,7 +522,8 @@ class _AddressCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 42, height: 42,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                   color: AppColors.forest100,
                   borderRadius: BorderRadius.circular(10)),
@@ -448,17 +534,18 @@ class _AddressCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    if (address.addressType?.isNotEmpty == true)
-                      _Chip(address.addressType!.toUpperCase(),
-                          bg: AppColors.forest100,
-                          fg: AppColors.primaryMain),
-                    if (address.isDefault) ...[
-                      const SizedBox(width: 6),
-                      _Chip('DEFAULT',
-                          bg: AppColors.primaryMain, fg: Colors.white),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      if (address.addressType?.isNotEmpty == true)
+                        _Chip(address.addressType!.toUpperCase(),
+                            bg: AppColors.forest100, fg: AppColors.primaryMain),
+                      if (address.isDefault)
+                        _Chip('DEFAULT',
+                            bg: AppColors.primaryMain, fg: Colors.white),
                     ],
-                  ]),
+                  ),
                   if (address.contactName?.isNotEmpty == true) ...[
                     const SizedBox(height: 5),
                     Text(address.contactName!,
@@ -472,33 +559,45 @@ class _AddressCard extends StatelessWidget {
                             .copyWith(color: AppColors.textSecondary)),
                   ],
                   const SizedBox(height: 5),
-                  Text(address.displayAddress,
-                      style: AppTypography.body
-                          .copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    address.displayAddress,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ),
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                if (v == 'edit') onEdit();
-                if (v == 'delete') onDelete();
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(children: [
-                      Icon(Icons.edit_outlined, size: 18),
-                      SizedBox(width: 8), Text('Edit'),
-                    ])),
-                const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(children: [
-                      Icon(Icons.delete_outline, size: 18, color: AppColors.red600),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: AppColors.red600)),
-                    ])),
-              ],
-              icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textMuted),
+            SizedBox(
+              width: 36,
+              child: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                onSelected: (v) {
+                  if (v == 'edit') onEdit();
+                  if (v == 'delete') onDelete();
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(children: [
+                        Icon(Icons.edit_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ])),
+                  const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        Icon(Icons.delete_outline,
+                            size: 18, color: AppColors.red600),
+                        SizedBox(width: 8),
+                        Text('Delete',
+                            style: TextStyle(color: AppColors.red600)),
+                      ])),
+                ],
+                icon: const Icon(Icons.more_vert,
+                    size: 20, color: AppColors.textMuted),
+              ),
             ),
           ],
         ),
@@ -540,9 +639,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   final _mobileCtrl = TextEditingController();
   final _line1Ctrl = TextEditingController();
   final _line2Ctrl = TextEditingController();
-  final _cityCtrl = TextEditingController();   // edit mode only
+  final _cityCtrl = TextEditingController(); // edit mode only
   final _pincodeCtrl = TextEditingController();
-  String? _selectedState;                      // edit mode only
+  String? _selectedState; // edit mode only
   double? _latitude;
   double? _longitude;
   bool _isDefault = false;
@@ -611,7 +710,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _saving = true; _saveError = null; });
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
 
     final city = _isMapMode ? _mapResult!.city : _cityCtrl.text.trim();
     final state = _isMapMode ? _mapResult!.state : _selectedState;
@@ -779,7 +881,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                     validator: (v) {
                                       final s = v?.trim() ?? '';
                                       if (s.isEmpty) return 'Required';
-                                      if (s.length != 6) return 'Must be 6 digits';
+                                      if (s.length != 6)
+                                        return 'Must be 6 digits';
                                       return null;
                                     },
                                   ),
@@ -836,8 +939,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           ),
                           Switch(
                             value: _isDefault,
-                            onChanged: (v) =>
-                                setState(() => _isDefault = v),
+                            onChanged: (v) => setState(() => _isDefault = v),
                             activeColor: AppColors.primaryMain,
                           ),
                         ],
@@ -891,8 +993,7 @@ class _MapLocationBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.forest100,
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: AppColors.primaryMain.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,8 +1098,7 @@ class _LockedField extends StatelessWidget {
               Text(
                 label,
                 style: AppTypography.caption.copyWith(
-                    color: AppColors.primaryMain,
-                    fontWeight: FontWeight.w500),
+                    color: AppColors.primaryMain, fontWeight: FontWeight.w500),
               ),
               const Spacer(),
               const Icon(Icons.lock_rounded,
@@ -1007,14 +1107,15 @@ class _LockedField extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(value,
-              style: AppTypography.body
-                  .copyWith(fontWeight: FontWeight.w600),
+              style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis),
         ],
       ),
     );
 
-    return fullWidth ? SizedBox(width: double.infinity, child: content) : content;
+    return fullWidth
+        ? SizedBox(width: double.infinity, child: content)
+        : content;
   }
 }
 
@@ -1032,8 +1133,7 @@ class _GeocodedBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.forest100,
         borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: AppColors.primaryMain.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1043,8 +1143,7 @@ class _GeocodedBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             'GPS: ${lat.toStringAsFixed(5)}, ${lon.toStringAsFixed(5)}',
-            style:
-                AppTypography.caption.copyWith(color: AppColors.primaryMain),
+            style: AppTypography.caption.copyWith(color: AppColors.primaryMain),
           ),
         ],
       ),
@@ -1082,8 +1181,8 @@ class _SaveBar extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryMain,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 0,
           ),
           child: saving
@@ -1119,8 +1218,8 @@ class _AddButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryMain,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
       ),
@@ -1181,8 +1280,7 @@ class _Field extends StatelessWidget {
       children: [
         Text(label,
             style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500)),
+                color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         child,
       ],
@@ -1201,8 +1299,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline,
-              size: 48, color: AppColors.textMuted),
+          const Icon(Icons.error_outline, size: 48, color: AppColors.textMuted),
           const SizedBox(height: AppSpacing.md),
           Text(error, style: AppTypography.body, textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.md),
@@ -1225,8 +1322,7 @@ class _ErrorBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(message,
-            style:
-                AppTypography.bodySmall.copyWith(color: AppColors.red600)),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.red600)),
       );
 }
 
@@ -1252,8 +1348,7 @@ class _Chip extends StatelessWidget {
 InputDecoration _deco(String hint) => InputDecoration(
       hintText: hint,
       isDense: true,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
       border: InputBorder.none,
       enabledBorder: InputBorder.none,
       focusedBorder: InputBorder.none,

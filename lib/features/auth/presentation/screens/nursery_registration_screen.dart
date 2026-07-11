@@ -115,11 +115,9 @@ class _NurseryRegistrationScreenState
     if (!_formKey.currentState!.validate()) return;
     await ref.read(_nurseryRegProvider.notifier).submit(
           name: _nameCtrl.text.trim(),
-          mobile: _mobileCtrl.text.trim().isEmpty
-              ? null
-              : _mobileCtrl.text.trim(),
-          email:
-              _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+          mobile:
+              _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+          email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
           description:
               _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         );
@@ -253,7 +251,8 @@ class _NurseryRegistrationScreenState
                 label: 'Description',
                 hint: 'Brief description of your nursery...',
                 controller: _descCtrl,
-                textInputAction: TextInputAction.done,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
                 maxLines: 3,
               ),
 

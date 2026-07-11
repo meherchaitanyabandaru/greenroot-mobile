@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../app/main_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/qr_scanner_screen.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -84,61 +84,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     });
   }
 
-  String get _greeting {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(sessionProvider);
-    final firstName = session.user?.name?.split(' ').first ?? 'Driver';
-    final unread = ref.watch(notificationListProvider).unreadCount;
     final dashAsync = ref.watch(_driverDashboardProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: AppSpacing.screenPadding,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _greeting,
-              style: AppTypography.caption
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-            Text(firstName, style: AppTypography.h2),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: unread > 0
-                ? Badge.count(
-                    count: unread,
-                    backgroundColor: AppColors.primaryMain,
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications_outlined, size: 26),
-                      onPressed: () =>
-                          ref.read(mainTabIndexProvider.notifier).state = 2,
-                    ),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.notifications_outlined, size: 26),
-                    onPressed: () =>
-                        ref.read(mainTabIndexProvider.notifier).state = 2,
-                  ),
-          ),
-        ],
-      ),
+      appBar: const GreenRootAppBar(),
       body: RefreshIndicator(
         color: AppColors.primaryMain,
         displacement: 20,
@@ -166,6 +118,9 @@ class _DashboardBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trip = data.tripState.trip;
+    final firstName = ref.watch(sessionProvider).user?.name?.split(' ').first ?? 'Driver';
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -175,7 +130,14 @@ class _DashboardBody extends ConsumerWidget {
         top: AppSpacing.md,
         bottom: MediaQuery.of(context).padding.bottom + 100,
       ),
-      children: trip == null
+      children: [
+        Text(
+          greeting,
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+        ),
+        Text(firstName, style: AppTypography.h2),
+        const SizedBox(height: AppSpacing.md),
+        ...trip == null
           ? [
               const _NoTripCard(),
               const SizedBox(height: AppSpacing.md),
@@ -200,6 +162,7 @@ class _DashboardBody extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.md),
                       _ActiveTripTip(),
                     ],
+      ],
     );
   }
 }

@@ -43,20 +43,20 @@ class _SubscriptionPaymentScreenState
     return plan.sixMonthPrice ?? 0;
   }
 
-  double _gst(SubscriptionPlan? plan) {
-    final base = _basePrice(plan) - (_promoSavings ?? 0);
-    return base.clamp(0, double.infinity) * 0.18;
-  }
-
   double _total(SubscriptionPlan? plan) {
     final base = _basePrice(plan) - (_promoSavings ?? 0);
-    return base.clamp(0, double.infinity) + _gst(plan);
+    return base.clamp(0, double.infinity);
   }
 
   Future<void> _applyPromo(SubscriptionPlan? plan) async {
     final code = _promoController.text.trim().toUpperCase();
     if (code.isEmpty || plan == null) return;
-    setState(() { _validatingPromo = true; _promoMessage = null; _promoValid = false; _promoSavings = null; });
+    setState(() {
+      _validatingPromo = true;
+      _promoMessage = null;
+      _promoValid = false;
+      _promoSavings = null;
+    });
     try {
       final ds = ref.read(subscriptionDataSourceProvider);
       final result = await ds.validatePromo(
@@ -70,7 +70,8 @@ class _SubscriptionPaymentScreenState
         setState(() {
           _promoValid = true;
           _promoSavings = savings;
-          _promoMessage = 'Code applied! You save ₹${savings.toStringAsFixed(0)}';
+          _promoMessage =
+              'Code applied! You save ₹${savings.toStringAsFixed(0)}';
         });
       } else {
         setState(() {
@@ -79,9 +80,13 @@ class _SubscriptionPaymentScreenState
         });
       }
     } catch (_) {
-      setState(() { _promoMessage = 'Could not validate promo code'; });
+      setState(() {
+        _promoMessage = 'Could not validate promo code';
+      });
     } finally {
-      setState(() { _validatingPromo = false; });
+      setState(() {
+        _validatingPromo = false;
+      });
     }
   }
 
@@ -115,7 +120,6 @@ class _SubscriptionPaymentScreenState
             paymentMethod: _paymentMethod,
             basePrice: _basePrice(plan),
             promoSavings: _promoSavings,
-            gst: _gst(plan),
             total: _total(plan),
             paying: _paying,
             promoController: _promoController,
@@ -190,7 +194,6 @@ class _PaymentBody extends StatelessWidget {
   final String paymentMethod;
   final double basePrice;
   final double? promoSavings;
-  final double gst;
   final double total;
   final bool paying;
   final TextEditingController promoController;
@@ -208,7 +211,6 @@ class _PaymentBody extends StatelessWidget {
     required this.paymentMethod,
     required this.basePrice,
     this.promoSavings,
-    required this.gst,
     required this.total,
     required this.paying,
     required this.promoController,
@@ -255,7 +257,8 @@ class _PaymentBody extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(20),
@@ -276,8 +279,10 @@ class _PaymentBody extends StatelessWidget {
               Text(plan?.planName ?? 'Growth Plan', style: AppTypography.h3),
               const SizedBox(height: 4),
               Text(
-                plan?.description ?? 'Unlimited orders, quotations & up to 5 managers per nursery.',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                plan?.description ??
+                    'Unlimited orders, quotations & up to 5 managers per nursery.',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
               ),
               if (plan?.features != null) ...[
                 const SizedBox(height: 12),
@@ -351,13 +356,17 @@ class _PaymentBody extends StatelessWidget {
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   hintText: 'e.g. DIWALI2026',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   suffixIcon: promoValid
-                      ? const Icon(Icons.check_circle_rounded, color: Colors.green)
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Colors.green)
                       : null,
                 ),
-                style: const TextStyle(fontFamily: 'monospace', letterSpacing: 1.5, fontSize: 14),
+                style: const TextStyle(
+                    fontFamily: 'monospace', letterSpacing: 1.5, fontSize: 14),
               ),
             ),
             const SizedBox(width: 10),
@@ -367,11 +376,18 @@ class _PaymentBody extends StatelessWidget {
                 onPressed: validatingPromo ? null : onApplyPromo,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: validatingPromo
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Apply',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -381,15 +397,21 @@ class _PaymentBody extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: promoValid ? const Color(0xFFdcfce7) : const Color(0xFFfee2e2),
+              color: promoValid
+                  ? const Color(0xFFdcfce7)
+                  : const Color(0xFFfee2e2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
                 Icon(
-                  promoValid ? Icons.local_offer_rounded : Icons.error_outline_rounded,
+                  promoValid
+                      ? Icons.local_offer_rounded
+                      : Icons.error_outline_rounded,
                   size: 16,
-                  color: promoValid ? const Color(0xFF16a34a) : const Color(0xFFdc2626),
+                  color: promoValid
+                      ? const Color(0xFF16a34a)
+                      : const Color(0xFFdc2626),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -397,7 +419,9 @@ class _PaymentBody extends StatelessWidget {
                     promoMessage!,
                     style: TextStyle(
                       fontSize: 13,
-                      color: promoValid ? const Color(0xFF15803d) : const Color(0xFFb91c1c),
+                      color: promoValid
+                          ? const Color(0xFF15803d)
+                          : const Color(0xFFb91c1c),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -408,7 +432,7 @@ class _PaymentBody extends StatelessWidget {
         ],
         const SizedBox(height: AppSpacing.x2l),
 
-        // ── GST breakdown ────────────────────────────────────────────────────
+        // ── Price breakdown ──────────────────────────────────────────────────
         Text('Price Breakdown', style: AppTypography.h4),
         const SizedBox(height: AppSpacing.sm),
         _SectionCard(
@@ -425,11 +449,6 @@ class _PaymentBody extends StatelessWidget {
                   highlight: true,
                 ),
               ],
-              const SizedBox(height: 8),
-              _PriceLine(
-                  label: 'GST @ 18% (SAC 997331)',
-                  value: '₹${gst.toStringAsFixed(2)}',
-                  secondary: true),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Divider(color: AppColors.border, height: 1),
@@ -459,7 +478,7 @@ class _PaymentBody extends StatelessWidget {
               const Icon(Icons.security_rounded,
                   size: 13, color: AppColors.textMuted),
               const SizedBox(width: 4),
-              Text('Secured via Razorpay · GST Invoice provided',
+              Text('Secured via Razorpay · Invoice provided',
                   style: AppTypography.caption
                       .copyWith(color: AppColors.textMuted)),
             ],
@@ -479,7 +498,8 @@ class _FeatureChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final chips = <String>[];
     if (features['unlimited_orders'] == true) chips.add('Unlimited Orders');
-    if (features['unlimited_quotations'] == true) chips.add('Unlimited Quotations');
+    if (features['unlimited_quotations'] == true)
+      chips.add('Unlimited Quotations');
     final maxMgr = features['max_managers'];
     if (maxMgr != null) chips.add('Up to $maxMgr Managers');
     final support = features['support'];
@@ -552,14 +572,17 @@ class _CycleChip extends StatelessWidget {
                 children: [
                   Text(label,
                       style: TextStyle(
-                        color: selected ? AppColors.primaryMain : AppColors.textPrimary,
+                        color: selected
+                            ? AppColors.primaryMain
+                            : AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                       )),
                   if (badge != null) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFFdc2626),
                         borderRadius: BorderRadius.circular(20),
@@ -586,7 +609,9 @@ class _CycleChip extends StatelessWidget {
                 ),
               Text(sublabel,
                   style: AppTypography.caption.copyWith(
-                    color: selected ? AppColors.primaryMain : AppColors.textSecondary,
+                    color: selected
+                        ? AppColors.primaryMain
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
                   )),
             ],
@@ -600,14 +625,12 @@ class _CycleChip extends StatelessWidget {
 class _PriceLine extends StatelessWidget {
   final String label;
   final String value;
-  final bool secondary;
   final bool bold;
   final bool highlight;
 
   const _PriceLine({
     required this.label,
     required this.value,
-    this.secondary = false,
     this.bold = false,
     this.highlight = false,
   });
@@ -615,12 +638,12 @@ class _PriceLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = highlight
-        ? AppTypography.body.copyWith(color: const Color(0xFF16a34a), fontWeight: FontWeight.w700)
+        ? AppTypography.body.copyWith(
+            color: const Color(0xFF16a34a), fontWeight: FontWeight.w700)
         : bold
-            ? AppTypography.body.copyWith(fontWeight: FontWeight.w800, fontSize: 16)
-            : secondary
-                ? AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)
-                : AppTypography.body;
+            ? AppTypography.body
+                .copyWith(fontWeight: FontWeight.w800, fontSize: 16)
+            : AppTypography.body;
 
     return Row(
       children: [
@@ -681,7 +704,8 @@ class _SuccessSheet extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Your ${sub.planName} subscription is now active.',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.x2l),
@@ -699,8 +723,7 @@ class _SuccessSheet extends StatelessWidget {
                   const SizedBox(height: 6),
                   if (sub.endDate != null)
                     _SuccessRow(
-                        label: 'Valid Until',
-                        value: fmt.format(sub.endDate!)),
+                        label: 'Valid Until', value: fmt.format(sub.endDate!)),
                 ],
               ),
             ),

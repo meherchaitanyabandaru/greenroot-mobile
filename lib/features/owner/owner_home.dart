@@ -63,16 +63,12 @@ class OwnerHome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nurseryId = ref.watch(sessionProvider).capabilities.primaryNurseryId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const NurserySetupPrompt(),
         _OwnerActionGrid(
           onConnections: () => context.push('/connections'),
-          onBranding: nurseryId != null
-              ? () => context.push('/nursery/branding', extra: nurseryId)
-              : null,
         ),
       ],
     );
@@ -398,12 +394,8 @@ class _QuotationAlertCard extends StatelessWidget {
 
 class _OwnerActionGrid extends StatelessWidget {
   final VoidCallback onConnections;
-  final VoidCallback? onBranding;
 
-  const _OwnerActionGrid({
-    required this.onConnections,
-    this.onBranding,
-  });
+  const _OwnerActionGrid({required this.onConnections});
 
   @override
   Widget build(BuildContext context) {
@@ -417,17 +409,6 @@ class _OwnerActionGrid extends StatelessWidget {
             onTap: onConnections,
           ),
         ),
-        if (onBranding != null) ...[
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: _ActionCell(
-              icon: Icons.palette_outlined,
-              label: 'Branding',
-              color: AppColors.purple500,
-              onTap: onBranding!,
-            ),
-          ),
-        ],
       ],
     );
   }

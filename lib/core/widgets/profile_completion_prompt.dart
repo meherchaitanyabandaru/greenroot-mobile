@@ -18,6 +18,7 @@ Future<void> showCompletionPrompt(
   WidgetRef ref, {
   required List<CompletionItem> items,
   required double percent,
+  VoidCallback? onCompleteNow,
 }) async {
   ref.read(completionPromptShownProvider.notifier).state = true;
 
@@ -26,15 +27,24 @@ Future<void> showCompletionPrompt(
     isScrollControlled: true,
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _CompletionSheet(items: items, percent: percent),
+    builder: (_) => _CompletionSheet(
+      items: items,
+      percent: percent,
+      onCompleteNow: onCompleteNow,
+    ),
   );
 }
 
 class _CompletionSheet extends StatelessWidget {
   final List<CompletionItem> items;
   final double percent;
+  final VoidCallback? onCompleteNow;
 
-  const _CompletionSheet({required this.items, required this.percent});
+  const _CompletionSheet({
+    required this.items,
+    required this.percent,
+    this.onCompleteNow,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +74,11 @@ class _CompletionSheet extends StatelessWidget {
           // Progress ring + text
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.x2l, AppSpacing.x2l, AppSpacing.x2l, AppSpacing.md),
+              AppSpacing.x2l,
+              AppSpacing.x2l,
+              AppSpacing.x2l,
+              AppSpacing.md,
+            ),
             child: Row(
               children: [
                 _ProgressRing(percent: percent, size: 72),
@@ -73,7 +87,7 @@ class _CompletionSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Complete your profile',
                         style: AppTypography.h3,
                       ),
@@ -81,8 +95,10 @@ class _CompletionSheet extends StatelessWidget {
                       Text(
                         'Your profile is $pctLabel complete ($done of ${items.length} done). '
                         'Complete at least 90% for the best experience.',
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textSecondary, height: 1.4),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ),
@@ -105,7 +121,8 @@ class _CompletionSheet extends StatelessWidget {
                 itemCount: pending.length,
                 separatorBuilder: (_, __) =>
                     const Divider(height: 1, indent: 56),
-                itemBuilder: (_, i) => _SheetItem(item: pending[i], context: context),
+                itemBuilder: (_, i) =>
+                    _SheetItem(item: pending[i], context: context),
               ),
             ),
 
@@ -119,12 +136,15 @@ class _CompletionSheet extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        minimumSize:
-                            const Size(double.infinity, AppSpacing.buttonHeight),
+                        minimumSize: const Size(
+                          double.infinity,
+                          AppSpacing.buttonHeight,
+                        ),
                         side: const BorderSide(color: AppColors.border),
                         foregroundColor: AppColors.textSecondary,
                         shape: const RoundedRectangleBorder(
-                            borderRadius: AppRadius.buttonRadius),
+                          borderRadius: AppRadius.buttonRadius,
+                        ),
                       ),
                       child: const Text('Later'),
                     ),
@@ -135,7 +155,11 @@ class _CompletionSheet extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        // Tap the first actionable pending item
+                        if (onCompleteNow != null) {
+                          onCompleteNow!();
+                          return;
+                        }
+
                         final first =
                             pending.where((i) => i.onTap != null).firstOrNull;
                         first?.onTap?.call();
@@ -143,11 +167,14 @@ class _CompletionSheet extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryMain,
                         foregroundColor: Colors.white,
-                        minimumSize:
-                            const Size(double.infinity, AppSpacing.buttonHeight),
+                        minimumSize: const Size(
+                          double.infinity,
+                          AppSpacing.buttonHeight,
+                        ),
                         elevation: 0,
                         shape: const RoundedRectangleBorder(
-                            borderRadius: AppRadius.buttonRadius),
+                          borderRadius: AppRadius.buttonRadius,
+                        ),
                       ),
                       child: const Text('Complete Now'),
                     ),
@@ -179,18 +206,26 @@ class _SheetItem extends StatelessWidget {
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md),
+          horizontal: AppSpacing.cardPadding,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
-            const Icon(Icons.radio_button_unchecked_rounded,
-                size: 20, color: AppColors.textMuted),
+            const Icon(
+              Icons.radio_button_unchecked_rounded,
+              size: 20,
+              color: AppColors.textMuted,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(item.label, style: AppTypography.body),
             ),
             if (item.onTap != null)
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: AppColors.textMuted),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
           ],
         ),
       ),

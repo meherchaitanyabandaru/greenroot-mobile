@@ -6,9 +6,8 @@ import '../utilities/logger.dart';
 class AuthInterceptor extends Interceptor {
   final Dio _dio;
 
-  // Set by SessionNotifier after ApiClient.init() so the interceptor can trigger
-  // an immediate logout when the server tells us the user's membership was revoked.
   void Function()? onMembershipRevoked;
+  void Function()? onAccountSuspended;
 
   AuthInterceptor(this._dio);
 
@@ -41,6 +40,9 @@ class AuthInterceptor extends Interceptor {
         AppLogger.w('403 not_member — membership revoked mid-session, clearing storage');
         await SecureStorageService.clearSession();
         onMembershipRevoked?.call();
+      } else if (code == 'account_suspended' || code == 'nursery_suspended') {
+        AppLogger.w('403 $code — account suspended mid-session');
+        onAccountSuspended?.call();
       }
       return handler.next(err);
     }

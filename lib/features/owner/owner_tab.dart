@@ -15,6 +15,7 @@ import '../../core/models/pagination.dart';
 import '../../core/providers/paged_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
@@ -114,12 +115,8 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
               elevation: 2,
             )
           : null,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        titleSpacing: AppSpacing.screenPadding,
-        title: const Text('My Nursery', style: AppTypography.h2),
+      appBar: GreenRootAppBar(
+        title: 'My Nursery',
         bottom: TabBar(
           controller: _tabs,
           labelStyle: AppTypography.h4,
