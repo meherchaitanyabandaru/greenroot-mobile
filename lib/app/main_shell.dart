@@ -11,8 +11,7 @@ import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/buying/buying_screen.dart';
 import '../features/drivers/driver_home_screen.dart';
 import '../features/drivers/driver_trips_screen.dart';
-import '../core/widgets/qr_scanner_screen.dart';
-import '../features/drivers/trip_preview_screen.dart';
+import '../core/widgets/universal_qr_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications.dart';
 import '../features/nurseries/nurseries.dart';
@@ -248,18 +247,13 @@ class _DriverBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // tabs[0]=Home  tabs[1]=Driver
-    Future<void> scanQr() async {
-      final code = await Navigator.of(context).push<String>(
+    void scanQr() {
+      Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+          builder: (_) => const UniversalQrScreen(),
           fullscreenDialog: true,
         ),
       );
-      if (code != null && code.isNotEmpty && context.mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => TripPreviewScreen(code: code)),
-        );
-      }
     }
 
     return Container(
@@ -361,9 +355,29 @@ class _GreenRootBottomNav extends ConsumerWidget {
     required this.onSelected,
   });
 
+  // Rounded-up midpoint: scan button sits after this many tabs on the left.
+  // 2 tabs → 1   [A][Scan][B]
+  // 3 tabs → 2   [A][B][Scan][C]
+  // 4 tabs → 2   [A][B][Scan][C][D]
+  int get _split => (tabs.length + 1) ~/ 2;
+
+  void _openScan(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const UniversalQrScreen(),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = ref.watch(notificationListProvider).unreadCount;
+
+    int unreadFor(int i) =>
+        tabs[i].label == 'Alerts' || tabs[i].label == 'Notifications'
+            ? unread
+            : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -383,15 +397,22 @@ class _GreenRootBottomNav extends ConsumerWidget {
           height: 72,
           child: Row(
             children: [
-              for (var i = 0; i < tabs.length; i++)
+              for (var i = 0; i < _split; i++)
                 Expanded(
                   child: _BottomNavItem(
                     tab: tabs[i],
                     selected: selectedIndex == i,
-                    unreadCount: tabs[i].label == 'Alerts' ||
-                            tabs[i].label == 'Notifications'
-                        ? unread
-                        : 0,
+                    unreadCount: unreadFor(i),
+                    onTap: () => onSelected(i),
+                  ),
+                ),
+              Expanded(child: _CenterScanButton(onTap: () => _openScan(context))),
+              for (var i = _split; i < tabs.length; i++)
+                Expanded(
+                  child: _BottomNavItem(
+                    tab: tabs[i],
+                    selected: selectedIndex == i,
+                    unreadCount: unreadFor(i),
                     onTap: () => onSelected(i),
                   ),
                 ),
