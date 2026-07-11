@@ -54,6 +54,7 @@ import '../features/quotations/quotation_verification_screen.dart';
 import '../features/quotations/quotations.dart';
 import '../features/plant_requests/request_create_screen.dart';
 import '../features/owner/owner_members_screen.dart';
+import '../features/owner/nursery_branding_screen.dart';
 import '../features/plant_requests/request_detail_screen.dart';
 import '../features/connections/connections_screen.dart';
 import '../features/sourcing/sourcing_screen.dart';
@@ -474,6 +475,14 @@ final appRouter = GoRouter(
       path: '/sourcing',
       redirect: _canSellGuard,
       builder: (_, __) => const SourcingScreen(),
+    ),
+
+    // ── Nursery Branding ─────────────────────────────────────────────────────
+    GoRoute(
+      path: '/nursery/branding',
+      redirect: _ownerGuard,
+      builder: (_, state) =>
+          NurseryBrandingScreen(nurseryId: state.extra as int),
     ),
 
     // ── Nursery Members Management ────────────────────────────────────────────

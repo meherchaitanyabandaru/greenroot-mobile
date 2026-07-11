@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/services/profile_completion_service.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
+import '../core/widgets/profile_completion_prompt.dart';
 import '../features/auth/data/models/capabilities_model.dart';
+import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/buying/buying_screen.dart';
-import '../features/dispatches/dispatches.dart';
 import '../features/drivers/driver_home_screen.dart';
 import '../features/drivers/driver_trips_screen.dart';
 import '../core/widgets/qr_scanner_screen.dart';
 import '../features/drivers/trip_preview_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications.dart';
+import '../features/nurseries/nurseries.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/selling/selling_screen.dart';
 import '../features/market/local_market_screen.dart';
@@ -21,11 +23,71 @@ import '../features/market/local_market_screen.dart';
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
 
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Show the completion prompt once per cold start after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowPrompt());
+  }
+
+  Future<void> _maybeShowPrompt() async {
+    if (!mounted) return;
+    final alreadyShown = ref.read(completionPromptShownProvider);
+    if (alreadyShown) return;
+
+    final session = ref.read(sessionProvider);
+    if (!session.isAuthenticated) return;
+
+    final role = session.capabilities.canSell
+        ? (session.capabilities.isNurseryOwner
+            ? AppRole.nurseryOwner
+            : AppRole.manager)
+        : session.capabilities.hasDriverProfile
+            ? AppRole.driver
+            : AppRole.buyer;
+
+    // For owners: try to load nursery data for branding + address checks.
+    Nursery? nursery;
+    final nurseryId = session.capabilities.primaryNurseryId;
+    if (nurseryId != null) {
+      try {
+        nursery = await ref
+            .read(nurseryRepositoryProvider)
+            .getNursery(nurseryId);
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+
+    final items = buildCompletionItems(
+      role: role,
+      user: session.user,
+      caps: session.capabilities,
+      nursery: nursery,
+      onEditProfile: () => context.push('/create-profile'),
+      onEditBranding: nurseryId != null
+          ? () => context.push('/nursery/branding', extra: nurseryId)
+          : null,
+      onRegisterDriver: () => context.push('/register/driver'),
+    );
+
+    final pct = completionPercent(items);
+    if (!needsCompletionPrompt(items)) return;
+
+    if (!mounted) return;
+    await showCompletionPrompt(context, ref, items: items, percent: pct);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final caps = session.capabilities;
     final tabs = _buildTabs(caps);

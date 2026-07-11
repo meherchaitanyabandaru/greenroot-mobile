@@ -100,6 +100,36 @@ import '../../core/widgets/qr_share_sheet.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
+class NurseryDriver {
+  final int id;
+  final int driverUserId;
+  final String? name;
+  final String? mobile;
+  final String connectionStatus;
+
+  const NurseryDriver({
+    required this.id,
+    required this.driverUserId,
+    this.name,
+    this.mobile,
+    required this.connectionStatus,
+  });
+
+  factory NurseryDriver.fromJson(Map<String, dynamic> json) {
+    return NurseryDriver(
+      id: (json['id'] as num).toInt(),
+      driverUserId: (json['driver_user_id'] as num?)?.toInt() ??
+          (json['user_id'] as num?)?.toInt() ??
+          0,
+      name: json['name'] as String? ?? json['full_name'] as String?,
+      mobile: json['mobile'] as String?,
+      connectionStatus: json['connection_status'] as String? ?? 'CONNECTED',
+    );
+  }
+
+  String get displayName => name?.trim().isNotEmpty == true ? name! : 'Driver';
+}
+
 class NurseryManager {
   final int id;
   final int userId;
@@ -267,6 +297,7 @@ class MembersState {
   final List<NurseryManager> managers;
   final List<NurseryInvite> invites;
   final List<NurseryCustomer> customers;
+  final List<NurseryDriver> drivers;
   final String? error;
 
   const MembersState({
@@ -274,6 +305,7 @@ class MembersState {
     this.managers = const [],
     this.invites = const [],
     this.customers = const [],
+    this.drivers = const [],
     this.error,
   });
 
@@ -282,6 +314,7 @@ class MembersState {
     List<NurseryManager>? managers,
     List<NurseryInvite>? invites,
     List<NurseryCustomer>? customers,
+    List<NurseryDriver>? drivers,
     String? error,
   }) =>
       MembersState(
@@ -289,6 +322,7 @@ class MembersState {
         managers: managers ?? this.managers,
         invites: invites ?? this.invites,
         customers: customers ?? this.customers,
+        drivers: drivers ?? this.drivers,
         error: error,
       );
 }
@@ -342,17 +376,59 @@ class MembersNotifier extends StateNotifier<MembersState> {
                 .toList();
           },
         ),
+        _client.get<List<NurseryDriver>>(
+          ApiConstants.nurseryDrivers(nurseryId),
+          fromJson: (json) {
+            final map = json as Map<String, dynamic>;
+            final list = map['drivers'] as List<dynamic>? ?? [];
+            return list
+                .cast<Map<String, dynamic>>()
+                .map(NurseryDriver.fromJson)
+                .toList();
+          },
+        ),
       ]);
       state = state.copyWith(
         isLoading: false,
         managers: results[0] as List<NurseryManager>,
         invites: results[1] as List<NurseryInvite>,
         customers: results[2] as List<NurseryCustomer>,
+        drivers: results[3] as List<NurseryDriver>,
       );
     } on AppError catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Failed to load members');
+    }
+  }
+
+  Future<bool> removeManager(int userId) async {
+    try {
+      await _client
+          .delete(ApiConstants.removeNurseryManager(nurseryId, userId));
+      await load();
+      return true;
+    } on AppError catch (e) {
+      state = state.copyWith(error: e.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(error: 'Failed to remove manager');
+      return false;
+    }
+  }
+
+  Future<bool> disconnectDriver(int driverUserId) async {
+    try {
+      await _client
+          .delete(ApiConstants.disconnectDriver(nurseryId, driverUserId));
+      await load();
+      return true;
+    } on AppError catch (e) {
+      state = state.copyWith(error: e.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(error: 'Failed to disconnect driver');
+      return false;
     }
   }
 
@@ -401,7 +477,7 @@ final membersProvider =
 class MembersScreen extends ConsumerStatefulWidget {
   final int nurseryId;
   final String nurseryName;
-  final int initialTab; // 0 = Managers, 1 = Customers
+  final int initialTab; // 0 = Managers, 1 = Drivers, 2 = Customers
 
   const MembersScreen({
     super.key,
@@ -422,9 +498,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
   void initState() {
     super.initState();
     _tabController =
-        TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+        TabController(length: 3, vsync: this, initialIndex: widget.initialTab);
     WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(membersProvider(widget.nurseryId).notifier).load());
+        (_) => ref.read(membersProvider(widget.nurseryId).notifier).load(),);
   }
 
   @override
@@ -471,13 +547,14 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
           unselectedLabelStyle: AppTypography.bodySmall,
           tabs: const [
             Tab(text: 'Managers'),
+            Tab(text: 'Drivers'),
             Tab(text: 'Customers'),
           ],
         ),
       ),
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain))
+              child: CircularProgressIndicator(color: AppColors.primaryMain),)
           : state.error != null &&
                   state.managers.isEmpty &&
                   state.invites.isEmpty
@@ -498,13 +575,17 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                           .where((i) => i.inviteType == 'MANAGER_INVITE')
                           .toList(),
                     ),
+                    _DriversTab(
+                      nurseryId: widget.nurseryId,
+                      drivers: state.drivers,
+                    ),
                     _CustomersTab(
                       nurseryId: widget.nurseryId,
                       nurseryName: widget.nurseryName,
                       customers: state.customers,
                       pendingInvites: state.invites
                           .where((i) =>
-                              i.inviteType == 'CUSTOMER_INVITE' && i.isPending)
+                              i.inviteType == 'CUSTOMER_INVITE' && i.isPending,)
                           .toList(),
                     ),
                   ],
@@ -536,15 +617,12 @@ class _ManagersTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
-          // Invite Manager button
           AppButton(
             label: 'Invite Manager / Gumastha',
             leadingIcon: Icons.person_add_rounded,
             onPressed: () => _showInviteSheet(context, ref, 'MANAGER_INVITE'),
           ),
           const SizedBox(height: AppSpacing.x2l),
-
-          // Active managers
           const Text('Active Managers', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
           if (managers.isEmpty)
@@ -554,19 +632,31 @@ class _ManagersTab extends ConsumerWidget {
               subtitle: 'Invite a manager to help run your nursery operations.',
             )
           else
-            _MemberList(
-              items: managers
-                  .map((m) => _MemberItem(
-                        name: m.name ?? 'Unknown',
-                        subtitle: m.mobile ?? m.email ?? 'No contact',
-                        badge: m.role,
-                        badgeColor: AppColors.primaryMain,
-                        icon: Icons.manage_accounts_rounded,
-                      ))
-                  .toList(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < managers.length; i++) ...[
+                    _RemovableMemberTile(
+                      icon: Icons.manage_accounts_rounded,
+                      name: managers[i].displayName,
+                      subtitle: managers[i].mobile ??
+                          managers[i].email ??
+                          'No contact',
+                      badge: managers[i].role,
+                      badgeColor: AppColors.primaryMain,
+                      onRemove: () => _confirmRemove(context, ref, managers[i]),
+                    ),
+                    if (i < managers.length - 1)
+                      const Divider(height: 1, color: AppColors.border),
+                  ],
+                ],
+              ),
             ),
-
-          // Pending invites
           if (invites.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.x2l),
             const Text('Pending Invites', style: AppTypography.h4),
@@ -580,7 +670,7 @@ class _ManagersTab extends ConsumerWidget {
   }
 
   void _showInviteSheet(
-      BuildContext context, WidgetRef ref, String inviteType) {
+      BuildContext context, WidgetRef ref, String inviteType,) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -593,6 +683,122 @@ class _ManagersTab extends ConsumerWidget {
             ref.read(membersProvider(nurseryId).notifier).load(),
       ),
     );
+  }
+
+  Future<void> _confirmRemove(
+      BuildContext context, WidgetRef ref, NurseryManager m,) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove Manager'),
+        content: Text(
+          'Remove ${m.displayName} from your nursery? They will lose access immediately and must be re-invited to rejoin.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await ref
+          .read(membersProvider(nurseryId).notifier)
+          .removeManager(m.userId);
+    }
+  }
+}
+
+// ── Drivers Tab ───────────────────────────────────────────────────────────────
+
+class _DriversTab extends ConsumerWidget {
+  final int nurseryId;
+  final List<NurseryDriver> drivers;
+
+  const _DriversTab({required this.nurseryId, required this.drivers});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () => ref.read(membersProvider(nurseryId).notifier).load(),
+      color: AppColors.primaryMain,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        children: [
+          const Text('Connected Drivers', style: AppTypography.h4),
+          const SizedBox(height: AppSpacing.sm),
+          if (drivers.isEmpty)
+            const EmptyState(
+              icon: Icons.local_shipping_outlined,
+              title: 'No drivers connected',
+              subtitle:
+                  'Send a driver invite from the Members screen to connect drivers.',
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < drivers.length; i++) ...[
+                    _RemovableMemberTile(
+                      icon: Icons.local_shipping_rounded,
+                      name: drivers[i].displayName,
+                      subtitle: drivers[i].mobile ??
+                          'Driver #${drivers[i].driverUserId}',
+                      badge: drivers[i].connectionStatus,
+                      badgeColor: AppColors.forest600,
+                      onRemove: () =>
+                          _confirmDisconnect(context, ref, drivers[i]),
+                    ),
+                    if (i < drivers.length - 1)
+                      const Divider(height: 1, color: AppColors.border),
+                  ],
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.x3l),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDisconnect(
+      BuildContext context, WidgetRef ref, NurseryDriver d,) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Disconnect Driver'),
+        content: Text(
+          'Disconnect ${d.displayName} from your nursery? They will lose access to your trips immediately.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await ref
+          .read(membersProvider(nurseryId).notifier)
+          .disconnectDriver(d.driverUserId);
+    }
   }
 }
 
@@ -638,17 +844,56 @@ class _CustomersTab extends ConsumerWidget {
                   'Invite customers to place orders through your nursery.',
             )
           else
-            _MemberList(
-              items: customers
-                  .map((c) => _MemberItem(
-                        name: c.firstName,
-                        subtitle:
-                            c.mobile.isNotEmpty ? c.mobile : (c.email ?? ''),
-                        badge: 'CUSTOMER',
-                        badgeColor: AppColors.forest600,
-                        icon: Icons.shopping_bag_rounded,
-                      ))
-                  .toList(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < customers.length; i++) ...[
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: 4,),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.forest100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.shopping_bag_rounded,
+                            color: AppColors.primaryMain, size: 20,),
+                      ),
+                      title: Text(customers[i].displayName,
+                          style: AppTypography.label,),
+                      subtitle: Text(
+                        customers[i].mobile.isNotEmpty
+                            ? customers[i].mobile
+                            : (customers[i].email ?? ''),
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3,),
+                        decoration: BoxDecoration(
+                          color: AppColors.forest600.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('CUSTOMER',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.forest600,),),
+                      ),
+                    ),
+                    if (i < customers.length - 1)
+                      const Divider(height: 1, color: AppColors.border),
+                  ],
+                ],
+              ),
             ),
 
           // Pending invites
@@ -775,7 +1020,7 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
           ? _SuccessView(
               invite: _created!,
               onCopy: _copyUUID,
-              onDone: () => Navigator.pop(context))
+              onDone: () => Navigator.pop(context),)
           : _FormView(
               formKey: _formKey,
               nameCtrl: _nameCtrl,
@@ -893,12 +1138,12 @@ class _FormView extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(Icons.error_outline_rounded,
-                      color: AppColors.errorText, size: 18),
+                      color: AppColors.errorText, size: 18,),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(error!,
                         style: AppTypography.body
-                            .copyWith(color: AppColors.errorText)),
+                            .copyWith(color: AppColors.errorText),),
                   ),
                 ],
               ),
@@ -963,7 +1208,7 @@ class _SuccessView extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.check_rounded,
-              color: AppColors.primaryMain, size: 36),
+              color: AppColors.primaryMain, size: 36,),
         ),
         const SizedBox(height: AppSpacing.lg),
         const Text('Invite Created!', style: AppTypography.h3),
@@ -1005,7 +1250,7 @@ class _SuccessView extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.copy_rounded,
-                        color: AppColors.primaryMain, size: 20),
+                        color: AppColors.primaryMain, size: 20,),
                     onPressed: onCopy,
                     tooltip: 'Copy UUID',
                   ),
@@ -1052,32 +1297,25 @@ class _SuccessView extends StatelessWidget {
 
 // ── Shared components ─────────────────────────────────────────────────────────
 
-class _MemberList extends StatelessWidget {
-  final List<_MemberItem> items;
+class _RemovableMemberTile extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final String subtitle;
+  final String badge;
+  final Color badgeColor;
+  final VoidCallback onRemove;
 
-  const _MemberList({required this.items});
+  const _RemovableMemberTile({
+    required this.icon,
+    required this.name,
+    required this.subtitle,
+    required this.badge,
+    required this.badgeColor,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < items.length; i++) ...[
-            _buildTile(items[i]),
-            if (i < items.length - 1)
-              const Divider(height: 1, color: AppColors.border),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTile(_MemberItem item) {
     return ListTile(
       contentPadding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
@@ -1088,45 +1326,38 @@ class _MemberList extends StatelessWidget {
           color: AppColors.forest100,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(item.icon, color: AppColors.primaryMain, size: 20),
+        child: Icon(icon, color: AppColors.primaryMain, size: 20),
       ),
-      title: Text(item.name, style: AppTypography.label),
-      subtitle: Text(item.subtitle,
+      title: Text(name, style: AppTypography.label),
+      subtitle: Text(subtitle,
           style:
-              AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: item.badgeColor.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          item.badge,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: item.badgeColor,
+              AppTypography.caption.copyWith(color: AppColors.textSecondary),),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              badge,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w700, color: badgeColor,),
+            ),
           ),
-        ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.person_remove_outlined,
+                color: AppColors.red600, size: 20,),
+            tooltip: 'Remove',
+            onPressed: onRemove,
+          ),
+        ],
       ),
     );
   }
-}
-
-class _MemberItem {
-  final String name;
-  final String subtitle;
-  final String badge;
-  final Color badgeColor;
-  final IconData icon;
-
-  const _MemberItem({
-    required this.name,
-    required this.subtitle,
-    required this.badge,
-    required this.badgeColor,
-    required this.icon,
-  });
 }
 
 class _InviteCard extends StatelessWidget {
@@ -1154,7 +1385,7 @@ class _InviteCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.mail_outline_rounded,
-                color: AppColors.amber600, size: 20),
+                color: AppColors.amber600, size: 20,),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -1207,7 +1438,7 @@ class _InviteCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.qr_code_rounded,
-                        size: 12, color: AppColors.primaryMain),
+                        size: 12, color: AppColors.primaryMain,),
                     SizedBox(width: 3),
                     Text(
                       'QR / Share',

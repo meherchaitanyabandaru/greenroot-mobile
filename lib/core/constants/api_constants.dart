@@ -153,6 +153,12 @@ abstract class ApiConstants {
       '$v1/nurseries/$nurseryId/managers/$userId';
   static String nurseryCustomers(int nurseryId) =>
       '$v1/nurseries/$nurseryId/customers';
+  static String nurseryDrivers(int nurseryId) =>
+      '$v1/nurseries/$nurseryId/drivers';
+  static String disconnectDriver(int nurseryId, int driverUserId) =>
+      '$v1/nurseries/$nurseryId/drivers/$driverUserId';
+  static const String leaveNursery = '$v1/nurseries/me/leave';
+  static const String deleteAccount = '$v1/users/me';
 
   // Storage
   static const String storagePresign = '$v1/storage/presign';

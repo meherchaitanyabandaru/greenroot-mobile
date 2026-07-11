@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/network/api_client.dart';
 import '../../data/models/capabilities_model.dart';
 import '../../data/models/user_models.dart';
 import '../../data/models/workspace_model.dart';
@@ -73,7 +74,25 @@ class SessionState {
 class SessionNotifier extends StateNotifier<SessionState> {
   final AuthRepository _repo;
 
-  SessionNotifier(this._repo) : super(const SessionState());
+  SessionNotifier(this._repo) : super(const SessionState()) {
+    // Wire the interceptor callback so a mid-session membership revocation (403
+    // not_member) immediately logs the user out instead of waiting for JWT expiry.
+    try {
+      ApiClient.authInterceptor.onMembershipRevoked = _onMembershipRevoked;
+    } catch (_) {
+      // ApiClient not yet initialized in tests — safe to ignore.
+    }
+  }
+
+  void _onMembershipRevoked() {
+    // Called from the Dio interceptor (possibly a non-UI thread). Schedule on
+    // the microtask queue so state updates happen on the correct isolate.
+    Future.microtask(() async {
+      if (state.status == SessionStatus.authenticated) {
+        await logout();
+      }
+    });
+  }
 
   Future<void> bootstrap() async {
     state = state.copyWith(status: SessionStatus.loading);

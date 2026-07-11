@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/api_constants.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/services/profile_completion_service.dart';
+import '../../../core/widgets/profile_completion_card.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
+import '../../nurseries/nurseries.dart' show Nursery, nurseryDetailProvider;
 
 class ProfileTabContent extends ConsumerWidget {
   final AppRole role;
@@ -14,11 +19,34 @@ class ProfileTabContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(sessionProvider).user;
+    final session = ref.watch(sessionProvider);
+    final user = session.user;
+    final caps = session.capabilities;
+
+    // For owners, try to load nursery branding to include in completion.
+    final nurseryAsync = caps.primaryNurseryId != null
+        ? ref.watch(nurseryDetailProvider(caps.primaryNurseryId!))
+        : const AsyncValue<Nursery>.loading();
+
+    final completionItems = buildCompletionItems(
+      role: role,
+      user: user,
+      caps: caps,
+      nursery: nurseryAsync.valueOrNull,
+      onEditProfile: () => context.push('/create-profile'),
+      onEditBranding: caps.primaryNurseryId != null
+          ? () => context.push('/nursery/branding', extra: caps.primaryNurseryId!)
+          : null,
+      onRegisterDriver: () => context.push('/register/driver'),
+    );
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        if (completionItems.isNotEmpty) ...[
+          ProfileCompletionCard(items: completionItems),
+          const SizedBox(height: AppSpacing.x2l),
+        ],
         const SizedBox(height: AppSpacing.lg),
         Center(
           child: Container(
@@ -101,6 +129,41 @@ class ProfileTabContent extends ConsumerWidget {
           onTap: () {},
         ),
         const SizedBox(height: AppSpacing.x2l),
+
+        // Leave Nursery — only for managers (not owners)
+        if (role == AppRole.manager) ...[
+          OutlinedButton.icon(
+            onPressed: () => _confirmLeaveNursery(context, ref),
+            icon: const Icon(Icons.exit_to_app_rounded, color: AppColors.amber600),
+            label: const Text(
+              'Leave Nursery',
+              style: TextStyle(color: AppColors.amber600),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.amber600),
+              minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
+        // Disconnect from Nursery — only for drivers who have a connected nursery
+        if (role == AppRole.driver && caps.driverNurseryId != null) ...[
+          OutlinedButton.icon(
+            onPressed: () => _confirmDisconnectFromNursery(context, ref, caps.driverNurseryId!),
+            icon: const Icon(Icons.link_off_rounded, color: AppColors.amber600),
+            label: const Text(
+              'Disconnect from Nursery',
+              style: TextStyle(color: AppColors.amber600),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.amber600),
+              minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
         OutlinedButton.icon(
           onPressed: () {
             ref.read(sessionProvider.notifier).logout().then((_) {
@@ -117,9 +180,136 @@ class ProfileTabContent extends ConsumerWidget {
             minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
+
+        // Delete Account — available for all roles
+        TextButton(
+          onPressed: () => _confirmDeleteAccount(context, ref),
+          child: const Text(
+            'Delete Account',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ),
         const SizedBox(height: AppSpacing.x2l),
       ],
     );
+  }
+
+  Future<void> _confirmLeaveNursery(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Leave Nursery'),
+        content: const Text(
+          'You will lose access to this nursery immediately. You can rejoin by accepting a new invite from the owner.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.amber600),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ApiClient.instance.delete(ApiConstants.leaveNursery);
+      await ref.read(sessionProvider.notifier).bootstrap();
+      if (context.mounted) context.go('/select-activity');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to leave nursery. Please try again.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDisconnectFromNursery(BuildContext context, WidgetRef ref, int nurseryId) async {
+    final session = ref.read(sessionProvider);
+    final userId = session.user?.id;
+    if (userId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Disconnect from Nursery'),
+        content: const Text(
+          'You will be disconnected from this nursery immediately. The nursery owner can reconnect you by sending a new invite.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.amber600),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ApiClient.instance.delete(ApiConstants.disconnectDriver(nurseryId, userId));
+      await ref.read(sessionProvider.notifier).bootstrap();
+      if (context.mounted) context.go('/select-activity');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to disconnect. Please try again.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Your profile and personal data will be permanently removed. Business records such as orders and quotations are kept for legal compliance.\n\nThis cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
+            child: const Text('Delete My Account'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ApiClient.instance.delete(ApiConstants.deleteAccount);
+      await ref.read(sessionProvider.notifier).logout();
+      if (context.mounted) {
+        context.go('/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted. Goodbye.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete account. Please try again.')),
+        );
+      }
+    }
   }
 }
 

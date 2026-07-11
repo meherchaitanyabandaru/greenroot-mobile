@@ -94,6 +94,9 @@ class Nursery {
   final String status;
   final List<NurseryAddress> addresses;
   final List<NurseryUserLink> users;
+  final String? logoUrl;
+  final String? brandIconKey;
+  final String? brandColor;
 
   const Nursery({
     required this.id,
@@ -106,6 +109,9 @@ class Nursery {
     required this.status,
     required this.addresses,
     required this.users,
+    this.logoUrl,
+    this.brandIconKey,
+    this.brandColor,
   });
 
   factory Nursery.fromJson(Map<String, dynamic> j) => Nursery(
@@ -125,6 +131,9 @@ class Nursery {
                 ?.map((e) => NurseryUserLink.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        logoUrl: j['logo_url'] as String?,
+        brandIconKey: j['brand_icon_key'] as String?,
+        brandColor: j['brand_color'] as String?,
       );
 
   NurseryAddress? get primaryAddress =>
@@ -194,6 +203,27 @@ class NurseryRepository {
         return (d['nurseries'] as List<dynamic>)
             .map((e) => Nursery.fromJson(e as Map<String, dynamic>))
             .toList();
+      },
+    );
+  }
+
+  Future<Nursery> updateBranding(
+    int nurseryId, {
+    String? logoUrl,
+    String? brandIconKey,
+    String? brandColor,
+  }) async {
+    final body = <String, dynamic>{
+      if (logoUrl != null) 'logo_url': logoUrl,
+      if (brandIconKey != null) 'brand_icon_key': brandIconKey,
+      if (brandColor != null) 'brand_color': brandColor,
+    };
+    return _client.put(
+      ApiConstants.nurseryById(nurseryId),
+      data: body,
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Nursery.fromJson(d['nursery'] as Map<String, dynamic>);
       },
     );
   }

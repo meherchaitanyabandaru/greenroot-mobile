@@ -11,9 +11,12 @@ import 'package:intl/intl.dart';
 import '../../app/main_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
+import 'nursery_setup_prompt.dart';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -60,12 +63,16 @@ class OwnerHome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nurseryId = ref.watch(sessionProvider).capabilities.primaryNurseryId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Quick actions
+        const NurserySetupPrompt(),
         _OwnerActionGrid(
           onConnections: () => context.push('/connections'),
+          onBranding: nurseryId != null
+              ? () => context.push('/nursery/branding', extra: nurseryId)
+              : null,
         ),
       ],
     );
@@ -391,9 +398,11 @@ class _QuotationAlertCard extends StatelessWidget {
 
 class _OwnerActionGrid extends StatelessWidget {
   final VoidCallback onConnections;
+  final VoidCallback? onBranding;
 
   const _OwnerActionGrid({
     required this.onConnections,
+    this.onBranding,
   });
 
   @override
@@ -408,6 +417,17 @@ class _OwnerActionGrid extends StatelessWidget {
             onTap: onConnections,
           ),
         ),
+        if (onBranding != null) ...[
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: _ActionCell(
+              icon: Icons.palette_outlined,
+              label: 'Branding',
+              color: AppColors.purple500,
+              onTap: onBranding!,
+            ),
+          ),
+        ],
       ],
     );
   }

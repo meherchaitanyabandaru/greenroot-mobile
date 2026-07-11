@@ -51,6 +51,7 @@ class Quotation {
   final int? nurseryId;
   final String? nurseryName;
   final String? nurseryPhone;
+  final String? nurseryBrandColor;
   final int? assignedManagerUserId;
   final String? assignedManagerName;
   final int? convertedOrderId;
@@ -79,6 +80,7 @@ class Quotation {
     this.nurseryId,
     this.nurseryName,
     this.nurseryPhone,
+    this.nurseryBrandColor,
     this.assignedManagerUserId,
     this.assignedManagerName,
     this.convertedOrderId,
@@ -114,6 +116,7 @@ class Quotation {
             j['nursery_id'] != null ? (j['nursery_id'] as num).toInt() : null,
         nurseryName: j['nursery_name'] as String?,
         nurseryPhone: j['nursery_phone'] as String?,
+        nurseryBrandColor: j['nursery_brand_color'] as String?,
         assignedManagerUserId: j['assigned_manager_user_id'] != null
             ? (j['assigned_manager_user_id'] as num).toInt()
             : null,

@@ -11,6 +11,7 @@ class UserCapabilities {
   final String? ownedNurseryName;
   final String? ownedNurseryStatus;
   final List<Workspace> managedNurseries;
+  final int? driverNurseryId;
 
   const UserCapabilities({
     this.isNurseryOwner = false,
@@ -22,6 +23,7 @@ class UserCapabilities {
     this.ownedNurseryName,
     this.ownedNurseryStatus,
     this.managedNurseries = const [],
+    this.driverNurseryId,
   });
 
   bool get canSell => isNurseryOwner || isManager;
@@ -53,6 +55,8 @@ class UserCapabilities {
     }
     final managed =
         roleWorkspaces.where((w) => w.type == 'MANAGER_NURSERY').toList();
+    final driverWorkspace =
+        roleWorkspaces.where((w) => w.type == 'DRIVER').firstOrNull;
     final status = ownedNurseryStatus?.toUpperCase();
     final isApproved = owned != null &&
         (status == null || status == 'APPROVED' || status == 'ACTIVE');
@@ -62,13 +66,14 @@ class UserCapabilities {
     return UserCapabilities(
       isNurseryOwner: isApproved,
       isManager: managed.isNotEmpty,
-      hasDriverProfile: roleWorkspaces.any((w) => w.type == 'DRIVER'),
+      hasDriverProfile: driverWorkspace != null,
       hasPendingNursery: isPending,
       hasRejectedNursery: isRejected,
       ownedNurseryId: owned?.nurseryId,
       ownedNurseryName: owned?.nurseryName,
       ownedNurseryStatus: status,
       managedNurseries: managed,
+      driverNurseryId: driverWorkspace?.nurseryId,
     );
   }
 

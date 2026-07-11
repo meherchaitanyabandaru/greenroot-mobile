@@ -6,6 +6,10 @@ import '../utilities/logger.dart';
 class AuthInterceptor extends Interceptor {
   final Dio _dio;
 
+  // Set by SessionNotifier after ApiClient.init() so the interceptor can trigger
+  // an immediate logout when the server tells us the user's membership was revoked.
+  void Function()? onMembershipRevoked;
+
   AuthInterceptor(this._dio);
 
   @override
@@ -25,7 +29,23 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode != 401) {
+    final statusCode = err.response?.statusCode;
+
+    // 403 with not_member means the server revoked the user's membership between
+    // JWT issuance and this request. Clear local storage and signal the session
+    // notifier so the router redirects to login without waiting for the JWT to expire.
+    if (statusCode == 403) {
+      final body = err.response?.data;
+      final code = (body is Map) ? (body['error']?['code'] as String?) : null;
+      if (code == 'not_member') {
+        AppLogger.w('403 not_member — membership revoked mid-session, clearing storage');
+        await SecureStorageService.clearSession();
+        onMembershipRevoked?.call();
+      }
+      return handler.next(err);
+    }
+
+    if (statusCode != 401) {
       return handler.next(err);
     }
 

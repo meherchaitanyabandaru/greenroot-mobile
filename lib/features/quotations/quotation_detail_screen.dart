@@ -16,6 +16,7 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/nursery_branding_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import 'quotations.dart';
@@ -653,24 +654,36 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
           _InfoCard(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (q.createdByName != null) ...[
-                Text(q.createdByName!,
-                    style: AppTypography.body
-                        .copyWith(fontWeight: FontWeight.w600)),
-              ],
-              if (q.nurseryName != null) ...[
-                const SizedBox(height: 2),
-                Row(children: [
-                  const Icon(Icons.storefront_outlined,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(q.nurseryName!,
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textSecondary)),
-                ]),
+              if (q.nurseryName != null || q.createdByName != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    NurseryBrandingBadge(
+                      brandColor: q.nurseryBrandColor,
+                      nurseryName: q.nurseryName ?? q.createdByName ?? 'N',
+                      size: 40,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (q.nurseryName != null)
+                            Text(q.nurseryName!,
+                                style: AppTypography.body
+                                    .copyWith(fontWeight: FontWeight.w600)),
+                          if (q.createdByName != null)
+                            Text(q.createdByName!,
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
               if (q.nurseryPhone != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.sm),
                 Row(children: [
                   const Icon(Icons.phone_outlined,
                       size: 14, color: AppColors.textMuted),

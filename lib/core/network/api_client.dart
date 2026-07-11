@@ -11,12 +11,16 @@ import 'network_exceptions.dart';
 class ApiClient {
   static late Dio _dio;
   static late ApiClient _instance;
+  static late AuthInterceptor _authInterceptor;
 
   final Dio dio;
 
   ApiClient._(this.dio);
 
   static ApiClient get instance => _instance;
+
+  /// Exposed so SessionNotifier can wire onMembershipRevoked after init().
+  static AuthInterceptor get authInterceptor => _authInterceptor;
 
   static void init() {
     _dio = Dio(
@@ -32,9 +36,11 @@ class ApiClient {
       ),
     );
 
+    _authInterceptor = AuthInterceptor(_dio);
+
     // Interceptors (order matters)
     _dio.interceptors.addAll([
-      AuthInterceptor(_dio),
+      _authInterceptor,
       if (AppConfig.enableLogging) _LoggingInterceptor(),
     ]);
 
