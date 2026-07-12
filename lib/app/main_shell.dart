@@ -167,7 +167,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
         screen: DriverTripsScreen(),
         icon: Icons.route_outlined,
         activeIcon: Icons.route_rounded,
-        label: 'Driver',
+        label: 'Trips',
       ),
     ];
   }

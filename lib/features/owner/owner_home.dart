@@ -404,7 +404,7 @@ class _OwnerActionGrid extends StatelessWidget {
         Expanded(
           child: _ActionCell(
             icon: Icons.people_outline_rounded,
-            label: 'Connections',
+            label: 'People',
             color: AppColors.amber600,
             onTap: onConnections,
           ),

@@ -96,7 +96,7 @@ class ConnectionsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Connections', style: AppTypography.h3),
+        title: const Text('My People', style: AppTypography.h3),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,

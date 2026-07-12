@@ -522,7 +522,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Members', style: AppTypography.h3),
+            const Text('My People', style: AppTypography.h3),
             Text(
               widget.nurseryName,
               style: AppTypography.caption
