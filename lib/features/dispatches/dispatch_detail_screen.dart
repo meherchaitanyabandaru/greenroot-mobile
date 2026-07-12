@@ -37,11 +37,13 @@ class DispatchDetailScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.textMuted),
+              const Icon(Icons.error_outline,
+                  size: 48, color: AppColors.textMuted),
               const SizedBox(height: AppSpacing.md),
               Text(err.toString(), style: AppTypography.body),
               TextButton(
-                onPressed: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
+                onPressed: () =>
+                    ref.invalidate(dispatchDetailProvider(dispatchId)),
                 child: const Text('Retry'),
               ),
             ],
@@ -50,7 +52,8 @@ class DispatchDetailScreen extends ConsumerWidget {
         data: (dispatch) => _DetailView(
           dispatch: dispatch,
           dispatchId: dispatchId,
-          isDriver: caps.hasDriverProfile && !caps.isNurseryOwner && !caps.isManager,
+          isDriver:
+              caps.hasDriverProfile && !caps.isNurseryOwner && !caps.isManager,
           isManager: caps.isManager,
         ),
       ),
@@ -80,7 +83,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _busy = true);
     try {
-      await ref.read(dispatchRepositoryProvider).updateStatus(widget.dispatchId, newStatus);
+      await ref
+          .read(dispatchRepositoryProvider)
+          .updateStatus(widget.dispatchId, newStatus);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       if (mounted) {
         final msg = switch (newStatus) {
@@ -103,7 +108,41 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red600),
+          SnackBar(
+              content: Text(e.toString()), backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _ackDeliveryUpdate() async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(dispatchRepositoryProvider)
+          .acknowledgeDeliveryUpdate(widget.dispatchId);
+      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Delivery update acknowledged.'),
+            backgroundColor: AppColors.primaryMain,
+          ),
+        );
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.toString()), backgroundColor: AppColors.red600),
         );
       }
     } finally {
@@ -119,6 +158,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       isManager: widget.isManager,
       busy: _busy,
       onUpdateStatus: _updateStatus,
+      onAckDeliveryUpdate: _ackDeliveryUpdate,
     );
   }
 }
@@ -130,6 +170,7 @@ class _DetailContent extends StatelessWidget {
   final bool isManager;
   final bool busy;
   final void Function(String) onUpdateStatus;
+  final VoidCallback onAckDeliveryUpdate;
 
   const _DetailContent({
     required this.dispatch,
@@ -137,6 +178,7 @@ class _DetailContent extends StatelessWidget {
     this.isManager = false,
     required this.busy,
     required this.onUpdateStatus,
+    required this.onAckDeliveryUpdate,
   });
 
   @override
@@ -234,7 +276,8 @@ class _DetailContent extends StatelessWidget {
                 _Row(
                     icon: Icons.calendar_today_outlined,
                     label: 'Dispatch Date',
-                    value: DateFormat('dd MMM yyyy').format(dispDate.toLocal())),
+                    value:
+                        DateFormat('dd MMM yyyy').format(dispDate.toLocal())),
               ],
               if (delDate != null) ...[
                 const Divider(height: 1, indent: 56),
@@ -309,6 +352,65 @@ class _DetailContent extends StatelessWidget {
 
         const SizedBox(height: AppSpacing.x2l),
 
+        if (isDriver && dispatch.requiresDriverAck) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: AppColors.amber100,
+              borderRadius: AppRadius.cardRadius,
+              border: Border.all(color: AppColors.amber600),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.amber700),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text('Delivery Address Updated',
+                          style: AppTypography.h4
+                              .copyWith(color: AppColors.amber700)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Please review the destination before continuing the trip.',
+                  style: AppTypography.body
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSpacing.buttonHeight,
+                  child: ElevatedButton.icon(
+                    onPressed: busy ? null : onAckDeliveryUpdate,
+                    icon: busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded),
+                    label: const Text('Acknowledge Update'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryMain,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.buttonRadius),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x2l),
+        ],
+
         // ── Driver: Trip Progress + Actions ───────────────────────────────────
         if (isDriver) ...[
           _DriverTripProgress(status: dispatch.status),
@@ -373,7 +475,8 @@ class _DetailContent extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_rounded, color: AppColors.primaryMain),
+                  Icon(Icons.check_circle_rounded,
+                      color: AppColors.primaryMain),
                   SizedBox(width: AppSpacing.sm),
                   Text('Trip Completed',
                       style: TextStyle(
@@ -440,7 +543,8 @@ class _DetailContent extends StatelessWidget {
         if (!isDriver) ...[
           // Owner-only: Mark Dispatched (PENDING or ACCEPTED → DISPATCHED)
           if (!isManager &&
-              (dispatch.status == 'PENDING' || dispatch.status == 'ACCEPTED')) ...[
+              (dispatch.status == 'PENDING' ||
+                  dispatch.status == 'ACCEPTED')) ...[
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -608,9 +712,7 @@ class _DriverTripProgress extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              step.done
-                                  ? Icons.check_rounded
-                                  : step.icon,
+                              step.done ? Icons.check_rounded : step.icon,
                               color: step.done || step.current
                                   ? Colors.white
                                   : AppColors.textMuted,
@@ -742,8 +844,7 @@ class _Row extends StatelessWidget {
   final String label;
   final String value;
 
-  const _Row(
-      {required this.icon, required this.label, required this.value});
+  const _Row({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

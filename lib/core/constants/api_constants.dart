@@ -46,6 +46,7 @@ abstract class ApiConstants {
   static String orderById(int id) => '$v1/orders/$id';
   static String orderItems(int id) => '$v1/orders/$id/items';
   static String orderStatus(int id) => '$v1/orders/$id/status';
+  static String orderDelivery(int id) => '$v1/orders/$id/delivery';
   static String orderStartLoading(int id) => '$v1/orders/$id/start-loading';
   static String orderCompleteLoading(int id) =>
       '$v1/orders/$id/complete-loading';
@@ -72,6 +73,8 @@ abstract class ApiConstants {
       '$v1/orders/$orderId/dispatches';
   static String dispatchById(int id) => '$v1/dispatches/$id';
   static String dispatchStatus(int id) => '$v1/dispatches/$id/status';
+  static String dispatchAckDeliveryUpdate(int id) =>
+      '$v1/dispatches/$id/ack-delivery-update';
   static String dispatchByCode(String code) => '$v1/dispatches/code/$code';
   static String acceptDispatch(int id) => '$v1/dispatches/$id/accept';
   static String dispatchTracking(int id) => '$v1/dispatches/$id/tracking';

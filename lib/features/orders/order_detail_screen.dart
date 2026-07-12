@@ -136,6 +136,14 @@ class _OrderDetailBody extends StatelessWidget {
         // ── Collapsible order info (buyer + seller) ───────────────────────
         _CollapsibleInfoCard(order: order),
 
+        if (order.deliverySnapshot != null || canManage) ...[
+          const SizedBox(height: AppSpacing.x2l),
+          _DeliverySnapshotCard(
+            order: order,
+            canManage: canManage,
+          ),
+        ],
+
         // ── Items ─────────────────────────────────────────────────────────
         if (order.items.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.x2l),
@@ -1296,6 +1304,345 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DeliverySnapshotCard extends ConsumerStatefulWidget {
+  final Order order;
+  final bool canManage;
+
+  const _DeliverySnapshotCard({
+    required this.order,
+    required this.canManage,
+  });
+
+  @override
+  ConsumerState<_DeliverySnapshotCard> createState() =>
+      _DeliverySnapshotCardState();
+}
+
+class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
+  bool _busy = false;
+
+  Future<void> _edit() async {
+    final result = await showModalBottomSheet<DeliverySnapshotRequest>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _DeliveryEditSheet(snapshot: widget.order.deliverySnapshot),
+    );
+    if (result == null) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(orderRepositoryProvider)
+          .updateDeliverySnapshot(widget.order.id, result);
+      ref.invalidate(orderDetailProvider(widget.order.id));
+      ref.invalidate(_orderDispatchesProvider(widget.order.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.emergencyUpdate
+                ? 'Emergency delivery update sent to driver.'
+                : 'Delivery address updated.'),
+            backgroundColor: AppColors.primaryMain,
+          ),
+        );
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.toString()), backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final delivery = widget.order.deliverySnapshot;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                    color: AppColors.forest100, shape: BoxShape.circle),
+                child: const Icon(Icons.location_on_outlined,
+                    size: 18, color: AppColors.primaryMain),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                  child: Text('Delivery Snapshot', style: AppTypography.h4)),
+              if (widget.canManage)
+                TextButton.icon(
+                  onPressed: _busy ? null : _edit,
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.edit_location_alt_outlined, size: 18),
+                  label: const Text('Edit'),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (delivery == null)
+            Text(
+              'No delivery address snapshot saved yet.',
+              style: AppTypography.body.copyWith(color: AppColors.textMuted),
+            )
+          else ...[
+            Text(delivery.displayAddress, style: AppTypography.body),
+            if (delivery.contactName?.isNotEmpty == true ||
+                delivery.contactMobile?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                [
+                  if (delivery.contactName?.isNotEmpty == true)
+                    delivery.contactName,
+                  if (delivery.contactMobile?.isNotEmpty == true)
+                    delivery.contactMobile,
+                ].whereType<String>().join(' | '),
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+            if (delivery.deliveryInstructions?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                delivery.deliveryInstructions!,
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+            if (delivery.requiresDriverAck) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.amber100,
+                  borderRadius: AppRadius.buttonRadius,
+                  border: Border.all(color: AppColors.amber600),
+                ),
+                child: Text(
+                  'Driver acknowledgement pending for latest delivery update.',
+                  style:
+                      AppTypography.caption.copyWith(color: AppColors.amber700),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DeliveryEditSheet extends StatefulWidget {
+  final DeliverySnapshot? snapshot;
+  const _DeliveryEditSheet({required this.snapshot});
+
+  @override
+  State<_DeliveryEditSheet> createState() => _DeliveryEditSheetState();
+}
+
+class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
+  late final TextEditingController _name;
+  late final TextEditingController _mobile;
+  late final TextEditingController _line1;
+  late final TextEditingController _line2;
+  late final TextEditingController _city;
+  late final TextEditingController _state;
+  late final TextEditingController _country;
+  late final TextEditingController _postal;
+  late final TextEditingController _landmark;
+  late final TextEditingController _instructions;
+  bool _emergency = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.snapshot;
+    _name = TextEditingController(text: s?.contactName ?? '');
+    _mobile = TextEditingController(text: s?.contactMobile ?? '');
+    _line1 = TextEditingController(text: s?.addressLine1 ?? '');
+    _line2 = TextEditingController(text: s?.addressLine2 ?? '');
+    _city = TextEditingController(text: s?.city ?? '');
+    _state = TextEditingController(text: s?.state ?? '');
+    _country = TextEditingController(text: s?.country ?? 'India');
+    _postal = TextEditingController(text: s?.postalCode ?? '');
+    _landmark = TextEditingController(text: s?.landmark ?? '');
+    _instructions = TextEditingController(text: s?.deliveryInstructions ?? '');
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _mobile.dispose();
+    _line1.dispose();
+    _line2.dispose();
+    _city.dispose();
+    _state.dispose();
+    _country.dispose();
+    _postal.dispose();
+    _landmark.dispose();
+    _instructions.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_line1.text.trim().isEmpty) return;
+    Navigator.pop(
+      context,
+      DeliverySnapshotRequest(
+        contactName: _name.text,
+        contactMobile: _mobile.text,
+        addressLine1: _line1.text,
+        addressLine2: _line2.text,
+        city: _city.text,
+        state: _state.text,
+        country: _country.text,
+        postalCode: _postal.text,
+        landmark: _landmark.text,
+        deliveryInstructions: _instructions.text,
+        emergencyUpdate: _emergency,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        left: AppSpacing.screenPadding,
+        right: AppSpacing.screenPadding,
+        top: AppSpacing.lg,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Edit Delivery Address', style: AppTypography.h3),
+            const SizedBox(height: AppSpacing.md),
+            _SheetField(controller: _name, label: 'Contact name'),
+            _SheetField(
+              controller: _mobile,
+              label: 'Contact mobile',
+              keyboardType: TextInputType.phone,
+            ),
+            _SheetField(controller: _line1, label: 'Address line 1'),
+            _SheetField(controller: _line2, label: 'Address line 2'),
+            Row(
+              children: [
+                Expanded(child: _SheetField(controller: _city, label: 'City')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                    child: _SheetField(controller: _state, label: 'State')),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(
+                    child: _SheetField(controller: _postal, label: 'PIN code')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                    child: _SheetField(controller: _country, label: 'Country')),
+              ],
+            ),
+            _SheetField(controller: _landmark, label: 'Landmark'),
+            _SheetField(
+              controller: _instructions,
+              label: 'Delivery instructions',
+              maxLines: 3,
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _emergency,
+              onChanged: (v) => setState(() => _emergency = v),
+              title: const Text('Emergency update'),
+              subtitle:
+                  const Text('Use after trip starts. Driver must acknowledge.'),
+              activeThumbColor: AppColors.primaryMain,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeight,
+              child: ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                ),
+                child: const Text('Save Delivery Address'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final TextInputType? keyboardType;
+  final int maxLines;
+
+  const _SheetField({
+    required this.controller,
+    required this.label,
+    this.keyboardType,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: AppRadius.inputRadius),
+        ),
       ),
     );
   }

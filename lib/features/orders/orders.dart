@@ -84,6 +84,123 @@ class NurseryManager {
   }
 }
 
+class DeliverySnapshot {
+  final String? contactName;
+  final String? contactMobile;
+  final String? alternateMobile;
+  final String? addressLine1;
+  final String? addressLine2;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? postalCode;
+  final String? landmark;
+  final String? deliveryInstructions;
+  final double? latitude;
+  final double? longitude;
+  final bool emergencyUpdated;
+  final bool requiresDriverAck;
+  final String? driverAcknowledgedAt;
+
+  const DeliverySnapshot({
+    this.contactName,
+    this.contactMobile,
+    this.alternateMobile,
+    this.addressLine1,
+    this.addressLine2,
+    this.city,
+    this.state,
+    this.country,
+    this.postalCode,
+    this.landmark,
+    this.deliveryInstructions,
+    this.latitude,
+    this.longitude,
+    this.emergencyUpdated = false,
+    this.requiresDriverAck = false,
+    this.driverAcknowledgedAt,
+  });
+
+  factory DeliverySnapshot.fromJson(Map<String, dynamic> j) => DeliverySnapshot(
+        contactName: j['contact_name'] as String?,
+        contactMobile: j['contact_mobile'] as String?,
+        alternateMobile: j['alternate_mobile'] as String?,
+        addressLine1: j['address_line1'] as String?,
+        addressLine2: j['address_line2'] as String?,
+        city: j['city'] as String?,
+        state: j['state'] as String?,
+        country: j['country'] as String?,
+        postalCode: j['postal_code'] as String?,
+        landmark: j['landmark'] as String?,
+        deliveryInstructions: j['delivery_instructions'] as String?,
+        latitude: (j['latitude'] as num?)?.toDouble(),
+        longitude: (j['longitude'] as num?)?.toDouble(),
+        emergencyUpdated: j['emergency_updated'] == true,
+        requiresDriverAck: j['requires_driver_ack'] == true,
+        driverAcknowledgedAt: j['driver_acknowledged_at'] as String?,
+      );
+
+  String get displayAddress {
+    final parts = [
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+    ].where((p) => p?.trim().isNotEmpty == true).map((p) => p!.trim());
+    return parts.isEmpty ? 'No delivery address saved' : parts.join(', ');
+  }
+}
+
+class DeliverySnapshotRequest {
+  final String? contactName;
+  final String? contactMobile;
+  final String? addressLine1;
+  final String? addressLine2;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? postalCode;
+  final String? landmark;
+  final String? deliveryInstructions;
+  final bool emergencyUpdate;
+
+  const DeliverySnapshotRequest({
+    this.contactName,
+    this.contactMobile,
+    this.addressLine1,
+    this.addressLine2,
+    this.city,
+    this.state,
+    this.country,
+    this.postalCode,
+    this.landmark,
+    this.deliveryInstructions,
+    this.emergencyUpdate = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (contactName?.trim().isNotEmpty == true)
+          'contact_name': contactName!.trim(),
+        if (contactMobile?.trim().isNotEmpty == true)
+          'contact_mobile': contactMobile!.trim(),
+        if (addressLine1?.trim().isNotEmpty == true)
+          'address_line1': addressLine1!.trim(),
+        if (addressLine2?.trim().isNotEmpty == true)
+          'address_line2': addressLine2!.trim(),
+        if (city?.trim().isNotEmpty == true) 'city': city!.trim(),
+        if (state?.trim().isNotEmpty == true) 'state': state!.trim(),
+        if (country?.trim().isNotEmpty == true) 'country': country!.trim(),
+        if (postalCode?.trim().isNotEmpty == true)
+          'postal_code': postalCode!.trim(),
+        if (landmark?.trim().isNotEmpty == true) 'landmark': landmark!.trim(),
+        if (deliveryInstructions?.trim().isNotEmpty == true)
+          'delivery_instructions': deliveryInstructions!.trim(),
+        if (emergencyUpdate) 'emergency_update': true,
+      };
+}
+
 class Order {
   final int id;
   final String orderCode;
@@ -106,6 +223,7 @@ class Order {
   final int? assignedManagerUserId;
   final String? assignedManagerName;
   final String? customerName;
+  final DeliverySnapshot? deliverySnapshot;
 
   const Order({
     required this.id,
@@ -127,6 +245,7 @@ class Order {
     this.assignedManagerUserId,
     this.assignedManagerName,
     this.customerName,
+    this.deliverySnapshot,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -152,6 +271,10 @@ class Order {
         assignedManagerUserId: (j['assigned_manager_user_id'] as num?)?.toInt(),
         assignedManagerName: j['assigned_manager_name'] as String?,
         customerName: j['customer_name'] as String?,
+        deliverySnapshot: j['delivery_snapshot'] is Map<String, dynamic>
+            ? DeliverySnapshot.fromJson(
+                j['delivery_snapshot'] as Map<String, dynamic>)
+            : null,
       );
 }
 
@@ -295,6 +418,18 @@ class OrderRepository {
     return _client.post(
       ApiConstants.orderAssignManager(orderId),
       data: {'manager_user_id': managerUserId},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Order.fromJson(d['order'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Order> updateDeliverySnapshot(
+      int orderId, DeliverySnapshotRequest request) async {
+    return _client.put(
+      ApiConstants.orderDelivery(orderId),
+      data: request.toJson(),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);

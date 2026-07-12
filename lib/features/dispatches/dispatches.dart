@@ -63,6 +63,7 @@ class Dispatch {
   final String? dispatchDate;
   final String? deliveryDate;
   final String? destinationAddress;
+  final bool requiresDriverAck;
   final String? notes;
   final String createdAt;
   final String? updatedAt;
@@ -83,6 +84,7 @@ class Dispatch {
     this.dispatchDate,
     this.deliveryDate,
     this.destinationAddress,
+    this.requiresDriverAck = false,
     this.notes,
     required this.createdAt,
     this.updatedAt,
@@ -102,10 +104,13 @@ class Dispatch {
         vehicleNumber: j['vehicle_number'] as String?,
         driverName: j['driver_name'] as String?,
         driverMobile: j['driver_mobile'] as String?,
-        driverUserId: j['driver_user_id'] != null ? (j['driver_user_id'] as num).toInt() : null,
+        driverUserId: j['driver_user_id'] != null
+            ? (j['driver_user_id'] as num).toInt()
+            : null,
         dispatchDate: j['dispatch_date'] as String?,
         deliveryDate: j['delivery_date'] as String?,
         destinationAddress: j['destination_address'] as String?,
+        requiresDriverAck: j['requires_driver_ack'] == true,
         notes: j['notes'] as String?,
         createdAt: j['created_at'] as String,
         updatedAt: j['updated_at'] as String?,
@@ -194,6 +199,16 @@ class DispatchRepository {
     return _client.put(
       ApiConstants.dispatchStatus(id),
       data: {'dispatch_status': status},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Dispatch> acknowledgeDeliveryUpdate(int id) async {
+    return _client.post(
+      ApiConstants.dispatchAckDeliveryUpdate(id),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
@@ -314,7 +329,8 @@ class DispatchListState {
   final String? statusFilter;
   final int? nurseryId;
 
-  const DispatchListState({required this.paged, this.statusFilter, this.nurseryId});
+  const DispatchListState(
+      {required this.paged, this.statusFilter, this.nurseryId});
 
   DispatchListState copyWith({
     PagedState<Dispatch>? paged,
@@ -367,7 +383,9 @@ class DispatchListNotifier extends StateNotifier<DispatchListState> {
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
       final (items, pagination) = await _repo.listDispatches(
-          page: _page + 1, status: state.statusFilter, nurseryId: state.nurseryId);
+          page: _page + 1,
+          status: state.statusFilter,
+          nurseryId: state.nurseryId);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
