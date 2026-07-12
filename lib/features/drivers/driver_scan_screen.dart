@@ -5,7 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/qr_scanner_screen.dart';
+import '../../core/widgets/universal_qr_screen.dart';
 
 /// Driver-only screen: scan a trip QR code or enter a trip code manually.
 class DriverScanScreen extends StatefulWidget {
@@ -26,16 +26,13 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
     super.dispose();
   }
 
-  Future<void> _openScanner() async {
-    final result = await Navigator.of(context).push<String>(
+  void _openScanner() {
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+        builder: (_) => const UniversalQrScreen(),
         fullscreenDialog: true,
       ),
     );
-    if (result != null && result.isNotEmpty && mounted) {
-      _navigateToPreview(result.trim());
-    }
   }
 
   void _submitCode() {

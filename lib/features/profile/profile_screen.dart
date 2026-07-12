@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/api_constants.dart';
@@ -8,11 +9,12 @@ import '../../core/services/profile_completion_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/app_button.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart' show nurseryDetailProvider;
+
+const _appVersion = '1.0.0';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -39,23 +41,17 @@ class ProfileScreen extends ConsumerWidget {
       onRegisterDriver: () => context.push('/register/driver'),
     );
     final completionPct = completionPercent(completionItems);
-    final pctLabel = '${(completionPct * 100).round()}%';
     final roleLabel = _roleLabel(caps);
+    final isComplete = completionPct >= 1.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      // No notification bell here — accessible via the Account section below.
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: const Text('Profile', style: AppTypography.h3),
-        actions: [
-          IconButton(
-            tooltip: 'Notifications',
-            onPressed: () => context.push('/notifications'),
-            icon: const Icon(Icons.notifications_none_rounded),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -64,16 +60,24 @@ class ProfileScreen extends ConsumerWidget {
             name: user?.name ?? 'GreenRoot User',
             roleLabel: roleLabel,
             userCode: user?.userCode,
+            mobile: user?.mobile,
+            onEdit: () => context.push('/edit-profile'),
           ),
           const SizedBox(height: AppSpacing.md),
-          _ProfileCompletionCard(
-            percent: completionPct,
-            pctLabel: pctLabel,
-            done: completionItems.where((i) => i.done).length,
-            total: completionItems.length,
-            onContinue: () => context.push('/complete-profile'),
-          ),
-          const SizedBox(height: AppSpacing.x2l),
+
+          // Profile completion — hidden once 100% done.
+          if (!isComplete) ...[
+            _ProfileCompletionCard(
+              percent: completionPct,
+              pctLabel: '${(completionPct * 100).round()}%',
+              done: completionItems.where((i) => i.done).length,
+              total: completionItems.length,
+              onContinue: () => context.push('/complete-profile'),
+            ),
+            const SizedBox(height: AppSpacing.x2l),
+          ] else
+            const SizedBox(height: AppSpacing.x2l),
+
           const Text('Account', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
           _SettingsSection(
@@ -106,12 +110,14 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: 'Nursery, billing, delivery',
                   onTap: () => context.push('/my-addresses'),
                 ),
-              _SettingsTile(
-                icon: Icons.workspace_premium_rounded,
-                label: 'Subscription',
-                subtitle: 'Plan, status, billing',
-                onTap: () => context.push('/subscription'),
-              ),
+              // Subscription is only relevant for nursery roles.
+              if (caps.canSell)
+                _SettingsTile(
+                  icon: Icons.workspace_premium_rounded,
+                  label: 'Subscription',
+                  subtitle: 'Plan, status, billing',
+                  onTap: () => context.push('/subscription'),
+                ),
               if (caps.isDriverOnly)
                 _SettingsTile(
                   icon: Icons.route_outlined,
@@ -155,11 +161,14 @@ class ProfileScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 label: 'About GreenRoot',
+                subtitle: 'Version $_appVersion',
                 onTap: () => context.push('/about-greenroot'),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.x2l),
+          const Text('Manage Account', style: AppTypography.h4),
+          const SizedBox(height: AppSpacing.sm),
           _SettingsSection(
             items: [
               if (caps.isManager)
@@ -186,7 +195,8 @@ class ProfileScreen extends ConsumerWidget {
                     context: context,
                     builder: (_) => AlertDialog(
                       title: const Text('Sign Out'),
-                      content: const Text('Are you sure you want to sign out?'),
+                      content:
+                          const Text('Are you sure you want to sign out?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -208,17 +218,14 @@ class ProfileScreen extends ConsumerWidget {
                   }
                 },
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: TextButton(
-              onPressed: () => _confirmDeleteAccount(context, ref),
-              child: const Text(
-                'Delete Account',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              _SettingsTile(
+                icon: Icons.delete_outline_rounded,
+                iconColor: AppColors.red600,
+                label: 'Delete Account',
+                subtitle: 'Permanently remove your data',
+                onTap: () => _confirmDeleteAccount(context, ref),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: AppSpacing.x3l),
         ],
@@ -255,7 +262,8 @@ class ProfileScreen extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to leave nursery. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to leave nursery. Please try again.')),
         );
       }
     }
@@ -294,13 +302,15 @@ class ProfileScreen extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to disconnect. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to disconnect. Please try again.')),
         );
       }
     }
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDeleteAccount(
+      BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -341,12 +351,15 @@ class ProfileScreen extends ConsumerWidget {
           ? 'Close or cancel your active orders, quotations, and nursery before deleting your account.'
           : 'Failed to delete account. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+        SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 5)),
       );
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete account. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to delete account. Please try again.')),
         );
       }
     }
@@ -368,16 +381,33 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
+// ── Profile header card ───────────────────────────────────────────────────────
+
 class _ProfileHeaderCard extends StatelessWidget {
   final String name;
   final String roleLabel;
   final String? userCode;
+  final String? mobile;
+  final VoidCallback onEdit;
 
   const _ProfileHeaderCard({
     required this.name,
     required this.roleLabel,
     required this.userCode,
+    required this.mobile,
+    required this.onEdit,
   });
+
+  void _copyCode(BuildContext context, String code) {
+    Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('User code copied'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +421,29 @@ class _ProfileHeaderCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const UserAvatar(size: 68, borderWidth: 0),
+          Stack(
+            children: [
+              const UserAvatar(size: 72, borderWidth: 0),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: onEdit,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryMain,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                    child: const Icon(Icons.edit_rounded,
+                        color: Colors.white, size: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(name, style: AppTypography.h3, textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.xs),
@@ -412,13 +464,33 @@ class _ProfileHeaderCard extends StatelessWidget {
               ),
             ),
           ),
-          if (userCode != null) ...[
+          if (mobile != null && mobile!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
-              userCode!,
-              style: AppTypography.caption.copyWith(
-                color: AppColors.primaryMain,
-                fontWeight: FontWeight.w800,
+              mobile!,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          if (userCode != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            GestureDetector(
+              onTap: () => _copyCode(context, userCode!),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    userCode!,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.primaryMain,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.copy_rounded,
+                      size: 12, color: AppColors.primaryMain),
+                ],
               ),
             ),
           ],
@@ -427,6 +499,8 @@ class _ProfileHeaderCard extends StatelessWidget {
     );
   }
 }
+
+// ── Profile completion card ───────────────────────────────────────────────────
 
 class _ProfileCompletionCard extends StatelessWidget {
   final double percent;
@@ -445,7 +519,6 @@ class _ProfileCompletionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final complete = percent >= 1;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -469,9 +542,7 @@ class _ProfileCompletionCard extends StatelessWidget {
                     Text('$pctLabel Complete', style: AppTypography.h3),
                     const SizedBox(height: 4),
                     Text(
-                      complete
-                          ? '$done of $total steps completed'
-                          : 'Keep going! You are almost there.',
+                      '$done of $total steps completed',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -482,10 +553,20 @@ class _ProfileCompletionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: complete ? 'View Profile' : 'Continue Profile',
-            onPressed: onContinue,
-            trailingIcon: Icons.arrow_forward_rounded,
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onContinue,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryMain,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text('Complete Profile',
+                  style: AppTypography.button
+                      .copyWith(color: Colors.white)),
+            ),
           ),
         ],
       ),
@@ -542,6 +623,8 @@ class _ProgressBadge extends StatelessWidget {
     );
   }
 }
+
+// ── Settings section + tile ───────────────────────────────────────────────────
 
 class _SettingsSection extends StatelessWidget {
   final List<_SettingsTile> items;

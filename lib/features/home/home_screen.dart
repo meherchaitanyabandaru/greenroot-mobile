@@ -285,10 +285,10 @@ class _OwnerPendingCardState extends ConsumerState<_OwnerPendingCard> {
             style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
             textAlign: TextAlign.center,
           ),
-          if (nurseryName != null) ...[
+          if (widget.nurseryName != null) ...[
             const SizedBox(height: 4),
             Text(
-              nurseryName!,
+              widget.nurseryName!,
               style: AppTypography.body.copyWith(
                 color: AppColors.primaryMain,
                 fontWeight: FontWeight.w700,

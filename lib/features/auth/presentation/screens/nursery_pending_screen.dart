@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,11 +20,21 @@ class NurseryPendingScreen extends ConsumerStatefulWidget {
 class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
   bool _refreshing = false;
   DateTime? _submittedAt;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadNurseryDetails();
+    _pollTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted && !_refreshing) _refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadNurseryDetails() async {

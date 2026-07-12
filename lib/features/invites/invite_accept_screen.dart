@@ -8,7 +8,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
-import '../../core/widgets/qr_scanner_screen.dart';
+import '../../core/widgets/universal_qr_screen.dart';
+import '../auth/presentation/providers/session_provider.dart';
 
 // ── Invite model ──────────────────────────────────────────────────────────────
 
@@ -152,7 +153,9 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     if (widget.preloadedUUID != null) {
       _uuidCtrl.text = widget.preloadedUUID!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _lookup();
+        // Only auto-lookup if authenticated; unauthenticated users see a login prompt.
+        final session = ref.read(sessionProvider);
+        if (session.isAuthenticated) _lookup();
       });
     }
   }
@@ -164,17 +167,13 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     ref.read(inviteProvider.notifier).fetchByUUID(uuid);
   }
 
-  Future<void> _scanQr() async {
-    final result = await Navigator.of(context).push<String>(
+  void _scanQr() {
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(title: 'Scan Invite QR'),
+        builder: (_) => const UniversalQrScreen(),
         fullscreenDialog: true,
       ),
     );
-    if (result != null && result.isNotEmpty && mounted) {
-      _uuidCtrl.text = result;
-      _lookup();
-    }
   }
 
   void _accept() {
@@ -210,6 +209,59 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
         }
       }
     });
+
+    final isAuthenticated = ref.watch(sessionProvider).isAuthenticated;
+
+    // Unauthenticated deep link: show login prompt instead of invite form.
+    if (!isAuthenticated && widget.preloadedUUID != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Accept Invite'),
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: AppColors.forest100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mail_outline_rounded, size: 40, color: AppColors.primaryMain),
+              ),
+              const SizedBox(height: AppSpacing.x2l),
+              const Text('You\'ve Been Invited!', style: AppTypography.h3, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Login or create an account to accept this invite and get started.',
+                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.x3l),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.go('/login'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Login to Accept', style: AppTypography.button.copyWith(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
