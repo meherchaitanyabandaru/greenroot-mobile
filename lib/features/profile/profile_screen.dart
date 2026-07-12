@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -227,6 +228,32 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: AppSpacing.xl),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Text(
+                'DEV TOOLS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF7C3AED),
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            _SettingsSection(
+              items: [
+                _SettingsTile(
+                  icon: Icons.qr_code_rounded,
+                  iconColor: const Color(0xFF7C3AED),
+                  label: 'QR Test Gallery',
+                  subtitle: 'Scan all QR scenarios in one place',
+                  onTap: () => context.push('/dev/qr-gallery'),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),

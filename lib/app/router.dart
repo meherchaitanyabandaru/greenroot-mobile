@@ -67,6 +67,8 @@ import '../features/tracking/dispatch_tracking_screen.dart';
 import '../features/buyer/buyer_delivery_tracking_screen.dart';
 import '../features/buyer/buyer_nursery_connections_screen.dart';
 import 'main_shell.dart';
+import '../features/dev/qr_test_gallery_screen.dart';
+import 'package:flutter/foundation.dart';
 
 UserCapabilities _capabilities(BuildContext context) {
   final container = ProviderScope.containerOf(context, listen: false);
@@ -586,6 +588,11 @@ final appRouter = GoRouter(
         dispatchId: int.parse(state.pathParameters['id']!),
       ),
     ),
+    if (kDebugMode)
+      GoRoute(
+        path: '/dev/qr-gallery',
+        builder: (_, __) => const QrTestGalleryScreen(),
+      ),
   ],
   errorBuilder: (context, state) => Scaffold(
     body: Center(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,7 +95,12 @@ class _QuotationVerificationScreenState
     try {
       final data = await ApiClient.instance.get<Map<String, dynamic>>(
         ApiConstants.publicVerify(widget.token),
-        fromJson: (j) => j as Map<String, dynamic>,
+        fromJson: (j) {
+          if (j is Map<String, dynamic>) return j;
+          if (j is Map) return j.cast<String, dynamic>();
+          if (j is String) return jsonDecode(j) as Map<String, dynamic>;
+          throw FormatException('unexpected verify response type: ${j.runtimeType}');
+        },
       );
       if (mounted) {
         setState(() {
