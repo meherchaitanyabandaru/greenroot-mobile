@@ -79,6 +79,7 @@ import '../../app/main_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/universal_qr_screen.dart';
 import '../orders/orders.dart';
 
 /// Fetches buyer home data: orders scoped to the current buyer.
@@ -539,8 +540,26 @@ class _EmptyBuyerState extends StatelessWidget {
             label: const Text('Explore Nurseries'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
+              minimumSize: const Size(double.infinity, 48),
               padding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const UniversalQrScreen(),
+                fullscreenDialog: true,
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner_rounded,
+                size: 18, color: AppColors.primaryMain),
+            label: const Text('Have an invite? Scan QR',
+                style: TextStyle(color: AppColors.primaryMain)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primaryMain),
+              minimumSize: const Size(double.infinity, 48),
             ),
           ),
         ],

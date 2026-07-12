@@ -168,14 +168,25 @@ class _QrShareSheetState extends State<QrShareSheet> {
   final _qrKey = GlobalKey();
   bool _sharing = false;
 
+  // Builds a full web invite link from the current app base URL.
+  // On mobile returns just the code (native deep link would need separate config).
+  String _inviteLink() {
+    if (!kIsWeb || widget.qrType == QrCodeType.tripQr) return widget.code;
+    final origin = Uri.base.origin;
+    return '$origin/#/invite/${widget.code}';
+  }
+
+  bool get _isInvite => widget.qrType != QrCodeType.tripQr;
+
   Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: widget.code));
+    final text = _inviteLink();
+    await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard'),
+        SnackBar(
+          content: Text(kIsWeb && _isInvite ? 'Invite link copied!' : 'Copied to clipboard'),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -187,12 +198,16 @@ class _QrShareSheetState extends State<QrShareSheet> {
 
     try {
       if (kIsWeb) {
-        // Web: file sharing not available — copy invite code to clipboard
-        await Clipboard.setData(ClipboardData(text: widget.code));
+        // Web: file sharing not available — copy invite link to clipboard
+        final link = _inviteLink();
+        final msg = _isInvite
+            ? '${widget.qrType.shareText}\n\nOpen this link: $link'
+            : widget.code;
+        await Clipboard.setData(ClipboardData(text: msg));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invite code copied — share it with your contact'),
+            SnackBar(
+              content: Text(_isInvite ? 'Invite link copied — share it via WhatsApp or SMS' : 'Code copied'),
               backgroundColor: AppColors.primaryMain,
               behavior: SnackBarBehavior.floating,
             ),
@@ -496,8 +511,8 @@ class _QrShareSheetState extends State<QrShareSheet> {
                 children: [
                   Expanded(
                     child: _ActionButton(
-                      icon: Icons.copy_rounded,
-                      label: 'Copy ID',
+                      icon: kIsWeb && _isInvite ? Icons.link_rounded : Icons.copy_rounded,
+                      label: kIsWeb && _isInvite ? 'Copy Link' : 'Copy ID',
                       color: const Color(0xFF475569),
                       onTap: _copy,
                     ),
@@ -507,10 +522,10 @@ class _QrShareSheetState extends State<QrShareSheet> {
                     child: _ActionButton(
                       icon: _sharing
                           ? Icons.hourglass_top_rounded
-                          : (kIsWeb ? Icons.copy_all_rounded : Icons.image_rounded),
+                          : (kIsWeb ? Icons.share_rounded : Icons.image_rounded),
                       label: _sharing
                           ? 'Preparing...'
-                          : (kIsWeb ? 'Copy Code' : 'Share Image'),
+                          : (kIsWeb ? 'Share Link' : 'Share Image'),
                       color: accent,
                       filled: true,
                       onTap: _sharing ? () {} : _shareImage,
