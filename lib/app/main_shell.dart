@@ -317,23 +317,31 @@ class _CenterScanButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: AppColors.primaryMain,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primaryMain.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: const Icon(
               Icons.qr_code_scanner_rounded,
               color: Colors.white,
-              size: 26,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Scan',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.primaryMain,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
