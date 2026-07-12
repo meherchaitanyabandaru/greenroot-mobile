@@ -109,7 +109,11 @@ class HomeScreen extends ConsumerWidget {
             _GreetingBlock(caps: caps, firstName: session.user?.firstName),
               const SizedBox(height: 20),
               const TrialExpiryBanner(),
-              if (caps.isDriverOnly)
+              if (caps.hasPendingNursery)
+                _OwnerPendingCard(nurseryName: caps.ownedNurseryName)
+              else if (caps.hasRejectedNursery)
+                const _OwnerRejectedCard()
+              else if (caps.isDriverOnly)
                 const _DriverHome()
               else if (caps.isNurseryOwner)
                 const OwnerHome()
@@ -217,6 +221,139 @@ class _DriverHome extends ConsumerWidget {
   }
 }
 
+// ── Owner pending approval card ────────────────────────────────────────────────
+
+class _OwnerPendingCard extends StatelessWidget {
+  final String? nurseryName;
+  const _OwnerPendingCard({this.nurseryName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryMain.withAlpha(51)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primaryMain.withAlpha(26),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.hourglass_top_rounded,
+              size: 36,
+              color: AppColors.primaryMain,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Application Under Review',
+            style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
+            textAlign: TextAlign.center,
+          ),
+          if (nurseryName != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              nurseryName!,
+              style: AppTypography.body.copyWith(
+                color: AppColors.primaryMain,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            'Our team is reviewing your nursery application. '
+            'Approvals typically complete within 24–48 hours.',
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pull down to refresh and check your status.',
+            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Owner rejected card ────────────────────────────────────────────────────────
+
+class _OwnerRejectedCard extends StatelessWidget {
+  const _OwnerRejectedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.red500.withAlpha(51)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.red500.withAlpha(26),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.cancel_outlined,
+              size: 36,
+              color: AppColors.red500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Application Not Approved',
+            style: AppTypography.h3.copyWith(color: AppColors.red500),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your nursery application was not approved at this time. '
+            'Please contact our support team to understand next steps.',
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.support_agent_rounded,
+                color: AppColors.red500, size: 18),
+            label: const Text('Contact Support',
+                style: TextStyle(color: AppColors.red500)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.red500),
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Greeting block ─────────────────────────────────────────────────────────────
 
 class _GreetingBlock extends StatelessWidget {
   final dynamic caps;

@@ -7,7 +7,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
-import '../../core/widgets/qr_scanner_screen.dart';
+import '../../core/widgets/universal_qr_screen.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
@@ -118,9 +118,11 @@ class _DashboardBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trip = data.tripState.trip;
-    final firstName = ref.watch(sessionProvider).user?.name?.split(' ').first ?? 'Driver';
+    final session = ref.watch(sessionProvider);
+    final firstName = session.user?.name?.split(' ').first ?? 'Driver';
     final hour = DateTime.now().hour;
     final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final isConnected = session.capabilities.driverNurseryId != null;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -137,7 +139,9 @@ class _DashboardBody extends ConsumerWidget {
         ),
         Text(firstName, style: AppTypography.h2),
         const SizedBox(height: AppSpacing.md),
-        ...trip == null
+        if (!isConnected)
+          const _DriverNotConnectedCard()
+        else ...trip == null
           ? [
               const _NoTripCard(),
               const SizedBox(height: AppSpacing.md),
@@ -317,16 +321,13 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
     }
   }
 
-  Future<void> _scanQr() async {
-    final code = await Navigator.of(context).push<String>(
+  void _scanQr() {
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(title: 'Scan Trip QR'),
+        builder: (_) => const UniversalQrScreen(),
         fullscreenDialog: true,
       ),
     );
-    if (code != null && code.isNotEmpty && mounted) {
-      context.push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
-    }
   }
 
   @override
@@ -1126,6 +1127,81 @@ class _HowItWorksCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Driver not connected to nursery ───────────────────────────────────────────
+
+class _DriverNotConnectedCard extends StatelessWidget {
+  const _DriverNotConnectedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryMain.withAlpha(51)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primaryMain.withAlpha(26),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.local_shipping_outlined,
+              size: 36,
+              color: AppColors.primaryMain,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "You're registered as a Driver!",
+            style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'To start receiving trips, a nursery owner needs to connect you. '
+            'Ask them to send an invite, or scan their QR code below.',
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const UniversalQrScreen(),
+                fullscreenDialog: true,
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+            label: const Text('Scan Nursery Invite QR'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryMain,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Pull down to refresh once connected.',
+            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
