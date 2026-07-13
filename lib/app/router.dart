@@ -66,6 +66,7 @@ import '../features/sourcing/sourcing_screen.dart';
 import '../features/tracking/dispatch_tracking_screen.dart';
 import '../features/buyer/buyer_delivery_tracking_screen.dart';
 import '../features/buyer/buyer_nursery_connections_screen.dart';
+import '../features/ratings/rating_screen.dart';
 import 'main_shell.dart';
 import '../features/dev/qr_test_gallery_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -586,6 +587,25 @@ final appRouter = GoRouter(
       path: '/dispatches/:id/buyer-track',
       builder: (_, state) => BuyerDeliveryTrackingScreen(
         dispatchId: int.parse(state.pathParameters['id']!),
+      ),
+    ),
+    // Ratings
+    GoRoute(
+      path: '/ratings/app',
+      builder: (_, __) => const AppRatingScreen(),
+    ),
+    GoRoute(
+      path: '/ratings/order/:id',
+      builder: (_, state) => OrderRatingScreen(
+        orderId: int.parse(state.pathParameters['id']!),
+        orderCode: state.uri.queryParameters['code'],
+      ),
+    ),
+    GoRoute(
+      path: '/ratings/trip/:id',
+      builder: (_, state) => TripRatingScreen(
+        dispatchId: int.parse(state.pathParameters['id']!),
+        dispatchCode: state.uri.queryParameters['code'],
       ),
     ),
     if (kDebugMode)

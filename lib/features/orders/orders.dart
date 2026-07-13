@@ -403,6 +403,33 @@ class OrderRepository {
     );
   }
 
+  Future<OrderItem> createOrderItem(int orderId, OrderItemRequest req) async {
+    return _client.post(
+      ApiConstants.orderItems(orderId),
+      data: req.toJson(),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return OrderItem.fromJson(d['item'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<OrderItem> updateOrderItem(
+      int orderId, int itemId, OrderItemRequest req) async {
+    return _client.put(
+      ApiConstants.orderItemById(orderId, itemId),
+      data: req.toJson(),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return OrderItem.fromJson(d['item'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<void> deleteOrderItem(int orderId, int itemId) async {
+    await _client.delete<dynamic>(ApiConstants.orderItemById(orderId, itemId));
+  }
+
   Future<Order> cancelOrder(int id, {String? reason}) async {
     return _client.post(
       ApiConstants.orderCancel(id),

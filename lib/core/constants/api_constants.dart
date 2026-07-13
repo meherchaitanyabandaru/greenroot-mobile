@@ -55,6 +55,8 @@ abstract class ApiConstants {
       '$v1/orders/$orderId/items/$itemId/loaded-quantity';
   static String orderAssignManager(int id) => '$v1/orders/$id/assign-manager';
   static String orderConfirm(int id) => '$v1/orders/$id/confirm';
+  static String orderItemById(int orderId, int itemId) =>
+      '$v1/orders/$orderId/items/$itemId';
 
   // Payments
   static const String payments = '$v1/payments';
@@ -197,4 +199,9 @@ abstract class ApiConstants {
       '$v1/sourcing-posts/$id/responses';
   static String sourcingPostResponse(int id, int responseId) =>
       '$v1/sourcing-posts/$id/responses/$responseId';
+
+  // Ratings
+  static const String ratingsApp = '$v1/ratings/app';
+  static String ratingsOrder(int orderId) => '$v1/ratings/order/$orderId';
+  static String ratingsTrip(int dispatchId) => '$v1/ratings/trip/$dispatchId';
 }

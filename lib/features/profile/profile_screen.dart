@@ -145,6 +145,12 @@ class ProfileScreen extends ConsumerWidget {
           _SettingsSection(
             items: [
               _SettingsTile(
+                icon: Icons.star_rounded,
+                label: 'Rate the App',
+                subtitle: 'Share your feedback with us',
+                onTap: () => context.push('/ratings/app'),
+              ),
+              _SettingsTile(
                 icon: Icons.help_outline_rounded,
                 label: 'Help & Support',
                 onTap: () => context.push('/help-support'),
