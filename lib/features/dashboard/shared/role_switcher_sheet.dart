@@ -131,7 +131,6 @@ class _RoleTile extends StatelessWidget {
         AppRole.manager      => Icons.manage_accounts_rounded,
         AppRole.driver       => Icons.local_shipping_rounded,
         AppRole.buyer        => Icons.shopping_bag_rounded,
-        AppRole.transportProvider => Icons.directions_bus_rounded,
         AppRole.admin        => Icons.admin_panel_settings_rounded,
         AppRole.superAdmin   => Icons.security_rounded,
       };

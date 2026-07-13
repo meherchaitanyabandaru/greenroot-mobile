@@ -4,8 +4,7 @@ enum AppRole {
   nurseryOwner('NURSERY_OWNER'),
   manager('MANAGER'),
   driver('DRIVER'),
-  buyer('BUYER'),
-  transportProvider('TRANSPORT_PROVIDER');
+  buyer('BUYER');
 
   final String value;
   const AppRole(this.value);
@@ -24,14 +23,12 @@ enum AppRole {
         AppRole.manager => 'Manager / Gumastha',
         AppRole.driver => 'Driver',
         AppRole.buyer => 'Customer',
-        AppRole.transportProvider => 'Transport Provider',
       };
 
-  // V1: Admin, Super Admin, and Transport Provider are web-only.
+  // V1: Admin and Super Admin are web-only.
   bool get isMobileRole => switch (this) {
         AppRole.admin => false,
         AppRole.superAdmin => false,
-        AppRole.transportProvider => false,
         _ => true,
       };
 }

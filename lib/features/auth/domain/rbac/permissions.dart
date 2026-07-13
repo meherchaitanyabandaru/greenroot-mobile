@@ -109,12 +109,4 @@ const Map<AppRole, Set<AppPermission>> rolePermissions = {
     AppPermission.profileRead,
     AppPermission.profileWrite,
   },
-  AppRole.transportProvider: {
-    AppPermission.dispatchRead,
-    AppPermission.trackingRead,
-    AppPermission.trackingUpdate,
-    AppPermission.notificationsRead,
-    AppPermission.profileRead,
-    AppPermission.profileWrite,
-  },
 };
