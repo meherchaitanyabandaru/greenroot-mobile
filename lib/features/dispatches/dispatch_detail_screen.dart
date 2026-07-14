@@ -619,23 +619,44 @@ class _DetailContent extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push(
-                '/dispatches/${dispatch.id}/track',
+          if (dispatch.status != 'DELIVERED' && dispatch.status != 'CANCELLED')
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () => context.push(
+                  '/dispatches/${dispatch.id}/track',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                ),
+                icon: const Icon(Icons.location_on_rounded, size: 20),
+                label: Text('Track Shipment', style: AppTypography.label),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.blue600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
-              ),
-              icon: const Icon(Icons.location_on_rounded, size: 20),
-              label: Text('Track Shipment', style: AppTypography.label),
             ),
-          ),
+          if (!isManager && dispatch.status == 'DELIVERED') ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(
+                  '/ratings/trip/${dispatch.id}?code=${dispatch.dispatchCode}',
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primaryMain),
+                  foregroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                ),
+                icon: const Icon(Icons.star_outline_rounded, size: 20),
+                label: Text('Rate This Delivery', style: AppTypography.label),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.x2l),
         ], // end if (!isDriver)
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
@@ -265,6 +266,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
   final _searchCtrl = TextEditingController();
   late final FocusNode _focus;
   late final ScrollController _scroll;
+  bool _nearbyLoading = false;
 
   @override
   void initState() {
@@ -292,6 +294,47 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
     _focus.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleNearby() async {
+    final browse = ref.read(browseAdsProvider);
+    if (browse.nearLat != null) {
+      ref.read(browseAdsProvider.notifier).setNearby();
+      return;
+    }
+    setState(() => _nearbyLoading = true);
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission required for nearby search')),
+          );
+        }
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+      );
+      if (mounted) {
+        ref.read(browseAdsProvider.notifier).setNearby(
+          lat: pos.latitude,
+          lon: pos.longitude,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not get your location')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _nearbyLoading = false);
+    }
   }
 
   void _showFilterSheet() {
@@ -508,6 +551,24 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
+          _nearbyLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _mkGreen),
+                  ),
+                )
+              : IconButton(
+                  tooltip: browse.nearLat != null ? 'Near Me (on)' : 'Near Me',
+                  onPressed: _toggleNearby,
+                  icon: Icon(
+                    browse.nearLat != null
+                        ? Icons.location_on_rounded
+                        : Icons.location_off_outlined,
+                    color: browse.nearLat != null ? _mkGreen : _mkTextSecondary,
+                  ),
+                ),
           IconButton(
             tooltip: 'Filters',
             onPressed: _showFilterSheet,
@@ -589,6 +650,11 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
         children: [
+          if (browse.nearLat != null)
+            _activeChip(
+              '📍 Near Me${browse.radiusKm != null ? ' (${browse.radiusKm!.toStringAsFixed(0)} km)' : ''}',
+              onRemove: () => notifier.setNearby(),
+            ),
           if (browse.category != null)
             _activeChip(browse.category!, onRemove: () => notifier.setFilters(
               category: null,
