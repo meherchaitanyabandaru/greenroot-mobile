@@ -415,10 +415,28 @@ class _DetailContent extends StatelessWidget {
         if (isDriver) ...[
           _DriverTripProgress(status: dispatch.status),
           const SizedBox(height: AppSpacing.md),
-          // Driver can start trip from PENDING, ACCEPTED, or DISPATCHED
-          if (dispatch.status == 'PENDING' ||
-              dispatch.status == 'ACCEPTED' ||
-              dispatch.status == 'DISPATCHED')
+          if (dispatch.status == 'PENDING' || dispatch.status == 'ACCEPTED')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.amber100,
+                borderRadius: AppRadius.cardRadius,
+                border: Border.all(
+                  color: AppColors.amber600.withValues(alpha: 0.30),
+                ),
+              ),
+              child: Text(
+                dispatch.status == 'PENDING'
+                    ? 'Accept this trip first. The nursery will dispatch it after loading is ready.'
+                    : 'Waiting for nursery dispatch confirmation. You can start the trip after it is marked dispatched.',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.amber700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          if (dispatch.status == 'DISPATCHED')
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,

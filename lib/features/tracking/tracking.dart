@@ -99,6 +99,7 @@ class TrackingRepository {
   Future<void> postLiveLocation({
     required double latitude,
     required double longitude,
+    required int dispatchId,
     int? driverUserId,
   }) async {
     await _client.post<Map<String, dynamic>>(
@@ -106,6 +107,7 @@ class TrackingRepository {
       data: {
         'latitude': latitude,
         'longitude': longitude,
+        'dispatch_id': dispatchId,
         if (driverUserId != null) 'driver_user_id': driverUserId,
       },
     );

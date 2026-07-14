@@ -502,6 +502,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           );
         case 'LOADED':
         case 'PARTIALLY_FULFILLED':
+          final hasDeliveredDispatch = existingDispatch?.status == 'DELIVERED';
           if (existingDispatch != null) {
             primaryBtn = _BigButton(
               label: 'View Dispatch',
@@ -524,11 +525,13 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
               onTap: _busy ? null : _createDispatch,
             );
           }
-          secondaryBtn = _OutlineButton(
-            label: 'Mark as Completed',
-            color: AppColors.primaryMain,
-            onTap: _busy ? null : _markCompleted,
-          );
+          if (hasDeliveredDispatch) {
+            secondaryBtn = _OutlineButton(
+              label: 'Mark as Completed',
+              color: AppColors.primaryMain,
+              onTap: _busy ? null : _markCompleted,
+            );
+          }
       }
 
       // Owner-only: assign manager — shown as a subtle tertiary link

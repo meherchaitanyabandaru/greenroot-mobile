@@ -224,6 +224,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
             .postLiveLocation(
               latitude: pos.latitude,
               longitude: pos.longitude,
+              dispatchId: widget.dispatchId,
             )
             .catchError((_) {}),
       ]);
