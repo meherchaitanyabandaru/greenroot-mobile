@@ -3,7 +3,9 @@ enum AppEnvironment { dev, qa, production }
 class EnvConfig {
   final AppEnvironment environment;
   final String apiBaseUrl;
-  final String webBaseUrl; // base URL of this web app — used to build QR verification URLs
+
+  /// Base URL of this web app, used to build QR verification URLs.
+  final String webBaseUrl;
   final String appName;
   final bool enableLogging;
 
@@ -17,8 +19,14 @@ class EnvConfig {
 
   static const dev = EnvConfig(
     environment: AppEnvironment.dev,
-    apiBaseUrl: 'http://localhost:8080', // use LAN IP (e.g. 192.168.1.x:8080) for physical device testing
-    webBaseUrl: 'http://localhost:4040',
+    apiBaseUrl: String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'http://localhost:8080',
+    ),
+    webBaseUrl: String.fromEnvironment(
+      'WEB_BASE_URL',
+      defaultValue: 'http://localhost:4040',
+    ),
     appName: 'GreenRoot Dev',
     enableLogging: true,
   );
