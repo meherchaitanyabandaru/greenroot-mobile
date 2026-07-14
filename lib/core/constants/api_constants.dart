@@ -101,6 +101,10 @@ abstract class ApiConstants {
 
   // Tracking (post location)
   static const String postTracking = '$v1/tracking';
+  static const String trackingLive = '$v1/tracking/live';
+  static String trackingLiveDriver(int driverUserId) =>
+      '$v1/tracking/live/drivers/$driverUserId';
+  static const String trackingLiveNearby = '$v1/tracking/live/nearby';
 
   // Dispatch trip events
   static String tripEvents(int dispatchId) =>

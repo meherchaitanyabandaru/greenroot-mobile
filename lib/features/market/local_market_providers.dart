@@ -390,6 +390,9 @@ class BrowseAdsState {
   final String? category;
   final double? minPrice;
   final double? maxPrice;
+  final double? nearLat;
+  final double? nearLon;
+  final double? radiusKm;
 
   const BrowseAdsState({
     this.ads = const [],
@@ -404,12 +407,16 @@ class BrowseAdsState {
     this.category,
     this.minPrice,
     this.maxPrice,
+    this.nearLat,
+    this.nearLon,
+    this.radiusKm,
   });
 
   int get activeFilterCount =>
       (category != null ? 1 : 0) +
       (minPrice != null ? 1 : 0) +
-      (maxPrice != null ? 1 : 0);
+      (maxPrice != null ? 1 : 0) +
+      (nearLat != null ? 1 : 0);
 
   BrowseAdsState copyWith({
     List<MarketAd>? ads,
@@ -428,6 +435,10 @@ class BrowseAdsState {
     bool clearMinPrice = false,
     double? maxPrice,
     bool clearMaxPrice = false,
+    double? nearLat,
+    bool clearNearby = false,
+    double? nearLon,
+    double? radiusKm,
   }) =>
       BrowseAdsState(
         ads: ads ?? this.ads,
@@ -442,6 +453,9 @@ class BrowseAdsState {
         category: clearCategory ? null : (category ?? this.category),
         minPrice: clearMinPrice ? null : (minPrice ?? this.minPrice),
         maxPrice: clearMaxPrice ? null : (maxPrice ?? this.maxPrice),
+        nearLat: clearNearby ? null : (nearLat ?? this.nearLat),
+        nearLon: clearNearby ? null : (nearLon ?? this.nearLon),
+        radiusKm: clearNearby ? null : (radiusKm ?? this.radiusKm),
       );
 }
 
@@ -462,6 +476,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       category: state.category,
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
+      nearLat: state.nearLat,
+      nearLon: state.nearLon,
+      radiusKm: state.radiusKm,
     );
     _debounce = Timer(const Duration(milliseconds: 400), _load);
   }
@@ -474,6 +491,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       category: state.category,
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
+      nearLat: state.nearLat,
+      nearLon: state.nearLon,
+      radiusKm: state.radiusKm,
     );
     _load();
   }
@@ -485,6 +505,23 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       category: category,
       minPrice: minPrice,
       maxPrice: maxPrice,
+      nearLat: state.nearLat,
+      nearLon: state.nearLon,
+      radiusKm: state.radiusKm,
+    );
+    _load();
+  }
+
+  void setNearby({double? lat, double? lon, double radiusKm = 50}) {
+    state = BrowseAdsState(
+      query: state.query,
+      sort: state.sort,
+      category: state.category,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+      nearLat: lat,
+      nearLon: lon,
+      radiusKm: lat != null ? radiusKm : null,
     );
     _load();
   }
@@ -496,6 +533,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       category: state.category,
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
+      nearLat: state.nearLat,
+      nearLon: state.nearLon,
+      radiusKm: state.radiusKm,
     );
     return _load();
   }
@@ -515,6 +555,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
     final category = state.category;
     final minPrice = state.minPrice;
     final maxPrice = state.maxPrice;
+    final nearLat = state.nearLat;
+    final nearLon = state.nearLon;
+    final radiusKm = state.radiusKm;
 
     try {
       final params = <String, String>{
@@ -525,6 +568,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         if (category != null) 'category': category,
         if (minPrice != null) 'min_price': minPrice.toStringAsFixed(0),
         if (maxPrice != null) 'max_price': maxPrice.toStringAsFixed(0),
+        if (nearLat != null) 'near_lat': nearLat.toStringAsFixed(6),
+        if (nearLon != null) 'near_lon': nearLon.toStringAsFixed(6),
+        if (radiusKm != null) 'radius_km': radiusKm.toStringAsFixed(1),
       };
 
       final data = await _repo.getAds(params);
@@ -548,6 +594,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         category: category,
         minPrice: minPrice,
         maxPrice: maxPrice,
+        nearLat: nearLat,
+        nearLon: nearLon,
+        radiusKm: radiusKm,
       );
     } catch (e) {
       state = state.copyWith(

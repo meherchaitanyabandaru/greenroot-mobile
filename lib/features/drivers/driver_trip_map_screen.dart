@@ -213,11 +213,18 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
             const LocationSettings(accuracy: LocationAccuracy.high),
       );
       if (mounted) setState(() => _devicePos = pos);
-      await ref.read(trackingRepositoryProvider).postLocation(
-            latitude: pos.latitude,
-            longitude: pos.longitude,
-            dispatchId: widget.dispatchId,
-          );
+      final repo = ref.read(trackingRepositoryProvider);
+      await Future.wait([
+        repo.postLocation(
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          dispatchId: widget.dispatchId,
+        ),
+        repo.postLiveLocation(
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+        ).catchError((_) {}),
+      ]);
     } catch (_) {
     } finally {
       _postingGps = false;
@@ -301,11 +308,17 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       }
     } catch (_) {}
 
-    // Geocode delivery address
-    final dest = widget.dispatch.destinationAddress;
-    if (dest != null && dest.isNotEmpty) {
-      final ll = await _geocode(dest);
-      if (ll != null && mounted) setState(() => _deliveryPointLatLng = ll);
+    // Use delivery coords from API when available; fall back to geocoding
+    final dlat = widget.dispatch.deliveryLatitude;
+    final dlon = widget.dispatch.deliveryLongitude;
+    if (dlat != null && dlon != null) {
+      if (mounted) setState(() => _deliveryPointLatLng = LatLng(dlat, dlon));
+    } else {
+      final dest = widget.dispatch.destinationAddress;
+      if (dest != null && dest.isNotEmpty) {
+        final ll = await _geocode(dest);
+        if (ll != null && mounted) setState(() => _deliveryPointLatLng = ll);
+      }
     }
     if (mounted) _fitBounds();
   }
@@ -410,10 +423,13 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   }
 
   Future<void> _openGoogleMaps() async {
+    final dlat = widget.dispatch.deliveryLatitude;
+    final dlon = widget.dispatch.deliveryLongitude;
     final addr = widget.dispatch.destinationAddress ?? '';
-    if (addr.isEmpty) return;
+    if (dlat == null && addr.isEmpty) return;
+    final query = dlat != null ? '$dlat,$dlon' : Uri.encodeComponent(addr);
     final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addr)}',
+      'https://www.google.com/maps/search/?api=1&query=$query',
     );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

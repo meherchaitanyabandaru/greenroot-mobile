@@ -63,6 +63,8 @@ class Dispatch {
   final String? dispatchDate;
   final String? deliveryDate;
   final String? destinationAddress;
+  final double? deliveryLatitude;
+  final double? deliveryLongitude;
   final bool requiresDriverAck;
   final String? notes;
   final String createdAt;
@@ -84,6 +86,8 @@ class Dispatch {
     this.dispatchDate,
     this.deliveryDate,
     this.destinationAddress,
+    this.deliveryLatitude,
+    this.deliveryLongitude,
     this.requiresDriverAck = false,
     this.notes,
     required this.createdAt,
@@ -110,6 +114,8 @@ class Dispatch {
         dispatchDate: j['dispatch_date'] as String?,
         deliveryDate: j['delivery_date'] as String?,
         destinationAddress: j['destination_address'] as String?,
+        deliveryLatitude: (j['delivery_latitude'] as num?)?.toDouble(),
+        deliveryLongitude: (j['delivery_longitude'] as num?)?.toDouble(),
         requiresDriverAck: j['requires_driver_ack'] == true,
         notes: j['notes'] as String?,
         createdAt: j['created_at'] as String,

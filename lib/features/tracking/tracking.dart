@@ -95,6 +95,21 @@ class TrackingRepository {
       },
     );
   }
+
+  Future<void> postLiveLocation({
+    required double latitude,
+    required double longitude,
+    int? driverUserId,
+  }) async {
+    await _client.post<Map<String, dynamic>>(
+      ApiConstants.trackingLive,
+      data: {
+        'latitude': latitude,
+        'longitude': longitude,
+        if (driverUserId != null) 'driver_user_id': driverUserId,
+      },
+    );
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
