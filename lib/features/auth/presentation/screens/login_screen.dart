@@ -232,7 +232,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Dev hint
                 Center(
                   child: Text(
-                    'Dev: use 9000000777 / OTP 123456',
+                    'Dev: use 9300000000 (buyer) or 9000000000 (admin) / OTP 123456',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textMuted,
                     ),
