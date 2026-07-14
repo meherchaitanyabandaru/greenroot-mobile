@@ -53,6 +53,9 @@ class Dispatch {
   final String dispatchCode;
   final int orderId;
   final String? orderNumber;
+  final String? orderStatus;
+  final String? loadingStartedAt;
+  final String? loadingCompletedAt;
   final String? dispatchNumber;
   final String status;
   final int? sellerNurseryId;
@@ -76,6 +79,9 @@ class Dispatch {
     required this.dispatchCode,
     required this.orderId,
     this.orderNumber,
+    this.orderStatus,
+    this.loadingStartedAt,
+    this.loadingCompletedAt,
     this.dispatchNumber,
     required this.status,
     this.sellerNurseryId,
@@ -100,6 +106,9 @@ class Dispatch {
         dispatchCode: j['dispatch_code'] as String,
         orderId: (j['order_id'] as num).toInt(),
         orderNumber: j['order_number'] as String?,
+        orderStatus: j['order_status'] as String?,
+        loadingStartedAt: j['loading_started_at'] as String?,
+        loadingCompletedAt: j['loading_completed_at'] as String?,
         dispatchNumber: j['dispatch_number'] as String?,
         status: j['dispatch_status'] as String,
         sellerNurseryId: j['seller_nursery_id'] != null
@@ -142,7 +151,7 @@ class DispatchRepository {
     final params = <String, dynamic>{
       'page': page,
       'per_page': perPage,
-      if (status?.isNotEmpty == true) 'status': status,
+      if (status?.isNotEmpty == true) 'dispatch_status': status,
       if (nurseryId != null) 'nursery_id': nurseryId,
     };
     return _client.get(

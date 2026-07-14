@@ -220,10 +220,12 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           longitude: pos.longitude,
           dispatchId: widget.dispatchId,
         ),
-        repo.postLiveLocation(
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-        ).catchError((_) {}),
+        repo
+            .postLiveLocation(
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+            )
+            .catchError((_) {}),
       ]);
     } catch (_) {
     } finally {
@@ -523,8 +525,11 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
                   // Order Journey timeline
                   _OrderJourneyCard(
                     status: d.status,
+                    orderStatus: d.orderStatus,
                     createdAt: d.createdAt,
                     updatedAt: d.updatedAt,
+                    loadingStartedAt: d.loadingStartedAt,
+                    loadingCompletedAt: d.loadingCompletedAt,
                     expanded: _journeyExpanded,
                     onToggle: () =>
                         setState(() => _journeyExpanded = !_journeyExpanded),
@@ -1008,15 +1013,21 @@ class _GpsChip extends StatelessWidget {
 
 class _OrderJourneyCard extends StatelessWidget {
   final String status;
+  final String? orderStatus;
   final String createdAt;
   final String? updatedAt;
+  final String? loadingStartedAt;
+  final String? loadingCompletedAt;
   final bool expanded;
   final VoidCallback onToggle;
 
   const _OrderJourneyCard({
     required this.status,
+    this.orderStatus,
     required this.createdAt,
     this.updatedAt,
+    this.loadingStartedAt,
+    this.loadingCompletedAt,
     required this.expanded,
     required this.onToggle,
   });
@@ -1084,8 +1095,11 @@ class _OrderJourneyCard extends StatelessWidget {
                   horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               child: _JourneyTimeline(
                 status: status,
+                orderStatus: orderStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                loadingStartedAt: loadingStartedAt,
+                loadingCompletedAt: loadingCompletedAt,
               ),
             ),
             // Hide button
@@ -1140,13 +1154,19 @@ class _Step {
 
 class _JourneyTimeline extends StatelessWidget {
   final String status;
+  final String? orderStatus;
   final String createdAt;
   final String? updatedAt;
+  final String? loadingStartedAt;
+  final String? loadingCompletedAt;
 
   const _JourneyTimeline({
     required this.status,
+    this.orderStatus,
     required this.createdAt,
     this.updatedAt,
+    this.loadingStartedAt,
+    this.loadingCompletedAt,
   });
 
   String _fmt(String? iso) {
@@ -1161,28 +1181,46 @@ class _JourneyTimeline extends StatelessWidget {
   List<_Step> _buildSteps() {
     final created = _fmt(createdAt);
     final updated = _fmt(updatedAt ?? createdAt);
+    final loadingStarted = _fmt(loadingStartedAt);
+    final loadingCompleted = _fmt(loadingCompletedAt);
+    final order = orderStatus?.toUpperCase();
+    final dispatch = status.toUpperCase();
 
-    // Determine how many steps are complete based on dispatch status
-    final completedUpTo = switch (status) {
+    var completedUpTo = switch (dispatch) {
       'PENDING' => 0,
-      'ACCEPTED' => 2,
+      'ACCEPTED' => 1,
       'DISPATCHED' => 6,
       'IN_TRANSIT' => 7,
       'DELIVERED' => 11,
       _ => 0,
     };
-    final activeStep = switch (status) {
+    var activeStep = switch (dispatch) {
       'PENDING' => 1,
-      'ACCEPTED' => 3,
+      'ACCEPTED' => 2,
       'DISPATCHED' => 7,
       'IN_TRANSIT' => 8,
-      'DELIVERED' => 0, // all done
+      'DELIVERED' => 0,
       _ => 1,
     };
 
+    if (dispatch == 'ACCEPTED') {
+      switch (order) {
+        case 'LOADING':
+          completedUpTo = 3;
+          activeStep = 4;
+        case 'LOADED':
+        case 'PARTIALLY_FULFILLED':
+        case 'COMPLETED':
+          completedUpTo = 5;
+          activeStep = 6;
+      }
+    }
+
     String? timeFor(int step) {
       if (step == 1) return created;
-      if (step == completedUpTo) return updated;
+      if (step == 2 && loadingStartedAt != null) return loadingStarted;
+      if (step == 3 && loadingStartedAt != null) return loadingStarted;
+      if (step == 5 && loadingCompletedAt != null) return loadingCompleted;
       if (step <= completedUpTo) return updated;
       return null;
     }

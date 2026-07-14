@@ -385,6 +385,10 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     }
   }
 
+  void _viewDispatch(Dispatch dispatch) {
+    context.push('/dispatches/${dispatch.id}');
+  }
+
   Future<void> _assignManager() async {
     final nurseryId = _order.sellerNurseryId;
     if (nurseryId == null) return;
@@ -455,6 +459,13 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     final canManage = widget.canManage;
     final isOwner = widget.isOwner;
     final status = _status;
+    final dispatchesAsync = ref.watch(_orderDispatchesProvider(widget.orderId));
+    final dispatches = dispatchesAsync.valueOrNull ?? [];
+    final isCheckingDispatches = dispatchesAsync.isLoading;
+    final existingDispatch = dispatches
+        .where((dispatch) => dispatch.status != 'CANCELLED')
+        .cast<Dispatch?>()
+        .firstOrNull;
 
     // Determine primary + secondary buttons for this role × state
     Widget? primaryBtn;
@@ -491,12 +502,28 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           );
         case 'LOADED':
         case 'PARTIALLY_FULFILLED':
-          primaryBtn = _BigButton(
-            label: 'Create Dispatch',
-            icon: Icons.local_shipping_rounded,
-            color: AppColors.blue600,
-            onTap: _busy ? null : _createDispatch,
-          );
+          if (existingDispatch != null) {
+            primaryBtn = _BigButton(
+              label: 'View Dispatch',
+              icon: Icons.local_shipping_rounded,
+              color: AppColors.blue600,
+              onTap: _busy ? null : () => _viewDispatch(existingDispatch),
+            );
+          } else if (isCheckingDispatches) {
+            primaryBtn = _BigButton(
+              label: 'Checking Dispatch',
+              icon: Icons.sync_rounded,
+              color: AppColors.textSecondary,
+              onTap: null,
+            );
+          } else {
+            primaryBtn = _BigButton(
+              label: 'Create Dispatch',
+              icon: Icons.local_shipping_rounded,
+              color: AppColors.blue600,
+              onTap: _busy ? null : _createDispatch,
+            );
+          }
           secondaryBtn = _OutlineButton(
             label: 'Mark as Completed',
             color: AppColors.primaryMain,
