@@ -197,7 +197,8 @@ final appRouter = GoRouter(
     }
 
     // Account or nursery suspended — hard wall before any authenticated screen.
-    if (session.status == SessionStatus.suspended && path != '/account-suspended') {
+    if (session.status == SessionStatus.suspended &&
+        path != '/account-suspended') {
       return '/account-suspended';
     }
 
@@ -208,13 +209,18 @@ final appRouter = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
 
     // ── Suspension ──────────────────────────────────────────────────────────
-    GoRoute(path: '/account-suspended', builder: (_, __) => const AccountSuspendedScreen()),
+    GoRoute(
+        path: '/account-suspended',
+        builder: (_, __) => const AccountSuspendedScreen()),
 
     // ── Auth ────────────────────────────────────────────────────────────────
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
     GoRoute(
       path: '/otp',
-      builder: (_, state) => OtpScreen(mobile: state.extra as String? ?? ''),
+      builder: (_, state) => OtpScreen(
+        mobile:
+            state.extra as String? ?? state.uri.queryParameters['mobile'] ?? '',
+      ),
     ),
     GoRoute(
       path: '/create-profile',

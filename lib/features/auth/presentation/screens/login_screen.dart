@@ -67,7 +67,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     if (mounted) {
-      context.go('/otp', extra: _mobileCtrl.text.trim());
+      final mobile = _mobileCtrl.text.trim();
+      context.go(
+        Uri(path: '/otp', queryParameters: {'mobile': mobile}).toString(),
+        extra: mobile,
+      );
     }
   }
 
