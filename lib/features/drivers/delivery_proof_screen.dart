@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,7 +23,7 @@ class DeliveryProofScreen extends ConsumerStatefulWidget {
 
 class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
   final _picker = ImagePicker();
-  final List<File> _photos = [];
+  final List<XFile> _photos = [];
   bool _uploading = false;
   String? _uploadError;
   int _uploadedCount = 0;
@@ -41,7 +41,7 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
       maxWidth: 1920,
     );
     if (file != null && mounted) {
-      setState(() => _photos.add(File(file.path)));
+      setState(() => _photos.add(file));
     }
   }
 
@@ -69,7 +69,7 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
     try {
       final client = ApiClient.instance;
       for (int i = 0; i < _photos.length; i++) {
-        await client.uploadFile(
+        await client.uploadXFile(
           ApiConstants.attachments,
           file: _photos[i],
           extraFields: {
@@ -264,8 +264,8 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
               height: AppSpacing.buttonHeight,
               child: FilledButton.icon(
                 onPressed: (_photos.isEmpty || _uploading) ? null : _upload,
-                style:
-                    FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+                style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain),
                 icon: _uploading
                     ? const SizedBox(
                         width: 18,
@@ -275,7 +275,9 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
                       )
                     : const Icon(Icons.cloud_upload_outlined),
                 label: Text(
-                  _uploading ? 'Uploading…' : 'Upload Proof (${_photos.length})',
+                  _uploading
+                      ? 'Uploading…'
+                      : 'Upload Proof (${_photos.length})',
                   style: AppTypography.label,
                 ),
               ),
@@ -288,7 +290,7 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
 }
 
 class _PhotoThumbnail extends StatelessWidget {
-  final File file;
+  final XFile file;
   final VoidCallback? onRemove;
 
   const _PhotoThumbnail({required this.file, this.onRemove});
@@ -300,14 +302,24 @@ class _PhotoThumbnail extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: AppRadius.cardRadius,
-          child: Image.file(
-            file,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: AppColors.border,
-              child: const Icon(Icons.broken_image_outlined,
-                  color: AppColors.textMuted),
-            ),
+          child: FutureBuilder<Uint8List>(
+            future: file.readAsBytes(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Image.memory(
+                  snapshot.data!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _BrokenPhoto(),
+                );
+              }
+              if (snapshot.hasError) return const _BrokenPhoto();
+              return Container(
+                color: AppColors.border,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            },
           ),
         ),
         if (onRemove != null)
@@ -329,6 +341,21 @@ class _PhotoThumbnail extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _BrokenPhoto extends StatelessWidget {
+  const _BrokenPhoto();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.border,
+      child: const Icon(
+        Icons.broken_image_outlined,
+        color: AppColors.textMuted,
+      ),
     );
   }
 }

@@ -207,6 +207,8 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
 
   Order get _order => widget.order;
   String get _status => _order.status;
+  bool get _hasDeliveryAddress =>
+      _order.deliverySnapshot?.addressLine1?.trim().isNotEmpty == true;
 
   // ── Status visual config ───────────────────────────────────────────────────
 
@@ -313,6 +315,11 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   }
 
   Future<void> _confirm() async {
+    if (!_hasDeliveryAddress) {
+      _snack('Add a delivery address before confirming this order.',
+          AppColors.amber700);
+      return;
+    }
     await _doAction(
         () => ref.read(orderRepositoryProvider).confirmOrder(widget.orderId));
     if (mounted) _snack('Order confirmed', AppColors.primaryMain);
@@ -462,6 +469,8 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     final dispatchesAsync = ref.watch(_orderDispatchesProvider(widget.orderId));
     final dispatches = dispatchesAsync.valueOrNull ?? [];
     final isCheckingDispatches = dispatchesAsync.isLoading;
+    final needsDeliveryBeforeConfirm =
+        canManage && status == 'PENDING' && !_hasDeliveryAddress;
     final existingDispatch = dispatches
         .where((dispatch) => dispatch.status != 'CANCELLED')
         .cast<Dispatch?>()
@@ -476,9 +485,15 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
       switch (status) {
         case 'PENDING':
           primaryBtn = _BigButton(
-            label: 'Confirm Order',
-            icon: Icons.check_circle_outline_rounded,
-            color: AppColors.primaryMain,
+            label: needsDeliveryBeforeConfirm
+                ? 'Add Delivery Address First'
+                : 'Confirm Order',
+            icon: needsDeliveryBeforeConfirm
+                ? Icons.location_on_outlined
+                : Icons.check_circle_outline_rounded,
+            color: needsDeliveryBeforeConfirm
+                ? AppColors.amber700
+                : AppColors.primaryMain,
             onTap: _busy ? null : _confirm,
           );
           secondaryBtn = _OutlineButton(
@@ -1355,12 +1370,18 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
   bool _busy = false;
 
   Future<void> _edit() async {
+    final profile = ref.read(sessionProvider).user;
+    final profileName = profile?.name?.trim();
+    final profileMobile = profile?.mobile?.trim();
     final result = await showModalBottomSheet<DeliverySnapshotRequest>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _DeliveryEditSheet(snapshot: widget.order.deliverySnapshot),
+      builder: (_) => _DeliveryEditSheet(
+        snapshot: widget.order.deliverySnapshot,
+        profileName: profileName,
+        profileMobile: profileMobile,
+      ),
     );
     if (result == null) return;
     setState(() => _busy = true);
@@ -1401,6 +1422,17 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
   @override
   Widget build(BuildContext context) {
     final delivery = widget.order.deliverySnapshot;
+    final profile = ref.watch(sessionProvider).user;
+    final profileName = profile?.name?.trim();
+    final profileMobile = profile?.mobile?.trim();
+    final profileContact = [
+      if (profileName?.isNotEmpty == true) profileName,
+      if (profileMobile?.isNotEmpty == true) '+91 $profileMobile',
+    ].whereType<String>().join(' | ');
+    final snapshotContact = [
+      if (delivery?.contactName?.isNotEmpty == true) delivery!.contactName,
+      if (delivery?.contactMobile?.isNotEmpty == true) delivery!.contactMobile,
+    ].whereType<String>().join(' | ');
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -1446,16 +1478,10 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
             )
           else ...[
             Text(delivery.displayAddress, style: AppTypography.body),
-            if (delivery.contactName?.isNotEmpty == true ||
-                delivery.contactMobile?.isNotEmpty == true) ...[
+            if (snapshotContact.isNotEmpty || profileContact.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                [
-                  if (delivery.contactName?.isNotEmpty == true)
-                    delivery.contactName,
-                  if (delivery.contactMobile?.isNotEmpty == true)
-                    delivery.contactMobile,
-                ].whereType<String>().join(' | '),
+                snapshotContact.isNotEmpty ? snapshotContact : profileContact,
                 style: AppTypography.caption
                     .copyWith(color: AppColors.textSecondary),
               ),
@@ -1494,7 +1520,14 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
 
 class _DeliveryEditSheet extends StatefulWidget {
   final DeliverySnapshot? snapshot;
-  const _DeliveryEditSheet({required this.snapshot});
+  final String? profileName;
+  final String? profileMobile;
+
+  const _DeliveryEditSheet({
+    required this.snapshot,
+    required this.profileName,
+    required this.profileMobile,
+  });
 
   @override
   State<_DeliveryEditSheet> createState() => _DeliveryEditSheetState();
@@ -1512,6 +1545,7 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
   late final TextEditingController _landmark;
   late final TextEditingController _instructions;
   bool _emergency = false;
+  bool _useProfileContact = true;
 
   @override
   void initState() {
@@ -1519,6 +1553,17 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
     final s = widget.snapshot;
     _name = TextEditingController(text: s?.contactName ?? '');
     _mobile = TextEditingController(text: s?.contactMobile ?? '');
+    final profileName = widget.profileName?.trim();
+    final profileMobile = widget.profileMobile?.trim();
+    final hasSnapshotContact = (s?.contactName?.trim().isNotEmpty ?? false) ||
+        (s?.contactMobile?.trim().isNotEmpty ?? false);
+    final snapshotMatchesProfile = (s?.contactName?.trim().isEmpty ?? true) ||
+        s?.contactName?.trim() == profileName;
+    final snapshotMobileMatchesProfile =
+        (s?.contactMobile?.trim().isEmpty ?? true) ||
+            s?.contactMobile?.trim() == profileMobile;
+    _useProfileContact = !hasSnapshotContact ||
+        (snapshotMatchesProfile && snapshotMobileMatchesProfile);
     _line1 = TextEditingController(text: s?.addressLine1 ?? '');
     _line2 = TextEditingController(text: s?.addressLine2 ?? '');
     _city = TextEditingController(text: s?.city ?? '');
@@ -1546,11 +1591,15 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
 
   void _submit() {
     if (_line1.text.trim().isEmpty) return;
+    final contactName =
+        _useProfileContact ? widget.profileName?.trim() : _name.text.trim();
+    final contactMobile =
+        _useProfileContact ? widget.profileMobile?.trim() : _mobile.text.trim();
     Navigator.pop(
       context,
       DeliverySnapshotRequest(
-        contactName: _name.text,
-        contactMobile: _mobile.text,
+        contactName: contactName,
+        contactMobile: contactMobile,
         addressLine1: _line1.text,
         addressLine2: _line2.text,
         city: _city.text,
@@ -1584,12 +1633,22 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
           children: [
             Text('Edit Delivery Address', style: AppTypography.h3),
             const SizedBox(height: AppSpacing.md),
-            _SheetField(controller: _name, label: 'Contact name'),
-            _SheetField(
-              controller: _mobile,
-              label: 'Contact mobile',
-              keyboardType: TextInputType.phone,
+            _DeliveryContactToggle(
+              value: _useProfileContact,
+              profileName: widget.profileName,
+              profileMobile: widget.profileMobile,
+              onChanged: (v) => setState(() => _useProfileContact = v),
             ),
+            if (!_useProfileContact) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _SheetField(controller: _name, label: 'Alternate contact name'),
+              _SheetField(
+                controller: _mobile,
+                label: 'Alternate contact mobile',
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.sm),
             _SheetField(controller: _line1, label: 'Address line 1'),
             _SheetField(controller: _line2, label: 'Address line 2'),
             Row(
@@ -1641,6 +1700,75 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DeliveryContactToggle extends StatelessWidget {
+  final bool value;
+  final String? profileName;
+  final String? profileMobile;
+  final ValueChanged<bool> onChanged;
+
+  const _DeliveryContactToggle({
+    required this.value,
+    required this.profileName,
+    required this.profileMobile,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final profileLabel = [
+      if (profileName?.trim().isNotEmpty == true) profileName!.trim(),
+      if (profileMobile?.trim().isNotEmpty == true)
+        '+91 ${profileMobile!.trim()}',
+    ].join(' - ');
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.forest100,
+        borderRadius: AppRadius.inputRadius,
+        border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.person_pin_circle_outlined,
+            color: AppColors.primaryMain,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Use profile contact',
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  profileLabel.isEmpty
+                      ? 'Saved profile contact details'
+                      : profileLabel,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.primaryMain,
+          ),
+        ],
       ),
     );
   }

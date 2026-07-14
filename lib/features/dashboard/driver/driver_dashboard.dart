@@ -57,9 +57,6 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dispatchListProvider.notifier).load(statusFilter: 'IN_TRANSIT');
-    });
   }
 
   @override
@@ -67,21 +64,16 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
     BuildContext context,
   ) {
     final user = ref.watch(sessionProvider).user;
-    final dispState = ref.watch(dispatchListProvider);
-    final paged = dispState.paged;
-    final inTransit = paged.items
-        .where((d) => d.status == 'IN_TRANSIT' || d.status == 'ASSIGNED')
-        .toList();
-    final hasActive = inTransit.isNotEmpty;
+    final activeTripAsync = ref.watch(activeDriverTripProvider);
+    final activeTrip = activeTripAsync.valueOrNull?.trip;
+    final hasActive = activeTrip != null;
 
     void gotoTrips() =>
         ref.read(roleTabIndexProvider(AppRole.driver).notifier).state = 1;
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref
-            .read(dispatchListProvider.notifier)
-            .load(statusFilter: 'IN_TRANSIT');
+        ref.invalidate(activeDriverTripProvider);
       },
       color: AppColors.primaryMain,
       child: ListView(
@@ -98,8 +90,18 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
           const SizedBox(height: AppSpacing.x2l),
 
           // ── Active trip banner ────────────────────────────────────────
-          if (hasActive) ...[
-            _ActiveTripBanner(dispatch: inTransit.first),
+          if (activeTripAsync.isLoading) ...[
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.x2l),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ] else if (activeTripAsync.valueOrNull?.result ==
+              ActiveTripResult.integrityError) ...[
+            const _MultipleTripsCard(),
+          ] else if (hasActive) ...[
+            _ActiveTripBanner(dispatch: activeTrip),
           ] else ...[
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -165,7 +167,7 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
               ),
               DashboardCard(
                 title: 'Active Trip',
-                value: hasActive ? '${inTransit.length}' : '0',
+                value: hasActive ? '1' : '0',
                 icon: Icons.delivery_dining_outlined,
                 iconColor: AppColors.blue600,
                 iconBg: AppColors.blue100,
@@ -192,6 +194,52 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
           const SizedBox(height: AppSpacing.md),
           const EmptyActivity(message: 'No trips yet today'),
           const SizedBox(height: AppSpacing.x2l),
+        ],
+      ),
+    );
+  }
+}
+
+class _MultipleTripsCard extends StatelessWidget {
+  const _MultipleTripsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.amber100,
+        border: Border.all(color: AppColors.amber600),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.amber700,
+            size: 36,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Multiple active trips',
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.amber700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'More than one active trip was found. Please contact support.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

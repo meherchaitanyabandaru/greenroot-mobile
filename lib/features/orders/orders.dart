@@ -164,6 +164,9 @@ class DeliverySnapshotRequest {
   final String? postalCode;
   final String? landmark;
   final String? deliveryInstructions;
+  final double? latitude;
+  final double? longitude;
+  final String? locationSource;
   final bool emergencyUpdate;
 
   const DeliverySnapshotRequest({
@@ -177,6 +180,9 @@ class DeliverySnapshotRequest {
     this.postalCode,
     this.landmark,
     this.deliveryInstructions,
+    this.latitude,
+    this.longitude,
+    this.locationSource,
     this.emergencyUpdate = false,
   });
 
@@ -197,6 +203,10 @@ class DeliverySnapshotRequest {
         if (landmark?.trim().isNotEmpty == true) 'landmark': landmark!.trim(),
         if (deliveryInstructions?.trim().isNotEmpty == true)
           'delivery_instructions': deliveryInstructions!.trim(),
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (locationSource?.trim().isNotEmpty == true)
+          'location_source': locationSource!.trim(),
         if (emergencyUpdate) 'emergency_update': true,
       };
 }
@@ -501,6 +511,7 @@ class OrderRepository {
     String? buyerName,
     required int sellerNurseryId,
     required List<OrderItemRequest> items,
+    DeliverySnapshotRequest? delivery,
     String? notes,
   }) async {
     final body = <String, dynamic>{
@@ -508,6 +519,7 @@ class OrderRepository {
       if (buyerName?.isNotEmpty == true) 'buyer_name': buyerName,
       'seller_nursery_id': sellerNurseryId,
       'items': items.map((i) => i.toJson()).toList(),
+      if (delivery != null) 'delivery': delivery.toJson(),
       if (notes?.isNotEmpty == true) 'notes': notes,
     };
     return _client.post(
@@ -525,12 +537,14 @@ class OrderRepository {
     required int sellerNurseryId,
     required List<OrderItemRequest> items,
     String? buyerName,
+    DeliverySnapshotRequest? delivery,
     String? notes,
   }) async {
     final body = <String, dynamic>{
       'seller_nursery_id': sellerNurseryId,
       'items': items.map((i) => i.toJson()).toList(),
       if (buyerName?.isNotEmpty == true) 'buyer_name': buyerName,
+      if (delivery != null) 'delivery': delivery.toJson(),
       if (notes?.isNotEmpty == true) 'notes': notes,
     };
     return _client.post(

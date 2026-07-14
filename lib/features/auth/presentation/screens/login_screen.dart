@@ -8,7 +8,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/onboarding_progress.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -49,8 +48,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _requestOtp() async {
     setState(() => _mobileError = null);
     if (!_agreedToTerms) {
-      setState(() => _mobileError =
-          'Please agree to the Terms & Conditions and Privacy Policy');
+      setState(
+        () => _mobileError =
+            'Please agree to the Terms & Conditions and Privacy Policy',
+      );
       return;
     }
     if (!_formKey.currentState!.validate()) return;
@@ -89,10 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.x2l),
-
-                const OnboardingProgress(currentStep: 1),
-                const SizedBox(height: AppSpacing.x2l),
+                const SizedBox(height: AppSpacing.x3l),
 
                 // Logo
                 Container(
@@ -184,7 +182,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),

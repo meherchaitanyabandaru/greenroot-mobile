@@ -93,9 +93,18 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
   Future<void> _createQuotation() async {
     final choice = await showQuotationTypeDialog(context);
     if (choice == null || !mounted) return;
-    final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
+    final type =
+        choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
     final created = await context.push<bool>('/quotations/create?type=$type');
     if (created == true) ref.read(_sellerQuotationProvider.notifier).load();
+  }
+
+  Future<void> _createOrder() async {
+    final created = await context.push<bool>('/orders/create');
+    if (created == true && mounted) {
+      ref.read(_sellerOrderProvider.notifier).load();
+      _tabs.animateTo(1);
+    }
   }
 
   @override
@@ -105,16 +114,16 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: _tabIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: _createQuotation,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('New Quotation'),
-              backgroundColor: AppColors.primaryMain,
-              foregroundColor: Colors.white,
-              elevation: 2,
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _tabIndex == 0 ? _createQuotation : _createOrder,
+        icon: Icon(
+          _tabIndex == 0 ? Icons.add_rounded : Icons.shopping_bag_outlined,
+        ),
+        label: Text(_tabIndex == 0 ? 'New Quotation' : 'New Order'),
+        backgroundColor: AppColors.primaryMain,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
       appBar: GreenRootAppBar(
         title: 'My Nursery',
         bottom: TabBar(
@@ -155,7 +164,8 @@ class _SellerQuotationsTab extends ConsumerWidget {
     final paged = ref.watch(_sellerQuotationProvider);
 
     if (paged.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryMain));
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryMain));
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -220,7 +230,8 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
           .read(quotationRepositoryProvider)
           .approveQuotation(widget.quotation.id);
       ref.read(_sellerQuotationProvider.notifier).updateItem(updated);
-      if (mounted) _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
+      if (mounted)
+        _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
     } finally {
@@ -248,7 +259,8 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Convert'),
           ),
@@ -264,7 +276,8 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
       ref.read(_sellerQuotationProvider.notifier).load();
       if (mounted) {
         _snack('Order created successfully', AppColors.primaryMain);
-        if (q.convertedOrderId != null) context.push('/orders/${q.convertedOrderId}');
+        if (q.convertedOrderId != null)
+          context.push('/orders/${q.convertedOrderId}');
       }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
@@ -289,8 +302,8 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.red600)),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -301,7 +314,9 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
       await ref
           .read(quotationRepositoryProvider)
           .deleteQuotation(widget.quotation.id);
-      ref.read(_sellerQuotationProvider.notifier).removeItem(widget.quotation.id);
+      ref
+          .read(_sellerQuotationProvider.notifier)
+          .removeItem(widget.quotation.id);
       if (mounted) _snack('Quotation deleted', AppColors.slate700);
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
@@ -343,14 +358,15 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
               children: [
                 Expanded(
                   child: Text(q.quotationCode,
-                      style: AppTypography.h4,
-                      overflow: TextOverflow.ellipsis),
+                      style: AppTypography.h4, overflow: TextOverflow.ellipsis),
                 ),
-                TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
+                TradeStatusChip(
+                    status: q.status, kind: TradeChipKind.quotation),
                 if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.red100,
                       borderRadius: BorderRadius.circular(4),
@@ -404,8 +420,8 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                 ],
                 const Spacer(),
                 Text(fmt.format(q.totalAmount),
-                    style:
-                        AppTypography.h3.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.h3
+                        .copyWith(color: AppColors.primaryMain)),
               ],
             ),
             if (_canApprove || _canConvert || _canDelete) ...[
@@ -504,7 +520,7 @@ class _SellerOrdersTab extends ConsumerWidget {
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No orders yet',
-        subtitle: 'Orders placed by your customers will appear here.',
+        subtitle: 'Tap New Order to create one, or wait for customer orders.',
       );
     }
 
@@ -563,8 +579,7 @@ class _SellerOrderCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(o.orderNumber,
-                      style: AppTypography.h4,
-                      overflow: TextOverflow.ellipsis),
+                      style: AppTypography.h4, overflow: TextOverflow.ellipsis),
                 ),
                 TradeStatusChip(status: o.status, kind: TradeChipKind.order),
               ],
@@ -609,8 +624,8 @@ class _SellerOrderCard extends ConsumerWidget {
                 ],
                 const Spacer(),
                 Text(fmt.format(o.totalAmount),
-                    style:
-                        AppTypography.h3.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.h3
+                        .copyWith(color: AppColors.primaryMain)),
               ],
             ),
             SellerOrderCardActions(

@@ -53,7 +53,10 @@ class _MgrQuotationNotifier extends StateNotifier<PagedState<Quotation>> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final (items, pagination) = await _repo.listQuotations(
-        page: 1, perPage: 20, search: _search, status: _status,
+        page: 1,
+        perPage: 20,
+        search: _search,
+        status: _status,
       );
       _page = 1;
       state = PagedState(
@@ -72,7 +75,10 @@ class _MgrQuotationNotifier extends StateNotifier<PagedState<Quotation>> {
     state = state.copyWith(isLoadingMore: true);
     try {
       final (items, pagination) = await _repo.listQuotations(
-        page: _page + 1, perPage: 20, search: _search, status: _status,
+        page: _page + 1,
+        perPage: 20,
+        search: _search,
+        status: _status,
       );
       _page++;
       state = state.copyWith(
@@ -96,7 +102,8 @@ class _MgrQuotationNotifier extends StateNotifier<PagedState<Quotation>> {
   }
 
   void removeItem(int id) {
-    state = state.copyWith(items: state.items.where((q) => q.id != id).toList());
+    state =
+        state.copyWith(items: state.items.where((q) => q.id != id).toList());
   }
 
   void updateItem(Quotation updated) {
@@ -125,11 +132,15 @@ class ManagerWorkTab extends ConsumerStatefulWidget {
 class _ManagerWorkTabState extends ConsumerState<ManagerWorkTab>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
+  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(() {
+      if (_tabs.index != _tabIndex) setState(() => _tabIndex = _tabs.index);
+    });
     Future.microtask(() {
       ref.read(_mgrOrderProvider.notifier).load();
       ref.read(_mgrQuotationProvider.notifier).load();
@@ -142,6 +153,14 @@ class _ManagerWorkTabState extends ConsumerState<ManagerWorkTab>
     super.dispose();
   }
 
+  Future<void> _createOrder() async {
+    final created = await context.push<bool>('/orders/create');
+    if (created == true && mounted) {
+      ref.read(_mgrOrderProvider.notifier).load();
+      _tabs.animateTo(1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(_mgrOrderProvider);
@@ -149,6 +168,16 @@ class _ManagerWorkTabState extends ConsumerState<ManagerWorkTab>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: _tabIndex == 1
+          ? FloatingActionButton.extended(
+              onPressed: _createOrder,
+              icon: const Icon(Icons.shopping_bag_outlined),
+              label: const Text('New Order'),
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Colors.white,
+              elevation: 2,
+            )
+          : null,
       appBar: GreenRootAppBar(
         title: 'My Work',
         bottom: TabBar(
@@ -202,7 +231,7 @@ class _MgrOrdersTab extends ConsumerWidget {
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No orders yet',
-        subtitle: 'Orders placed by customers will appear here.',
+        subtitle: 'Tap New Order to create one, or wait for customer orders.',
       );
     }
     return RefreshIndicator(
@@ -307,8 +336,8 @@ class _MgrOrderCard extends ConsumerWidget {
                 ],
                 const Spacer(),
                 Text(fmt.format(o.totalAmount),
-                    style:
-                        AppTypography.h3.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.h3
+                        .copyWith(color: AppColors.primaryMain)),
               ],
             ),
             SellerOrderCardActions(
@@ -428,17 +457,22 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => ref.read(_mgrQuotationProvider.notifier).setSearch(v),
+              onChanged: (v) =>
+                  ref.read(_mgrQuotationProvider.notifier).setSearch(v),
               decoration: InputDecoration(
                 hintText: 'Search quotations…',
-                hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                hintStyle: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textMuted),
+                prefixIcon: const Icon(Icons.search,
+                    size: 18, color: AppColors.textMuted),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, size: 16),
                         onPressed: () {
                           _searchCtrl.clear();
-                          ref.read(_mgrQuotationProvider.notifier).setSearch('');
+                          ref
+                              .read(_mgrQuotationProvider.notifier)
+                              .setSearch('');
                         },
                       )
                     : null,
@@ -475,23 +509,32 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                 return GestureDetector(
                   onTap: () {
                     setState(() => _activeStatus = opt.value);
-                    ref.read(_mgrQuotationProvider.notifier).setStatusFilter(opt.value);
+                    ref
+                        .read(_mgrQuotationProvider.notifier)
+                        .setStatusFilter(opt.value);
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primaryMain : AppColors.surface,
+                      color: isSelected
+                          ? AppColors.primaryMain
+                          : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? AppColors.primaryMain : AppColors.border,
+                        color: isSelected
+                            ? AppColors.primaryMain
+                            : AppColors.border,
                       ),
                     ),
                     child: Text(
                       opt.label,
                       style: AppTypography.caption.copyWith(
-                        color: isSelected ? Colors.white : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color:
+                            isSelected ? Colors.white : AppColors.textSecondary,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -510,13 +553,17 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                   )
                 : RefreshIndicator(
                     color: AppColors.primaryMain,
-                    onRefresh: () => ref.read(_mgrQuotationProvider.notifier).load(),
+                    onRefresh: () =>
+                        ref.read(_mgrQuotationProvider.notifier).load(),
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.screenPadding, AppSpacing.sm,
-                          AppSpacing.screenPadding, 100),
+                          AppSpacing.screenPadding,
+                          AppSpacing.sm,
+                          AppSpacing.screenPadding,
+                          100),
                       itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
-                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, i) {
                         if (i == paged.items.length) {
                           ref.read(_mgrQuotationProvider.notifier).loadMore();
@@ -530,7 +577,8 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                           key: ValueKey(q.id),
                           direction: DismissDirection.endToStart,
                           background: Container(
-                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            margin:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
                             decoration: BoxDecoration(
                               color: AppColors.red600,
                               borderRadius: BorderRadius.circular(12),
@@ -540,10 +588,12 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                             child: const Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.delete_outline, color: Colors.white, size: 22),
+                                Icon(Icons.delete_outline,
+                                    color: Colors.white, size: 22),
                                 SizedBox(height: 2),
                                 Text('Delete',
-                                    style: TextStyle(color: Colors.white, fontSize: 11)),
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 11)),
                               ],
                             ),
                           ),
@@ -562,7 +612,8 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
                                     child: Text('Delete',
-                                        style: TextStyle(color: AppColors.red600)),
+                                        style:
+                                            TextStyle(color: AppColors.red600)),
                                   ),
                                 ],
                               ),
@@ -603,7 +654,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
           .read(quotationRepositoryProvider)
           .approveQuotation(widget.quotation.id);
       ref.read(_mgrQuotationProvider.notifier).updateItem(updated);
-      if (mounted) _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
+      if (mounted)
+        _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
     } finally {
@@ -631,7 +683,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Convert'),
           ),
@@ -647,7 +700,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
       ref.read(_mgrQuotationProvider.notifier).load();
       if (mounted) {
         _snack('Order created successfully', AppColors.primaryMain);
-        if (q.convertedOrderId != null) context.push('/orders/${q.convertedOrderId}');
+        if (q.convertedOrderId != null)
+          context.push('/orders/${q.convertedOrderId}');
       }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
@@ -672,7 +726,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
     return GestureDetector(
       onTap: () async {
         final changed = await context.push<bool>('/quotations/${q.id}');
-        if (changed == true && mounted) ref.read(_mgrQuotationProvider.notifier).load();
+        if (changed == true && mounted)
+          ref.read(_mgrQuotationProvider.notifier).load();
       },
       child: Container(
         decoration: BoxDecoration(
@@ -694,7 +749,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                     child: Text(q.quotationCode,
                         style: AppTypography.h4,
                         overflow: TextOverflow.ellipsis)),
-                TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
+                TradeStatusChip(
+                    status: q.status, kind: TradeChipKind.quotation),
               ],
             ),
             if (q.recipientName?.isNotEmpty == true) ...[
@@ -736,8 +792,8 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                 ],
                 const Spacer(),
                 Text(fmt.format(q.totalAmount),
-                    style:
-                        AppTypography.h3.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.h3
+                        .copyWith(color: AppColors.primaryMain)),
               ],
             ),
             if (_canApprove || _canConvert) ...[

@@ -20,8 +20,10 @@ import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/trade_status_chip.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
+import '../profile/my_addresses_screen.dart';
 import '../quotations/quotations.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -206,7 +208,54 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
   bool get _canRespond =>
       widget.quotation.status == 'CUSTOMER_SENT' && !widget.quotation.isExpired;
 
+  Future<bool> _ensureDeliveryAddress() async {
+    final userId = ref.read(sessionProvider).user?.id;
+    if (userId == null) return false;
+    final List<UserAddress> addresses;
+    try {
+      addresses =
+          await ref.read(userAddressRepositoryProvider).listAddresses(userId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not check delivery addresses: $e'),
+            backgroundColor: AppColors.red600,
+          ),
+        );
+      }
+      return false;
+    }
+    if (addresses.isNotEmpty) return true;
+    if (!mounted) return false;
+    final add = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delivery address required'),
+        content: const Text(
+          'Add a delivery address before accepting this quotation. The nursery needs it before confirming your order.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Add Address'),
+          ),
+        ],
+      ),
+    );
+    if (add == true && mounted) {
+      await context.push('/my-addresses');
+    }
+    return false;
+  }
+
   Future<void> _accept() async {
+    final hasDeliveryAddress = await _ensureDeliveryAddress();
+    if (!hasDeliveryAddress || !mounted) return;
     setState(() => _acting = true);
     try {
       final updated = await ref
@@ -317,18 +366,22 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                 ),
                 if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.red100,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('Expired',
                         style: AppTypography.caption.copyWith(
-                            color: AppColors.red600, fontWeight: FontWeight.w700, fontSize: 10)),
+                            color: AppColors.red600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10)),
                   ),
                   const SizedBox(width: 6),
                 ],
-                TradeStatusChip(status: q.status, kind: TradeChipKind.quotation),
+                TradeStatusChip(
+                    status: q.status, kind: TradeChipKind.quotation),
               ],
             ),
             if (q.nurseryName?.isNotEmpty == true) ...[
@@ -365,8 +418,10 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                   Text(
                     '${q.isExpired ? "Expired" : "Valid until"}: ${DateFormat("d MMM yyyy").format(q.validUntil!)}',
                     style: AppTypography.caption.copyWith(
-                      color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
-                      fontWeight: q.isExpired ? FontWeight.w600 : FontWeight.normal,
+                      color:
+                          q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                      fontWeight:
+                          q.isExpired ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -405,7 +460,8 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                 const Spacer(),
                 Text(
                   fmt.format(q.totalAmount),
-                  style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
+                  style:
+                      AppTypography.h3.copyWith(color: AppColors.primaryMain),
                 ),
               ],
             ),
@@ -773,7 +829,8 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                 const Spacer(),
                 Text(
                   fmt.format(o.totalAmount),
-                  style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
+                  style:
+                      AppTypography.h3.copyWith(color: AppColors.primaryMain),
                 ),
               ],
             ),
@@ -878,8 +935,7 @@ class _DispatchCard extends StatelessWidget {
     final d = dispatch;
     final dateFmt = DateFormat('d MMM yyyy');
     final date = DateTime.tryParse(d.dispatchDate ?? d.createdAt)?.toLocal();
-    final isInTransit =
-        d.status == 'DISPATCHED' || d.status == 'IN_TRANSIT';
+    final isInTransit = d.status == 'DISPATCHED' || d.status == 'IN_TRANSIT';
 
     return GestureDetector(
       onTap: () => context.push('/dispatches/${d.id}/track'),

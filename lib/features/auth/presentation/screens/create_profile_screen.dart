@@ -7,7 +7,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/onboarding_progress.dart';
 import '../../data/models/user_models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
@@ -107,9 +106,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.x2l),
-                const OnboardingProgress(currentStep: 3),
-                const SizedBox(height: AppSpacing.x2l),
+                const SizedBox(height: AppSpacing.x3l),
                 Container(
                   width: 52,
                   height: 52,

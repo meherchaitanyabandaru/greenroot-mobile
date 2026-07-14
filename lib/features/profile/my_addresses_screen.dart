@@ -647,6 +647,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   bool _isDefault = false;
   bool _saving = false;
   String? _saveError;
+  bool _useProfileContact = true;
 
   // Mutable — updated if user taps "Change Location"
   MapPickResult? _mapResult;
@@ -672,6 +673,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       _latitude = e.latitude;
       _longitude = e.longitude;
       _isDefault = e.isDefault;
+      _useProfileContact = (e.contactName?.trim().isEmpty ?? true) &&
+          (e.contactMobile?.trim().isEmpty ?? true);
     } else if (_mapResult != null) {
       _pincodeCtrl.text = _mapResult!.postalCode ?? '';
       _latitude = _mapResult!.latitude;
@@ -720,13 +723,13 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     final pincode = _pincodeCtrl.text.trim();
 
     try {
+      final contactName = _useProfileContact ? null : _nameCtrl.text.trim();
+      final contactMobile = _useProfileContact ? null : _mobileCtrl.text.trim();
       await widget.onSave(AddressFormData(
         addressType:
             _labelCtrl.text.trim().isEmpty ? null : _labelCtrl.text.trim(),
-        contactName:
-            _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-        contactMobile:
-            _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
+        contactName: contactName?.isEmpty == true ? null : contactName,
+        contactMobile: contactMobile?.isEmpty == true ? null : contactMobile,
         addressLine1: _line1Ctrl.text.trim(),
         addressLine2:
             _line2Ctrl.text.trim().isEmpty ? null : _line2Ctrl.text.trim(),
@@ -751,6 +754,13 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
+    final profile = ref.watch(sessionProvider).user;
+    final profileName = profile?.name?.trim();
+    final profileMobile = profile?.mobile?.trim();
+    final profileLabel = [
+      if (profileName?.isNotEmpty == true) profileName,
+      if (profileMobile?.isNotEmpty == true) '+91 $profileMobile',
+    ].whereType<String>().join(' - ');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -791,26 +801,36 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           decoration: _deco('e.g. Home, Office, Nursery'),
                         ),
                       ),
-                      _Field(
-                        label: 'Full Name',
-                        child: TextFormField(
-                          controller: _nameCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: _deco('Contact person name'),
-                        ),
+                      _ProfileContactToggle(
+                        value: _useProfileContact,
+                        profileLabel: profileLabel.isEmpty
+                            ? 'Profile contact details'
+                            : profileLabel,
+                        onChanged: (v) =>
+                            setState(() => _useProfileContact = v),
                       ),
-                      _Field(
-                        label: 'Mobile Number',
-                        child: TextFormField(
-                          controller: _mobileCtrl,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                          decoration: _deco('10-digit mobile number'),
+                      if (!_useProfileContact) ...[
+                        _Field(
+                          label: 'Alternate Contact Name',
+                          child: TextFormField(
+                            controller: _nameCtrl,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: _deco('Person available here'),
+                          ),
                         ),
-                      ),
+                        _Field(
+                          label: 'Alternate Mobile Number',
+                          child: TextFormField(
+                            controller: _mobileCtrl,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            decoration: _deco('10-digit mobile number'),
+                          ),
+                        ),
+                      ],
                     ]),
                     const SizedBox(height: AppSpacing.md),
 
@@ -1283,6 +1303,66 @@ class _Field extends StatelessWidget {
                 color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         child,
+      ],
+    );
+  }
+}
+
+class _ProfileContactToggle extends StatelessWidget {
+  final bool value;
+  final String profileLabel;
+  final ValueChanged<bool> onChanged;
+
+  const _ProfileContactToggle({
+    required this.value,
+    required this.profileLabel,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: AppColors.forest100,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.person_pin_circle_outlined,
+            color: AppColors.primaryMain,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Use my profile contact details',
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                profileLabel,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: AppColors.primaryMain,
+        ),
       ],
     );
   }

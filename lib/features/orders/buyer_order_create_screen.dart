@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart';
 import '../plants/plants.dart';
+import '../profile/my_addresses_screen.dart';
 import 'orders.dart';
 
 // ── Buyer Order Create Screen ─────────────────────────────────────────────────
@@ -23,17 +26,24 @@ class BuyerOrderCreateScreen extends ConsumerStatefulWidget {
 class _BuyerOrderCreateScreenState
     extends ConsumerState<BuyerOrderCreateScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final List<_ItemRow> _items = [];
 
   Nursery? _selectedNursery;
+  List<UserAddress> _addresses = [];
+  UserAddress? _selectedAddress;
+  bool _loadingAddresses = true;
   bool _saving = false;
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadAddresses);
+  }
+
+  @override
   void dispose() {
-    _nameCtrl.dispose();
     _notesCtrl.dispose();
     for (final r in _items) {
       r.dispose();
@@ -50,10 +60,73 @@ class _BuyerOrderCreateScreenState
 
   double get _grandTotal => _items.fold(0.0, (s, r) => s + r.lineTotal);
 
+  Future<void> _loadAddresses() async {
+    final userId = ref.read(sessionProvider).user?.id;
+    if (userId == null) {
+      if (mounted) setState(() => _loadingAddresses = false);
+      return;
+    }
+    setState(() => _loadingAddresses = true);
+    try {
+      final addresses =
+          await ref.read(userAddressRepositoryProvider).listAddresses(userId);
+      final selected = addresses.where((a) => a.isDefault).firstOrNull ??
+          addresses.firstOrNull;
+      if (mounted) {
+        setState(() {
+          _addresses = addresses;
+          _selectedAddress = selected;
+          _loadingAddresses = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Could not load delivery addresses: $e';
+          _loadingAddresses = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _manageAddresses() async {
+    await context.push('/my-addresses');
+    if (mounted) await _loadAddresses();
+  }
+
+  DeliverySnapshotRequest? _deliveryFromSelectedAddress() {
+    final address = _selectedAddress;
+    if (address == null) return null;
+    final profile = ref.read(sessionProvider).user;
+    return DeliverySnapshotRequest(
+      contactName: address.contactName?.trim().isNotEmpty == true
+          ? address.contactName
+          : profile?.name,
+      contactMobile: address.contactMobile?.trim().isNotEmpty == true
+          ? address.contactMobile
+          : profile?.mobile,
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2,
+      city: address.city,
+      state: address.state,
+      country: address.country ?? 'India',
+      postalCode: address.postalCode,
+      latitude: address.latitude,
+      longitude: address.longitude,
+      locationSource: address.latitude != null && address.longitude != null
+          ? 'map_selected'
+          : 'address_search',
+    );
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_selectedNursery == null) {
       setState(() => _error = 'Select a nursery first');
+      return;
+    }
+    if (_selectedAddress == null) {
+      setState(() => _error = 'Select a delivery address before placing order');
       return;
     }
     if (_items.isEmpty) {
@@ -73,6 +146,7 @@ class _BuyerOrderCreateScreenState
     });
 
     try {
+      final profileName = ref.read(sessionProvider).user?.name?.trim();
       final reqs = _items
           .map((r) => OrderItemRequest(
                 plantId: r.plant!.id,
@@ -85,8 +159,8 @@ class _BuyerOrderCreateScreenState
       await ref.read(orderRepositoryProvider).createBuyerOrder(
             sellerNurseryId: _selectedNursery!.id,
             items: reqs,
-            buyerName:
-                _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            buyerName: profileName?.isEmpty == true ? null : profileName,
+            delivery: _deliveryFromSelectedAddress(),
             notes:
                 _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
           );
@@ -109,6 +183,10 @@ class _BuyerOrderCreateScreenState
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(sessionProvider).user;
+    final profileName = profile?.name?.trim();
+    final profileMobile = profile?.mobile?.trim();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buy Plants'),
@@ -131,12 +209,22 @@ class _BuyerOrderCreateScreenState
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // ── Optional name ─────────────────────────────────────────────
-            _SectionLabel('Your Name (optional)'),
-            TextFormField(
-              controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: _inputDeco('e.g. Ravi Kumar'),
+            // ── Profile contact ───────────────────────────────────────────
+            _SectionLabel('Profile Contact'),
+            _ProfileContactCard(
+              name: profileName,
+              mobile: profileMobile,
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // ── Delivery address ──────────────────────────────────────────
+            _SectionLabel('Deliver To'),
+            _DeliveryAddressSelector(
+              addresses: _addresses,
+              loading: _loadingAddresses,
+              selected: _selectedAddress,
+              onSelect: (address) => setState(() => _selectedAddress = address),
+              onManage: _manageAddresses,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -257,6 +345,276 @@ class _BuyerOrderCreateScreenState
 }
 
 // ── Nursery picker tile ───────────────────────────────────────────────────────
+
+class _ProfileContactCard extends StatelessWidget {
+  final String? name;
+  final String? mobile;
+
+  const _ProfileContactCard({required this.name, required this.mobile});
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = name?.isNotEmpty == true ? name! : 'Profile name';
+    final displayMobile =
+        mobile?.isNotEmpty == true ? '+91 $mobile' : 'Verified mobile';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surface,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.forest100,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              color: AppColors.primaryMain,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(displayName, style: AppTypography.label),
+                const SizedBox(height: 2),
+                Text(
+                  displayMobile,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeliveryAddressSelector extends StatelessWidget {
+  final List<UserAddress> addresses;
+  final bool loading;
+  final UserAddress? selected;
+  final ValueChanged<UserAddress> onSelect;
+  final VoidCallback onManage;
+
+  const _DeliveryAddressSelector({
+    required this.addresses,
+    required this.loading,
+    required this.selected,
+    required this.onSelect,
+    required this.onManage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(8),
+          color: AppColors.surface,
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Text('Loading saved addresses...'),
+          ],
+        ),
+      );
+    }
+
+    if (addresses.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.amber600),
+          borderRadius: BorderRadius.circular(8),
+          color: AppColors.amber100,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.location_off_outlined,
+                    color: AppColors.amber700),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Delivery address required',
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.amber700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Add a delivery address once, then reuse it for future orders.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: onManage,
+              icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+              label: const Text('Add Delivery Address'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surface,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (selected != null) _SelectedAddressCard(address: selected!),
+          if (addresses.length > 1) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final address in addresses)
+                  ChoiceChip(
+                    selected: selected?.id == address.id,
+                    label: Text(
+                      address.addressType?.isNotEmpty == true
+                          ? address.addressType!
+                          : 'Address ${address.id}',
+                    ),
+                    onSelected: (_) => onSelect(address),
+                    selectedColor: AppColors.forest100,
+                    labelStyle: TextStyle(
+                      color: selected?.id == address.id
+                          ? AppColors.primaryMain
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          TextButton.icon(
+            onPressed: onManage,
+            icon: const Icon(Icons.manage_search_outlined, size: 18),
+            label: const Text('Manage saved addresses'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectedAddressCard extends StatelessWidget {
+  final UserAddress address;
+
+  const _SelectedAddressCard({required this.address});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+            color: AppColors.forest100,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.location_on_outlined,
+            color: AppColors.primaryMain,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      address.addressType?.isNotEmpty == true
+                          ? address.addressType!
+                          : 'Delivery address',
+                      style: AppTypography.label,
+                    ),
+                  ),
+                  if (address.isDefault)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.forest100,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'Default',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                address.displayAddress,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                address.contactName?.isNotEmpty == true ||
+                        address.contactMobile?.isNotEmpty == true
+                    ? [
+                        address.contactName,
+                        address.contactMobile,
+                      ].whereType<String>().join(' - ')
+                    : 'Uses profile contact',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _NurseryPickerTile extends ConsumerStatefulWidget {
   final Nursery? selected;

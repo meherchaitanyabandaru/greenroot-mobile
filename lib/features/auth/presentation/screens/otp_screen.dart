@@ -9,7 +9,6 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/onboarding_progress.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 import 'splash_screen.dart';
@@ -129,8 +128,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: AppSpacing.lg),
-              const OnboardingProgress(currentStep: 2),
               const SizedBox(height: AppSpacing.x2l),
               const Text('Enter verification code', style: AppTypography.h1),
               const SizedBox(height: AppSpacing.sm),

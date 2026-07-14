@@ -92,7 +92,8 @@ class ProfileTabContent extends ConsumerWidget {
           Center(
             child: Text(
               user!.mobile!,
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -101,7 +102,8 @@ class ProfileTabContent extends ConsumerWidget {
           Center(
             child: Text(
               user!.email!,
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -132,7 +134,8 @@ class ProfileTabContent extends ConsumerWidget {
         if (role == AppRole.manager) ...[
           OutlinedButton.icon(
             onPressed: () => _confirmLeaveNursery(context, ref),
-            icon: const Icon(Icons.exit_to_app_rounded, color: AppColors.amber600),
+            icon: const Icon(Icons.exit_to_app_rounded,
+                color: AppColors.amber600),
             label: const Text(
               'Leave Nursery',
               style: TextStyle(color: AppColors.amber600),
@@ -148,7 +151,8 @@ class ProfileTabContent extends ConsumerWidget {
         // Disconnect from Nursery — only for drivers who have a connected nursery
         if (role == AppRole.driver && caps.driverNurseryId != null) ...[
           OutlinedButton.icon(
-            onPressed: () => _confirmDisconnectFromNursery(context, ref, caps.driverNurseryId!),
+            onPressed: () => _confirmDisconnectFromNursery(
+                context, ref, caps.driverNurseryId!),
             icon: const Icon(Icons.link_off_rounded, color: AppColors.amber600),
             label: const Text(
               'Disconnect from Nursery',
@@ -180,10 +184,15 @@ class ProfileTabContent extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Delete Account — available for all roles
-        TextButton(
+        // Delete Account — available for all roles, intentionally low emphasis.
+        TextButton.icon(
           onPressed: () => _confirmDeleteAccount(context, ref),
-          child: const Text(
+          icon: const Icon(
+            Icons.delete_outline_rounded,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
+          label: const Text(
             'Delete Account',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
@@ -223,13 +232,15 @@ class ProfileTabContent extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to leave nursery. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to leave nursery. Please try again.')),
         );
       }
     }
   }
 
-  Future<void> _confirmDisconnectFromNursery(BuildContext context, WidgetRef ref, int nurseryId) async {
+  Future<void> _confirmDisconnectFromNursery(
+      BuildContext context, WidgetRef ref, int nurseryId) async {
     final session = ref.read(sessionProvider);
     final userId = session.user?.id;
     if (userId == null) return;
@@ -257,19 +268,22 @@ class ProfileTabContent extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await ApiClient.instance.delete(ApiConstants.disconnectDriver(nurseryId, userId));
+      await ApiClient.instance
+          .delete(ApiConstants.disconnectDriver(nurseryId, userId));
       await ref.read(sessionProvider.notifier).bootstrap();
       if (context.mounted) context.go('/select-activity');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to disconnect. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to disconnect. Please try again.')),
         );
       }
     }
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDeleteAccount(
+      BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -316,7 +330,8 @@ class ProfileTabContent extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete account. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to delete account. Please try again.')),
         );
       }
     }
@@ -352,7 +367,9 @@ class ProfileTile extends StatelessWidget {
           child: Icon(icon, size: 20, color: AppColors.primaryMain),
         ),
         title: Text(title, style: AppTypography.body),
-        subtitle: subtitle != null ? Text(subtitle!, style: AppTypography.caption) : null,
+        subtitle: subtitle != null
+            ? Text(subtitle!, style: AppTypography.caption)
+            : null,
         trailing: const Icon(
           Icons.chevron_right_rounded,
           color: AppColors.textMuted,
@@ -379,7 +396,8 @@ class EmptyActivity extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.inbox_outlined, size: 36, color: AppColors.textMuted),
+          const Icon(Icons.inbox_outlined,
+              size: 36, color: AppColors.textMuted),
           const SizedBox(height: AppSpacing.sm),
           Text(
             message,

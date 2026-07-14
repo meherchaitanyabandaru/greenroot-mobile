@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -202,8 +201,7 @@ class ProfileScreen extends ConsumerWidget {
                     context: context,
                     builder: (_) => AlertDialog(
                       title: const Text('Sign Out'),
-                      content:
-                          const Text('Are you sure you want to sign out?'),
+                      content: const Text('Are you sure you want to sign out?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -225,41 +223,21 @@ class ProfileScreen extends ConsumerWidget {
                   }
                 },
               ),
-              _SettingsTile(
-                icon: Icons.delete_outline_rounded,
-                iconColor: AppColors.red600,
-                label: 'Delete Account',
-                subtitle: 'Permanently remove your data',
-                onTap: () => _confirmDeleteAccount(context, ref),
-              ),
             ],
           ),
-          if (kDebugMode) ...[
-            const SizedBox(height: AppSpacing.xl),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text(
-                'DEV TOOLS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF7C3AED),
-                  letterSpacing: 1.2,
-                ),
-              ),
+          const SizedBox(height: AppSpacing.x2l),
+          TextButton.icon(
+            onPressed: () => _confirmDeleteAccount(context, ref),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 18,
+              color: AppColors.textMuted,
             ),
-            _SettingsSection(
-              items: [
-                _SettingsTile(
-                  icon: Icons.qr_code_rounded,
-                  iconColor: const Color(0xFF7C3AED),
-                  label: 'QR Test Gallery',
-                  subtitle: 'Scan all QR scenarios in one place',
-                  onTap: () => context.push('/dev/qr-gallery'),
-                ),
-              ],
+            label: const Text(
+              'Delete Account',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
-          ],
+          ),
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),
@@ -384,9 +362,7 @@ class ProfileScreen extends ConsumerWidget {
           ? 'Close or cancel your active orders, quotations, and nursery before deleting your account.'
           : 'Failed to delete account. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 5)),
+        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
       );
     } catch (_) {
       if (context.mounted) {
@@ -597,8 +573,7 @@ class _ProfileCompletionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10)),
               ),
               child: Text('Complete Profile',
-                  style: AppTypography.button
-                      .copyWith(color: Colors.white)),
+                  style: AppTypography.button.copyWith(color: Colors.white)),
             ),
           ),
         ],
