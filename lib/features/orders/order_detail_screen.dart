@@ -482,22 +482,12 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
             color: AppColors.blue600,
             onTap: _busy ? null : _startLoading,
           );
-          secondaryBtn = _OutlineButton(
-            label: 'Cancel Order',
-            color: AppColors.red600,
-            onTap: _busy ? null : _confirmCancel,
-          );
         case 'LOADING':
           primaryBtn = _BigButton(
             label: 'Complete Loading',
             icon: Icons.done_all_rounded,
             color: AppColors.primaryMain,
             onTap: _busy ? null : _completeLoading,
-          );
-          secondaryBtn = _OutlineButton(
-            label: 'Cancel Order',
-            color: AppColors.red600,
-            onTap: _busy ? null : _confirmCancel,
           );
         case 'LOADED':
         case 'PARTIALLY_FULFILLED':
@@ -1687,8 +1677,8 @@ class _RateOrderCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'How was the plant quality and service for this order?',
-            style: AppTypography.caption
-                .copyWith(color: AppColors.textSecondary),
+            style:
+                AppTypography.caption.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -1725,8 +1715,7 @@ class _ItemsCard extends ConsumerStatefulWidget {
 class _ItemsCardState extends ConsumerState<_ItemsCard> {
   bool _expanded = false;
 
-  bool get _editable =>
-      widget.order.status == 'LOADING' && widget.canManage;
+  bool get _editable => widget.order.status == 'LOADING' && widget.canManage;
 
   void _refresh() => ref.invalidate(orderDetailProvider(widget.order.id));
 
@@ -1757,8 +1746,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.errorText),
+            content: Text(e.message), backgroundColor: AppColors.errorText),
       );
     }
   }
@@ -1879,12 +1867,12 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                                 visualDensity: VisualDensity.compact,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                onPressed: () =>
-                                    _showItemSheet(existing: item),
+                                onPressed: () => _showItemSheet(existing: item),
                               ),
                               const SizedBox(width: 4),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 18),
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 18),
                                 color: AppColors.errorText,
                                 visualDensity: VisualDensity.compact,
                                 padding: EdgeInsets.zero,
@@ -1991,8 +1979,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
   }
 
   Future<void> _save() async {
-    final plantId =
-        _plant?.id ?? widget.existing?.plantId;
+    final plantId = _plant?.id ?? widget.existing?.plantId;
     final qty = double.tryParse(_qtyCtrl.text.trim());
     final price = double.tryParse(_priceCtrl.text.trim());
 
@@ -2040,8 +2027,8 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
-    final plantName = _plant?.displayName ??
-        (isEdit ? widget.existing!.displayName : null);
+    final plantName =
+        _plant?.displayName ?? (isEdit ? widget.existing!.displayName : null);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -2075,8 +2062,8 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
               onTap: _pickPlant,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(8),
@@ -2093,8 +2080,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right,
-                        color: AppColors.textMuted),
+                    const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   ],
                 ),
               ),
@@ -2215,8 +2201,8 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
               decoration: InputDecoration(
                 hintText: 'Search plants…',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 isDense: true,
               ),
             ),
@@ -2225,8 +2211,8 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primaryMain))
+                    child:
+                        CircularProgressIndicator(color: AppColors.primaryMain))
                 : _results.isEmpty
                     ? Center(
                         child: Text('No plants found',
@@ -2235,8 +2221,7 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
                     : ListView.separated(
                         controller: controller,
                         itemCount: _results.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1),
+                        separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
                           final p = _results[i];
                           return ListTile(

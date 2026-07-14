@@ -27,6 +27,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
     'CONFIRMED': _LoadingTabState(),
     'LOADING': _LoadingTabState(),
     'LOADED': _LoadingTabState(),
+    'PARTIAL': _LoadingTabState(),
   };
 
   @override
@@ -57,11 +58,11 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
       final repo = ref.read(orderRepositoryProvider);
       final results = await Future.wait(
         tab.statuses.map((s) => repo.listOrders(
-          page: 1,
-          perPage: 50,
-          status: s,
-          nurseryId: widget.nurseryId,
-        )),
+              page: 1,
+              perPage: 50,
+              status: s,
+              nurseryId: widget.nurseryId,
+            )),
       );
       if (!mounted) return;
       final merged = results.expand((r) => r.$1).toList()
@@ -175,7 +176,28 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               onRefresh: () => _load('LOADED'),
               onOpen: (order) => context.push('/orders/${order.id}'),
               onStartLoading: null,
-              onCompleteLoading: null,
+              onCompleteLoading: (order) => _runAction(
+                order,
+                (repo) => repo.updateStatus(order.id, 'COMPLETED'),
+                'Order completed',
+              ),
+              completeLabel: 'Mark Completed',
+            ),
+            _LoadingOrderList(
+              state: _states['PARTIAL']!,
+              emptyTitle: _tabs[3].emptyTitle,
+              emptySubtitle: _tabs[3].emptySubtitle,
+              canManage: canManage,
+              showItemAdjust: false,
+              onRefresh: () => _load('PARTIAL'),
+              onOpen: (order) => context.push('/orders/${order.id}'),
+              onStartLoading: null,
+              onCompleteLoading: (order) => _runAction(
+                order,
+                (repo) => repo.updateStatus(order.id, 'COMPLETED'),
+                'Partial order completed',
+              ),
+              completeLabel: 'Mark Completed',
             ),
           ],
         ),
@@ -194,6 +216,7 @@ class _LoadingOrderList extends StatelessWidget {
   final ValueChanged<Order> onOpen;
   final ValueChanged<Order>? onStartLoading;
   final ValueChanged<Order>? onCompleteLoading;
+  final String completeLabel;
 
   const _LoadingOrderList({
     required this.state,
@@ -205,6 +228,7 @@ class _LoadingOrderList extends StatelessWidget {
     required this.onOpen,
     required this.onStartLoading,
     required this.onCompleteLoading,
+    this.completeLabel = 'Complete Loading',
   });
 
   @override
@@ -280,8 +304,10 @@ class _LoadingOrderList extends StatelessWidget {
           onOpen: () => onOpen(order),
           onStartLoading:
               onStartLoading != null ? () => onStartLoading!(order) : null,
-          onCompleteLoading:
-              onCompleteLoading != null ? () => onCompleteLoading!(order) : null,
+          onCompleteLoading: onCompleteLoading != null
+              ? () => onCompleteLoading!(order)
+              : null,
+          completeLabel: completeLabel,
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
@@ -297,6 +323,7 @@ class _LoadingOrderCard extends ConsumerWidget {
   final VoidCallback onOpen;
   final VoidCallback? onStartLoading;
   final VoidCallback? onCompleteLoading;
+  final String completeLabel;
 
   const _LoadingOrderCard({
     required this.order,
@@ -305,6 +332,7 @@ class _LoadingOrderCard extends ConsumerWidget {
     required this.onOpen,
     required this.onStartLoading,
     required this.onCompleteLoading,
+    required this.completeLabel,
   });
 
   @override
@@ -463,7 +491,7 @@ class _LoadingOrderCard extends ConsumerWidget {
                     child: FilledButton.icon(
                       onPressed: onCompleteLoading,
                       icon: const Icon(Icons.done_all_rounded),
-                      label: const Text('Complete Loading'),
+                      label: Text(completeLabel),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.successText,
                       ),
@@ -708,8 +736,17 @@ const _tabs = [
   _LoadingTab(
     key: 'LOADED',
     label: 'Loaded',
-    statuses: ['LOADED', 'PARTIALLY_FULFILLED'],
+    statuses: ['LOADED'],
     emptyTitle: 'No loaded orders',
-    emptySubtitle: 'Orders appear here once loading is complete. Open an order to create a dispatch.',
+    emptySubtitle:
+        'Fully loaded orders appear here. Mark complete when fulfillment is done.',
+  ),
+  _LoadingTab(
+    key: 'PARTIAL',
+    label: 'Partial',
+    statuses: ['PARTIALLY_FULFILLED'],
+    emptyTitle: 'No partial orders',
+    emptySubtitle:
+        'Partially fulfilled orders appear here after reduced loading.',
   ),
 ];

@@ -22,8 +22,8 @@
 //
 //   (default — pure buyer)       →  BuyerTab
 //       Not an owner, not a manager, not a driver.
-//       Buyer-only actions: view quotations (accept/reject), view orders, track dispatches.
-//       CANNOT create orders or quotations.
+//       Buyer-only actions: place orders, view quotations (accept/reject),
+//       view orders, and track dispatches. Cannot create quotations.
 //
 // DRIVER EXCLUSION
 // ─────────────────

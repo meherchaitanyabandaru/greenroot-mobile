@@ -85,12 +85,10 @@ class _BuyerOrderCreateScreenState
       await ref.read(orderRepositoryProvider).createBuyerOrder(
             sellerNurseryId: _selectedNursery!.id,
             items: reqs,
-            buyerName: _nameCtrl.text.trim().isEmpty
-                ? null
-                : _nameCtrl.text.trim(),
-            notes: _notesCtrl.text.trim().isEmpty
-                ? null
-                : _notesCtrl.text.trim(),
+            buyerName:
+                _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            notes:
+                _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
           );
 
       if (mounted) {
@@ -264,12 +262,10 @@ class _NurseryPickerTile extends ConsumerStatefulWidget {
   final Nursery? selected;
   final ValueChanged<Nursery> onSelected;
 
-  const _NurseryPickerTile(
-      {required this.selected, required this.onSelected});
+  const _NurseryPickerTile({required this.selected, required this.onSelected});
 
   @override
-  ConsumerState<_NurseryPickerTile> createState() =>
-      _NurseryPickerTileState();
+  ConsumerState<_NurseryPickerTile> createState() => _NurseryPickerTileState();
 }
 
 class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
@@ -302,8 +298,9 @@ class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
         child: Row(
           children: [
             Icon(Icons.storefront_rounded,
-                color:
-                    n != null ? AppColors.primaryMain : AppColors.textSecondary),
+                color: n != null
+                    ? AppColors.primaryMain
+                    : AppColors.textSecondary),
             const SizedBox(width: 12),
             Expanded(
               child: n != null
@@ -367,7 +364,8 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
     try {
       final (nurseries, _) = await ref
           .read(nurseryRepositoryProvider)
-          .listNurseries(search: query.isEmpty ? null : query, status: 'active');
+          .listNurseries(
+              search: query.isEmpty ? null : query, status: 'active');
       if (mounted) setState(() => _results = nurseries);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -414,8 +412,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
                         ? Center(
                             child: Text('No nurseries found',
                                 style: AppTypography.body
-                                    .copyWith(
-                                        color: AppColors.textSecondary)))
+                                    .copyWith(color: AppColors.textSecondary)))
                         : ListView.separated(
                             controller: controller,
                             itemCount: _results.length,
@@ -429,8 +426,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
                                   child: Icon(Icons.local_florist,
                                       color: AppColors.primaryMain, size: 20),
                                 ),
-                                title: Text(n.name,
-                                    style: AppTypography.label),
+                                title: Text(n.name, style: AppTypography.label),
                                 subtitle: n.cityState.isNotEmpty
                                     ? Text(n.cityState,
                                         style: AppTypography.bodySmall)
@@ -535,8 +531,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
           GestureDetector(
             onTap: _pickPlant,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 border: Border.all(
                     color: row.plant != null
@@ -708,13 +703,13 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                               child: Icon(Icons.eco,
                                   color: AppColors.primaryMain, size: 20),
                             ),
-                            title: Text(p.displayName,
-                                style: AppTypography.label),
+                            title:
+                                Text(p.displayName, style: AppTypography.label),
                             subtitle: p.commonName != null &&
                                     p.scientificName != p.displayName
                                 ? Text(p.scientificName,
-                                    style: AppTypography.bodySmall.copyWith(
-                                        fontStyle: FontStyle.italic))
+                                    style: AppTypography.bodySmall
+                                        .copyWith(fontStyle: FontStyle.italic))
                                 : null,
                             onTap: () => Navigator.of(context).pop(p),
                           );
@@ -737,15 +732,14 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
-            style: AppTypography.label
-                .copyWith(color: AppColors.textSecondary)),
+            style:
+                AppTypography.label.copyWith(color: AppColors.textSecondary)),
       );
 }
 
 InputDecoration _inputDeco(String hint) => InputDecoration(
       hintText: hint,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

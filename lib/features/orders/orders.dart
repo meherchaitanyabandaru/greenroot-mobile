@@ -322,7 +322,7 @@ class OrderRepository {
     final params = <String, dynamic>{
       'page': page,
       'per_page': perPage,
-      if (status?.isNotEmpty == true) 'status': status,
+      if (status?.isNotEmpty == true) 'order_status': status,
       if (nurseryId != null) 'nursery_id': nurseryId,
     };
     return _client.get(

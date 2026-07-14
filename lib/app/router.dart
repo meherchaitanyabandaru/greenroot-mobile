@@ -45,6 +45,7 @@ import '../features/plants/plant_list_screen.dart';
 import '../features/profile/my_addresses_screen.dart';
 import '../features/buyer/buyer_payments_screen.dart';
 import '../features/orders/order_create_screen.dart';
+import '../features/orders/buyer_order_create_screen.dart';
 import '../features/orders/order_detail_screen.dart';
 import '../features/orders/order_loading_screen.dart';
 import '../features/orders/order_list_screen.dart';
@@ -74,6 +75,11 @@ import 'package:flutter/foundation.dart';
 UserCapabilities _capabilities(BuildContext context) {
   final container = ProviderScope.containerOf(context, listen: false);
   return container.read(sessionProvider).capabilities;
+}
+
+List<AppRole> _roles(BuildContext context) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  return container.read(sessionProvider).roles;
 }
 
 // ============================================================================
@@ -123,12 +129,23 @@ String? _driverGuard(BuildContext context, GoRouterState state) {
 
 // _canSellGuard: require canSell capability (owner OR manager).
 // Blocks: pure buyers, driver-only users.
-// Applied on: seller-create routes — order create, quotation create, dispatch create.
-// API equivalent: routes that call POST /api/v1/orders, POST /api/v1/quotations, etc.
+// Applied on seller-only create routes — quotations, dispatch create, etc.
+// API equivalent: routes that call seller-scoped write endpoints.
 String? _canSellGuard(BuildContext context, GoRouterState state) {
   final driverRedirect = _driverGuard(context, state);
   if (driverRedirect != null) return driverRedirect;
   return _capabilities(context).canSell ? null : '/home';
+}
+
+// _orderCreateGuard: buyers, nursery owners, and managers can create orders.
+// Drivers are confined to driver screens. Admins are web-monitoring only.
+String? _orderCreateGuard(BuildContext context, GoRouterState state) {
+  final driverRedirect = _driverGuard(context, state);
+  if (driverRedirect != null) return driverRedirect;
+
+  final caps = _capabilities(context);
+  final roles = _roles(context);
+  return caps.canSell || roles.contains(AppRole.buyer) ? null : '/home';
 }
 
 // _ownerGuard: require isNurseryOwner (NOT just canSell).
@@ -472,8 +489,12 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/orders/create',
-      redirect: _canSellGuard,
-      builder: (_, __) => const OrderCreateScreen(),
+      redirect: _orderCreateGuard,
+      builder: (context, __) {
+        final caps = _capabilities(context);
+        if (caps.canSell) return const OrderCreateScreen();
+        return const BuyerOrderCreateScreen();
+      },
     ),
     GoRoute(
       path: '/orders/:id',

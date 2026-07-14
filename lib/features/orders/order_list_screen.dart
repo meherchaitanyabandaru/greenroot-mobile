@@ -7,6 +7,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
+import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'orders.dart';
 
@@ -48,8 +49,10 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
     final paged = listState.paged;
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
-    final caps = ref.watch(sessionProvider).capabilities;
-    final canCreate = caps.isNurseryOwner || caps.isManager;
+    final session = ref.watch(sessionProvider);
+    final caps = session.capabilities;
+    final canCreate = caps.canSell || session.roles.contains(AppRole.buyer);
+    final createLabel = caps.canSell ? 'New Order' : 'Place Order';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -71,8 +74,8 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
               },
               backgroundColor: AppColors.primaryMain,
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'New Order',
+              label: Text(
+                createLabel,
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -81,7 +84,9 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
             )
           : null,
       body: RefreshIndicator(
-        onRefresh: () => ref.read(orderListProvider.notifier).load(nurseryId: widget.nurseryId),
+        onRefresh: () => ref
+            .read(orderListProvider.notifier)
+            .load(nurseryId: widget.nurseryId),
         color: AppColors.primaryMain,
         child: CustomScrollView(
           controller: _scrollCtrl,
@@ -121,8 +126,8 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
             if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
-                    child:
-                        CircularProgressIndicator(color: AppColors.primaryMain)),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryMain)),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -177,53 +182,60 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                           child: InkWell(
                             onTap: () async {
                               await context.push('/orders/${order.id}');
-                              if (mounted) ref.read(orderListProvider.notifier).load(nurseryId: widget.nurseryId, statusFilter: widget.statusFilter);
+                              if (mounted)
+                                ref.read(orderListProvider.notifier).load(
+                                    nurseryId: widget.nurseryId,
+                                    statusFilter: widget.statusFilter);
                             },
                             borderRadius: AppRadius.cardRadius,
                             child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                              padding:
+                                  const EdgeInsets.all(AppSpacing.cardPadding),
                               decoration: BoxDecoration(
                                 borderRadius: AppRadius.cardRadius,
                                 border: Border.all(color: AppColors.border),
                               ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(order.orderNumber,
-                                          style: AppTypography.h4),
-                                    ),
-                                    StatusBadge(
-                                      label: order.status,
-                                      variant: badgeVariantFromStatus(order.status),
-                                      dot: true,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                if (order.sellerNursery != null)
-                                  Text(order.sellerNursery!,
-                                      style: AppTypography.bodySmall.copyWith(
-                                          color: AppColors.textSecondary)),
-                                const SizedBox(height: AppSpacing.sm),
-                                Row(
-                                  children: [
-                                    Text(
-                                      fmt.format(order.totalAmount),
-                                      style: AppTypography.h4.copyWith(
-                                          color: AppColors.primaryMain),
-                                    ),
-                                    const Spacer(),
-                                    if (dateStr.isNotEmpty)
-                                      Text(dateStr,
-                                          style: AppTypography.caption.copyWith(
-                                              color: AppColors.textMuted)),
-                                  ],
-                                ),
-                              ],
-                            ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(order.orderNumber,
+                                            style: AppTypography.h4),
+                                      ),
+                                      StatusBadge(
+                                        label: order.status,
+                                        variant: badgeVariantFromStatus(
+                                            order.status),
+                                        dot: true,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  if (order.sellerNursery != null)
+                                    Text(order.sellerNursery!,
+                                        style: AppTypography.bodySmall.copyWith(
+                                            color: AppColors.textSecondary)),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        fmt.format(order.totalAmount),
+                                        style: AppTypography.h4.copyWith(
+                                            color: AppColors.primaryMain),
+                                      ),
+                                      const Spacer(),
+                                      if (dateStr.isNotEmpty)
+                                        Text(dateStr,
+                                            style: AppTypography.caption
+                                                .copyWith(
+                                                    color:
+                                                        AppColors.textMuted)),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

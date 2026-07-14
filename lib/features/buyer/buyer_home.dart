@@ -23,6 +23,7 @@
 // │  ✅  Browse plant catalog              GET  /api/v1/plants                  │
 // │  ✅  Browse nurseries (public)         GET  /api/v1/nurseries               │
 // │  ✅  View nursery detail               GET  /api/v1/nurseries/:id           │
+// │  ✅  Place own order                   POST /api/v1/orders                  │
 // │  ✅  View own orders                   GET  /api/v1/orders                  │
 // │  ✅  View order detail                 GET  /api/v1/orders/:id              │
 // │  ✅  Cancel PENDING order (own only)   POST /api/v1/orders/:id/cancel       │
@@ -40,7 +41,6 @@
 // ├─────────────────────────────────────────────────────────────────────────────┤
 // │  RBAC — WHAT A BUYER CANNOT DO                                              │
 // ├─────────────────────────────────────────────────────────────────────────────┤
-// │  ❌  Create orders     POST /api/v1/orders                                  │
 // │  ❌  Create quotations POST /api/v1/quotations                              │
 // │  ❌  Approve / convert quotations                                           │
 // │  ❌  Access inventory, plant requests, sourcing network                     │
@@ -67,7 +67,7 @@
 //
 // BUSINESS RULES — MUST ENFORCE IN UI
 // ─────────────────────────────────────
-//   • NEVER render "Create Order", "Place Order", "Buy Now" button or FAB
+//   • Render buyer order creation as "Place Order", never seller "New Order"
 //   • "Cancel Order" visible ONLY when order.status == 'PENDING'
 //   • Empty state: show "Explore nurseries →" CTA, NOT "Create your first order"
 
@@ -101,7 +101,8 @@ class _BuyerHomeData {
   const _BuyerHomeData({required this.orders});
 
   List<Order> get activeOrders => orders
-      .where((o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
+      .where(
+          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
       .toList();
 
   int get completedCount =>
@@ -165,7 +166,8 @@ class BuyerHome extends ConsumerWidget {
           const SizedBox(height: 12),
         ],
         // Empty state
-        if (isEmpty) _EmptyBuyerState(onExplore: () => context.push('/nurseries')),
+        if (isEmpty)
+          _EmptyBuyerState(onExplore: () => context.push('/nurseries')),
       ],
     );
   }
@@ -541,8 +543,7 @@ class _EmptyBuyerState extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
               minimumSize: const Size(double.infinity, 48),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
           const SizedBox(height: 10),

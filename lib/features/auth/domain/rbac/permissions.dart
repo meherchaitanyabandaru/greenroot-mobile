@@ -55,6 +55,7 @@ const Map<AppRole, Set<AppPermission>> rolePermissions = {
     AppPermission.plantsRead,
     AppPermission.nurseriesRead,
     AppPermission.ordersRead,
+    AppPermission.ordersCreate,
     AppPermission.paymentsRead,
     AppPermission.trackingRead,
     AppPermission.notificationsRead,
