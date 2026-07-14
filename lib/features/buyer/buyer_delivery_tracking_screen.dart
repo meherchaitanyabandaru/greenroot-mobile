@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/api_client.dart';
@@ -15,6 +14,29 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
+
+String _formatDistance(double km) => km < 1
+    ? '${(km * 1000).toStringAsFixed(0)} m'
+    : '${km.toStringAsFixed(1)} km';
+
+BadgeVariant _dispatchBadgeVariant(String status) =>
+    switch (status.toUpperCase()) {
+      'PENDING' => BadgeVariant.neutral,
+      'ACCEPTED' => BadgeVariant.info,
+      'DISPATCHED' => BadgeVariant.accent,
+      'IN_TRANSIT' || 'DELIVERED' => BadgeVariant.success,
+      'CANCELLED' => BadgeVariant.error,
+      _ => badgeVariantFromStatus(status),
+    };
+
+Color _dispatchStatusColor(String status) => switch (status.toUpperCase()) {
+      'PENDING' => AppColors.textSecondary,
+      'ACCEPTED' => AppColors.blue600,
+      'DISPATCHED' => AppColors.accentHover,
+      'IN_TRANSIT' || 'DELIVERED' => AppColors.primaryMain,
+      'CANCELLED' => AppColors.errorText,
+      _ => AppColors.textSecondary,
+    };
 
 // ── Screen shell ───────────────────────────────────────────────────────────────
 
@@ -91,7 +113,7 @@ class _AppBarTitle extends StatelessWidget {
         ),
         StatusBadge(
           label: dispatch.status.replaceAll('_', ' '),
-          variant: badgeVariantFromStatus(dispatch.status),
+          variant: _dispatchBadgeVariant(dispatch.status),
           dot: true,
         ),
         const SizedBox(width: 8),
@@ -123,12 +145,9 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   bool _journeyExpanded = true;
   bool _plantsExpanded = false;
   Timer? _pollTimer;
-  DateTime? _lastRefresh;
+  DateTime? _lastLocationAt;
 
-  // Route + ETA
-  List<LatLng> _routePoints = [];
-  int? _etaMinutes;
-  double? _distToDestKm;
+  double? _approxDistanceKm;
 
   @override
   void initState() {
@@ -168,10 +187,12 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
       if (mounted) {
         setState(() {
           _trackingPts = pts;
-          _lastRefresh = DateTime.now();
+          _lastLocationAt = pts.isEmpty
+              ? null
+              : DateTime.tryParse(pts.first.trackedAt)?.toLocal();
         });
         if (pts.isNotEmpty && _mapReady) _fitBounds();
-        _fetchRoute();
+        _updateApproxDistance();
       }
     } catch (_) {}
   }
@@ -210,14 +231,18 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
       } catch (_) {}
     }
 
-    final dest = widget.dispatch.destinationAddress;
-    if (dest != null && dest.isNotEmpty) {
+    final deliveryLat = widget.dispatch.deliveryLatitude;
+    final deliveryLng = widget.dispatch.deliveryLongitude;
+    if (deliveryLat != null && deliveryLng != null) {
+      setState(() => _deliveryPointLatLng = LatLng(deliveryLat, deliveryLng));
+    } else if (widget.dispatch.destinationAddress case final dest?
+        when dest.isNotEmpty) {
       final ll = await _geocode(dest);
       if (ll != null && mounted) setState(() => _deliveryPointLatLng = ll);
     }
     if (mounted) {
       _fitBounds();
-      _fetchRoute();
+      _updateApproxDistance();
     }
   }
 
@@ -264,53 +289,15 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     return null;
   }
 
-  // ── Route + ETA from OSRM ────────────────────────────────────────────────────
-
-  Future<void> _fetchRoute() async {
+  void _updateApproxDistance() {
     final truck = _truckLatLng;
     final dest = _deliveryPointLatLng;
     if (truck == null || dest == null) return;
-    try {
-      final resp = await Dio().get<Map<String, dynamic>>(
-        'https://router.project-osrm.org/route/v1/driving'
-        '/${truck.longitude},${truck.latitude};${dest.longitude},${dest.latitude}',
-        queryParameters: {'overview': 'full', 'geometries': 'geojson'},
-        options: Options(
-          headers: {'User-Agent': 'GreenRoot-Buyer/1.0'},
-          receiveTimeout: const Duration(seconds: 10),
-        ),
-      );
-      final data = resp.data!;
-      final routes = data['routes'] as List<dynamic>;
-      if (routes.isEmpty) return;
-      final route = routes.first as Map<String, dynamic>;
-      final secs = (route['duration'] as num).toDouble();
-      final meters = (route['distance'] as num).toDouble();
-      final pts = (route['geometry']['coordinates'] as List<dynamic>)
-          .map((c) {
-            final arr = c as List<dynamic>;
-            return LatLng(
-                (arr[1] as num).toDouble(), (arr[0] as num).toDouble());
-          })
-          .toList();
-      if (mounted) {
-        setState(() {
-          _routePoints = pts;
-          _etaMinutes = (secs / 60).ceil();
-          _distToDestKm = meters / 1000;
-        });
-        _fitBounds();
-      }
-    } catch (_) {
-      // Straight-line fallback when OSRM is unreachable
-      if (mounted) {
-        const calc = Distance();
-        setState(() {
-          _distToDestKm = calc.as(LengthUnit.Kilometer, truck, dest);
-        });
-        _fitBounds();
-      }
-    }
+    const calc = Distance();
+    final km = calc.as(LengthUnit.Kilometer, truck, dest);
+    if (!mounted) return;
+    setState(() => _approxDistanceKm = km);
+    _fitBounds();
   }
 
   // ── Map helpers ──────────────────────────────────────────────────────────────
@@ -321,7 +308,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   }
 
   LatLng? get _truckLatLng => _trackingPts.isNotEmpty
-      ? LatLng(_trackingPts.last.latitude, _trackingPts.last.longitude)
+      ? LatLng(_trackingPts.first.latitude, _trackingPts.first.longitude)
       : null;
 
   void _fitBounds() {
@@ -376,23 +363,20 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
             loadingPointLatLng: _loadingPointLatLng,
             deliveryPointLatLng: _deliveryPointLatLng,
             trackingPts: _trackingPts,
-            routePoints: _routePoints,
             nurseryName: _nurseryName ?? 'Nursery',
             isInTransit: d.status == 'IN_TRANSIT',
-            distToDestKm: _distToDestKm,
-            etaMinutes: _etaMinutes,
+            approxDistanceKm: _approxDistanceKm,
             onMapReady: _onMapReady,
-            onCenterTruck: truck == null
-                ? null
-                : () => _mapController.move(truck, 15),
+            onCenterTruck:
+                truck == null ? null : () => _mapController.move(truck, 15),
           ),
           _LegendStrip(
             hasTruck: truck != null,
             hasLoading: _loadingPointLatLng != null,
             hasDelivery: _deliveryPointLatLng != null,
           ),
-          if (truck != null && (_etaMinutes != null || _distToDestKm != null))
-            _EtaStrip(etaMinutes: _etaMinutes, distKm: _distToDestKm),
+          if (truck != null && _approxDistanceKm != null)
+            _DistanceStrip(distKm: _approxDistanceKm),
         ],
 
         // Scrollable content
@@ -414,7 +398,11 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
               ),
               child: Column(
                 children: [
-                  _DriverInfoCard(dispatch: d, lastRefresh: _lastRefresh),
+                  _DriverInfoCard(
+                    dispatch: d,
+                    lastLocationAt: _lastLocationAt,
+                    approxDistanceKm: _approxDistanceKm,
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   _BuyerJourneyCard(
                     dispatch: d,
@@ -442,7 +430,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
         _BuyerBottomBar(
           destinationAddress: d.destinationAddress,
           isLive: _isLive,
-          lastRefresh: _lastRefresh,
+          lastLocationAt: _lastLocationAt,
           onOpenMaps: _openInMaps,
         ),
       ],
@@ -458,11 +446,9 @@ class _MapSection extends StatelessWidget {
   final LatLng? loadingPointLatLng;
   final LatLng? deliveryPointLatLng;
   final List<TrackingPoint> trackingPts;
-  final List<LatLng> routePoints;
   final String nurseryName;
   final bool isInTransit;
-  final double? distToDestKm;
-  final int? etaMinutes;
+  final double? approxDistanceKm;
   final VoidCallback onMapReady;
   final VoidCallback? onCenterTruck;
 
@@ -472,12 +458,10 @@ class _MapSection extends StatelessWidget {
     required this.loadingPointLatLng,
     required this.deliveryPointLatLng,
     required this.trackingPts,
-    required this.routePoints,
     required this.nurseryName,
     required this.isInTransit,
     required this.onMapReady,
-    this.distToDestKm,
-    this.etaMinutes,
+    this.approxDistanceKm,
     this.onCenterTruck,
   });
 
@@ -490,8 +474,9 @@ class _MapSection extends StatelessWidget {
         defaultCenter;
     final zoom = truckLatLng != null ? 13.0 : 6.0;
 
-    final gpsPts =
-        trackingPts.map((p) => LatLng(p.latitude, p.longitude)).toList();
+    final gpsPts = trackingPts.reversed
+        .map((p) => LatLng(p.latitude, p.longitude))
+        .toList();
 
     final straightLine = <LatLng>[
       if (truckLatLng != null) truckLatLng!,
@@ -514,8 +499,8 @@ class _MapSection extends StatelessWidget {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'in.greenroot.greenroot_mobile',
               ),
-              // Straight-line fallback (visible immediately, replaced by OSRM when ready)
-              if (routePoints.isEmpty && straightLine.length == 2)
+              // Approximate business connection only. Road navigation stays in Maps.
+              if (straightLine.length == 2)
                 PolylineLayer(
                   polylines: [
                     Polyline(
@@ -523,22 +508,6 @@ class _MapSection extends StatelessWidget {
                       strokeWidth: 2.5,
                       color: AppColors.primaryMain.withValues(alpha: 0.45),
                       pattern: const StrokePattern.dotted(spacingFactor: 3),
-                    ),
-                  ],
-                ),
-              // Road route driver → destination (OSRM — replaces straight line)
-              if (routePoints.length >= 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: routePoints,
-                      strokeWidth: 6,
-                      color: AppColors.primaryMain.withValues(alpha: 0.25),
-                    ),
-                    Polyline(
-                      points: routePoints,
-                      strokeWidth: 3.5,
-                      color: AppColors.primaryMain,
                     ),
                   ],
                 ),
@@ -621,33 +590,14 @@ class _MapSection extends StatelessWidget {
             ),
           ),
 
-          // Distance + ETA pills (bottom-left)
-          if (distToDestKm != null || etaMinutes != null)
+          if (approxDistanceKm != null)
             Positioned(
               bottom: 8,
               left: 8,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (distToDestKm != null)
-                    _MapPill(
-                      icon: Icons.straighten_rounded,
-                      color: AppColors.blue600,
-                      label: distToDestKm! < 1
-                          ? '${(distToDestKm! * 1000).toStringAsFixed(0)} m'
-                          : '${distToDestKm!.toStringAsFixed(1)} km',
-                    ),
-                  if (distToDestKm != null && etaMinutes != null)
-                    const SizedBox(width: 6),
-                  if (etaMinutes != null)
-                    _MapPill(
-                      icon: Icons.access_time_rounded,
-                      color: AppColors.primaryMain,
-                      label: etaMinutes! < 60
-                          ? '~$etaMinutes min'
-                          : '~${(etaMinutes! / 60).toStringAsFixed(1)} hr',
-                    ),
-                ],
+              child: _MapPill(
+                icon: Icons.straighten_rounded,
+                color: AppColors.blue600,
+                label: _formatDistance(approxDistanceKm!),
               ),
             ),
 
@@ -765,11 +715,7 @@ class _LiveChip extends StatelessWidget {
     final (bg, fg, label) = isInTransit && hasPosition
         ? (AppColors.primaryLight, AppColors.primaryMain, 'Live Tracking')
         : isInTransit
-            ? (
-                AppColors.amber100,
-                AppColors.amber700,
-                'Awaiting Location'
-              )
+            ? (AppColors.amber100, AppColors.amber700, 'Awaiting Location')
             : (AppColors.blue100, AppColors.blue600, 'Loading Plants');
 
     return Container(
@@ -778,8 +724,7 @@ class _LiveChip extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(99),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
         ],
       ),
       child: Row(
@@ -821,7 +766,8 @@ class _MapPill extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
-  const _MapPill({required this.icon, required this.color, required this.label});
+  const _MapPill(
+      {required this.icon, required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -854,25 +800,16 @@ class _MapPill extends StatelessWidget {
   }
 }
 
-// ── ETA strip (below legend) ───────────────────────────────────────────────────
+// ── Approximate distance strip (below legend) ──────────────────────────────────
 
-class _EtaStrip extends StatelessWidget {
-  final int? etaMinutes;
+class _DistanceStrip extends StatelessWidget {
   final double? distKm;
-  const _EtaStrip({this.etaMinutes, this.distKm});
+  const _DistanceStrip({this.distKm});
 
   @override
   Widget build(BuildContext context) {
-    final etaStr = etaMinutes == null
-        ? null
-        : etaMinutes! < 60
-            ? '~$etaMinutes min'
-            : '~${(etaMinutes! / 60).toStringAsFixed(1)} hr';
-    final distStr = distKm == null
-        ? null
-        : distKm! < 1
-            ? '${(distKm! * 1000).toStringAsFixed(0)} m away'
-            : '${distKm!.toStringAsFixed(1)} km away';
+    final distStr =
+        distKm == null ? null : '${_formatDistance(distKm!)} remaining';
 
     return Container(
       color: AppColors.primaryMain,
@@ -893,9 +830,9 @@ class _EtaStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (etaStr != null)
+                if (distStr != null)
                   Text(
-                    'Arrives in $etaStr',
+                    'Approx. Distance Remaining',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -905,12 +842,11 @@ class _EtaStrip extends StatelessWidget {
                   ),
                 if (distStr != null)
                   Text(
-                    'Driver is $distStr',
+                    distStr,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontFamily: 'Inter',
-                    ),
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontFamily: 'Inter'),
                   ),
               ],
             ),
@@ -1009,16 +945,20 @@ class _LegendItem extends StatelessWidget {
 
 class _DriverInfoCard extends StatelessWidget {
   final Dispatch dispatch;
-  final DateTime? lastRefresh;
+  final DateTime? lastLocationAt;
+  final double? approxDistanceKm;
 
-  const _DriverInfoCard({required this.dispatch, this.lastRefresh});
+  const _DriverInfoCard({
+    required this.dispatch,
+    this.lastLocationAt,
+    this.approxDistanceKm,
+  });
 
   @override
   Widget build(BuildContext context) {
     final d = dispatch;
     final hasDriver = d.driverName?.isNotEmpty == true;
     final hasVehicle = d.vehicleNumber?.isNotEmpty == true;
-    final hasAddr = d.destinationAddress?.isNotEmpty == true;
 
     return Container(
       decoration: BoxDecoration(
@@ -1063,35 +1003,48 @@ class _DriverInfoCard extends StatelessWidget {
                     ],
                   ),
                 ],
-                if (lastRefresh != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  d.status.replaceAll('_', ' '),
+                  style: AppTypography.caption.copyWith(
+                    color: _dispatchStatusColor(d.status),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (lastLocationAt != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Location updated ${_ago(lastRefresh!)}',
-                    style: AppTypography.caption.copyWith(
-                        color: AppColors.textMuted, fontSize: 10),
+                    'Location updated ${_ago(lastLocationAt!)}',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textMuted, fontSize: 10),
                   ),
                 ],
               ],
             ),
           ),
-          if (hasAddr) ...[
+          if (approxDistanceKm != null) ...[
             const SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Icon(Icons.location_on_outlined,
+                const Icon(Icons.straighten_rounded,
                     size: 16, color: AppColors.blue600),
                 const SizedBox(height: 2),
-                SizedBox(
-                  width: 90,
-                  child: Text(
-                    d.destinationAddress!,
-                    style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary, fontSize: 10),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
+                Text(
+                  _formatDistance(approxDistanceKm!),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
                   ),
+                  textAlign: TextAlign.end,
+                ),
+                Text(
+                  'remaining',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.end,
                 ),
               ],
             ),
@@ -1103,7 +1056,8 @@ class _DriverInfoCard extends StatelessWidget {
 
   static String _ago(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inSeconds < 10) return 'just now';
+    if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     return '${diff.inHours}h ago';
   }
@@ -1293,11 +1247,7 @@ class _BuyerStepRow extends StatelessWidget {
           Colors.white,
           AppColors.textPrimary
         ),
-      _StepState.active => (
-          AppColors.blue600,
-          Colors.white,
-          AppColors.blue600
-        ),
+      _StepState.active => (AppColors.blue600, Colors.white, AppColors.blue600),
       _StepState.pending => (
           AppColors.border,
           AppColors.textMuted,
@@ -1511,13 +1461,13 @@ class _PlantsCard extends StatelessWidget {
 class _BuyerBottomBar extends StatelessWidget {
   final String? destinationAddress;
   final bool isLive;
-  final DateTime? lastRefresh;
+  final DateTime? lastLocationAt;
   final VoidCallback onOpenMaps;
 
   const _BuyerBottomBar({
     required this.destinationAddress,
     required this.isLive,
-    required this.lastRefresh,
+    required this.lastLocationAt,
     required this.onOpenMaps,
   });
 
@@ -1558,8 +1508,8 @@ class _BuyerBottomBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  lastRefresh != null
-                      ? 'Tracking active · updated ${_ago(lastRefresh!)}'
+                  lastLocationAt != null
+                      ? 'Tracking active · updated ${_ago(lastLocationAt!)}'
                       : 'Tracking active · loading location…',
                   style: AppTypography.caption
                       .copyWith(color: AppColors.textSecondary),
@@ -1591,7 +1541,8 @@ class _BuyerBottomBar extends StatelessWidget {
 
   static String _ago(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inSeconds < 10) return 'just now';
+    if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     return '${diff.inHours}h ago';
   }
@@ -1632,8 +1583,8 @@ class _ErrorView extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
-              style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primaryMain),
+              style:
+                  TextButton.styleFrom(foregroundColor: AppColors.primaryMain),
             ),
           ],
         ),
