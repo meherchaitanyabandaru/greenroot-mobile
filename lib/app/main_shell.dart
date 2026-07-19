@@ -9,7 +9,8 @@ import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
 import '../features/buying/buying_screen.dart';
-import '../features/drivers/driver_home_screen.dart';
+import '../features/drivers/driver_home_screen.dart'
+    show DriverHomeScreen, driverHasActiveTripProvider;
 import '../features/drivers/driver_trips_screen.dart';
 import '../core/widgets/universal_qr_screen.dart';
 import '../features/home/home_screen.dart';
@@ -233,7 +234,7 @@ List<_Tab> _buildTabs(UserCapabilities caps) {
 // ── Driver bottom nav with center scan action ─────────────────────────────────
 // Layout: Home | [Scan] | Driver
 
-class _DriverBottomNav extends StatelessWidget {
+class _DriverBottomNav extends ConsumerWidget {
   final List<_Tab> tabs;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
@@ -245,9 +246,23 @@ class _DriverBottomNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // tabs[0]=Home  tabs[1]=Driver
+    final hasActiveTrip = ref.watch(driverHasActiveTripProvider);
+
     void scanQr() {
+      if (hasActiveTrip) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'You have an active trip. Complete your delivery before scanning for a new one.',
+            ),
+            backgroundColor: AppColors.red600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const UniversalQrScreen(),

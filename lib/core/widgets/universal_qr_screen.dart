@@ -15,6 +15,8 @@ import '../qr/sheets/verify_sheet.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../../features/auth/presentation/providers/session_provider.dart';
+import '../../features/drivers/driver_home_screen.dart'
+    show driverHasActiveTripProvider;
 import '../../features/drivers/trip_preview_screen.dart';
 
 class UniversalQrScreen extends ConsumerStatefulWidget {
@@ -82,8 +84,22 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
     HapticFeedback.mediumImpact();
     if (!mounted) return;
 
-    final detection = classifyQr(raw);
     final isDriver = ref.read(sessionProvider).capabilities.hasDriverProfile;
+
+    // Drivers with an active trip cannot join another trip or accept invites.
+    if (isDriver && ref.read(driverHasActiveTripProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You already have an active trip to complete first.'),
+          backgroundColor: AppColors.red600,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    final detection = classifyQr(raw);
 
     final result = await showModalBottomSheet<QrSheetResult>(
       context: context,

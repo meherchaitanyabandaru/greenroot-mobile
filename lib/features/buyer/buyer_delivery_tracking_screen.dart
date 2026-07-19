@@ -11,23 +11,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/status_badge.dart';
+import '../../core/widgets/map_widgets.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
 
 String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
     : '${km.toStringAsFixed(1)} km';
-
-BadgeVariant _dispatchBadgeVariant(String status) =>
-    switch (status.toUpperCase()) {
-      'PENDING' => BadgeVariant.neutral,
-      'ACCEPTED' => BadgeVariant.info,
-      'DISPATCHED' => BadgeVariant.accent,
-      'IN_TRANSIT' || 'DELIVERED' => BadgeVariant.success,
-      'CANCELLED' => BadgeVariant.error,
-      _ => badgeVariantFromStatus(status),
-    };
 
 Color _dispatchStatusColor(String status) => switch (status.toUpperCase()) {
       'PENDING' => AppColors.textSecondary,
@@ -49,25 +40,7 @@ class BuyerDeliveryTrackingScreen extends ConsumerWidget {
     final async = ref.watch(dispatchDetailProvider(dispatchId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        titleSpacing: 0,
-        title: async.maybeWhen(
-          data: (d) => _AppBarTitle(dispatch: d),
-          orElse: () => const Text('Track Delivery', style: AppTypography.h4),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
-            tooltip: 'Refresh',
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
+      backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primaryMain)),
@@ -81,43 +54,6 @@ class BuyerDeliveryTrackingScreen extends ConsumerWidget {
           dispatchId: dispatchId,
         ),
       ),
-    );
-  }
-}
-
-// ── App bar title ──────────────────────────────────────────────────────────────
-
-class _AppBarTitle extends StatelessWidget {
-  final Dispatch dispatch;
-  const _AppBarTitle({required this.dispatch});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(dispatch.dispatchCode, style: AppTypography.h4),
-              Text(
-                dispatch.orderNumber != null
-                    ? 'Order ${dispatch.orderNumber}'
-                    : 'Your Delivery',
-                style:
-                    AppTypography.caption.copyWith(color: AppColors.textMuted),
-              ),
-            ],
-          ),
-        ),
-        StatusBadge(
-          label: dispatch.status.replaceAll('_', ' '),
-          variant: _dispatchBadgeVariant(dispatch.status),
-          dot: true,
-        ),
-        const SizedBox(width: 8),
-      ],
     );
   }
 }
@@ -142,11 +78,10 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   LatLng? _deliveryPointLatLng;
   String? _nurseryName;
   bool _mapReady = false;
-  bool _journeyExpanded = true;
+  bool _journeyExpanded = false;
   bool _plantsExpanded = false;
   Timer? _pollTimer;
   DateTime? _lastLocationAt;
-
   double? _approxDistanceKm;
 
   @override
@@ -172,10 +107,6 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   bool get _isLive =>
       widget.dispatch.status == 'IN_TRANSIT' ||
       widget.dispatch.status == 'DISPATCHED';
-
-  bool get _isCompleted =>
-      widget.dispatch.status == 'DELIVERED' ||
-      widget.dispatch.status == 'CANCELLED';
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -247,12 +178,9 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   }
 
   Future<LatLng?> _geocode(String address) async {
-    // Try progressively simpler queries so apartment-level addresses still resolve.
     final queries = <String>[
       address,
-      // Drop "Flat 12B, Building name," prefix — keep area + city + pin
       address.replaceFirst(RegExp(r'^[^,]+,\s*(?:[^,]+,\s*)?'), ''),
-      // Just pincode + city
       RegExp(r'[A-Za-z\s]+\d{6}').firstMatch(address)?.group(0)?.trim() ?? '',
     ].where((q) => q.length > 4).toList();
 
@@ -330,7 +258,9 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
-        padding: const EdgeInsets.all(64),
+        // Extra bottom padding so markers aren't hidden behind the floating card
+        padding: const EdgeInsets.only(
+            top: 100, left: 40, right: 40, bottom: 260),
       ),
     );
   }
@@ -352,95 +282,103 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
   Widget build(BuildContext context) {
     final d = widget.dispatch;
     final truck = _truckLatLng;
+    final caps = ref.watch(sessionProvider).capabilities;
+    final isOwnerView =
+        caps.isNurseryOwner == true || caps.isManager == true;
 
-    return Column(
+    // Map controls must clear the collapsed bottom sheet (≈ 12% of screen height).
+    final controlsBottom =
+        MediaQuery.of(context).size.height * 0.12 + 16;
+
+    return Stack(
       children: [
-        // Map — visible for live dispatches only
-        if (!_isCompleted && _isLive) ...[
-          _MapSection(
+        // Full-screen map
+        Positioned.fill(
+          child: _FullMapSection(
             mapController: _mapController,
             truckLatLng: truck,
-            loadingPointLatLng: _loadingPointLatLng,
+            loadingPointLatLng:
+                isOwnerView ? _loadingPointLatLng : null,
             deliveryPointLatLng: _deliveryPointLatLng,
             trackingPts: _trackingPts,
             nurseryName: _nurseryName ?? 'Nursery',
             isInTransit: d.status == 'IN_TRANSIT',
-            approxDistanceKm: _approxDistanceKm,
             onMapReady: _onMapReady,
-            onCenterTruck:
-                truck == null ? null : () => _mapController.move(truck, 15),
           ),
-          _LegendStrip(
-            hasTruck: truck != null,
-            hasLoading: _loadingPointLatLng != null,
-            hasDelivery: _deliveryPointLatLng != null,
-          ),
-          if (truck != null && _approxDistanceKm != null)
-            _DistanceStrip(distKm: _approxDistanceKm),
-        ],
+        ),
 
-        // Scrollable content
-        Expanded(
-          child: RefreshIndicator(
-            color: AppColors.primaryMain,
+        // Top overlay: back + dispatch code chip + refresh
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: _TopOverlay(
+            dispatch: d,
+            onRefresh: () {
+              ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+              _loadTracking();
+              _fetchNurseryAndGeocode();
+            },
+          ),
+        ),
+
+        // Status + distance chips
+        Positioned(
+          bottom: controlsBottom,
+          left: 12,
+          child: _StatusChipRow(
+            status: d.status,
+            hasPosition: truck != null,
+            approxDistanceKm: _approxDistanceKm,
+          ),
+        ),
+
+        // Center-on-truck button
+        if (truck != null)
+          Positioned(
+            bottom: controlsBottom,
+            right: 12,
+            child: MapIconButton(
+              icon: Icons.gps_fixed_rounded,
+              onTap: () => _mapController.move(truck, 15),
+            ),
+          ),
+
+        // Floating bottom card
+        DraggableScrollableSheet(
+          initialChildSize: 0.38,
+          minChildSize: 0.12,
+          maxChildSize: 0.88,
+          snap: true,
+          snapSizes: const [0.12, 0.38, 0.88],
+          builder: (ctx, scrollCtrl) => _FloatingCard(
+            scrollController: scrollCtrl,
+            dispatch: d,
+            approxDistanceKm: _approxDistanceKm,
+            lastLocationAt: _lastLocationAt,
+            isLive: _isLive,
+            journeyExpanded: _journeyExpanded,
+            plantsExpanded: _plantsExpanded,
+            onJourneyToggle: () =>
+                setState(() => _journeyExpanded = !_journeyExpanded),
+            onPlantsToggle: () =>
+                setState(() => _plantsExpanded = !_plantsExpanded),
+            onOpenMaps: _openInMaps,
             onRefresh: () async {
               ref.invalidate(dispatchDetailProvider(widget.dispatchId));
               await _loadTracking();
               await _fetchNurseryAndGeocode();
             },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenPadding,
-                AppSpacing.md,
-                AppSpacing.screenPadding,
-                AppSpacing.sm,
-              ),
-              child: Column(
-                children: [
-                  _DriverInfoCard(
-                    dispatch: d,
-                    lastLocationAt: _lastLocationAt,
-                    approxDistanceKm: _approxDistanceKm,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _BuyerJourneyCard(
-                    dispatch: d,
-                    expanded: _journeyExpanded,
-                    onToggle: () =>
-                        setState(() => _journeyExpanded = !_journeyExpanded),
-                  ),
-                  if (d.items.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    _PlantsCard(
-                      items: d.items,
-                      expanded: _plantsExpanded,
-                      onToggle: () =>
-                          setState(() => _plantsExpanded = !_plantsExpanded),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-              ),
-            ),
           ),
-        ),
-
-        // Bottom bar
-        _BuyerBottomBar(
-          destinationAddress: d.destinationAddress,
-          isLive: _isLive,
-          lastLocationAt: _lastLocationAt,
-          onOpenMaps: _openInMaps,
         ),
       ],
     );
   }
 }
 
-// ── Map section ────────────────────────────────────────────────────────────────
+// ── Full-screen map ────────────────────────────────────────────────────────────
 
-class _MapSection extends StatelessWidget {
+class _FullMapSection extends StatelessWidget {
   final MapController mapController;
   final LatLng? truckLatLng;
   final LatLng? loadingPointLatLng;
@@ -448,11 +386,9 @@ class _MapSection extends StatelessWidget {
   final List<TrackingPoint> trackingPts;
   final String nurseryName;
   final bool isInTransit;
-  final double? approxDistanceKm;
   final VoidCallback onMapReady;
-  final VoidCallback? onCenterTruck;
 
-  const _MapSection({
+  const _FullMapSection({
     required this.mapController,
     required this.truckLatLng,
     required this.loadingPointLatLng,
@@ -461,483 +397,338 @@ class _MapSection extends StatelessWidget {
     required this.nurseryName,
     required this.isInTransit,
     required this.onMapReady,
-    this.approxDistanceKm,
-    this.onCenterTruck,
   });
 
   @override
   Widget build(BuildContext context) {
     const defaultCenter = LatLng(20.5937, 78.9629);
-    final center = truckLatLng ??
-        loadingPointLatLng ??
-        deliveryPointLatLng ??
-        defaultCenter;
+    final center =
+        truckLatLng ?? loadingPointLatLng ?? deliveryPointLatLng ?? defaultCenter;
     final zoom = truckLatLng != null ? 13.0 : 6.0;
 
     final gpsPts = trackingPts.reversed
         .map((p) => LatLng(p.latitude, p.longitude))
         .toList();
 
-    final straightLine = <LatLng>[
+    final routeLine = <LatLng>[
       if (truckLatLng != null) truckLatLng!,
       if (deliveryPointLatLng != null) deliveryPointLatLng!,
     ];
 
-    return SizedBox(
-      height: 310,
-      child: Stack(
-        children: [
-          FlutterMap(
-            mapController: mapController,
-            options: MapOptions(
-              initialCenter: center,
-              initialZoom: zoom,
-              onMapReady: onMapReady,
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: zoom,
+        onMapReady: onMapReady,
+      ),
+      children: [
+        ColorFiltered(
+          colorFilter: kMapDesatFilter,
+          child: TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'in.greenroot.greenroot_mobile',
+          ),
+        ),
+        // Dotted route line: truck → delivery
+        if (routeLine.length == 2)
+          PolylineLayer(polylines: [
+            Polyline(
+              points: routeLine,
+              strokeWidth: 5,
+              color: AppColors.primaryMain.withValues(alpha: 0.50),
+              pattern: const StrokePattern.dotted(spacingFactor: 2.5),
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'in.greenroot.greenroot_mobile',
+          ]),
+        // GPS breadcrumb trail
+        if (gpsPts.length >= 2)
+          PolylineLayer(polylines: [
+            Polyline(
+              points: gpsPts,
+              strokeWidth: 3.5,
+              color: AppColors.primaryMain.withValues(alpha: 0.75),
+            ),
+          ]),
+        MarkerLayer(markers: [
+          // Loading / origin point — only shown for owner/manager
+          if (loadingPointLatLng != null)
+            Marker(
+              point: loadingPointLatLng!,
+              width: 76,
+              height: 82,
+              alignment: Alignment.topCenter,
+              child: MapPointMarker(
+                color: AppColors.forest600,
+                label: nurseryName.length > 14
+                    ? '${nurseryName.substring(0, 12)}…'
+                    : nurseryName,
+                sublabel: 'Origin',
+                isNursery: true,
               ),
-              // Approximate business connection only. Road navigation stays in Maps.
-              if (straightLine.length == 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: straightLine,
-                      strokeWidth: 2.5,
-                      color: AppColors.primaryMain.withValues(alpha: 0.45),
-                      pattern: const StrokePattern.dotted(spacingFactor: 3),
-                    ),
-                  ],
+            ),
+          // Delivery / home point
+          if (deliveryPointLatLng != null)
+            Marker(
+              point: deliveryPointLatLng!,
+              width: 76,
+              height: 82,
+              alignment: Alignment.topCenter,
+              child: const MapPointMarker(
+                color: AppColors.blue600,
+                label: 'Your Address',
+                sublabel: 'Delivery',
+                isNursery: false,
+              ),
+            ),
+          // Truck — pulses when IN_TRANSIT
+          if (truckLatLng != null)
+            Marker(
+              point: truckLatLng!,
+              width: 62,
+              height: 62,
+              child: MapTruckMarker(active: isInTransit),
+            ),
+        ]),
+      ],
+    );
+  }
+}
+
+// ── Top overlay (frosted glass back + badge + refresh) ─────────────────────────
+
+class _TopOverlay extends StatelessWidget {
+  final Dispatch dispatch;
+  final VoidCallback onRefresh;
+  const _TopOverlay({required this.dispatch, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            MapIconButton(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Center(
+                child: MapTextChip(
+                  label: dispatch.dispatchCode,
+                  color: AppColors.textPrimary,
                 ),
-              // Breadcrumb trail (GPS history) — thinner, muted
-              if (gpsPts.length >= 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: gpsPts,
-                      strokeWidth: 2,
-                      color: AppColors.textMuted.withValues(alpha: 0.5),
-                    ),
-                  ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            MapIconButton(
+              icon: Icons.refresh_rounded,
+              onTap: onRefresh,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status + distance chip row (bottom-left, above sheet) ─────────────────────
+
+class _StatusChipRow extends StatelessWidget {
+  final String status;
+  final bool hasPosition;
+  final double? approxDistanceKm;
+
+  const _StatusChipRow({
+    required this.status,
+    required this.hasPosition,
+    this.approxDistanceKm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status.toUpperCase();
+    if (s == 'IN_TRANSIT' && hasPosition) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MapTextChip(
+            label: 'Live Tracking',
+            color: AppColors.primaryMain,
+            dot: true,
+          ),
+          if (approxDistanceKm != null) ...[
+            const SizedBox(width: 6),
+            MapChip(
+              icon: Icons.straighten_rounded,
+              label: _formatDistance(approxDistanceKm!),
+              iconColor: AppColors.blue600,
+            ),
+          ],
+        ],
+      );
+    }
+    if (s == 'IN_TRANSIT') {
+      return const MapTextChip(
+          label: 'Awaiting Location', color: AppColors.amber700);
+    }
+    if (s == 'DISPATCHED') {
+      return const MapTextChip(
+          label: 'Loading Plants', color: AppColors.blue600);
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+// ── Floating bottom card (Swiggy-style draggable sheet) ───────────────────────
+
+class _FloatingCard extends StatelessWidget {
+  final ScrollController scrollController;
+  final Dispatch dispatch;
+  final double? approxDistanceKm;
+  final DateTime? lastLocationAt;
+  final bool isLive;
+  final bool journeyExpanded;
+  final bool plantsExpanded;
+  final VoidCallback onJourneyToggle;
+  final VoidCallback onPlantsToggle;
+  final VoidCallback onOpenMaps;
+  final Future<void> Function() onRefresh;
+
+  const _FloatingCard({
+    required this.scrollController,
+    required this.dispatch,
+    required this.isLive,
+    required this.journeyExpanded,
+    required this.plantsExpanded,
+    required this.onJourneyToggle,
+    required this.onPlantsToggle,
+    required this.onOpenMaps,
+    required this.onRefresh,
+    this.approxDistanceKm,
+    this.lastLocationAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final d = dispatch;
+    final hasAddr = d.destinationAddress?.isNotEmpty == true;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x2A000000),
+            blurRadius: 24,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: RefreshIndicator(
+        color: AppColors.primaryMain,
+        onRefresh: onRefresh,
+        child: ListView(
+          controller: scrollController,
+          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPad + 16),
+          children: [
+            // Drag handle
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              MarkerLayer(
-                markers: [
-                  if (loadingPointLatLng != null)
-                    Marker(
-                      point: loadingPointLatLng!,
-                      width: 56,
-                      height: 72,
-                      alignment: Alignment.topCenter,
-                      child: _MapMarker(
-                        color: AppColors.amber600,
-                        icon: Icons.store_rounded,
-                        label: nurseryName.length > 14
-                            ? '${nurseryName.substring(0, 12)}…'
-                            : nurseryName,
-                        sublabel: 'Origin',
-                      ),
-                    ),
-                  if (deliveryPointLatLng != null)
-                    Marker(
-                      point: deliveryPointLatLng!,
-                      width: 72,
-                      height: 72,
-                      alignment: Alignment.topCenter,
-                      child: const _MapMarker(
-                        color: AppColors.blue600,
-                        icon: Icons.home_rounded,
-                        label: 'Your',
-                        sublabel: 'Location',
-                      ),
-                    ),
-                  if (truckLatLng != null)
-                    Marker(
-                      point: truckLatLng!,
-                      width: 48,
-                      height: 48,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryMain,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AppColors.primaryMain.withValues(alpha: 0.45),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.local_shipping_rounded,
-                            color: Colors.white, size: 20),
-                      ),
-                    ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Driver info
+            _DriverInfoCard(
+              dispatch: d,
+              lastLocationAt: lastLocationAt,
+              approxDistanceKm: approxDistanceKm,
+            ),
+            const SizedBox(height: 12),
+
+            // Delivery status timeline
+            _BuyerJourneyCard(
+              dispatch: d,
+              expanded: journeyExpanded,
+              onToggle: onJourneyToggle,
+            ),
+
+            // Plants in delivery
+            if (d.items.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _PlantsCard(
+                items: d.items,
+                expanded: plantsExpanded,
+                onToggle: onPlantsToggle,
+              ),
+            ],
+
+            // Open delivery address in Maps
+            if (hasAddr) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: AppSpacing.buttonHeight,
+                child: OutlinedButton.icon(
+                  onPressed: onOpenMaps,
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('Open Delivery Address in Maps'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.blue600,
+                    side: const BorderSide(color: AppColors.blue600),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+
+            // Live tracking notice
+            if (isLive) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                        color: AppColors.primaryMain, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    lastLocationAt != null
+                        ? 'Tracking active · updated ${_ago(lastLocationAt!)}'
+                        : 'Tracking active · loading location…',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ],
-          ),
-
-          // Live / awaiting chip
-          Positioned(
-            top: 8,
-            left: 8,
-            child: _LiveChip(
-              isInTransit: isInTransit,
-              hasPosition: truckLatLng != null,
-            ),
-          ),
-
-          if (approxDistanceKm != null)
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: _MapPill(
-                icon: Icons.straighten_rounded,
-                color: AppColors.blue600,
-                label: _formatDistance(approxDistanceKm!),
-              ),
-            ),
-
-          // Center-on-truck button
-          if (onCenterTruck != null)
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: onCenterTruck,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 6),
-                    ],
-                  ),
-                  child: const Icon(Icons.gps_fixed_rounded,
-                      color: AppColors.primaryMain, size: 18),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Map marker with label ──────────────────────────────────────────────────────
-
-class _MapMarker extends StatelessWidget {
-  final Color color;
-  final IconData icon;
-  final String label;
-  final String sublabel;
-
-  const _MapMarker({
-    required this.color,
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          ],
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 3),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                    fontFamily: 'Inter'),
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                sublabel,
-                style: const TextStyle(
-                    fontSize: 8,
-                    color: AppColors.textMuted,
-                    fontFamily: 'Inter'),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Live chip ──────────────────────────────────────────────────────────────────
-
-class _LiveChip extends StatelessWidget {
-  final bool isInTransit;
-  final bool hasPosition;
-
-  const _LiveChip({required this.isInTransit, required this.hasPosition});
-
-  @override
-  Widget build(BuildContext context) {
-    final (bg, fg, label) = isInTransit && hasPosition
-        ? (AppColors.primaryLight, AppColors.primaryMain, 'Live Tracking')
-        : isInTransit
-            ? (AppColors.amber100, AppColors.amber700, 'Awaiting Location')
-            : (AppColors.blue100, AppColors.blue600, 'Loading Plants');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(99),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isInTransit && hasPosition)
-            Container(
-              width: 7,
-              height: 7,
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
-            )
-          else
-            Icon(
-              isInTransit
-                  ? Icons.location_searching_rounded
-                  : Icons.inventory_2_outlined,
-              size: 11,
-              color: fg,
-            ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: fg,
-                fontFamily: 'Inter'),
-          ),
-        ],
       ),
     );
   }
-}
 
-// ── Small map overlay pill ─────────────────────────────────────────────────────
-
-class _MapPill extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  const _MapPill(
-      {required this.icon, required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(99),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 5),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Approximate distance strip (below legend) ──────────────────────────────────
-
-class _DistanceStrip extends StatelessWidget {
-  final double? distKm;
-  const _DistanceStrip({this.distKm});
-
-  @override
-  Widget build(BuildContext context) {
-    final distStr =
-        distKm == null ? null : '${_formatDistance(distKm!)} remaining';
-
-    return Container(
-      color: AppColors.primaryMain,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (distStr != null)
-                  Text(
-                    'Approx. Distance Remaining',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                if (distStr != null)
-                  Text(
-                    distStr,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontFamily: 'Inter'),
-                  ),
-              ],
-            ),
-          ),
-          const Icon(Icons.local_shipping_rounded,
-              color: Colors.white, size: 22),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Legend strip ───────────────────────────────────────────────────────────────
-
-class _LegendStrip extends StatelessWidget {
-  final bool hasTruck;
-  final bool hasLoading;
-  final bool hasDelivery;
-
-  const _LegendStrip({
-    required this.hasTruck,
-    required this.hasLoading,
-    required this.hasDelivery,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _LegendItem(
-            icon: Icons.local_shipping_rounded,
-            color: AppColors.primaryMain,
-            label: 'Driver',
-            active: hasTruck,
-          ),
-          Container(width: 1, height: 24, color: AppColors.border),
-          _LegendItem(
-            icon: Icons.store_rounded,
-            color: AppColors.amber600,
-            label: 'From Nursery',
-            active: hasLoading,
-          ),
-          Container(width: 1, height: 24, color: AppColors.border),
-          _LegendItem(
-            icon: Icons.home_rounded,
-            color: AppColors.blue600,
-            label: 'Your Address',
-            active: hasDelivery,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  final bool active;
-
-  const _LegendItem({
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.active,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = active ? color : AppColors.textMuted;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: c, size: 15),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: c,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ],
-    );
+  static String _ago(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 10) return 'just now';
+    if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    return '${diff.inHours}h ago';
   }
 }
 
@@ -1453,98 +1244,6 @@ class _PlantsCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-// ── Bottom action bar ──────────────────────────────────────────────────────────
-
-class _BuyerBottomBar extends StatelessWidget {
-  final String? destinationAddress;
-  final bool isLive;
-  final DateTime? lastLocationAt;
-  final VoidCallback onOpenMaps;
-
-  const _BuyerBottomBar({
-    required this.destinationAddress,
-    required this.isLive,
-    required this.lastLocationAt,
-    required this.onOpenMaps,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasAddr = destinationAddress?.isNotEmpty == true;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: const Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.screenPadding,
-        AppSpacing.md,
-        AppSpacing.screenPadding,
-        MediaQuery.of(context).padding.bottom + AppSpacing.md,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isLive) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                      color: AppColors.primaryMain, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  lastLocationAt != null
-                      ? 'Tracking active · updated ${_ago(lastLocationAt!)}'
-                      : 'Tracking active · loading location…',
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          if (hasAddr)
-            SizedBox(
-              width: double.infinity,
-              height: AppSpacing.buttonHeight,
-              child: OutlinedButton.icon(
-                onPressed: onOpenMaps,
-                icon: const Icon(Icons.map_outlined, size: 18),
-                label: const Text('Open Delivery Address in Maps'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.blue600,
-                  side: const BorderSide(color: AppColors.blue600),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _ago(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 10) return 'just now';
-    if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    return '${diff.inHours}h ago';
   }
 }
 

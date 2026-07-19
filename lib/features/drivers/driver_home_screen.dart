@@ -13,6 +13,13 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../notifications/notifications.dart';
 
+// ── Exported: whether the driver currently has an active trip ──────────────────
+// Used by the bottom nav to gate the QR scan button without an extra API call.
+// Returns false when the dashboard hasn't loaded yet (safe default: allow UI).
+final driverHasActiveTripProvider = Provider.autoDispose<bool>(
+  (ref) => ref.watch(_driverDashboardProvider).valueOrNull?.tripState.trip != null,
+);
+
 // ── Dashboard data model ───────────────────────────────────────────────────────
 
 class _DashboardData {
@@ -139,33 +146,30 @@ class _DashboardBody extends ConsumerWidget {
         ),
         Text(firstName, style: AppTypography.h2),
         const SizedBox(height: AppSpacing.md),
-        if (!isConnected)
+        // Active trip always takes priority over connection state.
+        if (trip != null) ...[
+          if (trip.status == 'ACCEPTED') ...[
+            _WaitingForLoadingCard(trip: trip),
+            const SizedBox(height: AppSpacing.md),
+            const _WaitingTip(),
+          ] else if (trip.status == 'DISPATCHED') ...[
+            _ReadyToDepartCard(trip: trip),
+            const SizedBox(height: AppSpacing.md),
+            const _DepartTip(),
+          ] else ...[
+            _ActiveTripCard(trip: trip),
+            const SizedBox(height: AppSpacing.md),
+            _ActiveTripActions(trip: trip),
+            const SizedBox(height: AppSpacing.md),
+            _ActiveTripTip(),
+          ],
+        ] else if (!isConnected)
           const _DriverNotConnectedCard()
-        else ...trip == null
-          ? [
-              const _NoTripCard(),
-              const SizedBox(height: AppSpacing.md),
-              const _HowItWorksCard(),
-            ]
-          : trip.status == 'ACCEPTED'
-              ? [
-                  _WaitingForLoadingCard(trip: trip),
-                  const SizedBox(height: AppSpacing.md),
-                  const _WaitingTip(),
-                ]
-              : trip.status == 'DISPATCHED'
-                  ? [
-                      _ReadyToDepartCard(trip: trip),
-                      const SizedBox(height: AppSpacing.md),
-                      const _DepartTip(),
-                    ]
-                  : [
-                      _ActiveTripCard(trip: trip),
-                      const SizedBox(height: AppSpacing.md),
-                      _ActiveTripActions(trip: trip),
-                      const SizedBox(height: AppSpacing.md),
-                      _ActiveTripTip(),
-                    ],
+        else ...[
+          const _NoTripCard(),
+          const SizedBox(height: AppSpacing.md),
+          const _HowItWorksCard(),
+        ],
       ],
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' show min, max;
+import 'dart:ui' as ui;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/map_widgets.dart';
 import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
@@ -150,8 +152,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   // Tracking history
   List<TrackingPoint> _trackingPts = [];
 
-  // UI state
-  bool _journeyExpanded = true;
+  // UI state — timeline starts collapsed so the map is the focus
+  bool _journeyExpanded = false;
   bool _plantsExpanded = false;
   bool _busy = false;
   bool _mapReady = false;
@@ -246,6 +248,26 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   bool _usesLiveMap(String status) =>
       status == 'DISPATCHED' || status == 'IN_TRANSIT';
 
+  // True once loading at the nursery is complete and driver heads to delivery.
+  bool get _loadingComplete {
+    final ds = widget.dispatch.status.toUpperCase();
+    final os = widget.dispatch.orderStatus?.toUpperCase();
+    if (ds == 'DISPATCHED' || ds == 'IN_TRANSIT' || ds == 'DELIVERED') {
+      return true;
+    }
+    if (ds == 'ACCEPTED' &&
+        (os == 'LOADED' ||
+            os == 'PARTIALLY_FULFILLED' ||
+            os == 'COMPLETED')) {
+      return true;
+    }
+    return false;
+  }
+
+  // Active destination: where the driver should go RIGHT NOW.
+  LatLng? get _activeDestination =>
+      _loadingComplete ? _deliveryPointLatLng : _loadingPointLatLng;
+
   void _onMapReady() {
     _mapReady = true;
     _fitBounds();
@@ -253,11 +275,12 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
 
   void _fitBounds() {
     if (!_mapReady || !mounted) return;
+    // Fit only truck + active destination for a focused driver view.
+    final dest = _activeDestination;
     final points = <LatLng>[
       if (_devicePos != null)
         LatLng(_devicePos!.latitude, _devicePos!.longitude),
-      if (_loadingPointLatLng != null) _loadingPointLatLng!,
-      if (_deliveryPointLatLng != null) _deliveryPointLatLng!,
+      if (dest != null) dest,
     ];
     if (points.isEmpty) return;
     if (points.length == 1) {
@@ -482,6 +505,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
             nurseryName: _nurseryName ?? 'Loading Point',
             deliveryAddress: d.destinationAddress ?? 'Delivery Point',
             isInTransit: d.status == 'IN_TRANSIT',
+            loadingComplete: _loadingComplete,
             distanceKm: distKm,
             onMapReady: _onMapReady,
             onCenterTruck: _devicePos == null
@@ -583,6 +607,7 @@ class _MapSection extends StatelessWidget {
   final String nurseryName;
   final String deliveryAddress;
   final bool isInTransit;
+  final bool loadingComplete;
   final double? distanceKm;
   final VoidCallback onMapReady;
   final VoidCallback? onCenterTruck;
@@ -597,6 +622,7 @@ class _MapSection extends StatelessWidget {
     required this.nurseryName,
     required this.deliveryAddress,
     required this.isInTransit,
+    required this.loadingComplete,
     required this.onMapReady,
     this.distanceKm,
     this.onCenterTruck,
@@ -614,19 +640,30 @@ class _MapSection extends StatelessWidget {
         defaultCenter;
     final zoom = truckLatLng != null ? 13.0 : 6.0;
 
-    // Build route polyline: loading → truck → delivery (when we have points)
+    // Single active leg: truck → next destination only.
+    // Before loading done: truck → loading point.
+    // After loading done: truck → delivery point.
+    final activeDestination =
+        loadingComplete ? deliveryPointLatLng : loadingPointLatLng;
+
     final routePoints = <LatLng>[
-      if (loadingPointLatLng != null) loadingPointLatLng!,
       if (truckLatLng != null) truckLatLng,
-      if (deliveryPointLatLng != null) deliveryPointLatLng!,
+      if (activeDestination != null) activeDestination,
     ];
 
-    // GPS tracking polyline (actual driven path for IN_TRANSIT)
     final gpsPts =
         trackingPts.map((p) => LatLng(p.latitude, p.longitude)).toList();
 
+    // ETA estimate based on straight-line distance at 30 km/h
+    String? etaLabel;
+    if (distanceKm != null && isInTransit) {
+      final mins = (distanceKm! / 30 * 60).round();
+      etaLabel =
+          mins < 60 ? '~$mins min' : '~${mins ~/ 60}h ${mins % 60}m';
+    }
+
     return SizedBox(
-      height: 264,
+      height: 292,
       child: Stack(
         children: [
           FlutterMap(
@@ -637,236 +674,155 @@ class _MapSection extends StatelessWidget {
               onMapReady: onMapReady,
             ),
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'in.greenroot.greenroot_mobile',
+              ColorFiltered(
+                colorFilter: kMapDesatFilter,
+                child: TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'in.greenroot.greenroot_mobile',
+                ),
               ),
-              // Planned route line (dashed appearance via low opacity)
-              if (routePoints.length >= 2)
+
+              // Active route — glow + main
+              if (routePoints.length >= 2) ...[
                 PolylineLayer(
                   polylines: [
                     Polyline(
                       points: routePoints,
-                      strokeWidth: 2.5,
-                      color: AppColors.textMuted.withValues(alpha: 0.6),
-                      pattern: const StrokePattern.dotted(spacingFactor: 2),
+                      strokeWidth: 16,
+                      color: AppColors.primaryMain.withValues(alpha: 0.10),
                     ),
                   ],
                 ),
-              // GPS-tracked driven path
-              if (gpsPts.length >= 2)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: routePoints,
+                      strokeWidth: 5,
+                      color: AppColors.primaryMain.withValues(alpha: 0.82),
+                      pattern: isInTransit
+                          ? const StrokePattern.dotted(spacingFactor: 2.5)
+                          : const StrokePattern.solid(),
+                    ),
+                  ],
+                ),
+              ],
+
+              // GPS breadcrumb — solid driven path
+              if (gpsPts.length >= 2) ...[
                 PolylineLayer(
                   polylines: [
                     Polyline(
                       points: gpsPts,
-                      strokeWidth: 4,
-                      color: AppColors.primaryMain.withValues(alpha: 0.8),
+                      strokeWidth: 16,
+                      color: AppColors.primaryMain.withValues(alpha: 0.14),
                     ),
                   ],
                 ),
-              // Markers
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: gpsPts,
+                      strokeWidth: 5,
+                      color: AppColors.primaryMain,
+                    ),
+                  ],
+                ),
+              ],
+
               MarkerLayer(
                 markers: [
-                  // Loading Point — orange store icon
+                  // Loading point — shown active before loading, dimmed after
                   if (loadingPointLatLng != null)
                     Marker(
                       point: loadingPointLatLng!,
-                      width: 56,
-                      height: 72,
+                      width: loadingComplete ? 52 : 72,
+                      height: loadingComplete ? 52 : 84,
                       alignment: Alignment.topCenter,
-                      child: _MapMarker(
-                        color: AppColors.amber600,
-                        icon: Icons.store_rounded,
-                        label: nurseryName.length > 14
-                            ? '${nurseryName.substring(0, 12)}…'
-                            : nurseryName,
-                        sublabel: 'Loading Point',
-                      ),
+                      child: loadingComplete
+                          ? const MapCompletedMarker(label: 'Loaded')
+                          : MapPointMarker(
+                              color: AppColors.forest600,
+                              label: nurseryName.length > 14
+                                  ? '${nurseryName.substring(0, 12)}…'
+                                  : nurseryName,
+                              sublabel: 'Loading Point',
+                              isNursery: true,
+                            ),
                     ),
-                  // Delivery Point — blue pin
-                  if (deliveryPointLatLng != null)
+                  // Delivery point — shown after loading is complete
+                  if (deliveryPointLatLng != null && loadingComplete)
                     Marker(
                       point: deliveryPointLatLng!,
                       width: 72,
-                      height: 72,
+                      height: 84,
                       alignment: Alignment.topCenter,
-                      child: _MapMarker(
+                      child: const MapPointMarker(
                         color: AppColors.blue600,
-                        icon: Icons.location_on_rounded,
                         label: 'Delivery',
                         sublabel: 'Point',
+                        isNursery: false,
                       ),
                     ),
-                  // Truck — dark green
+                  // Truck
                   if (truckLatLng != null)
                     Marker(
                       point: truckLatLng,
-                      width: 48,
-                      height: 48,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryMain,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AppColors.primaryMain.withValues(alpha: 0.45),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.local_shipping_rounded,
-                            color: Colors.white, size: 20),
-                      ),
+                      width: 62,
+                      height: 62,
+                      child: MapTruckMarker(active: isInTransit),
                     ),
                 ],
               ),
             ],
           ),
 
-          // GPS status chip
+          // GPS chip — top left
           Positioned(
-            top: 8,
-            left: 8,
-            child: _GpsChip(
-              granted: locationGranted,
-              isPosting: isInTransit,
-            ),
+            top: 10,
+            left: 10,
+            child: _GpsChip(granted: locationGranted, isPosting: isInTransit),
           ),
 
-          // Distance pill — bottom left
-          if (distanceKm != null)
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(99),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.straighten_rounded,
-                        size: 12, color: AppColors.blue600),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${distanceKm!.toStringAsFixed(1)} km',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Center-on-truck button — bottom right
+          // Center-on-truck — top right
           if (onCenterTruck != null)
             Positioned(
-              bottom: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: onCenterTruck,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 6,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.my_location_rounded,
-                      color: AppColors.primaryMain, size: 18),
-                ),
+              top: 10,
+              right: 10,
+              child: MapIconButton(
+                icon: Icons.my_location_rounded,
+                onTap: onCenterTruck!,
               ),
             ),
+
+          // Distance + ETA chips — bottom left
+          Positioned(
+            bottom: 10,
+            left: 10,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (distanceKm != null)
+                  MapChip(
+                    icon: Icons.straighten_rounded,
+                    label: distanceKm! < 1
+                        ? '${(distanceKm! * 1000).toStringAsFixed(0)} m'
+                        : '${distanceKm!.toStringAsFixed(1)} km',
+                    iconColor: AppColors.blue600,
+                  ),
+                if (etaLabel != null) ...[
+                  const SizedBox(width: 6),
+                  MapChip(
+                    icon: Icons.schedule_rounded,
+                    label: etaLabel,
+                    iconColor: AppColors.amber600,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
-    );
-  }
-}
-
-// Individual map marker with label
-class _MapMarker extends StatelessWidget {
-  final Color color;
-  final IconData icon;
-  final String label;
-  final String sublabel;
-
-  const _MapMarker({
-    required this.color,
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 18),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 3),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                      fontFamily: 'Inter'),
-                  overflow: TextOverflow.ellipsis),
-              Text(sublabel,
-                  style: const TextStyle(
-                      fontSize: 8,
-                      color: AppColors.textMuted,
-                      fontFamily: 'Inter'),
-                  overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -888,26 +844,23 @@ class _LegendStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _LegendItem(
-            icon: Icons.local_shipping_rounded,
             color: AppColors.primaryMain,
             label: 'Your Truck',
             active: hasTruck,
           ),
-          Container(width: 1, height: 24, color: AppColors.border),
+          Container(width: 1, height: 20, color: AppColors.border),
           _LegendItem(
-            icon: Icons.store_rounded,
-            color: AppColors.amber600,
+            color: AppColors.forest600,
             label: 'Loading Point',
             active: hasLoading,
           ),
-          Container(width: 1, height: 24, color: AppColors.border),
+          Container(width: 1, height: 20, color: AppColors.border),
           _LegendItem(
-            icon: Icons.location_on_rounded,
             color: AppColors.blue600,
             label: 'Delivery Point',
             active: hasDelivery,
@@ -919,13 +872,11 @@ class _LegendStrip extends StatelessWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  final IconData icon;
   final Color color;
   final String label;
   final bool active;
 
   const _LegendItem({
-    required this.icon,
     required this.color,
     required this.label,
     required this.active,
@@ -937,15 +888,20 @@ class _LegendItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: c, size: 15),
-        const SizedBox(width: 5),
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
             color: c,
             fontFamily: 'Inter',
+            letterSpacing: -0.1,
           ),
         ),
       ],
@@ -953,58 +909,119 @@ class _LegendItem extends StatelessWidget {
   }
 }
 
-// ── GPS chip ───────────────────────────────────────────────────────────────────
+// ── GPS chip — blurred pill with live pulsing dot when active ─────────────────
 
-class _GpsChip extends StatelessWidget {
+class _GpsChip extends StatefulWidget {
   final bool granted;
   final bool isPosting;
-
   const _GpsChip({required this.granted, required this.isPosting});
 
   @override
-  Widget build(BuildContext context) {
-    final (bg, fg, icon, label) = !granted
-        ? (
-            AppColors.amber100,
-            AppColors.amber700,
-            Icons.gps_off_rounded,
-            'GPS off'
-          )
-        : isPosting
-            ? (
-                AppColors.primaryLight,
-                AppColors.primaryMain,
-                Icons.gps_fixed_rounded,
-                'GPS Active'
-              )
-            : (
-                AppColors.primaryLight,
-                AppColors.primaryMain,
-                Icons.gps_fixed_rounded,
-                'GPS Ready'
-              );
+  State<_GpsChip> createState() => _GpsChipState();
+}
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(99),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: fg),
-          const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+class _GpsChipState extends State<_GpsChip>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _blink;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _blink = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+    if (widget.granted && widget.isPosting) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_GpsChip old) {
+    super.didUpdateWidget(old);
+    if (widget.granted && widget.isPosting) {
+      if (!_ctrl.isAnimating) _ctrl.repeat(reverse: true);
+    } else {
+      _ctrl.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (fg, label) = !widget.granted
+        ? (AppColors.amber700, 'GPS off')
+        : widget.isPosting
+            ? (AppColors.primaryMain, 'GPS Active')
+            : (AppColors.primaryMid, 'GPS Ready');
+
+    final dot = widget.granted && widget.isPosting;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(99),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (dot)
+                AnimatedBuilder(
+                  animation: _blink,
+                  builder: (_, __) => Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: fg.withValues(alpha: 0.45 + _blink.value * 0.55),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                )
+              else ...[
+                Icon(
+                  widget.granted
+                      ? Icons.gps_fixed_rounded
+                      : Icons.gps_off_rounded,
+                  size: 11,
                   color: fg,
-                  fontFamily: 'Inter')),
-        ],
+                ),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: fg,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
