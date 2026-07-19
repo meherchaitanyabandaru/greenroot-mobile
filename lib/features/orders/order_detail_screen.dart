@@ -173,11 +173,13 @@ class _StatusConfig {
   final IconData icon;
   final String headline;
   final String message;
+  final String? label;
   const _StatusConfig({
     required this.color,
     required this.icon,
     required this.headline,
     required this.message,
+    this.label,
   });
 }
 
@@ -212,7 +214,69 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
 
   // ── Status visual config ───────────────────────────────────────────────────
 
-  _StatusConfig get _cfg {
+  _StatusConfig _cfgFor(Dispatch? dispatch) {
+    final dispatchStatus = dispatch?.status.toUpperCase();
+    final hasActiveDelivery = widget.isBuyer &&
+        _status != 'COMPLETED' &&
+        dispatchStatus != null &&
+        dispatchStatus != 'CANCELLED';
+    if (hasActiveDelivery) {
+      switch (dispatchStatus) {
+        case 'DELIVERED':
+          return const _StatusConfig(
+            color: AppColors.primaryMain,
+            icon: Icons.check_circle_rounded,
+            headline: 'Delivered',
+            message: 'Your order has been delivered.',
+            label: 'DELIVERED',
+          );
+        case 'IN_TRANSIT':
+          return const _StatusConfig(
+            color: AppColors.amber700,
+            icon: Icons.local_shipping_rounded,
+            headline: 'On the Way',
+            message: 'Your delivery is on the way.',
+            label: 'IN TRANSIT',
+          );
+        case 'DISPATCHED':
+          return const _StatusConfig(
+            color: AppColors.blue600,
+            icon: Icons.local_shipping_rounded,
+            headline: 'Out for Delivery',
+            message: 'Your order has left the nursery.',
+            label: 'DISPATCHED',
+          );
+        case 'ACCEPTED':
+          return const _StatusConfig(
+            color: AppColors.blue600,
+            icon: Icons.person_rounded,
+            headline: 'Driver Assigned',
+            message: 'A driver has accepted your delivery.',
+            label: 'DRIVER ASSIGNED',
+          );
+        case 'PENDING':
+          return const _StatusConfig(
+            color: AppColors.textSecondary,
+            icon: Icons.schedule_rounded,
+            headline: 'Delivery Being Arranged',
+            message: 'The nursery is arranging your delivery.',
+            label: 'DELIVERY PENDING',
+          );
+      }
+    }
+
+    if (widget.canManage &&
+        _status != 'COMPLETED' &&
+        dispatchStatus == 'DELIVERED') {
+      return const _StatusConfig(
+        color: AppColors.primaryMain,
+        icon: Icons.check_circle_rounded,
+        headline: 'Delivery Delivered',
+        message: 'Review the order and mark it completed.',
+        label: 'DELIVERED',
+      );
+    }
+
     switch (_status) {
       case 'PENDING':
         return widget.isBuyer
@@ -305,6 +369,8 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     try {
       await action();
       ref.invalidate(orderDetailProvider(widget.orderId));
+      ref.invalidate(orderListProvider);
+      ref.invalidate(buyingOrderListProvider);
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
     } catch (e) {
@@ -462,7 +528,6 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cfg = _cfg;
     final canManage = widget.canManage;
     final isOwner = widget.isOwner;
     final status = _status;
@@ -475,6 +540,8 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
         .where((dispatch) => dispatch.status != 'CANCELLED')
         .cast<Dispatch?>()
         .firstOrNull;
+    final cfg = _cfgFor(existingDispatch);
+    final statusLabel = cfg.label ?? status.replaceAll('_', ' ');
 
     // Determine primary + secondary buttons for this role × state
     Widget? primaryBtn;
@@ -643,7 +710,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            status.replaceAll('_', ' '),
+                            statusLabel,
                             style: AppTypography.caption.copyWith(
                               color: cfg.color,
                               fontWeight: FontWeight.w700,

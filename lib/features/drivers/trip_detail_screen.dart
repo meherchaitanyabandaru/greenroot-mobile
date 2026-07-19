@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
+import '../orders/orders.dart';
 
 class DriverTripDetailScreen extends ConsumerWidget {
   final int dispatchId;
@@ -35,8 +36,8 @@ class DriverTripDetailScreen extends ConsumerWidget {
         ],
       ),
       body: async.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryMain)),
         error: (err, _) => _ErrorState(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
@@ -73,7 +74,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     if (widget.dispatch.status != 'DISPATCHED') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cannot start journey. Nursery loading is not yet complete.'),
+          content: Text(
+              'Cannot start journey. Nursery loading is not yet complete.'),
           backgroundColor: AppColors.amber600,
         ),
       );
@@ -85,6 +87,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
           .read(dispatchRepositoryProvider)
           .updateStatus(widget.dispatchId, 'IN_TRANSIT');
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,8 +100,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.message), backgroundColor: AppColors.red600),
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
         );
       }
     } finally {
@@ -119,7 +121,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
               child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
             child: const Text('Complete'),
           ),
         ],
@@ -133,6 +136,9 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
           .read(dispatchRepositoryProvider)
           .updateStatus(widget.dispatchId, 'DELIVERED');
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+      ref.invalidate(orderListProvider);
+      ref.invalidate(buyingOrderListProvider);
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -145,8 +151,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.message), backgroundColor: AppColors.red600),
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
         );
       }
     } finally {
@@ -228,8 +233,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
                       color: Colors.white, size: 20),
                   const SizedBox(width: 6),
                   Text('Trip',
-                      style: AppTypography.caption
-                          .copyWith(color: Colors.white.withValues(alpha: 0.8))),
+                      style: AppTypography.caption.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8))),
                   const Spacer(),
                   StatusBadge(
                     label: status.replaceAll('_', ' '),
@@ -241,8 +246,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 dispatch.dispatchCode,
-                style: AppTypography.h2.copyWith(
-                    color: Colors.white, letterSpacing: 0.5),
+                style: AppTypography.h2
+                    .copyWith(color: Colors.white, letterSpacing: 0.5),
               ),
               if (dispatchDate != null)
                 Text(
@@ -328,8 +333,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
                           // Show quantity only — never show prices.
                           Text(
                             'Qty: ${e.value.quantity.toInt()}',
-                            style: AppTypography.label.copyWith(
-                                color: AppColors.textSecondary),
+                            style: AppTypography.label
+                                .copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -380,7 +385,11 @@ class _StatusTimeline extends StatelessWidget {
   ];
 
   static const _order = [
-    'PENDING', 'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED'
+    'PENDING',
+    'ACCEPTED',
+    'DISPATCHED',
+    'IN_TRANSIT',
+    'DELIVERED'
   ];
 
   @override
@@ -432,7 +441,8 @@ class _StatusTimeline extends StatelessWidget {
                           color: done || current
                               ? AppColors.primaryMain
                               : AppColors.textMuted,
-                          fontWeight: current ? FontWeight.w700 : FontWeight.normal,
+                          fontWeight:
+                              current ? FontWeight.w700 : FontWeight.normal,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 2,
@@ -785,16 +795,18 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.textMuted),
+            const Icon(Icons.error_outline,
+                size: 48, color: AppColors.textMuted),
             const SizedBox(height: AppSpacing.md),
-            Text(message, style: AppTypography.body, textAlign: TextAlign.center),
+            Text(message,
+                style: AppTypography.body, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.md),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain),
             ),
           ],
         ),

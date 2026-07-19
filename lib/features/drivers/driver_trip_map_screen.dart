@@ -20,6 +20,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/map_widgets.dart';
 import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
+import '../orders/orders.dart';
 import '../tracking/tracking.dart';
 
 // ── Screen shell ───────────────────────────────────────────────────────────────
@@ -256,9 +257,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       return true;
     }
     if (ds == 'ACCEPTED' &&
-        (os == 'LOADED' ||
-            os == 'PARTIALLY_FULFILLED' ||
-            os == 'COMPLETED')) {
+        (os == 'LOADED' || os == 'PARTIALLY_FULFILLED' || os == 'COMPLETED')) {
       return true;
     }
     return false;
@@ -378,6 +377,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           .read(dispatchRepositoryProvider)
           .acceptDispatch(widget.dispatchId);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(activeDriverTripProvider);
       _snack('Trip accepted! Waiting for nursery to load plants.');
     } on AppError catch (e) {
@@ -400,6 +400,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       _startGpsPosting();
       await _postGps();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(activeDriverTripProvider);
       _snack('Journey started! GPS tracking active.');
     } on AppError catch (e) {
@@ -439,6 +440,9 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
           .updateStatus(widget.dispatchId, 'DELIVERED');
       _gpsTimer?.cancel();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+      ref.invalidate(orderListProvider);
+      ref.invalidate(buyingOrderListProvider);
       ref.invalidate(activeDriverTripProvider);
       _snack('Delivery completed. Well done!');
     } on AppError catch (e) {
@@ -658,8 +662,7 @@ class _MapSection extends StatelessWidget {
     String? etaLabel;
     if (distanceKm != null && isInTransit) {
       final mins = (distanceKm! / 30 * 60).round();
-      etaLabel =
-          mins < 60 ? '~$mins min' : '~${mins ~/ 60}h ${mins % 60}m';
+      etaLabel = mins < 60 ? '~$mins min' : '~${mins ~/ 60}h ${mins % 60}m';
     }
 
     return SizedBox(
@@ -677,8 +680,7 @@ class _MapSection extends StatelessWidget {
               ColorFiltered(
                 colorFilter: kMapDesatFilter,
                 child: TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'in.greenroot.greenroot_mobile',
                 ),
               ),

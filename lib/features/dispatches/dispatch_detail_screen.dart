@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../orders/orders.dart';
 import 'dispatches.dart';
 
 class DispatchDetailScreen extends ConsumerWidget {
@@ -87,6 +88,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           .read(dispatchRepositoryProvider)
           .updateStatus(widget.dispatchId, newStatus);
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+      ref.invalidate(orderListProvider);
+      ref.invalidate(buyingOrderListProvider);
       if (mounted) {
         final msg = switch (newStatus) {
           'DISPATCHED' => 'Marked as dispatched.',
