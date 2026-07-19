@@ -11,7 +11,8 @@ class AuthRemoteDataSource {
   Future<SendOtpResponse> sendOtp(String mobile) => _client.post(
         ApiConstants.sendOtp,
         data: SendOtpRequest(mobile: mobile).toJson(),
-        fromJson: (json) => SendOtpResponse.fromJson(json as Map<String, dynamic>),
+        fromJson: (json) =>
+            SendOtpResponse.fromJson(json as Map<String, dynamic>),
       );
 
   Future<AuthResponse> verifyOtp(String mobile, String otp) => _client.post(
@@ -38,7 +39,8 @@ class AuthRemoteDataSource {
 
   Future<UserRolesResponse> getUserRoles(int userId) => _client.get(
         ApiConstants.userRoles(userId),
-        fromJson: (json) => UserRolesResponse.fromJson(json as Map<String, dynamic>),
+        fromJson: (json) =>
+            UserRolesResponse.fromJson(json as Map<String, dynamic>),
       );
 
   Future<List<Map<String, dynamic>>> getWorkspaces() => _client.get(
@@ -46,7 +48,9 @@ class AuthRemoteDataSource {
         fromJson: (json) {
           // API returns a bare JSON array, not {"workspaces": [...]}
           if (json is List) return json.cast<Map<String, dynamic>>();
-          final list = (json as Map<String, dynamic>)['workspaces'] as List<dynamic>? ?? [];
+          final list =
+              (json as Map<String, dynamic>)['workspaces'] as List<dynamic>? ??
+                  [];
           return list.cast<Map<String, dynamic>>();
         },
       );
@@ -56,6 +60,19 @@ class AuthRemoteDataSource {
         ApiConstants.usersMe,
         data: req.toJson(),
         fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
+      );
+
+  Future<UserProfile> completeOnboarding(String initialActivity) =>
+      _client.post(
+        ApiConstants.usersMeOnboarding,
+        data: {'initial_activity': initialActivity},
+        fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
+      );
+
+  Future<DriverApplicationStatus> getDriverApplicationStatus() => _client.get(
+        ApiConstants.driversMe,
+        fromJson: (json) =>
+            DriverApplicationStatus.fromJson(json as Map<String, dynamic>),
       );
 
   Future<String?> getOwnedNurseryStatus() async {

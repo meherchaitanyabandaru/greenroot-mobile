@@ -31,26 +31,26 @@ class InviteDetail {
   factory InviteDetail.fromJson(Map<String, dynamic> json) {
     final inv = json['invite'] as Map<String, dynamic>? ?? json;
     return InviteDetail(
-      uuid:        inv['invite_uuid'] as String? ?? '',
-      inviteType:  inv['invite_type'] as String? ?? '',
+      uuid: inv['invite_uuid'] as String? ?? '',
+      inviteType: inv['invite_type'] as String? ?? '',
       nurseryName: inv['nursery_name'] as String?,
       inviterName: inv['inviter_name'] as String?,
-      status:      inv['status'] as String? ?? '',
+      status: inv['status'] as String? ?? '',
     );
   }
 
   String get typeLabel => switch (inviteType) {
-        'MANAGER_INVITE'  => 'Manager Invite',
-        'DRIVER_INVITE'   => 'Driver Invite',
+        'MANAGER_INVITE' => 'Manager Invite',
+        'DRIVER_INVITE' => 'Driver Invite',
         'CUSTOMER_INVITE' => 'Customer Invite',
-        _                 => inviteType.replaceAll('_', ' '),
+        _ => inviteType.replaceAll('_', ' '),
       };
 
   IconData get typeIcon => switch (inviteType) {
-        'MANAGER_INVITE'  => Icons.manage_accounts_rounded,
-        'DRIVER_INVITE'   => Icons.local_shipping_rounded,
+        'MANAGER_INVITE' => Icons.manage_accounts_rounded,
+        'DRIVER_INVITE' => Icons.local_shipping_rounded,
         'CUSTOMER_INVITE' => Icons.shopping_bag_rounded,
-        _                 => Icons.mail_rounded,
+        _ => Icons.mail_rounded,
       };
 
   bool get isPending => status == 'PENDING';
@@ -81,11 +81,11 @@ class InviteState {
     String? error,
   }) =>
       InviteState(
-        isLoading:   isLoading   ?? this.isLoading,
+        isLoading: isLoading ?? this.isLoading,
         isAccepting: isAccepting ?? this.isAccepting,
-        accepted:    accepted    ?? this.accepted,
-        invite:      invite      ?? this.invite,
-        error:       error,
+        accepted: accepted ?? this.accepted,
+        invite: invite ?? this.invite,
+        error: error,
       );
 }
 
@@ -99,8 +99,7 @@ class InviteNotifier extends StateNotifier<InviteState> {
     try {
       final detail = await _client.get(
         '/api/v1/invites/$uuid',
-        fromJson: (json) =>
-            InviteDetail.fromJson(json as Map<String, dynamic>),
+        fromJson: (json) => InviteDetail.fromJson(json as Map<String, dynamic>),
       );
       state = state.copyWith(isLoading: false, invite: detail);
     } on AppError catch (e) {
@@ -201,12 +200,9 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
             backgroundColor: AppColors.primaryMain,
           ),
         );
-        // Go back or to home
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/');
-        }
+        ref.read(sessionProvider.notifier).bootstrap().then((_) {
+          if (context.mounted) context.go('/');
+        });
       }
     });
 
@@ -234,14 +230,17 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                   color: AppColors.forest100,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.mail_outline_rounded, size: 40, color: AppColors.primaryMain),
+                child: const Icon(Icons.mail_outline_rounded,
+                    size: 40, color: AppColors.primaryMain),
               ),
               const SizedBox(height: AppSpacing.x2l),
-              const Text('You\'ve Been Invited!', style: AppTypography.h3, textAlign: TextAlign.center),
+              const Text('You\'ve Been Invited!',
+                  style: AppTypography.h3, textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Login or create an account to accept this invite and get started.',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.x3l),
@@ -252,9 +251,12 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryMain,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('Login to Accept', style: AppTypography.button.copyWith(color: Colors.white)),
+                  child: Text('Login to Accept',
+                      style:
+                          AppTypography.button.copyWith(color: Colors.white)),
                 ),
               ),
             ],
@@ -293,8 +295,8 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
-          const Text('Enter Your Invite Code', style: AppTypography.h3,
-              textAlign: TextAlign.center),
+          const Text('Enter Your Invite Code',
+              style: AppTypography.h3, textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Ask your nursery owner or manager for the invite link/UUID.',
@@ -395,6 +397,20 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenPadding,
+            0,
+            AppSpacing.screenPadding,
+            AppSpacing.md,
+          ),
+          child: TextButton(
+            onPressed: () => context.go('/home'),
+            child: const Text('Continue as Customer for now'),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -443,8 +459,7 @@ class _InviteCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: invite.isPending
                       ? AppColors.forest100

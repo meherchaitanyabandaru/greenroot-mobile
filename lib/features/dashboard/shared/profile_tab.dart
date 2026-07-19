@@ -228,7 +228,7 @@ class ProfileTabContent extends ConsumerWidget {
     try {
       await ApiClient.instance.delete(ApiConstants.leaveNursery);
       await ref.read(sessionProvider.notifier).bootstrap();
-      if (context.mounted) context.go('/select-activity');
+      if (context.mounted) context.go('/home');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -271,7 +271,7 @@ class ProfileTabContent extends ConsumerWidget {
       await ApiClient.instance
           .delete(ApiConstants.disconnectDriver(nurseryId, userId));
       await ref.read(sessionProvider.notifier).bootstrap();
-      if (context.mounted) context.go('/select-activity');
+      if (context.mounted) context.go('/home');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

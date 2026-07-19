@@ -8,6 +8,8 @@ class UserProfile {
   final bool mobileVerified;
   final String? email;
   final bool emailVerified;
+  final bool onboardingCompleted;
+  final String? initialActivity;
   final String? profileImageUrl;
   final String? status;
   final DateTime? createdAt;
@@ -23,6 +25,8 @@ class UserProfile {
     this.mobileVerified = false,
     this.email,
     this.emailVerified = false,
+    this.onboardingCompleted = false,
+    this.initialActivity,
     this.profileImageUrl,
     this.status,
     this.createdAt,
@@ -54,6 +58,8 @@ class UserProfile {
       mobileVerified: u['mobile_verified'] as bool? ?? false,
       email: u['email'] as String?,
       emailVerified: u['email_verified'] as bool? ?? false,
+      onboardingCompleted: u['onboarding_completed'] as bool? ?? false,
+      initialActivity: u['initial_activity'] as String?,
       profileImageUrl: u['profile_image_url'] as String?,
       status: u['status'] as String?,
       createdAt: u['created_at'] != null
@@ -82,6 +88,8 @@ class UserProfile {
         mobileVerified: mobileVerified,
         email: email ?? this.email,
         emailVerified: emailVerified,
+        onboardingCompleted: onboardingCompleted,
+        initialActivity: initialActivity,
         profileImageUrl: profileImageUrl ?? this.profileImageUrl,
         status: status,
         createdAt: createdAt,
@@ -102,6 +110,28 @@ class UserProfile {
     if (ln != null && ln.isNotEmpty) return '${fn[0]}${ln[0]}'.toUpperCase();
     return fn[0].toUpperCase();
   }
+}
+
+class DriverApplicationStatus {
+  final String approvalStatus;
+  final String profileStatus;
+
+  const DriverApplicationStatus({
+    required this.approvalStatus,
+    required this.profileStatus,
+  });
+
+  factory DriverApplicationStatus.fromJson(Map<String, dynamic> json) {
+    final driver = json['driver'] as Map<String, dynamic>? ?? json;
+    return DriverApplicationStatus(
+      approvalStatus:
+          (driver['approval_status'] as String? ?? '').toUpperCase(),
+      profileStatus: (driver['profile_status'] as String? ?? '').toUpperCase(),
+    );
+  }
+
+  bool get isPending => approvalStatus == 'PENDING';
+  bool get isRejected => approvalStatus == 'REJECTED';
 }
 
 class UserRole {

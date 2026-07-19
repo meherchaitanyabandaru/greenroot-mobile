@@ -9,13 +9,20 @@ import '../../domain/rbac/permission_service.dart';
 import '../../domain/rbac/roles.dart';
 import 'auth_provider.dart';
 
-enum SessionStatus { unknown, loading, authenticated, unauthenticated, suspended }
+enum SessionStatus {
+  unknown,
+  loading,
+  authenticated,
+  unauthenticated,
+  suspended
+}
 
 class SessionState {
   final SessionStatus status;
   final UserProfile? user;
   final List<AppRole> roles;
   final List<Workspace> workspaces;
+  final DriverApplicationStatus? driverApplication;
   final int? nurseryId;
   final String? ownedNurseryStatus;
   final AppRole? activeRole;
@@ -26,6 +33,7 @@ class SessionState {
     this.user,
     this.roles = const [],
     this.workspaces = const [],
+    this.driverApplication,
     this.nurseryId,
     this.ownedNurseryStatus,
     this.activeRole,
@@ -37,6 +45,7 @@ class SessionState {
     UserProfile? user,
     List<AppRole>? roles,
     List<Workspace>? workspaces,
+    DriverApplicationStatus? driverApplication,
     int? nurseryId,
     String? ownedNurseryStatus,
     AppRole? activeRole,
@@ -48,6 +57,7 @@ class SessionState {
         user: user ?? this.user,
         roles: roles ?? this.roles,
         workspaces: workspaces ?? this.workspaces,
+        driverApplication: driverApplication ?? this.driverApplication,
         nurseryId: nurseryId ?? this.nurseryId,
         ownedNurseryStatus: ownedNurseryStatus ?? this.ownedNurseryStatus,
         activeRole: clearActiveRole ? null : (activeRole ?? this.activeRole),
@@ -64,6 +74,10 @@ class SessionState {
       workspaces.where((w) => w.isBusinessWorkspace).toList();
 
   bool get hasMultipleWorkspaces => mobileWorkspaces.length > 1;
+  bool get hasCompletedOnboarding => user?.onboardingCompleted ?? false;
+  bool get hasPendingDriverApplication => driverApplication?.isPending ?? false;
+  bool get hasRejectedDriverApplication =>
+      driverApplication?.isRejected ?? false;
 
   UserCapabilities get capabilities => UserCapabilities.fromWorkspaces(
         workspaces,
@@ -119,6 +133,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
       final user = await _repo.getCurrentUser();
       final workspaces = await _repo.getWorkspaces();
+      final driverApplication = await _repo.getDriverApplicationStatus();
       final roles = await _repo.getUserRoles();
       final nurseryId = await _repo.getNurseryId();
       final storedActiveRole = await _repo.getStoredActiveRole();
@@ -133,9 +148,11 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
       // Use nursery_status from workspace response (API v2); fallback to separate call for older API builds
       String? ownedNurseryStatus;
-      final ownedWorkspace = workspaces.where((w) => w.type == 'OWNED_NURSERY').firstOrNull;
+      final ownedWorkspace =
+          workspaces.where((w) => w.type == 'OWNED_NURSERY').firstOrNull;
       if (ownedWorkspace != null) {
-        ownedNurseryStatus = ownedWorkspace.nurseryStatus ?? await _repo.getOwnedNurseryStatus();
+        ownedNurseryStatus =
+            ownedWorkspace.nurseryStatus ?? await _repo.getOwnedNurseryStatus();
       }
 
       state = SessionState(
@@ -143,6 +160,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
         user: user,
         roles: roles,
         workspaces: workspaces,
+        driverApplication: driverApplication,
         nurseryId: nurseryId,
         ownedNurseryStatus: ownedNurseryStatus,
         activeRole: activeRole,

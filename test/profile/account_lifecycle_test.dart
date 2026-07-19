@@ -20,8 +20,6 @@ import 'package:greenroot_mobile/features/auth/data/repositories/auth_repository
 import 'package:greenroot_mobile/features/auth/domain/rbac/roles.dart';
 import 'package:greenroot_mobile/features/auth/presentation/providers/session_provider.dart';
 
-import '../helpers/fake_api_client.dart';
-
 // ─── Fake auth repo ───────────────────────────────────────────────────────────
 
 class _FakeAuthRepo extends AuthRepository {
@@ -50,18 +48,34 @@ class _FakeAuthRepo extends AuthRepository {
     return AuthRemoteDataSource(ApiClient.instance);
   }
 
-  @override Future<bool> hasValidSession() async => _valid;
-  @override Future<UserProfile> getCurrentUser() async {
-    if (_error != null) throw _error!;
+  @override
+  Future<bool> hasValidSession() async => _valid;
+  @override
+  Future<UserProfile> getCurrentUser() async {
+    final error = _error;
+    if (error != null) throw error;
     return _user ?? const UserProfile(id: 99, firstName: 'Test');
   }
-  @override Future<List<Workspace>> getWorkspaces() async => _workspaces;
-  @override Future<List<AppRole>> getUserRoles() async => [];
-  @override Future<int?> getNurseryId() async => null;
-  @override Future<AppRole?> getStoredActiveRole() async => null;
-  @override Future<String?> getOwnedNurseryStatus() async => null;
-  @override Future<void> logout() async { _valid = false; }
-  @override Future<void> saveActiveRole(AppRole role) async {}
+
+  @override
+  Future<List<Workspace>> getWorkspaces() async => _workspaces;
+  @override
+  Future<List<AppRole>> getUserRoles() async => [];
+  @override
+  Future<DriverApplicationStatus?> getDriverApplicationStatus() async => null;
+  @override
+  Future<int?> getNurseryId() async => null;
+  @override
+  Future<AppRole?> getStoredActiveRole() async => null;
+  @override
+  Future<String?> getOwnedNurseryStatus() async => null;
+  @override
+  Future<void> logout() async {
+    _valid = false;
+  }
+
+  @override
+  Future<void> saveActiveRole(AppRole role) async {}
 
   // Helper: simulate a new bootstrap after role change (e.g. after leaving nursery)
   void updateWorkspaces(List<Workspace> ws) => _workspaces = ws;
@@ -88,7 +102,11 @@ void main() {
         user: const UserProfile(id: 20, firstName: 'Gumastha'),
         workspaces: [
           Workspace.fromJson({'type': 'PERSONAL'}),
-          Workspace.fromJson({'type': 'MANAGER_NURSERY', 'nursery_id': 5, 'nursery_name': 'Test'}),
+          Workspace.fromJson({
+            'type': 'MANAGER_NURSERY',
+            'nursery_id': 5,
+            'nursery_name': 'Test'
+          }),
         ],
       );
       final notifier = SessionNotifier(repo);
@@ -98,12 +116,18 @@ void main() {
       expect(notifier.state.capabilities.primaryNurseryId, 5);
     });
 
-    test('after leaving: bootstrap with no manager workspace clears manager capability', () async {
+    test(
+        'after leaving: bootstrap with no manager workspace clears manager capability',
+        () async {
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 20, firstName: 'Gumastha'),
         workspaces: [
-          Workspace.fromJson({'type': 'MANAGER_NURSERY', 'nursery_id': 5, 'nursery_name': 'Test'}),
+          Workspace.fromJson({
+            'type': 'MANAGER_NURSERY',
+            'nursery_id': 5,
+            'nursery_name': 'Test'
+          }),
         ],
       );
       final notifier = SessionNotifier(repo);
@@ -111,7 +135,9 @@ void main() {
       expect(notifier.state.capabilities.isManager, isTrue);
 
       // Simulate leave nursery: server removes the MANAGER_NURSERY workspace
-      repo.updateWorkspaces([Workspace.fromJson({'type': 'PERSONAL'})]);
+      repo.updateWorkspaces([
+        Workspace.fromJson({'type': 'PERSONAL'})
+      ]);
       await notifier.bootstrap();
 
       expect(notifier.state.capabilities.isManager, isFalse,
@@ -120,12 +146,16 @@ void main() {
           reason: 'no nursery should be associated after leaving');
     });
 
-    test('after leaving: workspace selector should be the next route (multiple workspaces = false)', () async {
+    test(
+        'after leaving: workspace selector should be the next route (multiple workspaces = false)',
+        () async {
       // A user who just left has only PERSONAL workspace → hasMultipleWorkspaces = false
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 20, firstName: 'Gumastha'),
-        workspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+        workspaces: [
+          Workspace.fromJson({'type': 'PERSONAL'})
+        ],
       );
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
@@ -143,7 +173,9 @@ void main() {
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 30, firstName: 'Ravi'),
-        workspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+        workspaces: [
+          Workspace.fromJson({'type': 'PERSONAL'})
+        ],
       );
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
@@ -158,7 +190,8 @@ void main() {
       expect(notifier.state.nurseryId, isNull);
     });
 
-    test('bootstrap after deletion (invalid session) → unauthenticated', () async {
+    test('bootstrap after deletion (invalid session) → unauthenticated',
+        () async {
       // Simulate deleted account: session is now invalid (sessions revoked)
       final repo = _FakeAuthRepo(
         valid: false,
@@ -168,14 +201,16 @@ void main() {
       await notifier.bootstrap();
 
       expect(notifier.state.status, SessionStatus.unauthenticated,
-          reason: 'a deleted account with revoked sessions must not be re-authenticated');
+          reason:
+              'a deleted account with revoked sessions must not be re-authenticated');
     });
   });
 
   // ── Re-entry: new registration after deletion ───────────────────────────────
 
   group('Re-entry after account deletion', () {
-    test('re-registered user gets a fresh unauthenticated state first', () async {
+    test('re-registered user gets a fresh unauthenticated state first',
+        () async {
       // After deletion the app logs out → unauthenticated
       final repo = _FakeAuthRepo(valid: false);
       final notifier = SessionNotifier(repo);
@@ -183,12 +218,15 @@ void main() {
       expect(notifier.state.status, SessionStatus.unauthenticated);
     });
 
-    test('re-registered user with valid new session gets authenticated state', () async {
+    test('re-registered user with valid new session gets authenticated state',
+        () async {
       // OTP flow produces a new valid session for the re-registered user
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 200, firstName: 'GreenRoot'), // new user ID
-        workspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+        workspaces: [
+          Workspace.fromJson({'type': 'PERSONAL'})
+        ],
       );
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
@@ -200,11 +238,14 @@ void main() {
       expect(notifier.state.capabilities.isNurseryOwner, isFalse);
     });
 
-    test('fresh user from re-registration has no nursery associations', () async {
+    test('fresh user from re-registration has no nursery associations',
+        () async {
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 201, firstName: 'GreenRoot'),
-        workspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+        workspaces: [
+          Workspace.fromJson({'type': 'PERSONAL'})
+        ],
       );
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
@@ -218,13 +259,18 @@ void main() {
   // ── Owner role preserved (not affected by member lifecycle) ────────────────
 
   group('Owner role unaffected by manager/driver lifecycle changes', () {
-    test('owner bootstrap still shows OWNED_NURSERY after manager is removed', () async {
+    test('owner bootstrap still shows OWNED_NURSERY after manager is removed',
+        () async {
       // Owner removes a manager — their own session is unchanged.
       final repo = _FakeAuthRepo(
         valid: true,
         user: const UserProfile(id: 10, firstName: 'Priya'),
         workspaces: [
-          Workspace.fromJson({'type': 'OWNED_NURSERY', 'nursery_id': 1, 'nursery_name': 'Priya Nursery'}),
+          Workspace.fromJson({
+            'type': 'OWNED_NURSERY',
+            'nursery_id': 1,
+            'nursery_name': 'Priya Nursery'
+          }),
         ],
       );
       final notifier = SessionNotifier(repo);

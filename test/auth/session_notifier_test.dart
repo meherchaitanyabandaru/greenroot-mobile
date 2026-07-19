@@ -67,6 +67,9 @@ class _FakeAuthRepo extends AuthRepository {
   Future<List<AppRole>> getUserRoles() async => fakeRoles;
 
   @override
+  Future<DriverApplicationStatus?> getDriverApplicationStatus() async => null;
+
+  @override
   Future<int?> getNurseryId() async => null;
 
   @override
@@ -122,7 +125,9 @@ void main() {
             mobile: kTestMobile,
             mobileVerified: true,
           ),
-          fakeWorkspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+          fakeWorkspaces: [
+            Workspace.fromJson({'type': 'PERSONAL'})
+          ],
           fakeRoles: [AppRole.buyer],
         ),
       );
@@ -134,7 +139,8 @@ void main() {
       expect(notifier.state.roles, contains(AppRole.buyer));
     });
 
-    test('bootstrap: getCurrentUser throws UnauthorizedError → unauthenticated', () async {
+    test('bootstrap: getCurrentUser throws UnauthorizedError → unauthenticated',
+        () async {
       final notifier = SessionNotifier(
         _FakeAuthRepo(
           sessionValid: true,
@@ -147,7 +153,8 @@ void main() {
       expect(notifier.state.user, isNull);
     });
 
-    test('bootstrap status transitions: unknown → loading → authenticated', () async {
+    test('bootstrap status transitions: unknown → loading → authenticated',
+        () async {
       final states = <SessionStatus>[];
       final notifier = SessionNotifier(
         _FakeAuthRepo(
@@ -169,12 +176,15 @@ void main() {
   });
 
   group('SessionNotifier.logout', () {
-    test('logout sets status to unauthenticated and clears all fields', () async {
+    test('logout sets status to unauthenticated and clears all fields',
+        () async {
       final notifier = SessionNotifier(
         _FakeAuthRepo(
           sessionValid: true,
           fakeUser: const UserProfile(id: kTestUserId, firstName: 'Ravi'),
-          fakeWorkspaces: [Workspace.fromJson({'type': 'PERSONAL'})],
+          fakeWorkspaces: [
+            Workspace.fromJson({'type': 'PERSONAL'})
+          ],
           fakeRoles: [AppRole.buyer],
         ),
       );
@@ -218,7 +228,8 @@ void main() {
       );
       await notifier.bootstrap();
 
-      notifier.updateUser(const UserProfile(id: kTestUserId, firstName: 'Updated'));
+      notifier
+          .updateUser(const UserProfile(id: kTestUserId, firstName: 'Updated'));
 
       expect(notifier.state.user?.firstName, 'Updated');
       expect(notifier.state.roles, contains(AppRole.buyer));
@@ -232,7 +243,8 @@ void main() {
         isTrue,
       );
       expect(
-        const SessionState(status: SessionStatus.unauthenticated).isAuthenticated,
+        const SessionState(status: SessionStatus.unauthenticated)
+            .isAuthenticated,
         isFalse,
       );
       expect(

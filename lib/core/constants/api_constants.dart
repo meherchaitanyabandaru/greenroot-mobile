@@ -10,6 +10,7 @@ abstract class ApiConstants {
 
   // Users
   static const String usersMe = '$v1/users/me';
+  static const String usersMeOnboarding = '$v1/users/me/onboarding';
   static String userById(int id) => '$v1/users/$id';
   static String userRoles(int id) => '$v1/users/$id/roles';
   static String userAddresses(int id) => '$v1/users/$id/addresses';

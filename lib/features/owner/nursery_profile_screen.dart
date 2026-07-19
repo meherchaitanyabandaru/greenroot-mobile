@@ -255,7 +255,8 @@ class _NurserySummaryCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.surface, width: 1.5),
                     ),
-                    child: const Icon(Icons.edit_rounded, size: 10, color: Colors.white),
+                    child: const Icon(Icons.edit_rounded,
+                        size: 10, color: Colors.white),
                   ),
                 ),
               ],
@@ -290,7 +291,8 @@ class _CloseNurserySection extends ConsumerStatefulWidget {
   const _CloseNurserySection({required this.nurseryId});
 
   @override
-  ConsumerState<_CloseNurserySection> createState() => _CloseNurserySectionState();
+  ConsumerState<_CloseNurserySection> createState() =>
+      _CloseNurserySectionState();
 }
 
 class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
@@ -323,7 +325,7 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
     try {
       await ref.read(nurseryRepositoryProvider).deleteNursery(widget.nurseryId);
       await ref.read(sessionProvider.notifier).bootstrap();
-      if (mounted) context.go('/select-activity');
+      if (mounted) context.go('/home');
     } on DioException catch (e) {
       if (!mounted) return;
       final body = e.response?.data;
@@ -339,7 +341,8 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not close nursery. Please try again.')),
+          const SnackBar(
+              content: Text('Could not close nursery. Please try again.')),
         );
       }
     } finally {
@@ -352,7 +355,8 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Danger Zone', style: AppTypography.h4.copyWith(color: AppColors.red600)),
+        Text('Danger Zone',
+            style: AppTypography.h4.copyWith(color: AppColors.red600)),
         const SizedBox(height: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
@@ -380,7 +384,8 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
                         color: AppColors.red600,
                       ),
                     )
-                  : const Icon(Icons.delete_forever_rounded, color: AppColors.red600, size: 20),
+                  : const Icon(Icons.delete_forever_rounded,
+                      color: AppColors.red600, size: 20),
             ),
             title: Text(
               'Close Nursery',
@@ -388,7 +393,8 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
             ),
             subtitle: Text(
               'Permanently closes your nursery account',
-              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+              style: AppTypography.caption
+                  .copyWith(color: AppColors.textSecondary),
             ),
             onTap: _deleting ? null : _confirmClose,
           ),

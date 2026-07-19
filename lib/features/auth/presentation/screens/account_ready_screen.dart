@@ -19,7 +19,6 @@ class AccountReadyScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-
               Container(
                 width: 88,
                 height: 88,
@@ -34,7 +33,6 @@ class AccountReadyScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.x2l),
-
               const Text(
                 "You're all set!",
                 style: AppTypography.h1,
@@ -43,13 +41,11 @@ class AccountReadyScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 "Welcome to GreenRoot. Let's choose how you'd like to get started.",
-                style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
-
               const Spacer(flex: 3),
-
               AppButton(
                 label: 'Get Started',
                 onPressed: () => context.go('/select-activity'),

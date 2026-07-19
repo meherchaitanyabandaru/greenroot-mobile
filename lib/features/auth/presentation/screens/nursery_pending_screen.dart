@@ -68,8 +68,18 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -120,7 +130,8 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Your nursery registration is being reviewed by the GreenRoot team. You\'ll be notified once a decision is made.',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
 
@@ -243,9 +254,8 @@ class _StatusStep extends StatelessWidget {
                   title,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isActive
-                        ? AppColors.amber700
-                        : AppColors.textPrimary,
+                    color:
+                        isActive ? AppColors.amber700 : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),

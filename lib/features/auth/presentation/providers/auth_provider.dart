@@ -26,8 +26,8 @@ class OtpSendState {
   OtpSendState copyWith({bool? isLoading, bool? sent, AppError? error}) =>
       OtpSendState(
         isLoading: isLoading ?? this.isLoading,
-        sent:      sent      ?? this.sent,
-        error:     error,
+        sent: sent ?? this.sent,
+        error: error,
       );
 }
 
@@ -80,9 +80,9 @@ class OtpVerifyState {
   }) =>
       OtpVerifyState(
         isLoading: isLoading ?? this.isLoading,
-        verified:  verified  ?? this.verified,
+        verified: verified ?? this.verified,
         isNewUser: isNewUser ?? this.isNewUser,
-        error:     error,
+        error: error,
       );
 }
 

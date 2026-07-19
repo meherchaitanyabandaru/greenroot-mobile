@@ -48,8 +48,18 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -103,7 +113,8 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Unfortunately, your nursery registration was not approved. Please review the reason below and resubmit.',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
 
@@ -126,8 +137,8 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Nursery',
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.textSecondary)),
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.textSecondary)),
                             Text(
                               session.capabilities.ownedNurseryName!,
                               style: AppTypography.body
@@ -136,8 +147,8 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                             if (_rejectedAt != null)
                               Text(
                                 'Rejected on ${_formatDate(_rejectedAt!)}',
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.textMuted),
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.textMuted),
                               ),
                           ],
                         ),
@@ -226,7 +237,8 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     _Tip('Address the reason mentioned above and resubmit.'),
                     _Tip('Contact GreenRoot support for more details.'),
-                    _Tip('Ensure your contact details and documents are accurate.'),
+                    _Tip(
+                        'Ensure your contact details and documents are accurate.'),
                   ],
                 ),
               ),

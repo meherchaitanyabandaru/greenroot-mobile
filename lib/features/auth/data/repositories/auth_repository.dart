@@ -28,9 +28,9 @@ class AuthRepository {
     try {
       final response = await _remote.verifyOtp(mobile, otp);
       await SecureStorageService.saveSession(
-        accessToken:  response.accessToken,
+        accessToken: response.accessToken,
         refreshToken: response.refreshToken,
-        userId:       response.user.id,
+        userId: response.user.id,
       );
       AppLogger.i('Login success — userId=${response.user.id}');
       return response;
@@ -56,13 +56,14 @@ class AuthRepository {
       if (existing == null) return;
       final response = await _remote.refreshToken(existing);
       await SecureStorageService.saveSession(
-        accessToken:  response.accessToken,
+        accessToken: response.accessToken,
         refreshToken: response.refreshToken,
-        userId:       response.user.id,
+        userId: response.user.id,
       );
       AppLogger.i('Silent token refresh succeeded — roles updated in JWT');
     } catch (e) {
-      AppLogger.w('Silent token refresh failed (continuing with existing token)', e);
+      AppLogger.w(
+          'Silent token refresh failed (continuing with existing token)', e);
     }
   }
 
@@ -124,7 +125,8 @@ class AuthRepository {
         }
       } catch (_) {}
 
-      AppLogger.i('Resolved roles from workspaces: ${roles.map((r) => r.value).join(', ')}');
+      AppLogger.i(
+          'Resolved roles from workspaces: ${roles.map((r) => r.value).join(', ')}');
       return roles.toList();
     } on AppError {
       rethrow;
@@ -181,6 +183,25 @@ class AuthRepository {
     } catch (e) {
       AppLogger.e('updateProfile error', e);
       throw const UnknownError();
+    }
+  }
+
+  Future<UserProfile> completeOnboarding(String initialActivity) async {
+    try {
+      return await _remote.completeOnboarding(initialActivity);
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('completeOnboarding error', e);
+      throw const UnknownError();
+    }
+  }
+
+  Future<DriverApplicationStatus?> getDriverApplicationStatus() async {
+    try {
+      return await _remote.getDriverApplicationStatus();
+    } catch (_) {
+      return null;
     }
   }
 

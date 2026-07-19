@@ -15,6 +15,7 @@ import '../features/profile/about_screen.dart';
 import '../features/profile/help_support_screen.dart';
 import '../features/profile/legal_document_screen.dart';
 import '../features/auth/presentation/screens/driver_registration_screen.dart';
+import '../features/auth/presentation/screens/driver_application_status_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/activity_select_screen.dart';
 import '../features/auth/presentation/screens/nursery_pending_screen.dart';
@@ -302,6 +303,9 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/register/driver',
         builder: (_, __) => const DriverRegistrationScreen()),
+    GoRoute(
+        path: '/driver/application-status',
+        builder: (_, __) => const DriverApplicationStatusScreen()),
     GoRoute(
         path: '/register/nursery',
         builder: (_, __) => const NurseryRegistrationScreen()),

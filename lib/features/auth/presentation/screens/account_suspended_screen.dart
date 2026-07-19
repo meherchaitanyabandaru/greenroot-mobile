@@ -42,7 +42,8 @@ class AccountSuspendedScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Your account has been suspended. Please contact our support team to resolve this.',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.x2l),
@@ -55,11 +56,13 @@ class AccountSuspendedScreen extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.email_outlined, color: AppColors.primaryMain, size: 20),
+                    const Icon(Icons.email_outlined,
+                        color: AppColors.primaryMain, size: 20),
                     const SizedBox(width: AppSpacing.md),
                     Text(
                       'support@greenroot.in',
-                      style: AppTypography.body.copyWith(color: AppColors.primaryMain),
+                      style: AppTypography.body
+                          .copyWith(color: AppColors.primaryMain),
                     ),
                   ],
                 ),
@@ -72,7 +75,8 @@ class AccountSuspendedScreen extends ConsumerWidget {
                 },
                 child: Text(
                   'Sign Out',
-                  style: AppTypography.body.copyWith(color: AppColors.textMuted),
+                  style:
+                      AppTypography.body.copyWith(color: AppColors.textMuted),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

@@ -38,7 +38,9 @@ class _WorkspaceSelectScreenState extends ConsumerState<WorkspaceSelectScreen> {
     }
     // Single workspace: skip the picker and auto-navigate.
     if (workspaces.length == 1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _confirm(),);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _confirm(),
+      );
     }
   }
 

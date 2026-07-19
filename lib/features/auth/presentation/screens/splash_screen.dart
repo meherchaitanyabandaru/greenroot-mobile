@@ -14,12 +14,26 @@ class SplashScreen extends ConsumerStatefulWidget {
 
   static void _routeByCapabilities(BuildContext context, SessionState session) {
     final caps = session.capabilities;
+    if (!(session.user?.hasRealFirstName ?? false)) {
+      context.go('/create-profile');
+      return;
+    }
     if (caps.hasPendingNursery) {
       context.go('/nursery/pending');
       return;
     }
     if (caps.hasRejectedNursery) {
       context.go('/nursery/rejected');
+      return;
+    }
+    if (session.mobileWorkspaces.isEmpty &&
+        session.hasPendingDriverApplication) {
+      context.go('/driver/application-status');
+      return;
+    }
+    if (session.mobileWorkspaces.isEmpty &&
+        session.hasRejectedDriverApplication) {
+      context.go('/driver/application-status');
       return;
     }
     if (session.hasMultipleWorkspaces && session.activeRole == null) {
@@ -31,8 +45,9 @@ class SplashScreen extends ConsumerStatefulWidget {
       context.go('/home/admin');
       return;
     }
-    // New user with no business role yet — prompt them to pick an activity.
+    // New user with no completed first activity yet — prompt them to pick one.
     if (session.mobileWorkspaces.isEmpty &&
+        !session.hasCompletedOnboarding &&
         !session.roles.hasAnyRole([AppRole.admin, AppRole.superAdmin])) {
       context.go('/select-activity');
       return;
@@ -59,7 +74,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
     _fade = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
-        CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),);
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
+    );
 
     _animController.forward();
     _bootstrap();

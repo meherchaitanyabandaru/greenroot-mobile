@@ -23,23 +23,23 @@ class Workspace {
   bool get isBusinessWorkspace => type != 'PERSONAL';
 
   AppRole get appRole => switch (type) {
-        'OWNED_NURSERY'   => AppRole.nurseryOwner,
+        'OWNED_NURSERY' => AppRole.nurseryOwner,
         'MANAGER_NURSERY' => AppRole.manager,
-        'DRIVER'          => AppRole.driver,
-        _                 => AppRole.buyer,
+        'DRIVER' => AppRole.driver,
+        _ => AppRole.buyer,
       };
 
   String get displayTitle => switch (type) {
-        'OWNED_NURSERY'   => nurseryName ?? 'My Nursery',
+        'OWNED_NURSERY' => nurseryName ?? 'My Nursery',
         'MANAGER_NURSERY' => nurseryName ?? 'Manager',
-        'DRIVER'          => 'Driver',
-        _                 => 'Customer',
+        'DRIVER' => 'Driver',
+        _ => 'Customer',
       };
 
   String get roleLabel => switch (type) {
-        'OWNED_NURSERY'   => 'Nursery Owner',
+        'OWNED_NURSERY' => 'Nursery Owner',
         'MANAGER_NURSERY' => 'Manager / Gumastha',
-        'DRIVER'          => 'Delivery Driver',
-        _                 => 'Customer',
+        'DRIVER' => 'Delivery Driver',
+        _ => 'Customer',
       };
 }

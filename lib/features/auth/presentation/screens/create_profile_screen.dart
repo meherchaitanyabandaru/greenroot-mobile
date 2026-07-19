@@ -35,7 +35,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       if (user == null) return;
       // Profile already complete — skip straight to activity selection
       if (user.isProfileComplete) {
-        context.go('/select-activity');
+        context.go(user.onboardingCompleted ? '/home' : '/select-activity');
         return;
       }
       // Pre-fill whatever is already saved

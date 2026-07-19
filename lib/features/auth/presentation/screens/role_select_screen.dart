@@ -24,7 +24,8 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
   void initState() {
     super.initState();
     final saved = ref.read(activeRoleProvider);
-    final roles = ref.read(sessionProvider).roles.where((r) => r.isMobileRole).toList();
+    final roles =
+        ref.read(sessionProvider).roles.where((r) => r.isMobileRole).toList();
     _selected = saved ?? roles.firstOrNull;
   }
 
@@ -37,18 +38,18 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
   }
 
   String _roleSlug(AppRole role) => switch (role) {
-    AppRole.nurseryOwner => 'nursery-owner',
-    AppRole.manager      => 'manager',
-    AppRole.driver       => 'driver',
-    AppRole.admin        => 'admin',
-    _                    => 'buyer',
-  };
+        AppRole.nurseryOwner => 'nursery-owner',
+        AppRole.manager => 'manager',
+        AppRole.driver => 'driver',
+        AppRole.admin => 'admin',
+        _ => 'buyer',
+      };
 
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final roles = session.roles.where((r) => r.isMobileRole).toList();
-    final user  = session.user;
+    final user = session.user;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,13 +63,16 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
 
               // Greeting
               Text(
-                user?.name != null ? 'Hello, ${user!.name!.split(' ').first}' : 'Hello!',
+                user?.name != null
+                    ? 'Hello, ${user!.name!.split(' ').first}'
+                    : 'Hello!',
                 style: AppTypography.h1,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'You have multiple roles. Choose how you want to continue.',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.x3l),
 
@@ -76,7 +80,8 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
               Expanded(
                 child: ListView.separated(
                   itemCount: roles.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.md),
                   itemBuilder: (context, i) {
                     final role = roles[i];
                     final isSelected = _selected == role;
@@ -105,7 +110,8 @@ class _RoleSelectScreenState extends ConsumerState<RoleSelectScreen> {
                 child: Center(
                   child: Text(
                     'Sign out',
-                    style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                    style: AppTypography.body
+                        .copyWith(color: AppColors.textSecondary),
                   ),
                 ),
               ),
@@ -181,18 +187,18 @@ class _RoleCard extends StatelessWidget {
   }
 
   IconData get _icon => switch (role) {
-    AppRole.nurseryOwner => Icons.local_florist_outlined,
-    AppRole.manager      => Icons.manage_accounts_outlined,
-    AppRole.driver       => Icons.local_shipping_outlined,
-    AppRole.admin        => Icons.admin_panel_settings_outlined,
-    _                    => Icons.shopping_bag_outlined,
-  };
+        AppRole.nurseryOwner => Icons.local_florist_outlined,
+        AppRole.manager => Icons.manage_accounts_outlined,
+        AppRole.driver => Icons.local_shipping_outlined,
+        AppRole.admin => Icons.admin_panel_settings_outlined,
+        _ => Icons.shopping_bag_outlined,
+      };
 
   String get _subtitle => switch (role) {
-    AppRole.nurseryOwner => 'Manage your nursery & operations',
-    AppRole.manager      => 'View assigned orders & loading',
-    AppRole.driver       => 'View and manage deliveries',
-    AppRole.admin        => 'Platform administration',
-    _                    => 'View orders and track deliveries',
-  };
+        AppRole.nurseryOwner => 'Manage your nursery & operations',
+        AppRole.manager => 'View assigned orders & loading',
+        AppRole.driver => 'View and manage deliveries',
+        AppRole.admin => 'Platform administration',
+        _ => 'View orders and track deliveries',
+      };
 }

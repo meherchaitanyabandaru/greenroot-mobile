@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../providers/session_provider.dart';
 
 class _DriverRegState {
   final bool isLoading;
@@ -57,8 +58,8 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
   }
 }
 
-final _driverRegProvider = StateNotifierProvider.autoDispose<
-    _DriverRegNotifier, _DriverRegState>(
+final _driverRegProvider =
+    StateNotifierProvider.autoDispose<_DriverRegNotifier, _DriverRegState>(
   (ref) => _DriverRegNotifier(ApiClient.instance),
 );
 
@@ -83,15 +84,18 @@ class _DriverRegistrationScreenState
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final licence = _licenceCtrl.text.trim();
     final vehicle = _vehicleCtrl.text.trim();
     if (licence.isEmpty || vehicle.isEmpty) return;
-    ref.read(_driverRegProvider.notifier).apply(
+    await ref.read(_driverRegProvider.notifier).apply(
           licenceNumber: licence,
           vehicleNumber: vehicle,
           vehicleType: _vehicleType,
         );
+    if (ref.read(_driverRegProvider).submitted) {
+      await ref.read(sessionProvider.notifier).bootstrap();
+    }
   }
 
   @override
@@ -127,8 +131,8 @@ class _DriverRegistrationScreenState
                   ),
                 ),
                 const SizedBox(height: AppSpacing.x2l),
-                const Text('Application Submitted!', style: AppTypography.h2,
-                    textAlign: TextAlign.center),
+                const Text('Application Submitted!',
+                    style: AppTypography.h2, textAlign: TextAlign.center),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Your driver application is under review. You will be notified once approved.',
@@ -138,14 +142,8 @@ class _DriverRegistrationScreenState
                 ),
                 const SizedBox(height: AppSpacing.x3l),
                 AppButton(
-                  label: 'Back to Home',
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/');
-                    }
-                  },
+                  label: 'Continue as Customer',
+                  onPressed: () => context.go('/home'),
                 ),
               ],
             ),
@@ -182,8 +180,8 @@ class _DriverRegistrationScreenState
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
-          const Text('Driver Registration', style: AppTypography.h3,
-              textAlign: TextAlign.center),
+          const Text('Driver Registration',
+              style: AppTypography.h3, textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Submit your details to join as a delivery driver. '
@@ -222,8 +220,7 @@ class _DriverRegistrationScreenState
                 selectedColor: AppColors.primaryMain,
                 labelStyle: TextStyle(
                   color: selected ? Colors.white : AppColors.textPrimary,
-                  fontWeight:
-                      selected ? FontWeight.w700 : FontWeight.w400,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 ),
               );
             }).toList(),
@@ -238,8 +235,7 @@ class _DriverRegistrationScreenState
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(state.error!,
-                  style: AppTypography.body
-                      .copyWith(color: AppColors.red600)),
+                  style: AppTypography.body.copyWith(color: AppColors.red600)),
             ),
             const SizedBox(height: AppSpacing.md),
           ],
