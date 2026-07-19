@@ -445,7 +445,7 @@ class _DetailContent extends StatelessWidget {
                 ),
               ),
             ),
-          if (dispatch.status == 'DISPATCHED')
+          if (dispatch.capabilities?.canStartTrip == true)
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -468,7 +468,7 @@ class _DetailContent extends StatelessWidget {
                 ),
               ),
             ),
-          if (dispatch.status == 'IN_TRANSIT')
+          if (dispatch.capabilities?.canMarkDelivered == true)
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -517,7 +517,7 @@ class _DetailContent extends StatelessWidget {
 
         // ── Manager: Dispatch status actions ───────────────────────────────────
         if (!isDriver && isManager) ...[
-          if (dispatch.status == 'ACCEPTED' || dispatch.status == 'PENDING')
+          if (dispatch.capabilities?.canMarkDispatched == true)
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -540,7 +540,7 @@ class _DetailContent extends StatelessWidget {
                 ),
               ),
             ),
-          if (dispatch.status == 'IN_TRANSIT')
+          if (dispatch.capabilities?.canMarkDelivered == true)
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -569,9 +569,7 @@ class _DetailContent extends StatelessWidget {
         // ── Owner: Status actions + Share QR + Track ──────────────────────────
         if (!isDriver) ...[
           // Owner-only: Mark Dispatched (PENDING or ACCEPTED → DISPATCHED)
-          if (!isManager &&
-              (dispatch.status == 'PENDING' ||
-                  dispatch.status == 'ACCEPTED')) ...[
+          if (!isManager && dispatch.capabilities?.canMarkDispatched == true) ...[
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -597,7 +595,7 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Owner: confirm delivery when IN_TRANSIT
-          if (!isManager && dispatch.status == 'IN_TRANSIT') ...[
+          if (!isManager && dispatch.capabilities?.canMarkDelivered == true) ...[
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -623,7 +621,7 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Share dispatch code as QR
-          if (dispatch.status != 'DELIVERED' && dispatch.status != 'CANCELLED')
+          if (dispatch.capabilities?.canShareCode == true)
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -646,7 +644,7 @@ class _DetailContent extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.md),
-          if (dispatch.status != 'DELIVERED' && dispatch.status != 'CANCELLED')
+          if (dispatch.capabilities?.canViewTracking == true)
             SizedBox(
               width: double.infinity,
               height: 50,

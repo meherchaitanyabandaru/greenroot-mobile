@@ -197,11 +197,11 @@ final plantRepositoryProvider = Provider<PlantRepository>(
 );
 
 final plantCategoriesProvider =
-    FutureProvider<List<PlantCategory>>((ref) async {
+    FutureProvider.autoDispose<List<PlantCategory>>((ref) async {
   return ref.watch(plantRepositoryProvider).getCategories();
 });
 
-final plantSizesProvider = FutureProvider<List<PlantSize>>((ref) async {
+final plantSizesProvider = FutureProvider.autoDispose<List<PlantSize>>((ref) async {
   return ref.watch(plantRepositoryProvider).getSizes();
 });
 

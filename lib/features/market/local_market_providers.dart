@@ -498,7 +498,7 @@ Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
 
 // ── Latest Ads (home screen) ──────────────────────────────────
 
-final latestAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
+final latestAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getAds(
     {'per_page': '6', 'page': '1'},
   );
@@ -765,7 +765,7 @@ final browseAdsProvider =
 
 // ── My Ads ────────────────────────────────────────────────────
 
-final myAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
+final myAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getMyAds();
   final ads = (data['ads'] as List?) ?? [];
   return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
@@ -773,7 +773,7 @@ final myAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
 
 // ── Saved Ads ─────────────────────────────────────────────────
 
-final savedAdsProvider = FutureProvider<List<MarketAd>>((ref) async {
+final savedAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getSavedAds();
   final ads = (data['ads'] as List?) ?? [];
   return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();

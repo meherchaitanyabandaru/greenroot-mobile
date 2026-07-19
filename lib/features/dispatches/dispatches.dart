@@ -49,6 +49,40 @@ class DispatchItem {
       );
 }
 
+class DispatchCapabilities {
+  final bool canAccept;
+  final bool canMarkDispatched;
+  final bool canStartTrip;
+  final bool canMarkDelivered;
+  final bool canCancel;
+  final bool canAddItems;
+  final bool canViewTracking;
+  final bool canShareCode;
+
+  const DispatchCapabilities({
+    this.canAccept = false,
+    this.canMarkDispatched = false,
+    this.canStartTrip = false,
+    this.canMarkDelivered = false,
+    this.canCancel = false,
+    this.canAddItems = false,
+    this.canViewTracking = false,
+    this.canShareCode = false,
+  });
+
+  factory DispatchCapabilities.fromJson(Map<String, dynamic> j) =>
+      DispatchCapabilities(
+        canAccept: j['can_accept'] == true,
+        canMarkDispatched: j['can_mark_dispatched'] == true,
+        canStartTrip: j['can_start_trip'] == true,
+        canMarkDelivered: j['can_mark_delivered'] == true,
+        canCancel: j['can_cancel'] == true,
+        canAddItems: j['can_add_items'] == true,
+        canViewTracking: j['can_view_tracking'] == true,
+        canShareCode: j['can_share_code'] == true,
+      );
+}
+
 class Dispatch {
   final int id;
   final String dispatchCode;
@@ -75,6 +109,7 @@ class Dispatch {
   final String? updatedAt;
   final List<DispatchItem> items;
   final BackendLifecycle? lifecycle;
+  final DispatchCapabilities? capabilities;
 
   const Dispatch({
     required this.id,
@@ -102,6 +137,7 @@ class Dispatch {
     this.updatedAt,
     required this.items,
     this.lifecycle,
+    this.capabilities,
   });
 
   factory Dispatch.fromJson(Map<String, dynamic> j) => Dispatch(
@@ -134,6 +170,10 @@ class Dispatch {
         updatedAt: j['updated_at'] as String?,
         lifecycle: j['lifecycle'] is Map<String, dynamic>
             ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? DispatchCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>)
             : null,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
