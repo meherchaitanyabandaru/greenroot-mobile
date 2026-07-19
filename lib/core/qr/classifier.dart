@@ -63,18 +63,9 @@ QrDetection classifyQr(String raw) {
 
 String inviteErrorMessage(Object e) {
   if (e is WrongTargetInviteError) return e.message;
-  final s = e.toString().toLowerCase();
-  if (s.contains('conflicting_role')) {
-    return 'Role conflict: nursery owners cannot join as managers, and managers cannot become nursery owners.';
-  }
-  if (s.contains('already_member')) {
-    return 'You are already a manager at another nursery. Leave your current nursery first, then accept this invite.';
-  }
-  if (s.contains('forbidden')) {
-    return "You don't have permission to accept this invite.";
-  }
-  if (s.contains('not_found') || s.contains('404')) {
-    return 'This invite no longer exists. It may have been cancelled.';
-  }
+  if (e is ConflictingRoleError) return e.message;
+  if (e is AlreadyMemberError) return e.message;
+  if (e is NotFoundError) return 'This invite no longer exists. It may have been cancelled.';
+  if (e is ForbiddenError) return "You don't have permission to accept this invite.";
   return 'Failed to accept invite. Please try again.';
 }

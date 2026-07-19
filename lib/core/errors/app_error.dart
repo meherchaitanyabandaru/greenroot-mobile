@@ -51,3 +51,11 @@ class WrongTargetInviteError extends AppError {
   const WrongTargetInviteError()
       : super("This invite isn't for you. Ask the nursery to send a new invite to your number.");
 }
+
+class ConflictingRoleError extends AppError {
+  const ConflictingRoleError([super.message = "Your current role doesn't allow you to accept this invite."]);
+}
+
+class AlreadyMemberError extends AppError {
+  const AlreadyMemberError([super.message = 'You are already a member of a nursery. Leave your current nursery first.']);
+}

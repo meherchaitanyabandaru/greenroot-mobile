@@ -55,6 +55,10 @@ class NetworkExceptions {
         }
         if (code == 'wrong_target') return const WrongTargetInviteError();
         return ForbiddenError(message ?? 'You do not have permission to perform this action.');
+      case 409:
+        final code409 = _extractCode(response.data);
+        if (code409 == 'already_member') return AlreadyMemberError(message ?? 'You are already a member of a nursery.');
+        return ConflictingRoleError(message ?? "Your current role doesn't allow you to accept this invite.");
       case 404:
         return NotFoundError(message ?? 'Not found.');
       case 422:
