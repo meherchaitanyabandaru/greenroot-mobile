@@ -8,6 +8,7 @@ import '../../core/services/geocoding/geocoding_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'address_map_picker_screen.dart';
 
@@ -380,7 +381,14 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
           : _error != null
               ? _ErrorView(error: _error!, onRetry: _load)
               : _addresses.isEmpty
-                  ? _EmptyState(onAdd: () => _openForm())
+                  ? _EmptyState(
+                      onAdd: () => _openForm(),
+                      showOwnerHint: widget.nurseryId == null &&
+                          ref
+                              .watch(sessionProvider)
+                              .roles
+                              .contains(AppRole.nurseryOwner),
+                    )
                   : _AddressListView(
                       addresses: _addresses,
                       onEdit: (a) => _openForm(a),
@@ -396,7 +404,9 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+  final bool showOwnerHint;
+
+  const _EmptyState({required this.onAdd, this.showOwnerHint = false});
 
   @override
   Widget build(BuildContext context) {
@@ -414,16 +424,70 @@ class _EmptyState extends StatelessWidget {
                 size: 52, color: AppColors.primaryMain),
           ),
           const SizedBox(height: AppSpacing.x2l),
-          const Text('No Addresses Yet', style: AppTypography.h3),
+          const Text('No personal delivery addresses yet.',
+              style: AppTypography.h3, textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Add a delivery address so nurseries\nknow where to deliver your plants.',
+            'These are your personal delivery addresses\nfor receiving orders.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
+          if (showOwnerHint) ...[
+            const SizedBox(height: AppSpacing.x2l),
+            _OwnerAddressHint(),
+          ],
           const Spacer(),
           _AddButton(onTap: onAdd),
           const SizedBox(height: AppSpacing.x2l),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Owner hint banner ─────────────────────────────────────────────────────────
+// Shown only when the user has NURSERY_OWNER role and personal address list
+// is empty — prevents confusion between personal and nursery addresses.
+
+class _OwnerAddressHint extends StatelessWidget {
+  const _OwnerAddressHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.forest100,
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: AppColors.primaryMain.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.store_outlined,
+              size: 18, color: AppColors.primaryMain),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+                children: const [
+                  TextSpan(
+                      text:
+                          'Looking for your nursery address? Go to '),
+                  TextSpan(
+                    text: 'Nursery Profile → Addresses',
+                    style: TextStyle(
+                        color: AppColors.primaryMain,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: '.'),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

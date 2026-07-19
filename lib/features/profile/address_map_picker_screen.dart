@@ -336,6 +336,29 @@ class _AddressMapPickerScreenState
             ),
           ),
 
+          // ── Location-detecting overlay (hides India-default zoom) ─────────
+          if (_awaitingInitialLocation)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: AppColors.primaryMain,
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Detecting your location…',
+                      style: AppTypography.body
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // ── AppBar row ────────────────────────────────────────────────────
           SafeArea(
             child: Padding(
