@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import '../../core/domain/lifecycle_models.dart';
 import '../../core/network/api_client.dart';
 import '../../core/constants/api_constants.dart';
 
@@ -34,6 +35,9 @@ class MarketAd {
   final DateTime? expiresAt;
   final DateTime? publishedAt;
   final DateTime createdAt;
+  final BackendLifecycle? lifecycle;
+  final MarketAdCapabilities? capabilities;
+  final MarketAdSummary? summary;
 
   const MarketAd({
     required this.id,
@@ -59,6 +63,9 @@ class MarketAd {
     this.expiresAt,
     this.publishedAt,
     required this.createdAt,
+    this.lifecycle,
+    this.capabilities,
+    this.summary,
   });
 
   factory MarketAd.fromJson(Map<String, dynamic> j) => MarketAd(
@@ -74,7 +81,9 @@ class MarketAd {
         description: j['description'] as String?,
         quantity: j['quantity'] != null ? (j['quantity'] as num).toInt() : null,
         sizeDescription: j['size_description'] as String?,
-        pricePerUnit: j['price_per_unit'] != null ? (j['price_per_unit'] as num).toDouble() : null,
+        pricePerUnit: j['price_per_unit'] != null
+            ? (j['price_per_unit'] as num).toDouble()
+            : null,
         priceUnit: j['price_unit'] as String?,
         photos: (j['photos'] as List?)?.map((e) => e as String).toList() ?? [],
         status: j['status'] as String,
@@ -82,9 +91,82 @@ class MarketAd {
         saveCount: (j['save_count'] as num?)?.toInt() ?? 0,
         enquiryCount: (j['enquiry_count'] as num?)?.toInt() ?? 0,
         isSavedByMe: j['is_saved_by_me'] as bool? ?? false,
-        expiresAt: j['expires_at'] != null ? DateTime.tryParse(j['expires_at'] as String) : null,
-        publishedAt: j['published_at'] != null ? DateTime.tryParse(j['published_at'] as String) : null,
+        expiresAt: j['expires_at'] != null
+            ? DateTime.tryParse(j['expires_at'] as String)
+            : null,
+        publishedAt: j['published_at'] != null
+            ? DateTime.tryParse(j['published_at'] as String)
+            : null,
         createdAt: DateTime.parse(j['created_at'] as String),
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? MarketAdCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>,
+              )
+            : null,
+        summary: j['summary'] is Map<String, dynamic>
+            ? MarketAdSummary.fromJson(j['summary'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
+class MarketAdCapabilities {
+  final bool canEdit;
+  final bool canPublish;
+  final bool canPause;
+  final bool canResume;
+  final bool canRenew;
+  final bool canArchive;
+  final bool canSave;
+  final bool canEnquire;
+  final bool canReport;
+
+  const MarketAdCapabilities({
+    this.canEdit = false,
+    this.canPublish = false,
+    this.canPause = false,
+    this.canResume = false,
+    this.canRenew = false,
+    this.canArchive = false,
+    this.canSave = false,
+    this.canEnquire = false,
+    this.canReport = false,
+  });
+
+  factory MarketAdCapabilities.fromJson(Map<String, dynamic> j) =>
+      MarketAdCapabilities(
+        canEdit: j['can_edit'] as bool? ?? false,
+        canPublish: j['can_publish'] as bool? ?? false,
+        canPause: j['can_pause'] as bool? ?? false,
+        canResume: j['can_resume'] as bool? ?? false,
+        canRenew: j['can_renew'] as bool? ?? false,
+        canArchive: j['can_archive'] as bool? ?? false,
+        canSave: j['can_save'] as bool? ?? false,
+        canEnquire: j['can_enquire'] as bool? ?? false,
+        canReport: j['can_report'] as bool? ?? false,
+      );
+}
+
+class MarketAdSummary {
+  final bool isOwner;
+  final bool isLive;
+  final bool isExpired;
+  final int? daysRemaining;
+
+  const MarketAdSummary({
+    this.isOwner = false,
+    this.isLive = false,
+    this.isExpired = false,
+    this.daysRemaining,
+  });
+
+  factory MarketAdSummary.fromJson(Map<String, dynamic> j) => MarketAdSummary(
+        isOwner: j['is_owner'] as bool? ?? false,
+        isLive: j['is_live'] as bool? ?? false,
+        isExpired: j['is_expired'] as bool? ?? false,
+        daysRemaining: (j['days_remaining'] as num?)?.toInt(),
       );
 }
 
@@ -125,6 +207,9 @@ class MarketEnquiry {
   final String status;
   final DateTime createdAt;
   final List<MarketEnquiryMessage> messages;
+  final BackendLifecycle? lifecycle;
+  final MarketEnquiryCapabilities? capabilities;
+  final MarketEnquirySummary? summary;
 
   const MarketEnquiry({
     required this.id,
@@ -138,6 +223,9 @@ class MarketEnquiry {
     required this.status,
     required this.createdAt,
     this.messages = const [],
+    this.lifecycle,
+    this.capabilities,
+    this.summary,
   });
 
   factory MarketEnquiry.fromJson(Map<String, dynamic> j) => MarketEnquiry(
@@ -158,6 +246,62 @@ class MarketEnquiry {
                     MarketEnquiryMessage.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? MarketEnquiryCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>,
+              )
+            : null,
+        summary: j['summary'] is Map<String, dynamic>
+            ? MarketEnquirySummary.fromJson(
+                j['summary'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
+class MarketEnquiryCapabilities {
+  final bool canReply;
+  final bool canClose;
+  final bool canCancel;
+  final bool canCreateQuotation;
+  final bool canViewQuotation;
+
+  const MarketEnquiryCapabilities({
+    this.canReply = false,
+    this.canClose = false,
+    this.canCancel = false,
+    this.canCreateQuotation = false,
+    this.canViewQuotation = false,
+  });
+
+  factory MarketEnquiryCapabilities.fromJson(Map<String, dynamic> j) =>
+      MarketEnquiryCapabilities(
+        canReply: j['can_reply'] as bool? ?? false,
+        canClose: j['can_close'] as bool? ?? false,
+        canCancel: j['can_cancel'] as bool? ?? false,
+        canCreateQuotation: j['can_create_quotation'] as bool? ?? false,
+        canViewQuotation: j['can_view_quotation'] as bool? ?? false,
+      );
+}
+
+class MarketEnquirySummary {
+  final bool isBuyer;
+  final bool isSeller;
+  final bool isOpen;
+
+  const MarketEnquirySummary({
+    this.isBuyer = false,
+    this.isSeller = false,
+    this.isOpen = false,
+  });
+
+  factory MarketEnquirySummary.fromJson(Map<String, dynamic> j) =>
+      MarketEnquirySummary(
+        isBuyer: j['is_buyer'] as bool? ?? false,
+        isSeller: j['is_seller'] as bool? ?? false,
+        isOpen: j['is_open'] as bool? ?? false,
       );
 }
 
@@ -297,10 +441,10 @@ Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
   const maxDim = 1200;
   final src = (decoded.width > maxDim || decoded.height > maxDim)
       ? (decoded.width >= decoded.height
-          ? img.copyResize(decoded, width: maxDim,
-              interpolation: img.Interpolation.linear)
-          : img.copyResize(decoded, height: maxDim,
-              interpolation: img.Interpolation.linear))
+          ? img.copyResize(decoded,
+              width: maxDim, interpolation: img.Interpolation.linear)
+          : img.copyResize(decoded,
+              height: maxDim, interpolation: img.Interpolation.linear))
       : decoded;
 
   // Watermark: "GreenRoot" at bottom-right with drop-shadow
@@ -311,11 +455,11 @@ Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
   final y = src.height - font.lineHeight - 14;
 
   // Shadow (dark, offset 1px)
-  img.drawString(src, watermark, font: font, x: x + 1, y: y + 1,
-      color: img.ColorRgba8(0, 0, 0, 110));
+  img.drawString(src, watermark,
+      font: font, x: x + 1, y: y + 1, color: img.ColorRgba8(0, 0, 0, 110));
   // Main text (white, semi-transparent)
-  img.drawString(src, watermark, font: font, x: x, y: y,
-      color: img.ColorRgba8(255, 255, 255, 200));
+  img.drawString(src, watermark,
+      font: font, x: x, y: y, color: img.ColorRgba8(255, 255, 255, 200));
 
   return Uint8List.fromList(img.encodeJpg(src, quality: 80));
 }
@@ -660,9 +804,7 @@ final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
 
 final enquiryDetailProvider =
     FutureProvider.family<MarketEnquiry, int>((ref, id) async {
-  final data = await ref
-      .watch(marketRepositoryProvider)
-      .getEnquiryById(id);
+  final data = await ref.watch(marketRepositoryProvider).getEnquiryById(id);
   return MarketEnquiry.fromJson(data['enquiry'] as Map<String, dynamic>);
 });
 
@@ -690,8 +832,8 @@ class _ReplyEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final replyEnquiryProvider = StateNotifierProvider.family<_ReplyEnquiryNotifier,
-    AsyncValue<void>, int>(
+final replyEnquiryProvider =
+    StateNotifierProvider.family<_ReplyEnquiryNotifier, AsyncValue<void>, int>(
   (ref, id) => _ReplyEnquiryNotifier(id, ref),
 );
 
@@ -703,7 +845,8 @@ class _ToggleSaveNotifier extends StateNotifier<AsyncValue<void>> {
   final int adId;
   final Ref _ref;
 
-  _ToggleSaveNotifier(this.adId, this._ref) : super(const AsyncValue.data(null));
+  _ToggleSaveNotifier(this.adId, this._ref)
+      : super(const AsyncValue.data(null));
 
   Future<void> toggle() async {
     state = const AsyncValue.loading();
@@ -719,8 +862,8 @@ class _ToggleSaveNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final toggleSaveProvider = StateNotifierProvider.family<_ToggleSaveNotifier,
-    AsyncValue<void>, int>(
+final toggleSaveProvider =
+    StateNotifierProvider.family<_ToggleSaveNotifier, AsyncValue<void>, int>(
   (ref, adId) => _ToggleSaveNotifier(adId, ref),
 );
 
@@ -730,12 +873,15 @@ class _SendEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   final int adId;
   final Ref _ref;
 
-  _SendEnquiryNotifier(this.adId, this._ref) : super(const AsyncValue.data(null));
+  _SendEnquiryNotifier(this.adId, this._ref)
+      : super(const AsyncValue.data(null));
 
   Future<void> send(String message, {int? qty}) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(marketRepositoryProvider).sendEnquiry(adId, message, qty: qty);
+      await _ref
+          .read(marketRepositoryProvider)
+          .sendEnquiry(adId, message, qty: qty);
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
       state = const AsyncValue.data(null);
@@ -746,8 +892,8 @@ class _SendEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final sendEnquiryProvider = StateNotifierProvider.family<_SendEnquiryNotifier,
-    AsyncValue<void>, int>(
+final sendEnquiryProvider =
+    StateNotifierProvider.family<_SendEnquiryNotifier, AsyncValue<void>, int>(
   (ref, adId) => _SendEnquiryNotifier(adId, ref),
 );
 
@@ -762,7 +908,9 @@ class _ReportNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> report(String reason, {String? notes}) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(marketRepositoryProvider).reportAd(adId, reason, notes: notes);
+      await _ref
+          .read(marketRepositoryProvider)
+          .reportAd(adId, reason, notes: notes);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
@@ -795,15 +943,15 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final resp = await _ref.read(marketRepositoryProvider).createAd(
-        plantName: plantName,
-        title: title,
-        categoryName: categoryName,
-        description: description,
-        quantity: quantity,
-        pricePerUnit: pricePerUnit,
-        sizeDescription: sizeDescription,
-        photos: photos,
-      );
+            plantName: plantName,
+            title: title,
+            categoryName: categoryName,
+            description: description,
+            quantity: quantity,
+            pricePerUnit: pricePerUnit,
+            sizeDescription: sizeDescription,
+            photos: photos,
+          );
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
@@ -830,16 +978,16 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await _ref.read(marketRepositoryProvider).updateAd(
-        adId,
-        plantName: plantName,
-        title: title,
-        categoryName: categoryName,
-        description: description,
-        quantity: quantity,
-        pricePerUnit: pricePerUnit,
-        sizeDescription: sizeDescription,
-        photos: photos,
-      );
+            adId,
+            plantName: plantName,
+            title: title,
+            categoryName: categoryName,
+            description: description,
+            quantity: quantity,
+            pricePerUnit: pricePerUnit,
+            sizeDescription: sizeDescription,
+            photos: photos,
+          );
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(browseAdsProvider);
       _ref.invalidate(savedAdsProvider);
@@ -852,8 +1000,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final postAdProvider =
-    StateNotifierProvider<_PostAdNotifier, AsyncValue<void>>(
+final postAdProvider = StateNotifierProvider<_PostAdNotifier, AsyncValue<void>>(
   (ref) => _PostAdNotifier(ref),
 );
 

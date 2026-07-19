@@ -1184,27 +1184,40 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
     }
   }
 
-  List<(String, String, IconData)> get _actions => switch (widget.ad.status) {
-        'DRAFT' => [
-            ('edit', 'Edit', Icons.edit_outlined),
-            ('publish', 'Publish', Icons.publish_rounded),
-          ],
-        'PUBLISHED' => [
-            ('edit', 'Edit', Icons.edit_outlined),
-            ('pause', 'Pause', Icons.pause_circle_outline_rounded),
-            ('archive', 'Archive', Icons.archive_outlined),
-          ],
-        'PAUSED' => [
-            ('edit', 'Edit', Icons.edit_outlined),
-            ('resume', 'Resume', Icons.play_circle_outline_rounded),
-            ('archive', 'Archive', Icons.archive_outlined),
-          ],
-        'EXPIRED' => [
-            ('renew', 'Renew', Icons.refresh_rounded),
-            ('archive', 'Archive', Icons.archive_outlined),
-          ],
-        _ => <(String, String, IconData)>[],
-      };
+  List<(String, String, IconData)> get _actions {
+    final caps = widget.ad.capabilities;
+    if (caps != null) {
+      return [
+        if (caps.canEdit) ('edit', 'Edit', Icons.edit_outlined),
+        if (caps.canPublish) ('publish', 'Publish', Icons.publish_rounded),
+        if (caps.canPause) ('pause', 'Pause', Icons.pause_circle_outline_rounded),
+        if (caps.canResume) ('resume', 'Resume', Icons.play_circle_outline_rounded),
+        if (caps.canRenew) ('renew', 'Renew', Icons.refresh_rounded),
+        if (caps.canArchive) ('archive', 'Archive', Icons.archive_outlined),
+      ];
+    }
+    return switch (widget.ad.status) {
+      'DRAFT' => [
+          ('edit', 'Edit', Icons.edit_outlined),
+          ('publish', 'Publish', Icons.publish_rounded),
+        ],
+      'PUBLISHED' => [
+          ('edit', 'Edit', Icons.edit_outlined),
+          ('pause', 'Pause', Icons.pause_circle_outline_rounded),
+          ('archive', 'Archive', Icons.archive_outlined),
+        ],
+      'PAUSED' => [
+          ('edit', 'Edit', Icons.edit_outlined),
+          ('resume', 'Resume', Icons.play_circle_outline_rounded),
+          ('archive', 'Archive', Icons.archive_outlined),
+        ],
+      'EXPIRED' => [
+          ('renew', 'Renew', Icons.refresh_rounded),
+          ('archive', 'Archive', Icons.archive_outlined),
+        ],
+      _ => <(String, String, IconData)>[],
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1371,6 +1384,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
     final myNurseryId = ref.watch(sessionProvider.select((s) => s?.capabilities.ownedNurseryId));
     final effectiveIsOwn = widget.isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
+    final canSave = ad.capabilities?.canSave ?? !effectiveIsOwn;
+    final canReport = ad.capabilities?.canReport ?? !effectiveIsOwn;
 
     return Scaffold(
       backgroundColor: _mkBg,
@@ -1383,18 +1398,21 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
             foregroundColor: _mkTextPrimary,
             surfaceTintColor: Colors.transparent,
             actions: [
-              if (!effectiveIsOwn) ...[
+              if (canSave || canReport) ...[
                 IconButton(
                   icon: Icon(
                     isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     color: isSaved ? _heartRed : _mkTextPrimary,
                   ),
-                  onPressed: () => ref.read(toggleSaveProvider(ad.id).notifier).toggle(),
+                  onPressed: canSave
+                      ? () => ref.read(toggleSaveProvider(ad.id).notifier).toggle()
+                      : null,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert_rounded),
-                  onPressed: () => _showMoreSheet(context, ad),
-                ),
+                if (canReport)
+                  IconButton(
+                    icon: const Icon(Icons.more_vert_rounded),
+                    onPressed: () => _showMoreSheet(context, ad),
+                  ),
               ],
               if (effectiveIsOwn)
                 IconButton(
@@ -2919,7 +2937,8 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                 },
               ),
             ),
-            if (!const {'CLOSED', 'CANCELLED'}.contains(enquiry.status))
+            if (enquiry.capabilities?.canReply ??
+                !const {'CLOSED', 'CANCELLED'}.contains(enquiry.status))
               _ReplyInput(
                 controller: _replyCtrl,
                 replying: _replying,
