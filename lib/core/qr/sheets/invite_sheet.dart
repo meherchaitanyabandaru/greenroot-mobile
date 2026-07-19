@@ -29,6 +29,7 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
   bool _loading = false;
   bool _accepting = false;
   String? _error;
+  String? _acceptError;
 
   @override
   void initState() {
@@ -80,16 +81,10 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
       );
       widget.onResult(QrSheetResult.close);
     } catch (e) {
-      setState(() => _accepting = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(inviteErrorMessage(e)),
-            backgroundColor: AppColors.red500,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      setState(() {
+        _accepting = false;
+        _acceptError = inviteErrorMessage(e);
+      });
     }
   }
 
@@ -140,10 +135,37 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
           const SizedBox(height: 12),
           QrWarningBanner('This invite has already been used or has expired.'),
         ],
+        if (_acceptError != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.red50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.red100),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: AppColors.red600, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _acceptError!,
+                    style: const TextStyle(
+                      color: AppColors.red700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         if (invite.isPending)
           FilledButton(
-            onPressed: _accepting ? null : _accept,
+            onPressed: _accepting ? null : () { setState(() => _acceptError = null); _accept(); },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
               minimumSize: const Size(double.infinity, 52),
