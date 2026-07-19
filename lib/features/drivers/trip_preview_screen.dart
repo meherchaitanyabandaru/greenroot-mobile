@@ -226,7 +226,10 @@ class _TripDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: dispatch,
+      role: LifecycleRole.driver,
+    );
     final myTrip =
         dispatch.driverUserId != null && dispatch.driverUserId == currentUserId;
     final takenByOther =

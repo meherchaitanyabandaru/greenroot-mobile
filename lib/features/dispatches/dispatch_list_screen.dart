@@ -202,7 +202,10 @@ class _DispatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: dispatch,
+      role: LifecycleRole.operator,
+    );
     final date = dispatch.dispatchDate != null
         ? DateTime.tryParse(dispatch.dispatchDate!)
         : null;

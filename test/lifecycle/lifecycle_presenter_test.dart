@@ -48,6 +48,40 @@ void main() {
       expect(display.label, 'Delivered');
     });
 
+    test('backend order lifecycle overrides local fallback', () {
+      final display = LifecyclePresenter.forOrder(
+        order: _orderWithJson({
+          'order_status': 'LOADED',
+          'active_dispatch_status': 'IN_TRANSIT',
+          'lifecycle': {
+            'customer': {
+              'label': 'Backend On Way',
+              'title': 'Backend On Way',
+              'subtitle': 'From API',
+              'variant': 'warning',
+            },
+          },
+        }),
+        role: LifecycleRole.buyer,
+      );
+
+      expect(display.label, 'Backend On Way');
+      expect(display.subtitle, 'From API');
+    });
+
+    test('active dispatch status drives buyer order display without dispatch',
+        () {
+      final display = LifecyclePresenter.forOrder(
+        order: _orderWithJson({
+          'order_status': 'LOADED',
+          'active_dispatch_status': 'IN_TRANSIT',
+        }),
+        role: LifecycleRole.buyer,
+      );
+
+      expect(display.label, 'On the Way');
+    });
+
     test('active dispatch prefers progressed state over older pending state',
         () {
       final dispatch = LifecyclePresenter.activeDispatchForOrder(
@@ -72,6 +106,24 @@ void main() {
 
       expect(dispatch?.id, 1);
     });
+
+    test('backend dispatch lifecycle overrides local fallback', () {
+      final display = LifecyclePresenter.forDispatch(
+        dispatch: _dispatchWithJson({
+          'dispatch_status': 'IN_TRANSIT',
+          'lifecycle': {
+            'driver': {
+              'label': 'Backend Transit',
+              'title': 'Backend Transit',
+              'variant': 'warning',
+            },
+          },
+        }),
+        role: LifecycleRole.driver,
+      );
+
+      expect(display.label, 'Backend Transit');
+    });
   });
 }
 
@@ -84,6 +136,17 @@ Order _order(String status) => Order(
       orderDate: '2026-07-19T00:00:00Z',
       items: const [],
     );
+
+Order _orderWithJson(Map<String, dynamic> overrides) => Order.fromJson({
+      'id': 1,
+      'order_code': 'ORD-1',
+      'order_number': 'GR-ORD-1',
+      'order_status': 'PENDING',
+      'total_amount': 100,
+      'order_date': '2026-07-19T00:00:00Z',
+      'items': const [],
+      ...overrides,
+    });
 
 Dispatch _dispatch(
   String status, {
@@ -99,3 +162,14 @@ Dispatch _dispatch(
       updatedAt: updatedAt,
       items: const [],
     );
+
+Dispatch _dispatchWithJson(Map<String, dynamic> overrides) =>
+    Dispatch.fromJson({
+      'id': 1,
+      'dispatch_code': 'DSP-1',
+      'order_id': 1,
+      'dispatch_status': 'PENDING',
+      'created_at': '2026-07-19T00:00:00Z',
+      'items': const [],
+      ...overrides,
+    });

@@ -306,7 +306,10 @@ class _HistoryTripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display = LifecyclePresenter.forDispatchStatus(trip.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: trip,
+      role: LifecycleRole.driver,
+    );
     final dateStr = _formatDate(trip.updatedAt ?? trip.createdAt);
     final isDelivered = trip.status == 'DELIVERED';
 

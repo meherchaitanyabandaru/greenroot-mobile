@@ -824,7 +824,10 @@ class _BuyerDeliveryCard extends StatelessWidget {
     final isDelivered = d.status == 'DELIVERED';
     final hasDriver = d.driverName?.isNotEmpty == true;
     final hasPhone = d.driverMobile?.isNotEmpty == true;
-    final display = LifecyclePresenter.forBuyerDispatchStatus(d.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: d,
+      role: LifecycleRole.buyer,
+    );
     final statusColor = display.color;
     final statusBg = display.color.withValues(alpha: 0.12);
     final statusIcon = switch (d.status.toUpperCase()) {
@@ -1018,7 +1021,10 @@ class _SellerDispatchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = dispatch;
-    final display = LifecyclePresenter.forDispatchStatus(d.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: d,
+      role: LifecycleRole.operator,
+    );
     final isActive =
         {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
     final isDelivered = d.status == 'DELIVERED';

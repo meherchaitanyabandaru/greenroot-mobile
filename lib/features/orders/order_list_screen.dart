@@ -171,8 +171,8 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
                       final order = paged.items[i];
-                      final display = LifecyclePresenter.forOrderStatus(
-                        order.status,
+                      final display = LifecyclePresenter.forOrder(
+                        order: order,
                         role: caps.canSell
                             ? LifecycleRole.operator
                             : LifecycleRole.buyer,

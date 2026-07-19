@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../features/dispatches/dispatches.dart';
 import '../../features/orders/orders.dart';
+import 'lifecycle_models.dart';
 import '../theme/app_colors.dart';
 import '../widgets/status_badge.dart';
 
@@ -42,8 +43,11 @@ class LifecyclePresenter {
     Dispatch? dispatch,
     required LifecycleRole role,
   }) {
+    final backend = _displayForRole(order.lifecycle, role);
+    if (backend != null) return _fromBackend(backend);
     final orderStatus = order.status.toUpperCase();
-    final dispatchStatus = dispatch?.status.toUpperCase();
+    final dispatchStatus =
+        dispatch?.status.toUpperCase() ?? order.activeDispatchStatus;
     if (role == LifecycleRole.buyer &&
         orderStatus != 'COMPLETED' &&
         dispatchStatus != null &&
@@ -129,6 +133,18 @@ class LifecyclePresenter {
           variant: BadgeVariant.neutral,
         );
     }
+  }
+
+  static LifecycleDisplay forDispatch({
+    required Dispatch dispatch,
+    required LifecycleRole role,
+  }) {
+    final backend = _displayForRole(dispatch.lifecycle, role);
+    if (backend != null) return _fromBackend(backend);
+    if (role == LifecycleRole.buyer) {
+      return forBuyerDispatchStatus(dispatch.status);
+    }
+    return forDispatchStatus(dispatch.status);
   }
 
   static LifecycleDisplay forBuyerDispatchStatus(String status) =>
@@ -299,4 +315,48 @@ class LifecyclePresenter {
       DateTime.tryParse(dispatch.deliveryDate ?? '') ??
       DateTime.tryParse(dispatch.dispatchDate ?? '') ??
       DateTime.tryParse(dispatch.createdAt);
+
+  static BackendLifecycleDisplay? _displayForRole(
+    BackendLifecycle? lifecycle,
+    LifecycleRole role,
+  ) {
+    if (lifecycle == null) return null;
+    switch (role) {
+      case LifecycleRole.buyer:
+        return lifecycle.customer;
+      case LifecycleRole.operator:
+        return lifecycle.operator;
+      case LifecycleRole.driver:
+        return lifecycle.driver;
+    }
+  }
+
+  static LifecycleDisplay _fromBackend(BackendLifecycleDisplay backend) {
+    final variant = backend.variant;
+    final label = backend.label.isNotEmpty ? backend.label : backend.title;
+    return LifecycleDisplay(
+      label: label,
+      title: backend.title.isNotEmpty ? backend.title : label,
+      subtitle: backend.subtitle,
+      color: _colorForVariant(variant),
+      variant: variant,
+    );
+  }
+
+  static Color _colorForVariant(BadgeVariant variant) {
+    switch (variant) {
+      case BadgeVariant.success:
+        return AppColors.primaryMain;
+      case BadgeVariant.warning:
+        return AppColors.amber700;
+      case BadgeVariant.error:
+        return AppColors.red600;
+      case BadgeVariant.info:
+        return AppColors.blue600;
+      case BadgeVariant.accent:
+        return AppColors.amber700;
+      case BadgeVariant.neutral:
+        return AppColors.textSecondary;
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/domain/lifecycle_models.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
@@ -73,6 +74,7 @@ class Dispatch {
   final String createdAt;
   final String? updatedAt;
   final List<DispatchItem> items;
+  final BackendLifecycle? lifecycle;
 
   const Dispatch({
     required this.id,
@@ -99,6 +101,7 @@ class Dispatch {
     required this.createdAt,
     this.updatedAt,
     required this.items,
+    this.lifecycle,
   });
 
   factory Dispatch.fromJson(Map<String, dynamic> j) => Dispatch(
@@ -129,6 +132,9 @@ class Dispatch {
         notes: j['notes'] as String?,
         createdAt: j['created_at'] as String,
         updatedAt: j['updated_at'] as String?,
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??

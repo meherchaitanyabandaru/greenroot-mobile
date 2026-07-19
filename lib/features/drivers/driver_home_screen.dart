@@ -1255,7 +1255,10 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
   @override
   Widget build(BuildContext context) {
     final trip = widget.trip;
-    final display = LifecyclePresenter.forDispatchStatus(trip.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: trip,
+      role: LifecycleRole.driver,
+    );
     final assignedAt = DateTime.tryParse(trip.createdAt)?.toLocal();
     final assignedLabel = assignedAt != null
         ? DateFormat('dd MMM, hh:mm a').format(assignedAt)

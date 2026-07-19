@@ -742,6 +742,10 @@ class _DriverInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = dispatch;
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: d,
+      role: LifecycleRole.buyer,
+    );
     final hasDriver = d.driverName?.isNotEmpty == true;
     final hasVehicle = d.vehicleNumber?.isNotEmpty == true;
 
@@ -790,9 +794,9 @@ class _DriverInfoCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 2),
                 Text(
-                  LifecyclePresenter.forBuyerDispatchStatus(d.status).label,
+                  display.label,
                   style: AppTypography.caption.copyWith(
-                    color: _dispatchStatusColor(d.status),
+                    color: display.color,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -79,7 +79,10 @@ class _AppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: dispatch,
+      role: LifecycleRole.driver,
+    );
     return Row(
       children: [
         Expanded(

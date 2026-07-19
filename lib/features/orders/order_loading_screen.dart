@@ -338,7 +338,10 @@ class _LoadingOrderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final display = LifecyclePresenter.forOrderStatus(order.status);
+    final display = LifecyclePresenter.forOrder(
+      order: order,
+      role: LifecycleRole.operator,
+    );
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final date = DateTime.tryParse(order.orderDate);
     final dateStr =

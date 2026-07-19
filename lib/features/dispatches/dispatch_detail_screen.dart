@@ -188,7 +188,10 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: dispatch,
+      role: isDriver ? LifecycleRole.driver : LifecycleRole.operator,
+    );
     final dispDate = dispatch.dispatchDate != null
         ? DateTime.tryParse(dispatch.dispatchDate!)
         : null;

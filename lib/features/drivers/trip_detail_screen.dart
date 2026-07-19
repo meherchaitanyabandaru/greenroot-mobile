@@ -203,7 +203,10 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
   Widget build(BuildContext context) {
     final dispatch = widget.dispatch;
     final status = dispatch.status;
-    final display = LifecyclePresenter.forDispatchStatus(status);
+    final display = LifecyclePresenter.forDispatch(
+      dispatch: dispatch,
+      role: LifecycleRole.driver,
+    );
     // Verify this trip is assigned to the logged-in driver before showing actions.
     final isAssignedDriver = widget.currentUserId != null &&
         (dispatch.driverUserId == widget.currentUserId ||

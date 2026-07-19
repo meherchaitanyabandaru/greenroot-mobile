@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/domain/lifecycle_models.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
@@ -234,6 +235,9 @@ class Order {
   final String? assignedManagerName;
   final String? customerName;
   final DeliverySnapshot? deliverySnapshot;
+  final int? activeDispatchId;
+  final String? activeDispatchStatus;
+  final BackendLifecycle? lifecycle;
 
   const Order({
     required this.id,
@@ -256,6 +260,9 @@ class Order {
     this.assignedManagerName,
     this.customerName,
     this.deliverySnapshot,
+    this.activeDispatchId,
+    this.activeDispatchStatus,
+    this.lifecycle,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -281,9 +288,14 @@ class Order {
         assignedManagerUserId: (j['assigned_manager_user_id'] as num?)?.toInt(),
         assignedManagerName: j['assigned_manager_name'] as String?,
         customerName: j['customer_name'] as String?,
+        activeDispatchId: (j['active_dispatch_id'] as num?)?.toInt(),
+        activeDispatchStatus: j['active_dispatch_status'] as String?,
         deliverySnapshot: j['delivery_snapshot'] is Map<String, dynamic>
             ? DeliverySnapshot.fromJson(
                 j['delivery_snapshot'] as Map<String, dynamic>)
+            : null,
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
             : null,
       );
 }
