@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -58,6 +59,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final verifyState = ref.read(otpVerifyProvider);
 
     if (verifyState.error != null || !verifyState.verified) {
+      // Suspended account — redirect to suspended screen with reason
+      if (verifyState.error is AccountSuspendedError) {
+        final e = verifyState.error as AccountSuspendedError;
+        ref.read(sessionProvider.notifier).setSuspended(
+          reason: e.reason,
+          suspendedAt: e.suspendedAt,
+        );
+        return;
+      }
       _clearOtp();
       return;
     }

@@ -9,6 +9,13 @@ import '../../domain/rbac/permission_service.dart';
 import '../../domain/rbac/roles.dart';
 import 'auth_provider.dart';
 
+// Carries suspension details through to the suspended screen.
+class SuspensionInfo {
+  final String? reason;
+  final DateTime? suspendedAt;
+  const SuspensionInfo({this.reason, this.suspendedAt});
+}
+
 enum SessionStatus {
   unknown,
   loading,
@@ -27,6 +34,7 @@ class SessionState {
   final String? ownedNurseryStatus;
   final AppRole? activeRole;
   final AppError? error;
+  final SuspensionInfo? suspensionInfo;
 
   const SessionState({
     this.status = SessionStatus.unknown,
@@ -38,6 +46,7 @@ class SessionState {
     this.ownedNurseryStatus,
     this.activeRole,
     this.error,
+    this.suspensionInfo,
   });
 
   SessionState copyWith({
@@ -51,6 +60,8 @@ class SessionState {
     AppRole? activeRole,
     bool clearActiveRole = false,
     AppError? error,
+    SuspensionInfo? suspensionInfo,
+    bool clearSuspensionInfo = false,
   }) =>
       SessionState(
         status: status ?? this.status,
@@ -62,6 +73,8 @@ class SessionState {
         ownedNurseryStatus: ownedNurseryStatus ?? this.ownedNurseryStatus,
         activeRole: clearActiveRole ? null : (activeRole ?? this.activeRole),
         error: error,
+        suspensionInfo:
+            clearSuspensionInfo ? null : (suspensionInfo ?? this.suspensionInfo),
       );
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
@@ -108,10 +121,14 @@ class SessionNotifier extends StateNotifier<SessionState> {
     });
   }
 
-  void _onAccountSuspended() {
+  void _onAccountSuspended({String? reason, DateTime? suspendedAt}) {
     Future.microtask(() {
-      if (state.status == SessionStatus.authenticated) {
-        state = state.copyWith(status: SessionStatus.suspended);
+      if (state.status == SessionStatus.authenticated ||
+          state.status == SessionStatus.loading) {
+        state = state.copyWith(
+          status: SessionStatus.suspended,
+          suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt),
+        );
       }
     });
   }
@@ -165,6 +182,14 @@ class SessionNotifier extends StateNotifier<SessionState> {
         ownedNurseryStatus: ownedNurseryStatus,
         activeRole: activeRole,
       );
+    } on AccountSuspendedError catch (e) {
+      state = state.copyWith(
+        status: SessionStatus.suspended,
+        suspensionInfo: SuspensionInfo(
+          reason: e.reason,
+          suspendedAt: e.suspendedAt,
+        ),
+      );
     } on UnauthorizedError {
       await _repo.logout();
       state = state.copyWith(status: SessionStatus.unauthenticated);
@@ -184,6 +209,13 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
   void setActiveRole(AppRole? role) {
     state = state.copyWith(activeRole: role, clearActiveRole: role == null);
+  }
+
+  void setSuspended({String? reason, DateTime? suspendedAt}) {
+    state = state.copyWith(
+      status: SessionStatus.suspended,
+      suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt),
+    );
   }
 }
 

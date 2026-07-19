@@ -7,7 +7,7 @@ class AuthInterceptor extends Interceptor {
   final Dio _dio;
 
   void Function()? onMembershipRevoked;
-  void Function()? onAccountSuspended;
+  void Function({String? reason, DateTime? suspendedAt})? onAccountSuspended;
 
   AuthInterceptor(this._dio);
 
@@ -35,14 +35,25 @@ class AuthInterceptor extends Interceptor {
     // notifier so the router redirects to login without waiting for the JWT to expire.
     if (statusCode == 403) {
       final body = err.response?.data;
-      final code = (body is Map) ? (body['error']?['code'] as String?) : null;
+      final errorObj = (body is Map) ? body['error'] : null;
+      final code = (errorObj is Map) ? (errorObj['code'] as String?) : null;
       if (code == 'not_member') {
         AppLogger.w('403 not_member — membership revoked mid-session, clearing storage');
         await SecureStorageService.clearSession();
         onMembershipRevoked?.call();
-      } else if (code == 'account_suspended' || code == 'nursery_suspended') {
+      } else if (code == 'USER_SUSPENDED' || code == 'NURSERY_SUSPENDED' ||
+          code == 'account_suspended' || code == 'nursery_suspended') {
         AppLogger.w('403 $code — account suspended mid-session');
-        onAccountSuspended?.call();
+        String? reason;
+        DateTime? suspendedAt;
+        if (errorObj is Map) {
+          reason = errorObj['reason'] as String?;
+          final rawDate = errorObj['suspended_at'];
+          if (rawDate != null) {
+            suspendedAt = DateTime.tryParse(rawDate.toString())?.toLocal();
+          }
+        }
+        onAccountSuspended?.call(reason: reason, suspendedAt: suspendedAt);
       }
       return handler.next(err);
     }

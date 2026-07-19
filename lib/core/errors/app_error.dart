@@ -39,3 +39,10 @@ class ValidationError extends AppError {
 class UnknownError extends AppError {
   const UnknownError([super.message = 'Something went wrong. Please try again.']);
 }
+
+class AccountSuspendedError extends AppError {
+  final String? reason;
+  final DateTime? suspendedAt;
+  const AccountSuspendedError({this.reason, this.suspendedAt})
+      : super('Your account has been suspended. Contact support.');
+}
