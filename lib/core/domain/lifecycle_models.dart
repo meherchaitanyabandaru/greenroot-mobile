@@ -26,11 +26,13 @@ class BackendNextActions {
   final List<String> customer;
   final List<String> operator;
   final List<String> driver;
+  final List<String> supplier;
 
   const BackendNextActions({
     this.customer = const [],
     this.operator = const [],
     this.driver = const [],
+    this.supplier = const [],
   });
 
   factory BackendNextActions.fromJson(Map<String, dynamic> json) =>
@@ -38,6 +40,7 @@ class BackendNextActions {
         customer: _stringList(json['customer']),
         operator: _stringList(json['operator']),
         driver: _stringList(json['driver']),
+        supplier: _stringList(json['supplier']),
       );
 }
 
@@ -45,12 +48,16 @@ class BackendLifecycle {
   final BackendLifecycleDisplay? customer;
   final BackendLifecycleDisplay? operator;
   final BackendLifecycleDisplay? driver;
+  final BackendLifecycleDisplay? requester;
+  final BackendLifecycleDisplay? supplier;
   final BackendNextActions nextActions;
 
   const BackendLifecycle({
     this.customer,
     this.operator,
     this.driver,
+    this.requester,
+    this.supplier,
     this.nextActions = const BackendNextActions(),
   });
 
@@ -59,6 +66,8 @@ class BackendLifecycle {
         customer: _display(json['customer']),
         operator: _display(json['operator']),
         driver: _display(json['driver']),
+        requester: _display(json['requester']),
+        supplier: _display(json['supplier']),
         nextActions: json['next_actions'] is Map<String, dynamic>
             ? BackendNextActions.fromJson(
                 json['next_actions'] as Map<String, dynamic>,

@@ -579,8 +579,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   Widget _buildScaffold(Quotation q) {
     final caps = ref.watch(sessionProvider).capabilities;
     final isBuyerView = !caps.canSell;
-    // Business rule: only the nursery owner may delete a quotation.
-    final canDelete = caps.isNurseryOwner;
+    final backendCaps = q.capabilities;
+    // Backend capabilities are preferred; local rules remain as fallback for
+    // older API responses.
+    final canDelete = backendCaps?.canDelete ?? caps.isNurseryOwner;
     final isManagerOnly = caps.isManager && !caps.isNurseryOwner;
     // Quotations are editable only while in a DRAFT status.
     final isEditable =
@@ -588,11 +590,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     // Exclusive-editor rule: when assigned, only the assignee may edit content.
     // Owner can edit only if unassigned or assigned to themselves.
     final myUserId = ref.watch(sessionProvider).user?.id;
-    final canEditContent = isEditable &&
-        !isBuyerView &&
-        (q.assignedManagerUserId == null ||
-            q.assignedManagerUserId == myUserId);
-    final buyerCanAct = isBuyerView && q.status == 'CUSTOMER_SENT';
+    final canEditContent = backendCaps?.canEdit ??
+        (isEditable &&
+            !isBuyerView &&
+            (q.assignedManagerUserId == null ||
+                q.assignedManagerUserId == myUserId));
+    final buyerCanAct = (backendCaps?.canAccept ?? false) ||
+        (backendCaps?.canReject ?? false) ||
+        (backendCaps == null && isBuyerView && q.status == 'CUSTOMER_SENT');
     final isBusy = _deleting ||
         _exporting ||
         _buyerActing ||
@@ -1257,7 +1262,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
 
           // ── Seller status-based actions ─────────────────────────────────
           else if (!isBuyerView) ...[
-            if (q.status == 'CUSTOMER_DRAFT') ...[
+            if (backendCaps?.canSend ?? q.status == 'CUSTOMER_DRAFT') ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -1275,7 +1280,8 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-            ] else if (q.status == 'CUSTOMER_SENT') ...[
+            ] else if (backendCaps?.canRecall ??
+                q.status == 'CUSTOMER_SENT') ...[
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -1292,7 +1298,8 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-            ] else if (q.status == 'CUSTOMER_ACCEPTED') ...[
+            ] else if (backendCaps?.canConvert ??
+                q.status == 'CUSTOMER_ACCEPTED') ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(

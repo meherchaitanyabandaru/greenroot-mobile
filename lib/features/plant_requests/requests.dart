@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/domain/lifecycle_models.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
@@ -57,6 +58,9 @@ class PlantRequest {
   final String? expiresAt;
   final String createdAt;
   final List<RequestResponse> responses;
+  final BackendLifecycle? lifecycle;
+  final PlantRequestCapabilities? capabilities;
+  final PlantRequestSummary? summary;
 
   const PlantRequest({
     required this.id,
@@ -76,6 +80,9 @@ class PlantRequest {
     this.expiresAt,
     required this.createdAt,
     required this.responses,
+    this.lifecycle,
+    this.capabilities,
+    this.summary,
   });
 
   factory PlantRequest.fromJson(Map<String, dynamic> j) => PlantRequest(
@@ -96,14 +103,86 @@ class PlantRequest {
         expiresAt: j['expires_at'] as String?,
         createdAt: j['created_at'] as String,
         responses: (j['responses'] as List<dynamic>?)
-                ?.map((e) =>
-                    RequestResponse.fromJson(e as Map<String, dynamic>))
+                ?.map(
+                  (e) => RequestResponse.fromJson(e as Map<String, dynamic>),
+                )
                 .toList() ??
             [],
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? PlantRequestCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>,
+              )
+            : null,
+        summary: j['summary'] is Map<String, dynamic>
+            ? PlantRequestSummary.fromJson(j['summary'] as Map<String, dynamic>)
+            : null,
       );
 
   String get displayName =>
       commonName?.isNotEmpty == true ? commonName! : scientificName;
+}
+
+class PlantRequestCapabilities {
+  final bool canEdit;
+  final bool canDelete;
+  final bool canPublish;
+  final bool canClose;
+  final bool canReject;
+  final bool canRespond;
+  final bool canAcceptResponse;
+  final bool canRejectResponse;
+
+  const PlantRequestCapabilities({
+    this.canEdit = false,
+    this.canDelete = false,
+    this.canPublish = false,
+    this.canClose = false,
+    this.canReject = false,
+    this.canRespond = false,
+    this.canAcceptResponse = false,
+    this.canRejectResponse = false,
+  });
+
+  factory PlantRequestCapabilities.fromJson(Map<String, dynamic> j) =>
+      PlantRequestCapabilities(
+        canEdit: j['can_edit'] as bool? ?? false,
+        canDelete: j['can_delete'] as bool? ?? false,
+        canPublish: j['can_publish'] as bool? ?? false,
+        canClose: j['can_close'] as bool? ?? false,
+        canReject: j['can_reject'] as bool? ?? false,
+        canRespond: j['can_respond'] as bool? ?? false,
+        canAcceptResponse: j['can_accept_response'] as bool? ?? false,
+        canRejectResponse: j['can_reject_response'] as bool? ?? false,
+      );
+}
+
+class PlantRequestSummary {
+  final int responseCount;
+  final int acceptedResponseCount;
+  final int availableQuantity;
+  final int acceptedQuantity;
+  final int remainingQuantity;
+
+  const PlantRequestSummary({
+    this.responseCount = 0,
+    this.acceptedResponseCount = 0,
+    this.availableQuantity = 0,
+    this.acceptedQuantity = 0,
+    this.remainingQuantity = 0,
+  });
+
+  factory PlantRequestSummary.fromJson(Map<String, dynamic> j) =>
+      PlantRequestSummary(
+        responseCount: (j['response_count'] as num?)?.toInt() ?? 0,
+        acceptedResponseCount:
+            (j['accepted_response_count'] as num?)?.toInt() ?? 0,
+        availableQuantity: (j['available_quantity'] as num?)?.toInt() ?? 0,
+        acceptedQuantity: (j['accepted_quantity'] as num?)?.toInt() ?? 0,
+        remainingQuantity: (j['remaining_quantity'] as num?)?.toInt() ?? 0,
+      );
 }
 
 // ── Repository ────────────────────────────────────────────────────────────────

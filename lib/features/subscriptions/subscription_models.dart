@@ -1,5 +1,7 @@
 // ── Subscription data models ──────────────────────────────────────────────────
 
+import '../../core/domain/lifecycle_models.dart';
+
 class SubscriptionPayment {
   final int id;
   final String? paymentCode;
@@ -48,6 +50,9 @@ class SubscriptionModel {
   final bool autoRenew;
   final int? daysRemaining;
   final SubscriptionPayment? latestPayment;
+  final BackendLifecycle? lifecycle;
+  final SubscriptionCapabilities? capabilities;
+  final SubscriptionSummary? summary;
 
   const SubscriptionModel({
     required this.id,
@@ -61,6 +66,9 @@ class SubscriptionModel {
     required this.autoRenew,
     this.daysRemaining,
     this.latestPayment,
+    this.lifecycle,
+    this.capabilities,
+    this.summary,
   });
 
   factory SubscriptionModel.fromJson(Map<String, dynamic> j) =>
@@ -81,7 +89,19 @@ class SubscriptionModel {
             : null,
         latestPayment: j['latest_payment'] != null
             ? SubscriptionPayment.fromJson(
-                j['latest_payment'] as Map<String, dynamic>)
+                j['latest_payment'] as Map<String, dynamic>,
+              )
+            : null,
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? SubscriptionCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>,
+              )
+            : null,
+        summary: j['summary'] is Map<String, dynamic>
+            ? SubscriptionSummary.fromJson(j['summary'] as Map<String, dynamic>)
             : null,
       );
 
@@ -90,7 +110,58 @@ class SubscriptionModel {
   bool get isExpired => status == 'EXPIRED';
   bool get isCancelled => status == 'CANCELLED';
   bool get isExpiringSoon =>
-      isActive && daysRemaining != null && daysRemaining! <= 30;
+      summary?.isExpiringSoon ??
+      (isActive && daysRemaining != null && daysRemaining! <= 30);
+}
+
+class SubscriptionCapabilities {
+  final bool canRenew;
+  final bool canCancel;
+  final bool canPause;
+  final bool canResume;
+  final bool canChangePlan;
+  final bool canRetryPayment;
+
+  const SubscriptionCapabilities({
+    this.canRenew = false,
+    this.canCancel = false,
+    this.canPause = false,
+    this.canResume = false,
+    this.canChangePlan = false,
+    this.canRetryPayment = false,
+  });
+
+  factory SubscriptionCapabilities.fromJson(Map<String, dynamic> j) =>
+      SubscriptionCapabilities(
+        canRenew: j['can_renew'] as bool? ?? false,
+        canCancel: j['can_cancel'] as bool? ?? false,
+        canPause: j['can_pause'] as bool? ?? false,
+        canResume: j['can_resume'] as bool? ?? false,
+        canChangePlan: j['can_change_plan'] as bool? ?? false,
+        canRetryPayment: j['can_retry_payment'] as bool? ?? false,
+      );
+}
+
+class SubscriptionSummary {
+  final bool isActive;
+  final bool isExpired;
+  final bool isExpiringSoon;
+  final String paymentStatus;
+
+  const SubscriptionSummary({
+    this.isActive = false,
+    this.isExpired = false,
+    this.isExpiringSoon = false,
+    this.paymentStatus = '',
+  });
+
+  factory SubscriptionSummary.fromJson(Map<String, dynamic> j) =>
+      SubscriptionSummary(
+        isActive: j['is_active'] as bool? ?? false,
+        isExpired: j['is_expired'] as bool? ?? false,
+        isExpiringSoon: j['is_expiring_soon'] as bool? ?? false,
+        paymentStatus: j['payment_status'] as String? ?? '',
+      );
 }
 
 class SubscriptionPlan {
@@ -138,13 +209,17 @@ class SubscriptionPlan {
   }
 
   int get sixMonthDiscountPct {
-    if (sixMonthPrice == null || mrpSixMonthPrice == null || mrpSixMonthPrice! <= 0) return 0;
+    if (sixMonthPrice == null ||
+        mrpSixMonthPrice == null ||
+        mrpSixMonthPrice! <= 0) return 0;
     if (sixMonthPrice! >= mrpSixMonthPrice!) return 0;
-    return ((mrpSixMonthPrice! - sixMonthPrice!) / mrpSixMonthPrice! * 100).round();
+    return ((mrpSixMonthPrice! - sixMonthPrice!) / mrpSixMonthPrice! * 100)
+        .round();
   }
 
   int get yearlyDiscountPct {
-    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0) return 0;
+    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0)
+      return 0;
     if (yearlyPrice! >= mrpYearlyPrice!) return 0;
     return ((mrpYearlyPrice! - yearlyPrice!) / mrpYearlyPrice! * 100).round();
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/domain/lifecycle_models.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
 
@@ -70,6 +71,8 @@ class Quotation {
   final DateTime? customerRespondedAt;
   final String createdAt;
   final List<QuotationItem> items;
+  final BackendLifecycle? lifecycle;
+  final QuotationCapabilities? capabilities;
 
   const Quotation({
     required this.id,
@@ -99,6 +102,8 @@ class Quotation {
     this.customerRespondedAt,
     required this.createdAt,
     required this.items,
+    this.lifecycle,
+    this.capabilities,
   });
 
   bool get isInternal => quotationType == 'INTERNAL';
@@ -154,6 +159,57 @@ class Quotation {
                 ?.map((e) => QuotationItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        lifecycle: j['lifecycle'] is Map<String, dynamic>
+            ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
+            : null,
+        capabilities: j['capabilities'] is Map<String, dynamic>
+            ? QuotationCapabilities.fromJson(
+                j['capabilities'] as Map<String, dynamic>,
+              )
+            : null,
+      );
+}
+
+class QuotationCapabilities {
+  final bool canEdit;
+  final bool canUpdateCustomer;
+  final bool canDelete;
+  final bool canSend;
+  final bool canRecall;
+  final bool canAccept;
+  final bool canReject;
+  final bool canConvert;
+  final bool canAssignManager;
+  final bool canGenerateDocument;
+  final bool canManageVerifyToken;
+
+  const QuotationCapabilities({
+    this.canEdit = false,
+    this.canUpdateCustomer = false,
+    this.canDelete = false,
+    this.canSend = false,
+    this.canRecall = false,
+    this.canAccept = false,
+    this.canReject = false,
+    this.canConvert = false,
+    this.canAssignManager = false,
+    this.canGenerateDocument = false,
+    this.canManageVerifyToken = false,
+  });
+
+  factory QuotationCapabilities.fromJson(Map<String, dynamic> j) =>
+      QuotationCapabilities(
+        canEdit: j['can_edit'] as bool? ?? false,
+        canUpdateCustomer: j['can_update_customer'] as bool? ?? false,
+        canDelete: j['can_delete'] as bool? ?? false,
+        canSend: j['can_send'] as bool? ?? false,
+        canRecall: j['can_recall'] as bool? ?? false,
+        canAccept: j['can_accept'] as bool? ?? false,
+        canReject: j['can_reject'] as bool? ?? false,
+        canConvert: j['can_convert'] as bool? ?? false,
+        canAssignManager: j['can_assign_manager'] as bool? ?? false,
+        canGenerateDocument: j['can_generate_document'] as bool? ?? false,
+        canManageVerifyToken: j['can_manage_verify_token'] as bool? ?? false,
       );
 }
 

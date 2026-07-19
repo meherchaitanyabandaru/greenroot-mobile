@@ -887,9 +887,14 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
   @override
   Widget build(BuildContext context) {
     final sub = widget.sub;
-    final showCta = sub.isExpired ||
+    final shouldPromptRenewal = sub.summary?.isExpired == true ||
+        sub.summary?.isExpiringSoon == true ||
+        sub.isExpired ||
         sub.isTrial ||
         (sub.isActive && (sub.daysRemaining ?? 999) <= 30);
+    final showCta = (sub.capabilities?.canRenew ?? true) && shouldPromptRenewal;
+    final canCancel = sub.capabilities?.canCancel ??
+        (!sub.isCancelled && !sub.isExpired);
 
     final fmt = DateFormat('d MMM yyyy');
     final cardValidUntil = sub.endDate != null ? fmt.format(sub.endDate!) : null;
@@ -932,7 +937,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         const SizedBox(height: AppSpacing.x2l),
 
         // ── Cancel ────────────────────────────────────────────────────────
-        if (!sub.isCancelled && !sub.isExpired)
+        if (canCancel)
           Center(
             child: TextButton(
               onPressed: _cancelling ? null : () => _confirmCancel(context),
