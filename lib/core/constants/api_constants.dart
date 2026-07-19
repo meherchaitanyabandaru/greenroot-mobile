@@ -26,6 +26,7 @@ abstract class ApiConstants {
 
   // Nurseries
   static const String nurseries = '$v1/nurseries';
+  static const String nurseriesResubmit = '$v1/nurseries/owned/resubmit';
   static const String myNurseries = '$v1/nurseries/mine';
   static String nurseryById(int id) => '$v1/nurseries/$id';
   static String nurseryAddresses(int id) => '$v1/nurseries/$id/addresses';

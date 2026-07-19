@@ -131,4 +131,35 @@ class AuthRemoteDataSource {
           'status': 'PENDING',
         },
       );
+
+  Future<void> resubmitNursery({
+    required String name,
+    String? mobile,
+    String? email,
+    String? description,
+    String? addressLine1,
+    String? city,
+    String? state,
+    String? postalCode,
+    double? latitude,
+    double? longitude,
+  }) =>
+      _client.post(
+        ApiConstants.nurseriesResubmit,
+        data: {
+          'name': name,
+          if (mobile != null && mobile.isNotEmpty) 'mobile': mobile,
+          if (email != null && email.isNotEmpty) 'email': email,
+          if (description != null && description.isNotEmpty)
+            'description': description,
+          if (addressLine1 != null && addressLine1.isNotEmpty)
+            'address_line1': addressLine1,
+          if (city != null && city.isNotEmpty) 'city': city,
+          if (state != null && state.isNotEmpty) 'state': state,
+          if (postalCode != null && postalCode.isNotEmpty)
+            'postal_code': postalCode,
+          if (latitude != null) 'latitude': latitude,
+          if (longitude != null) 'longitude': longitude,
+        },
+      );
 }

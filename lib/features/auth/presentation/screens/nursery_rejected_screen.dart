@@ -247,7 +247,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
 
               AppButton(
                 label: 'Resubmit Application',
-                onPressed: () => context.go('/register/nursery'),
+                onPressed: () => context.go('/nursery/resubmit'),
                 trailingIcon: Icons.arrow_forward_rounded,
               ),
               const SizedBox(height: AppSpacing.md),

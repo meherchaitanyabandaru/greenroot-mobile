@@ -309,6 +309,9 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/register/nursery',
         builder: (_, __) => const NurseryRegistrationScreen()),
+    GoRoute(
+        path: '/nursery/resubmit',
+        builder: (_, __) => const NurseryRegistrationScreen(isResubmit: true)),
 
     // ── Nursery application status ───────────────────────────────────────────
     GoRoute(

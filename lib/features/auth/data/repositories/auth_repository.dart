@@ -254,4 +254,38 @@ class AuthRepository {
       throw const UnknownError();
     }
   }
+
+  Future<void> resubmitNursery({
+    required String name,
+    String? mobile,
+    String? email,
+    String? description,
+    String? addressLine1,
+    String? city,
+    String? state,
+    String? postalCode,
+    double? latitude,
+    double? longitude,
+  }) async {
+    try {
+      await _remote.resubmitNursery(
+        name: name,
+        mobile: mobile,
+        email: email,
+        description: description,
+        addressLine1: addressLine1,
+        city: city,
+        state: state,
+        postalCode: postalCode,
+        latitude: latitude,
+        longitude: longitude,
+      );
+      AppLogger.i('Nursery resubmission submitted: $name');
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('resubmitNursery error', e);
+      throw const UnknownError();
+    }
+  }
 }

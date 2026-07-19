@@ -92,6 +92,43 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
       );
     }
   }
+
+  Future<void> resubmit({
+    required String name,
+    required String? mobile,
+    required String? email,
+    required String? description,
+    required String? addressLine1,
+    required String? city,
+    required String? state,
+    required String? postalCode,
+    required double? latitude,
+    required double? longitude,
+  }) async {
+    this.state = this.state.copyWith(isLoading: true, error: null);
+    try {
+      await _repo.resubmitNursery(
+        name: name,
+        mobile: mobile,
+        email: email,
+        description: description,
+        addressLine1: addressLine1,
+        city: city,
+        state: state,
+        postalCode: postalCode,
+        latitude: latitude,
+        longitude: longitude,
+      );
+      this.state = this.state.copyWith(isLoading: false, success: true);
+    } on AppError catch (e) {
+      this.state = this.state.copyWith(isLoading: false, error: e.message);
+    } catch (_) {
+      this.state = this.state.copyWith(
+        isLoading: false,
+        error: 'Failed to resubmit application. Please try again.',
+      );
+    }
+  }
 }
 
 final _nurseryRegProvider =
@@ -102,7 +139,9 @@ final _nurseryRegProvider =
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class NurseryRegistrationScreen extends ConsumerStatefulWidget {
-  const NurseryRegistrationScreen({super.key});
+  final bool isResubmit;
+
+  const NurseryRegistrationScreen({super.key, this.isResubmit = false});
 
   @override
   ConsumerState<NurseryRegistrationScreen> createState() =>
@@ -178,18 +217,46 @@ class _NurseryRegistrationScreenState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(_nurseryRegProvider.notifier).submit(
-          name: _nameCtrl.text.trim(),
-          mobile: _nullIfEmpty(_mobileCtrl.text),
-          email: _nullIfEmpty(_emailCtrl.text),
-          description: _nullIfEmpty(_descCtrl.text),
-          addressLine1: _nullIfEmpty(_addressLine1Ctrl.text),
-          city: _nullIfEmpty(_cityCtrl.text),
-          state: _nullIfEmpty(_stateCtrl.text),
-          postalCode: _nullIfEmpty(_postalCodeCtrl.text),
-          latitude: _pickedLocation?.latitude,
-          longitude: _pickedLocation?.longitude,
-        );
+    final notifier = ref.read(_nurseryRegProvider.notifier);
+    final args = (
+      name: _nameCtrl.text.trim(),
+      mobile: _nullIfEmpty(_mobileCtrl.text),
+      email: _nullIfEmpty(_emailCtrl.text),
+      description: _nullIfEmpty(_descCtrl.text),
+      addressLine1: _nullIfEmpty(_addressLine1Ctrl.text),
+      city: _nullIfEmpty(_cityCtrl.text),
+      state: _nullIfEmpty(_stateCtrl.text),
+      postalCode: _nullIfEmpty(_postalCodeCtrl.text),
+      latitude: _pickedLocation?.latitude,
+      longitude: _pickedLocation?.longitude,
+    );
+    if (widget.isResubmit) {
+      await notifier.resubmit(
+        name: args.name,
+        mobile: args.mobile,
+        email: args.email,
+        description: args.description,
+        addressLine1: args.addressLine1,
+        city: args.city,
+        state: args.state,
+        postalCode: args.postalCode,
+        latitude: args.latitude,
+        longitude: args.longitude,
+      );
+    } else {
+      await notifier.submit(
+        name: args.name,
+        mobile: args.mobile,
+        email: args.email,
+        description: args.description,
+        addressLine1: args.addressLine1,
+        city: args.city,
+        state: args.state,
+        postalCode: args.postalCode,
+        latitude: args.latitude,
+        longitude: args.longitude,
+      );
+    }
   }
 
   @override
@@ -223,7 +290,7 @@ class _NurseryRegistrationScreenState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Register Nursery'),
+        title: Text(widget.isResubmit ? 'Resubmit Application' : 'Register Nursery'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -252,10 +319,15 @@ class _NurseryRegistrationScreenState
                 ),
               ),
               const SizedBox(height: AppSpacing.x2l),
-              const Text('Register Your Nursery', style: AppTypography.h2),
+              Text(
+                widget.isResubmit ? 'Resubmit Application' : 'Register Your Nursery',
+                style: AppTypography.h2,
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Fill in your nursery details. Your application will be reviewed by GreenRoot.',
+                widget.isResubmit
+                    ? 'Update your nursery details and resubmit for review.'
+                    : 'Fill in your nursery details. Your application will be reviewed by GreenRoot.',
                 style:
                     AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
@@ -461,7 +533,7 @@ class _NurseryRegistrationScreenState
               const SizedBox(height: AppSpacing.x2l),
 
               AppButton(
-                label: 'Submit Application',
+                label: widget.isResubmit ? 'Resubmit Application' : 'Submit Application',
                 onPressed: _submit,
                 isLoading: state.isLoading,
                 trailingIcon: Icons.send_rounded,
