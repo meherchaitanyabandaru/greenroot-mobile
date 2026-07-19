@@ -113,7 +113,7 @@ class ConnectionsScreen extends ConsumerWidget {
               icon: Icons.people_alt_rounded,
               iconBg: const Color(0xFFE8F5E9),
               iconColor: AppColors.primaryMain,
-              title: 'Customers',
+              title: 'Customers (Party)',
               subtitle: 'Buyers who have placed orders or accepted invites from $nurseryName',
               count: counts?.customers,
               actionLabel: 'Invite Customer',

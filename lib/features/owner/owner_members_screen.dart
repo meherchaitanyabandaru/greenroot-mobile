@@ -548,7 +548,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
           tabs: const [
             Tab(text: 'Managers'),
             Tab(text: 'Drivers'),
-            Tab(text: 'Customers'),
+            Tab(text: 'Customers (Party)'),
           ],
         ),
       ),
