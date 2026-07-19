@@ -51,27 +51,36 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
     required String? mobile,
     required String? email,
     required String? description,
+    required String? addressLine1,
+    required String? city,
+    required String? state,
+    required String? postalCode,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    this.state = this.state.copyWith(isLoading: true, error: null);
     try {
       await _repo.registerNursery(
         name: name,
         mobile: mobile,
         email: email,
         description: description,
+        addressLine1: addressLine1,
+        city: city,
+        state: state,
+        postalCode: postalCode,
       );
-      state = state.copyWith(isLoading: false, success: true);
+      this.state = this.state.copyWith(isLoading: false, success: true);
     } on ServerError catch (e) {
       // 409 means this user already owns a nursery — refresh session and go home
       if (e.statusCode == 409) {
-        state = state.copyWith(isLoading: false, alreadyRegistered: true);
+        this.state =
+            this.state.copyWith(isLoading: false, alreadyRegistered: true);
       } else {
-        state = state.copyWith(isLoading: false, error: e.message);
+        this.state = this.state.copyWith(isLoading: false, error: e.message);
       }
     } on AppError catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message);
+      this.state = this.state.copyWith(isLoading: false, error: e.message);
     } catch (_) {
-      state = state.copyWith(
+      this.state = this.state.copyWith(
         isLoading: false,
         error: 'Failed to register nursery. Please try again.',
       );
@@ -101,6 +110,25 @@ class _NurseryRegistrationScreenState
   final _mobileCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _addressLine1Ctrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _stateCtrl = TextEditingController();
+  final _postalCodeCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill nursery contact from the owner's personal profile.
+    final user = ref.read(sessionProvider).user;
+    if (user != null) {
+      if (user.mobile?.isNotEmpty ?? false) {
+        _mobileCtrl.text = user.mobile!;
+      }
+      if (user.email?.isNotEmpty ?? false) {
+        _emailCtrl.text = user.email!;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -108,18 +136,26 @@ class _NurseryRegistrationScreenState
     _mobileCtrl.dispose();
     _emailCtrl.dispose();
     _descCtrl.dispose();
+    _addressLine1Ctrl.dispose();
+    _cityCtrl.dispose();
+    _stateCtrl.dispose();
+    _postalCodeCtrl.dispose();
     super.dispose();
   }
+
+  String? _nullIfEmpty(String val) => val.trim().isEmpty ? null : val.trim();
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(_nurseryRegProvider.notifier).submit(
           name: _nameCtrl.text.trim(),
-          mobile:
-              _mobileCtrl.text.trim().isEmpty ? null : _mobileCtrl.text.trim(),
-          email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-          description:
-              _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          mobile: _nullIfEmpty(_mobileCtrl.text),
+          email: _nullIfEmpty(_emailCtrl.text),
+          description: _nullIfEmpty(_descCtrl.text),
+          addressLine1: _nullIfEmpty(_addressLine1Ctrl.text),
+          city: _nullIfEmpty(_cityCtrl.text),
+          state: _nullIfEmpty(_stateCtrl.text),
+          postalCode: _nullIfEmpty(_postalCodeCtrl.text),
         );
   }
 
@@ -192,6 +228,10 @@ class _NurseryRegistrationScreenState
               ),
               const SizedBox(height: AppSpacing.x3l),
 
+              // ── Section: Nursery Info ──────────────────────────────────────
+              _SectionLabel(label: 'Nursery Info'),
+              const SizedBox(height: AppSpacing.md),
+
               // Nursery Name (required)
               AppTextField(
                 label: 'Nursery Name *',
@@ -211,7 +251,7 @@ class _NurseryRegistrationScreenState
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Contact Mobile (optional)
+              // Contact Mobile (pre-filled from profile, editable)
               AppTextField(
                 label: 'Contact Mobile',
                 hint: 'Nursery contact number',
@@ -228,7 +268,7 @@ class _NurseryRegistrationScreenState
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Email (optional)
+              // Email (pre-filled from profile, editable)
               AppTextField(
                 label: 'Email Address',
                 hint: 'nursery@example.com',
@@ -254,6 +294,76 @@ class _NurseryRegistrationScreenState
                 keyboardType: TextInputType.multiline,
                 textInputAction: TextInputAction.newline,
                 maxLines: 3,
+              ),
+
+              const SizedBox(height: AppSpacing.x2l),
+
+              // ── Section: Nursery Address ───────────────────────────────────
+              _SectionLabel(label: 'Nursery Address'),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Where is your nursery located? This helps customers find you.',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              AppTextField(
+                label: 'Address Line 1 *',
+                hint: 'Street, area, locality',
+                controller: _addressLine1Ctrl,
+                textInputAction: TextInputAction.next,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Address is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      label: 'City *',
+                      hint: 'e.g. Bengaluru',
+                      controller: _cityCtrl,
+                      textInputAction: TextInputAction.next,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'City is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AppTextField(
+                      label: 'State *',
+                      hint: 'e.g. Karnataka',
+                      controller: _stateCtrl,
+                      textInputAction: TextInputAction.next,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'State is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              AppTextField(
+                label: 'Postal Code',
+                hint: '560001',
+                controller: _postalCodeCtrl,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
 
               if (state.error != null) ...[
@@ -334,5 +444,17 @@ class _NurseryRegistrationScreenState
         ),
       ),
     );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(label,
+        style: AppTypography.label
+            .copyWith(color: AppColors.textPrimary, letterSpacing: 0.4));
   }
 }

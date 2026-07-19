@@ -105,6 +105,10 @@ class AuthRemoteDataSource {
     String? mobile,
     String? email,
     String? description,
+    String? addressLine1,
+    String? city,
+    String? state,
+    String? postalCode,
   }) =>
       _client.post(
         ApiConstants.nurseries,
@@ -114,6 +118,12 @@ class AuthRemoteDataSource {
           if (email != null && email.isNotEmpty) 'email': email,
           if (description != null && description.isNotEmpty)
             'description': description,
+          if (addressLine1 != null && addressLine1.isNotEmpty)
+            'address_line1': addressLine1,
+          if (city != null && city.isNotEmpty) 'city': city,
+          if (state != null && state.isNotEmpty) 'state': state,
+          if (postalCode != null && postalCode.isNotEmpty)
+            'postal_code': postalCode,
           'status': 'PENDING',
         },
       );

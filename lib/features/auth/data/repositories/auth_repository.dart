@@ -226,6 +226,10 @@ class AuthRepository {
     String? mobile,
     String? email,
     String? description,
+    String? addressLine1,
+    String? city,
+    String? state,
+    String? postalCode,
   }) async {
     try {
       await _remote.createNursery(
@@ -233,6 +237,10 @@ class AuthRepository {
         mobile: mobile,
         email: email,
         description: description,
+        addressLine1: addressLine1,
+        city: city,
+        state: state,
+        postalCode: postalCode,
       );
       AppLogger.i('Nursery registration submitted: $name');
     } on AppError {
