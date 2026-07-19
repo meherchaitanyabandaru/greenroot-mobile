@@ -1,6 +1,6 @@
 # GreenRoot — Mobile App Reference
 
-> Last updated: 2026-06-28
+> Last updated: 2026-07-19
 
 ---
 
@@ -114,7 +114,7 @@ lib/
 
 ---
 
-## Completed Work (as of 2026-07-04)
+## Completed Work (as of 2026-07-19)
 
 | Feature | Status |
 |---|---|
@@ -158,26 +158,23 @@ lib/
 | `/plants` route for buyers — browse plant catalog | ✅ |
 | Profile screen: My Addresses + Payment History links | ✅ |
 | Buyer home: Browse Nurseries + Plant Catalog explore cards | ✅ |
+| Driver home screen + tracking screen redesigned; QR scan gated behind active trip check | ✅ |
+| Onboarding routing fixed: incomplete profile → `/create-profile`; no `initial_activity` → onboarding screen | ✅ |
+| Lifecycle presenter centralized: status chips, action labels, and colors driven by single presenter | ✅ |
+| Backend capabilities drive all action buttons (orders, dispatches, quotations, market ads) — no frontend role checks | ✅ |
+| Order display synced with dispatch lifecycle (delivery state reflected in buyer tracking) | ✅ |
+| Market ad capabilities: publish/pause/resume/archive/save driven by backend `capabilities` fields | ✅ |
+| Dispatch capabilities: accept/start-trip/complete-trip actions driven by backend `capabilities` fields | ✅ |
+| List providers set to `autoDispose` to prevent stale data across role contexts | ✅ |
 
 ---
 
-## Pending Work (Priority Order)
+## Pending Work
 
-### 1. Nursery Approval Status Screen ✅
-- BRD B.3 — ~~no pending approval screen~~ — **DONE**
-- Pending screen now shows submitted date from nursery `created_at`
-- Rejected screen now shows `rejection_reason` from API + `rejected_at` date
-- API workspace response now includes `nursery_status` inline (eliminates separate status call)
-- Splash routing uses workspace status with fallback to `/nurseries/owned`
-
-### 2. Splash Smart Routing
-- Currently: authenticated → `/home` (no further checks)
-- BRD rules: incomplete profile → `/create-profile`; no activity selected → start-activity screen; pending nursery → approval screen (done)
-- "Select Starting Activity" screen not yet built
-
-### 3. Sign-up Screen Polish ✅
-- Login screen already says "Welcome to GreenRoot" (handles new + existing users)
-- T&C + Privacy Policy checkbox added — must be checked to enable Send OTP
+### Select Starting Activity Screen
+- After login, users with no `initial_activity` on their account should be routed to a screen where they pick their first role (Buyer, Nursery Owner, Driver)
+- Incomplete profile → `/create-profile` is now working; pending nursery → approval screen is done; T&C checkbox done
+- The "Select Starting Activity" screen itself is the only onboarding gap remaining
 
 ---
 
