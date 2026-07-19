@@ -314,7 +314,6 @@ class _SheetShell extends StatelessWidget {
   Widget _buildSheet(BuildContext context) {
     void resume() => Navigator.of(context).pop(QrSheetResult.resume);
     void close() => Navigator.of(context).pop(QrSheetResult.close);
-    void goToTrip() => Navigator.of(context).pop(QrSheetResult.goToTrip);
 
     return switch (detection.type) {
       QrType.invite => InviteSheet(

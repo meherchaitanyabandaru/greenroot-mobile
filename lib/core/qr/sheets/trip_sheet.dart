@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_typography.dart';
 import '../../widgets/qr_shared_widgets.dart';
 import '../classifier.dart';
 

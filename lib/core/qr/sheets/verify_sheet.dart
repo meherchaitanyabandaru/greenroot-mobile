@@ -5,9 +5,7 @@ import 'package:intl/intl.dart';
 import '../../constants/api_constants.dart';
 import '../../network/api_client.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_typography.dart';
 import '../../widgets/qr_shared_widgets.dart';
-import '../classifier.dart';
 import '../qr_models.dart';
 
 class VerifySheet extends StatefulWidget {
