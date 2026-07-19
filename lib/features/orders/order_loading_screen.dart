@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -337,6 +338,7 @@ class _LoadingOrderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final display = LifecyclePresenter.forOrderStatus(order.status);
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final date = DateTime.tryParse(order.orderDate);
     final dateStr =
@@ -364,8 +366,8 @@ class _LoadingOrderCard extends ConsumerWidget {
                     child: Text(order.orderNumber, style: AppTypography.h4),
                   ),
                   StatusBadge(
-                    label: order.status,
-                    variant: badgeVariantFromStatus(order.status),
+                    label: display.label,
+                    variant: display.variant,
                     dot: true,
                   ),
                 ],

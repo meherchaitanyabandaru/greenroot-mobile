@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -101,14 +102,15 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen>
 // ── Providers ──────────────────────────────────────────────────────────────────
 
 // Separate provider for history list (DELIVERED + CANCELLED)
-final _historyProvider = FutureProvider.autoDispose<List<Dispatch>>((ref) async {
+final _historyProvider =
+    FutureProvider.autoDispose<List<Dispatch>>((ref) async {
   final repo = ref.watch(dispatchRepositoryProvider);
   final (dispatches, _) = await repo.listDispatches(page: 1, perPage: 100);
   return dispatches
       .where((d) => d.status == 'DELIVERED' || d.status == 'CANCELLED')
       .toList()
-    ..sort((a, b) => (b.updatedAt ?? b.createdAt)
-        .compareTo(a.updatedAt ?? a.createdAt));
+    ..sort((a, b) =>
+        (b.updatedAt ?? b.createdAt).compareTo(a.updatedAt ?? a.createdAt));
 });
 
 // ── Active tab ─────────────────────────────────────────────────────────────────
@@ -181,13 +183,12 @@ class _ActiveTab extends ConsumerWidget {
           children: [
             Icon(icon, size: 52, color: iconColor),
             const SizedBox(height: AppSpacing.md),
-            Text(title,
-                style: AppTypography.h4, textAlign: TextAlign.center),
+            Text(title, style: AppTypography.h4, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.xs),
             Text(
               subtitle,
-              style: AppTypography.body
-                  .copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             if (action != null) ...[
@@ -233,8 +234,8 @@ class _HistoryTab extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Completed and cancelled trips will appear here.',
-                style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary),
+                style:
+                    AppTypography.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -256,16 +257,17 @@ class _HistoryTab extends ConsumerWidget {
             itemCount: trips.length,
             itemBuilder: (context, i) {
               final trip = trips[i];
-              final showHeader = i == 0 || _monthOf(trips[i].createdAt) !=
-                  _monthOf(trips[i - 1].createdAt);
+              final showHeader = i == 0 ||
+                  _monthOf(trips[i].createdAt) !=
+                      _monthOf(trips[i - 1].createdAt);
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (showHeader) ...[
                     if (i != 0) const SizedBox(height: AppSpacing.md),
                     Padding(
-                      padding: const EdgeInsets.only(
-                          bottom: AppSpacing.sm, left: 2),
+                      padding:
+                          const EdgeInsets.only(bottom: AppSpacing.sm, left: 2),
                       child: Text(
                         _monthOf(trip.createdAt),
                         style: AppTypography.caption.copyWith(
@@ -304,6 +306,7 @@ class _HistoryTripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final display = LifecyclePresenter.forDispatchStatus(trip.status);
     final dateStr = _formatDate(trip.updatedAt ?? trip.createdAt);
     final isDelivered = trip.status == 'DELIVERED';
 
@@ -331,9 +334,8 @@ class _HistoryTripCard extends StatelessWidget {
                 isDelivered
                     ? Icons.check_circle_rounded
                     : Icons.cancel_outlined,
-                color: isDelivered
-                    ? AppColors.primaryMain
-                    : AppColors.textMuted,
+                color:
+                    isDelivered ? AppColors.primaryMain : AppColors.textMuted,
                 size: 20,
               ),
             ),
@@ -343,9 +345,10 @@ class _HistoryTripCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(trip.dispatchCode, style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                  )),
+                  Text(trip.dispatchCode,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      )),
                   if (trip.destinationAddress?.isNotEmpty == true) ...[
                     const SizedBox(height: 2),
                     Row(
@@ -380,8 +383,8 @@ class _HistoryTripCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 StatusBadge(
-                  label: trip.status,
-                  variant: badgeVariantFromStatus(trip.status),
+                  label: display.label,
+                  variant: display.variant,
                 ),
                 const SizedBox(height: 4),
                 const Icon(Icons.chevron_right_rounded,
@@ -396,7 +399,8 @@ class _HistoryTripCard extends StatelessWidget {
 
   String _formatDate(String isoDate) {
     try {
-      return DateFormat('dd MMM yyyy').format(DateTime.parse(isoDate).toLocal());
+      return DateFormat('dd MMM yyyy')
+          .format(DateTime.parse(isoDate).toLocal());
     } catch (_) {
       return '';
     }
@@ -428,8 +432,8 @@ class _RetryView extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain),
             ),
           ],
         ),

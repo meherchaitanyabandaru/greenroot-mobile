@@ -47,6 +47,31 @@ void main() {
 
       expect(display.label, 'Delivered');
     });
+
+    test('active dispatch prefers progressed state over older pending state',
+        () {
+      final dispatch = LifecyclePresenter.activeDispatchForOrder(
+        [
+          _dispatch('PENDING', id: 1, updatedAt: '2026-07-19T01:00:00Z'),
+          _dispatch('IN_TRANSIT', id: 2, updatedAt: '2026-07-19T00:00:00Z'),
+        ],
+        1,
+      );
+
+      expect(dispatch?.id, 2);
+    });
+
+    test('active dispatch ignores cancelled dispatches', () {
+      final dispatch = LifecyclePresenter.activeDispatchForOrder(
+        [
+          _dispatch('CANCELLED', id: 2, updatedAt: '2026-07-19T02:00:00Z'),
+          _dispatch('ACCEPTED', id: 1, updatedAt: '2026-07-19T01:00:00Z'),
+        ],
+        1,
+      );
+
+      expect(dispatch?.id, 1);
+    });
   });
 }
 
@@ -60,11 +85,17 @@ Order _order(String status) => Order(
       items: const [],
     );
 
-Dispatch _dispatch(String status) => Dispatch(
-      id: 1,
+Dispatch _dispatch(
+  String status, {
+  int id = 1,
+  String? updatedAt,
+}) =>
+    Dispatch(
+      id: id,
       dispatchCode: 'DSP-1',
       orderId: 1,
       status: status,
       createdAt: '2026-07-19T00:00:00Z',
+      updatedAt: updatedAt,
       items: const [],
     );

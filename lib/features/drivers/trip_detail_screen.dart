@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -202,6 +203,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
   Widget build(BuildContext context) {
     final dispatch = widget.dispatch;
     final status = dispatch.status;
+    final display = LifecyclePresenter.forDispatchStatus(status);
     // Verify this trip is assigned to the logged-in driver before showing actions.
     final isAssignedDriver = widget.currentUserId != null &&
         (dispatch.driverUserId == widget.currentUserId ||
@@ -237,8 +239,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
                           color: Colors.white.withValues(alpha: 0.8))),
                   const Spacer(),
                   StatusBadge(
-                    label: status.replaceAll('_', ' '),
-                    variant: badgeVariantFromStatus(status),
+                    label: display.label,
+                    variant: display.variant,
                     dot: true,
                   ),
                 ],

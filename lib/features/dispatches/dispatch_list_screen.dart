@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -23,8 +24,9 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(dispatchListProvider.notifier).load(nurseryId: widget.nurseryId));
+    WidgetsBinding.instance.addPostFrameCallback((_) => ref
+        .read(dispatchListProvider.notifier)
+        .load(nurseryId: widget.nurseryId));
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >=
           _scrollCtrl.position.maxScrollExtent - 200) {
@@ -47,7 +49,9 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
-        onRefresh: () => ref.read(dispatchListProvider.notifier).load(nurseryId: widget.nurseryId),
+        onRefresh: () => ref
+            .read(dispatchListProvider.notifier)
+            .load(nurseryId: widget.nurseryId),
         color: AppColors.primaryMain,
         child: CustomScrollView(
           controller: _scrollCtrl,
@@ -84,8 +88,8 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
             if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
-                    child:
-                        CircularProgressIndicator(color: AppColors.primaryMain)),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryMain)),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -161,7 +165,8 @@ class _Chip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _Chip({required this.label, required this.selected, required this.onTap});
+  const _Chip(
+      {required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +202,7 @@ class _DispatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
     final date = dispatch.dispatchDate != null
         ? DateTime.tryParse(dispatch.dispatchDate!)
         : null;
@@ -218,74 +224,74 @@ class _DispatchCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.amber100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.local_shipping_rounded,
-                      color: AppColors.amber600, size: 20),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        dispatch.dispatchCode,
-                        style: AppTypography.h4,
-                      ),
-                      if (dispatch.orderNumber != null)
-                        Text(
-                          'Order: ${dispatch.orderNumber}',
-                          style: AppTypography.caption
-                              .copyWith(color: AppColors.textSecondary),
-                        ),
-                    ],
-                  ),
-                ),
-                StatusBadge(
-                  label: dispatch.status.replaceAll('_', ' '),
-                  variant: badgeVariantFromStatus(dispatch.status),
-                  dot: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                if (dispatch.driverName != null) ...[
-                  const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(
-                    dispatch.driverName!,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.amber100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.local_shipping_rounded,
+                        color: AppColors.amber600, size: 20),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                ],
-                if (dispatch.vehicleNumber != null) ...[
-                  const Icon(Icons.directions_car_outlined,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(
-                    dispatch.vehicleNumber!,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dispatch.dispatchCode,
+                          style: AppTypography.h4,
+                        ),
+                        if (dispatch.orderNumber != null)
+                          Text(
+                            'Order: ${dispatch.orderNumber}',
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.textSecondary),
+                          ),
+                      ],
+                    ),
+                  ),
+                  StatusBadge(
+                    label: display.label,
+                    variant: display.variant,
+                    dot: true,
                   ),
                 ],
-                const Spacer(),
-                if (dateStr.isNotEmpty)
-                  Text(dateStr,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  if (dispatch.driverName != null) ...[
+                    const Icon(Icons.person_outline_rounded,
+                        size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      dispatch.driverName!,
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textMuted)),
-              ],
-            ),
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                  ],
+                  if (dispatch.vehicleNumber != null) ...[
+                    const Icon(Icons.directions_car_outlined,
+                        size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      dispatch.vehicleNumber!,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (dateStr.isNotEmpty)
+                    Text(dateStr,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textMuted)),
+                ],
+              ),
             ],
           ),
         ),

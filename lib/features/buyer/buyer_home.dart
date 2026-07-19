@@ -121,14 +121,8 @@ class _BuyerHomeData {
   int get cancelledCount =>
       orders.where((o) => o.status.toUpperCase() == 'CANCELLED').length;
 
-  Dispatch? dispatchForOrder(int orderId) {
-    for (final dispatch in dispatches) {
-      if (dispatch.orderId == orderId && dispatch.status != 'CANCELLED') {
-        return dispatch;
-      }
-    }
-    return null;
-  }
+  Dispatch? dispatchForOrder(int orderId) =>
+      LifecyclePresenter.activeDispatchForOrder(dispatches, orderId);
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────

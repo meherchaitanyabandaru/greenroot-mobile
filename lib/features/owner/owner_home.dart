@@ -73,14 +73,8 @@ class _OwnerHomeData {
   int get pendingCount =>
       orders.where((o) => o.status.toUpperCase() == 'PENDING').length;
 
-  Dispatch? dispatchForOrder(int orderId) {
-    for (final dispatch in dispatches) {
-      if (dispatch.orderId == orderId && dispatch.status != 'CANCELLED') {
-        return dispatch;
-      }
-    }
-    return null;
-  }
+  Dispatch? dispatchForOrder(int orderId) =>
+      LifecyclePresenter.activeDispatchForOrder(dispatches, orderId);
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────

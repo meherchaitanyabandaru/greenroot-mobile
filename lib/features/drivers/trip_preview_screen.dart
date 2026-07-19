@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -58,12 +59,15 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       _error = null;
     });
     try {
-      final d = await ref.read(dispatchRepositoryProvider).findByCode(widget.code);
+      final d =
+          await ref.read(dispatchRepositoryProvider).findByCode(widget.code);
       if (mounted) setState(() => _dispatch = d);
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Trip not found. Check the code and try again.');
+      if (mounted)
+        setState(
+            () => _error = 'Trip not found. Check the code and try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -91,8 +95,9 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
         return;
       }
 
-      final accepted =
-          await ref.read(dispatchRepositoryProvider).acceptDispatch(_dispatch!.id);
+      final accepted = await ref
+          .read(dispatchRepositoryProvider)
+          .acceptDispatch(_dispatch!.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -183,7 +188,8 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               message,
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.x2l),
@@ -220,9 +226,13 @@ class _TripDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final myTrip = dispatch.driverUserId != null && dispatch.driverUserId == currentUserId;
-    final takenByOther = dispatch.driverUserId != null && dispatch.driverUserId != currentUserId;
-    final alreadyAccepted = dispatch.status != 'PENDING' || myTrip || takenByOther;
+    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
+    final myTrip =
+        dispatch.driverUserId != null && dispatch.driverUserId == currentUserId;
+    final takenByOther =
+        dispatch.driverUserId != null && dispatch.driverUserId != currentUserId;
+    final alreadyAccepted =
+        dispatch.status != 'PENDING' || myTrip || takenByOther;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -253,8 +263,8 @@ class _TripDetails extends StatelessWidget {
                   ),
                   const Spacer(),
                   StatusBadge(
-                    label: dispatch.status.replaceAll('_', ' '),
-                    variant: badgeVariantFromStatus(dispatch.status),
+                    label: display.label,
+                    variant: display.variant,
                     dot: true,
                   ),
                 ],
@@ -417,7 +427,8 @@ class _TripDetails extends StatelessWidget {
               label: const Text('Reject Trip'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.red600,
-                side: BorderSide(color: AppColors.red600.withValues(alpha: 0.6)),
+                side:
+                    BorderSide(color: AppColors.red600.withValues(alpha: 0.6)),
                 shape: RoundedRectangleBorder(
                     borderRadius: AppRadius.buttonRadius),
               ),
@@ -445,10 +456,12 @@ class _TripDetails extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.check_circle_rounded, color: AppColors.primaryMain),
+                const Icon(Icons.check_circle_rounded,
+                    color: AppColors.primaryMain),
                 const SizedBox(width: AppSpacing.sm),
                 Text('You\'ve accepted this trip',
-                    style: AppTypography.label.copyWith(color: AppColors.primaryMain)),
+                    style: AppTypography.label
+                        .copyWith(color: AppColors.primaryMain)),
               ],
             ),
           ),
@@ -463,7 +476,8 @@ class _TripDetails extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryMain,
                 side: const BorderSide(color: AppColors.primaryMain),
-                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius),
               ),
             ),
           ),
@@ -475,7 +489,8 @@ class _TripDetails extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.red600.withValues(alpha: 0.08),
               borderRadius: AppRadius.buttonRadius,
-              border: Border.all(color: AppColors.red600.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.red600.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -487,7 +502,8 @@ class _TripDetails extends StatelessWidget {
                     dispatch.status != 'PENDING'
                         ? 'Trip is already underway'
                         : 'Trip already assigned to another driver',
-                    style: AppTypography.label.copyWith(color: AppColors.red600),
+                    style:
+                        AppTypography.label.copyWith(color: AppColors.red600),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -500,7 +516,8 @@ class _TripDetails extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Go Back',
-                  style: AppTypography.label.copyWith(color: AppColors.textMuted)),
+                  style:
+                      AppTypography.label.copyWith(color: AppColors.textMuted)),
             ),
           ),
         ],
@@ -536,8 +553,7 @@ class _InfoRow extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration:
-                BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
             child: Icon(icon, size: 17, color: iconColor),
           ),
           const SizedBox(width: AppSpacing.md),

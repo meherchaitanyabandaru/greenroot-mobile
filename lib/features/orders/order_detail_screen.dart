@@ -9,8 +9,10 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
+import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../plants/plants.dart';
@@ -215,151 +217,38 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   // ── Status visual config ───────────────────────────────────────────────────
 
   _StatusConfig _cfgFor(Dispatch? dispatch) {
+    final display = LifecyclePresenter.forOrder(
+      order: _order,
+      dispatch: dispatch,
+      role: widget.isBuyer ? LifecycleRole.buyer : LifecycleRole.operator,
+    );
+    final message =
+        _status == 'CANCELLED' && _order.cancelReason?.isNotEmpty == true
+            ? 'Reason: ${_order.cancelReason}'
+            : display.subtitle;
+    return _StatusConfig(
+      color: display.color,
+      icon: _iconFor(display, dispatch),
+      headline: display.title,
+      message: message,
+      label: display.label,
+    );
+  }
+
+  IconData _iconFor(LifecycleDisplay display, Dispatch? dispatch) {
     final dispatchStatus = dispatch?.status.toUpperCase();
-    final hasActiveDelivery = widget.isBuyer &&
-        _status != 'COMPLETED' &&
-        dispatchStatus != null &&
-        dispatchStatus != 'CANCELLED';
-    if (hasActiveDelivery) {
-      switch (dispatchStatus) {
-        case 'DELIVERED':
-          return const _StatusConfig(
-            color: AppColors.primaryMain,
-            icon: Icons.check_circle_rounded,
-            headline: 'Delivered',
-            message: 'Your order has been delivered.',
-            label: 'DELIVERED',
-          );
-        case 'IN_TRANSIT':
-          return const _StatusConfig(
-            color: AppColors.amber700,
-            icon: Icons.local_shipping_rounded,
-            headline: 'On the Way',
-            message: 'Your delivery is on the way.',
-            label: 'IN TRANSIT',
-          );
-        case 'DISPATCHED':
-          return const _StatusConfig(
-            color: AppColors.blue600,
-            icon: Icons.local_shipping_rounded,
-            headline: 'Out for Delivery',
-            message: 'Your order has left the nursery.',
-            label: 'DISPATCHED',
-          );
-        case 'ACCEPTED':
-          return const _StatusConfig(
-            color: AppColors.blue600,
-            icon: Icons.person_rounded,
-            headline: 'Driver Assigned',
-            message: 'A driver has accepted your delivery.',
-            label: 'DRIVER ASSIGNED',
-          );
-        case 'PENDING':
-          return const _StatusConfig(
-            color: AppColors.textSecondary,
-            icon: Icons.schedule_rounded,
-            headline: 'Delivery Being Arranged',
-            message: 'The nursery is arranging your delivery.',
-            label: 'DELIVERY PENDING',
-          );
-      }
+    if (display.variant == BadgeVariant.error) return Icons.cancel_rounded;
+    if (dispatchStatus == 'IN_TRANSIT' || dispatchStatus == 'DISPATCHED') {
+      return Icons.local_shipping_rounded;
     }
-
-    if (widget.canManage &&
-        _status != 'COMPLETED' &&
-        dispatchStatus == 'DELIVERED') {
-      return const _StatusConfig(
-        color: AppColors.primaryMain,
-        icon: Icons.check_circle_rounded,
-        headline: 'Delivery Delivered',
-        message: 'Review the order and mark it completed.',
-        label: 'DELIVERED',
-      );
+    if (dispatchStatus == 'ACCEPTED') return Icons.person_rounded;
+    if (display.variant == BadgeVariant.success) {
+      return Icons.check_circle_rounded;
     }
-
-    switch (_status) {
-      case 'PENDING':
-        return widget.isBuyer
-            ? const _StatusConfig(
-                color: AppColors.amber600,
-                icon: Icons.schedule_rounded,
-                headline: 'Waiting for Confirmation',
-                message: 'The nursery will review and confirm your order.',
-              )
-            : const _StatusConfig(
-                color: AppColors.amber600,
-                icon: Icons.notifications_active_rounded,
-                headline: 'New Order',
-                message: 'Confirm this order to begin preparation.',
-              );
-      case 'CONFIRMED':
-        return widget.isBuyer
-            ? const _StatusConfig(
-                color: AppColors.blue600,
-                icon: Icons.verified_rounded,
-                headline: 'Order Confirmed',
-                message:
-                    'The nursery has confirmed your order and is preparing it.',
-              )
-            : const _StatusConfig(
-                color: AppColors.blue600,
-                icon: Icons.inventory_2_outlined,
-                headline: 'Confirmed — Ready to Load',
-                message: 'Start loading items to prepare for dispatch.',
-              );
-      case 'LOADING':
-        return _StatusConfig(
-          color: AppColors.blue600,
-          icon: Icons.inventory_2_outlined,
-          headline: 'Loading in Progress',
-          message: widget.isBuyer
-              ? 'Your items are being carefully loaded.'
-              : 'Mark loading complete when all items are ready.',
-        );
-      case 'LOADED':
-        return _StatusConfig(
-          color: AppColors.primaryMain,
-          icon: Icons.done_all_rounded,
-          headline: 'Order Loaded',
-          message: widget.isBuyer
-              ? 'Your order is ready — dispatch is being arranged.'
-              : 'Create a dispatch to assign a driver.',
-        );
-      case 'PARTIALLY_FULFILLED':
-        return _StatusConfig(
-          color: AppColors.amber700,
-          icon: Icons.warning_amber_rounded,
-          headline: 'Partially Fulfilled',
-          message: widget.isBuyer
-              ? 'Some items had reduced quantities. Dispatch is being arranged.'
-              : 'Some items had reduced quantities. Create dispatch or mark complete.',
-        );
-      case 'COMPLETED':
-        return _StatusConfig(
-          color: AppColors.primaryMain,
-          icon: Icons.check_circle_rounded,
-          headline: widget.isBuyer ? 'Delivered' : 'Order Completed',
-          message: widget.isBuyer
-              ? 'Your order has been delivered. Thank you!'
-              : 'Order delivered and completed successfully.',
-        );
-      case 'CANCELLED':
-        return _StatusConfig(
-          color: AppColors.red600,
-          icon: Icons.cancel_rounded,
-          headline: 'Order Cancelled',
-          message: _order.cancelReason?.isNotEmpty == true
-              ? 'Reason: ${_order.cancelReason}'
-              : 'This order has been cancelled.',
-        );
-      default:
-        return _StatusConfig(
-          color: AppColors.textSecondary,
-          icon: Icons.help_outline,
-          headline: _status,
-          message: '',
-        );
+    if (_status == 'CONFIRMED' || _status == 'LOADING') {
+      return Icons.inventory_2_outlined;
     }
+    return Icons.schedule_rounded;
   }
 
   // ── API actions ────────────────────────────────────────────────────────────
@@ -536,10 +425,8 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     final isCheckingDispatches = dispatchesAsync.isLoading;
     final needsDeliveryBeforeConfirm =
         canManage && status == 'PENDING' && !_hasDeliveryAddress;
-    final existingDispatch = dispatches
-        .where((dispatch) => dispatch.status != 'CANCELLED')
-        .cast<Dispatch?>()
-        .firstOrNull;
+    final existingDispatch =
+        LifecyclePresenter.activeDispatchForOrder(dispatches, widget.orderId);
     final cfg = _cfgFor(existingDispatch);
     final statusLabel = cfg.label ?? status.replaceAll('_', ' ');
 
@@ -937,33 +824,15 @@ class _BuyerDeliveryCard extends StatelessWidget {
     final isDelivered = d.status == 'DELIVERED';
     final hasDriver = d.driverName?.isNotEmpty == true;
     final hasPhone = d.driverMobile?.isNotEmpty == true;
-
-    final Color statusColor;
-    final Color statusBg;
-    final IconData statusIcon;
-    final String statusLabel;
-
-    if (isDelivered) {
-      statusColor = AppColors.primaryMain;
-      statusBg = AppColors.primaryLight;
-      statusIcon = Icons.check_circle_rounded;
-      statusLabel = 'Delivered';
-    } else if (isOnWay) {
-      statusColor = AppColors.amber700;
-      statusBg = AppColors.amber100;
-      statusIcon = Icons.local_shipping_rounded;
-      statusLabel = 'On the Way';
-    } else if (d.status == 'ACCEPTED') {
-      statusColor = AppColors.blue600;
-      statusBg = const Color(0xFFEFF6FF);
-      statusIcon = Icons.person_rounded;
-      statusLabel = 'Driver Assigned';
-    } else {
-      statusColor = AppColors.textSecondary;
-      statusBg = AppColors.slate50;
-      statusIcon = Icons.schedule_rounded;
-      statusLabel = d.status.replaceAll('_', ' ');
-    }
+    final display = LifecyclePresenter.forBuyerDispatchStatus(d.status);
+    final statusColor = display.color;
+    final statusBg = display.color.withValues(alpha: 0.12);
+    final statusIcon = switch (d.status.toUpperCase()) {
+      'DELIVERED' => Icons.check_circle_rounded,
+      'DISPATCHED' || 'IN_TRANSIT' => Icons.local_shipping_rounded,
+      'ACCEPTED' => Icons.person_rounded,
+      _ => Icons.schedule_rounded,
+    };
 
     return Container(
       decoration: BoxDecoration(
@@ -995,7 +864,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(statusLabel,
+                      Text(display.label,
                           style: AppTypography.h4.copyWith(color: statusColor)),
                       if (isOnWay)
                         Text(
@@ -1149,6 +1018,7 @@ class _SellerDispatchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = dispatch;
+    final display = LifecyclePresenter.forDispatchStatus(d.status);
     final isActive =
         {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status);
     final isDelivered = d.status == 'DELIVERED';
@@ -1225,7 +1095,7 @@ class _SellerDispatchRow extends StatelessWidget {
               decoration: BoxDecoration(
                   color: chipBg, borderRadius: BorderRadius.circular(20)),
               child: Text(
-                d.status.replaceAll('_', ' '),
+                display.label,
                 style: AppTypography.caption
                     .copyWith(color: chipColor, fontWeight: FontWeight.w700),
               ),

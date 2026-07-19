@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -20,14 +21,8 @@ String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
     : '${km.toStringAsFixed(1)} km';
 
-Color _dispatchStatusColor(String status) => switch (status.toUpperCase()) {
-      'PENDING' => AppColors.textSecondary,
-      'ACCEPTED' => AppColors.blue600,
-      'DISPATCHED' => AppColors.accentHover,
-      'IN_TRANSIT' || 'DELIVERED' => AppColors.primaryMain,
-      'CANCELLED' => AppColors.errorText,
-      _ => AppColors.textSecondary,
-    };
+Color _dispatchStatusColor(String status) =>
+    LifecyclePresenter.forBuyerDispatchStatus(status).color;
 
 // ── Screen shell ───────────────────────────────────────────────────────────────
 
@@ -259,8 +254,8 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
       CameraFit.bounds(
         bounds: LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
         // Extra bottom padding so markers aren't hidden behind the floating card
-        padding: const EdgeInsets.only(
-            top: 100, left: 40, right: 40, bottom: 260),
+        padding:
+            const EdgeInsets.only(top: 100, left: 40, right: 40, bottom: 260),
       ),
     );
   }
@@ -283,12 +278,10 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     final d = widget.dispatch;
     final truck = _truckLatLng;
     final caps = ref.watch(sessionProvider).capabilities;
-    final isOwnerView =
-        caps.isNurseryOwner == true || caps.isManager == true;
+    final isOwnerView = caps.isNurseryOwner == true || caps.isManager == true;
 
     // Map controls must clear the collapsed bottom sheet (≈ 12% of screen height).
-    final controlsBottom =
-        MediaQuery.of(context).size.height * 0.12 + 16;
+    final controlsBottom = MediaQuery.of(context).size.height * 0.12 + 16;
 
     return Stack(
       children: [
@@ -297,8 +290,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
           child: _FullMapSection(
             mapController: _mapController,
             truckLatLng: truck,
-            loadingPointLatLng:
-                isOwnerView ? _loadingPointLatLng : null,
+            loadingPointLatLng: isOwnerView ? _loadingPointLatLng : null,
             deliveryPointLatLng: _deliveryPointLatLng,
             trackingPts: _trackingPts,
             nurseryName: _nurseryName ?? 'Nursery',
@@ -402,8 +394,10 @@ class _FullMapSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const defaultCenter = LatLng(20.5937, 78.9629);
-    final center =
-        truckLatLng ?? loadingPointLatLng ?? deliveryPointLatLng ?? defaultCenter;
+    final center = truckLatLng ??
+        loadingPointLatLng ??
+        deliveryPointLatLng ??
+        defaultCenter;
     final zoom = truckLatLng != null ? 13.0 : 6.0;
 
     final gpsPts = trackingPts.reversed
@@ -575,7 +569,7 @@ class _StatusChipRow extends StatelessWidget {
     }
     if (s == 'DISPATCHED') {
       return const MapTextChip(
-          label: 'Loading Plants', color: AppColors.blue600);
+          label: 'Out for Delivery', color: AppColors.blue600);
     }
     return const SizedBox.shrink();
   }
@@ -796,7 +790,7 @@ class _DriverInfoCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 2),
                 Text(
-                  d.status.replaceAll('_', ' '),
+                  LifecyclePresenter.forBuyerDispatchStatus(d.status).label,
                   style: AppTypography.caption.copyWith(
                     color: _dispatchStatusColor(d.status),
                     fontWeight: FontWeight.w700,

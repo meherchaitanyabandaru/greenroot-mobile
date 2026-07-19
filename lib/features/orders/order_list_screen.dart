@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -170,6 +171,12 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
                       final order = paged.items[i];
+                      final display = LifecyclePresenter.forOrderStatus(
+                        order.status,
+                        role: caps.canSell
+                            ? LifecycleRole.operator
+                            : LifecycleRole.buyer,
+                      );
                       final date = DateTime.tryParse(order.orderDate);
                       final dateStr = date != null
                           ? DateFormat('dd MMM yyyy').format(date.toLocal())
@@ -205,9 +212,8 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                                             style: AppTypography.h4),
                                       ),
                                       StatusBadge(
-                                        label: order.status,
-                                        variant: badgeVariantFromStatus(
-                                            order.status),
+                                        label: display.label,
+                                        variant: display.variant,
                                         dot: true,
                                       ),
                                     ],

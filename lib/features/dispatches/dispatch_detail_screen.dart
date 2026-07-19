@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -187,6 +188,7 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
     final dispDate = dispatch.dispatchDate != null
         ? DateTime.tryParse(dispatch.dispatchDate!)
         : null;
@@ -233,8 +235,8 @@ class _DetailContent extends StatelessWidget {
                     ),
                   ),
                   StatusBadge(
-                    label: dispatch.status.replaceAll('_', ' '),
-                    variant: badgeVariantFromStatus(dispatch.status),
+                    label: display.label,
+                    variant: display.variant,
                     dot: true,
                   ),
                 ],

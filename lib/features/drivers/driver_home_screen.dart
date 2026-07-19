@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -17,7 +18,8 @@ import '../notifications/notifications.dart';
 // Used by the bottom nav to gate the QR scan button without an extra API call.
 // Returns false when the dashboard hasn't loaded yet (safe default: allow UI).
 final driverHasActiveTripProvider = Provider.autoDispose<bool>(
-  (ref) => ref.watch(_driverDashboardProvider).valueOrNull?.tripState.trip != null,
+  (ref) =>
+      ref.watch(_driverDashboardProvider).valueOrNull?.tripState.trip != null,
 );
 
 // ── Dashboard data model ───────────────────────────────────────────────────────
@@ -57,12 +59,14 @@ final _driverDashboardProvider =
 
   ActiveTripState tripState;
   if (active.length > 1) {
-    tripState =
-        const ActiveTripState(trip: null, result: ActiveTripResult.integrityError);
+    tripState = const ActiveTripState(
+        trip: null, result: ActiveTripResult.integrityError);
   } else if (active.isNotEmpty) {
-    tripState = ActiveTripState(trip: active.first, result: ActiveTripResult.found);
+    tripState =
+        ActiveTripState(trip: active.first, result: ActiveTripResult.found);
   } else {
-    tripState = const ActiveTripState(trip: null, result: ActiveTripResult.none);
+    tripState =
+        const ActiveTripState(trip: null, result: ActiveTripResult.none);
   }
 
   return _DashboardData(
@@ -107,8 +111,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         },
         child: dashAsync.when(
           loading: () => const _DashboardSkeleton(),
-          error: (_, __) =>
-              _OfflineState(onRetry: () => ref.invalidate(_driverDashboardProvider)),
+          error: (_, __) => _OfflineState(
+              onRetry: () => ref.invalidate(_driverDashboardProvider)),
           data: (data) => _DashboardBody(data: data),
         ),
       ),
@@ -128,7 +132,11 @@ class _DashboardBody extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final firstName = session.user?.name?.split(' ').first ?? 'Driver';
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
     final isConnected = session.capabilities.driverNurseryId != null;
 
     return ListView(
@@ -321,7 +329,8 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
     await Future.delayed(const Duration(milliseconds: 80));
     if (mounted) {
       setState(() => _joining = false);
-      context.push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
+      context
+          .push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
     }
   }
 
@@ -404,7 +413,8 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               'To start a delivery, get the Trip ID from the nursery owner or manager.',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -751,8 +761,7 @@ class _WaitingForLoadingCardState
                   child: SizedBox(
                     height: AppSpacing.buttonHeight,
                     child: OutlinedButton.icon(
-                      onPressed: () =>
-                          context.push('/driver/trip/${trip.id}'),
+                      onPressed: () => context.push('/driver/trip/${trip.id}'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primaryMain,
                         side: const BorderSide(color: AppColors.primaryMain),
@@ -783,8 +792,7 @@ class _WaitingForLoadingCardState
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.textMuted),
+                                  strokeWidth: 2, color: AppColors.textMuted),
                             )
                           : const Icon(Icons.refresh_rounded, size: 18),
                       label: const Text('Refresh'),
@@ -923,8 +931,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
             const SizedBox(height: AppSpacing.sm),
             // Loading complete banner
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(8),
@@ -936,8 +943,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
                   const SizedBox(width: 8),
                   Text(
                     'Loading complete! All plants are loaded.',
-                    style: AppTypography.caption
-                        .copyWith(color: Colors.white),
+                    style: AppTypography.caption.copyWith(color: Colors.white),
                   ),
                 ],
               ),
@@ -1249,9 +1255,11 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
   @override
   Widget build(BuildContext context) {
     final trip = widget.trip;
+    final display = LifecyclePresenter.forDispatchStatus(trip.status);
     final assignedAt = DateTime.tryParse(trip.createdAt)?.toLocal();
-    final assignedLabel =
-        assignedAt != null ? DateFormat('dd MMM, hh:mm a').format(assignedAt) : null;
+    final assignedLabel = assignedAt != null
+        ? DateFormat('dd MMM, hh:mm a').format(assignedAt)
+        : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -1290,8 +1298,8 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
                   builder: (_, __) => Opacity(
                     opacity: _pulseAnim.value,
                     child: StatusBadge(
-                      label: trip.status.replaceAll('_', ' '),
-                      variant: badgeVariantFromStatus(trip.status),
+                      label: display.label,
+                      variant: display.variant,
                       dot: true,
                     ),
                   ),
@@ -1492,7 +1500,8 @@ class _ActiveTripTip extends StatelessWidget {
           Expanded(
             child: Text(
               'Complete your current delivery before accepting another trip.',
-              style: AppTypography.caption.copyWith(color: AppColors.primaryMain),
+              style:
+                  AppTypography.caption.copyWith(color: AppColors.primaryMain),
             ),
           ),
         ],
@@ -1583,7 +1592,8 @@ class _OfflineState extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         const SizedBox(height: 80),
-        const Icon(Icons.cloud_off_outlined, size: 64, color: AppColors.textMuted),
+        const Icon(Icons.cloud_off_outlined,
+            size: 64, color: AppColors.textMuted),
         const SizedBox(height: AppSpacing.x2l),
         const Text('Unable to connect',
             style: AppTypography.h3, textAlign: TextAlign.center),

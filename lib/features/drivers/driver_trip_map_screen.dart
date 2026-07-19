@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -78,6 +79,7 @@ class _AppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final display = LifecyclePresenter.forDispatchStatus(dispatch.status);
     return Row(
       children: [
         Expanded(
@@ -114,8 +116,8 @@ class _AppBarTitle extends StatelessWidget {
           ),
         ),
         StatusBadge(
-          label: dispatch.status.replaceAll('_', ' '),
-          variant: badgeVariantFromStatus(dispatch.status),
+          label: display.label,
+          variant: display.variant,
           dot: true,
         ),
         const SizedBox(width: 8),

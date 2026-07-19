@@ -24,6 +24,19 @@ class LifecycleDisplay {
 }
 
 class LifecyclePresenter {
+  static Dispatch? activeDispatchForOrder(
+    Iterable<Dispatch> dispatches,
+    int orderId,
+  ) {
+    final candidates = dispatches
+        .where((dispatch) =>
+            dispatch.orderId == orderId && dispatch.status != 'CANCELLED')
+        .toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort(_compareDispatches);
+    return candidates.first;
+  }
+
   static LifecycleDisplay forOrder({
     required Order order,
     Dispatch? dispatch,
@@ -117,6 +130,9 @@ class LifecyclePresenter {
         );
     }
   }
+
+  static LifecycleDisplay forBuyerDispatchStatus(String status) =>
+      _buyerDelivery(status.toUpperCase());
 
   static LifecycleDisplay _buyerDelivery(String status) {
     switch (status) {
@@ -247,4 +263,40 @@ class LifecyclePresenter {
       .split('_')
       .map((p) => p.isEmpty ? p : '${p[0].toUpperCase()}${p.substring(1)}')
       .join(' ');
+
+  static int _compareDispatches(Dispatch a, Dispatch b) {
+    final aRank = _dispatchRank(a.status);
+    final bRank = _dispatchRank(b.status);
+    if (aRank != bRank) return bRank.compareTo(aRank);
+
+    final aTime = _dispatchTime(a);
+    final bTime = _dispatchTime(b);
+    if (aTime != null && bTime != null) return bTime.compareTo(aTime);
+    if (aTime != null) return -1;
+    if (bTime != null) return 1;
+    return b.id.compareTo(a.id);
+  }
+
+  static int _dispatchRank(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return 5;
+      case 'IN_TRANSIT':
+        return 4;
+      case 'DISPATCHED':
+        return 3;
+      case 'ACCEPTED':
+        return 2;
+      case 'PENDING':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  static DateTime? _dispatchTime(Dispatch dispatch) =>
+      DateTime.tryParse(dispatch.updatedAt ?? '') ??
+      DateTime.tryParse(dispatch.deliveryDate ?? '') ??
+      DateTime.tryParse(dispatch.dispatchDate ?? '') ??
+      DateTime.tryParse(dispatch.createdAt);
 }
