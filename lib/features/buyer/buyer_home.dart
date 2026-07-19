@@ -76,10 +76,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../app/main_shell.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/universal_qr_screen.dart';
+import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 
 /// Fetches buyer home data: orders scoped to the current buyer.
@@ -87,18 +89,26 @@ import '../orders/orders.dart';
 final buyerHomeProvider =
     FutureProvider.autoDispose<_BuyerHomeData>((ref) async {
   final orderRepo = ref.watch(orderRepositoryProvider);
+  final dispatchRepo = ref.watch(dispatchRepositoryProvider);
   var orders = <Order>[];
+  var dispatches = <Dispatch>[];
   try {
     final (items, _) = await orderRepo.listBuyingOrders(page: 1, perPage: 30);
     orders = items;
   } catch (_) {}
-  return _BuyerHomeData(orders: orders);
+  try {
+    final (items, _) =
+        await dispatchRepo.listBuyingDispatches(page: 1, perPage: 50);
+    dispatches = items;
+  } catch (_) {}
+  return _BuyerHomeData(orders: orders, dispatches: dispatches);
 });
 
 class _BuyerHomeData {
   final List<Order> orders;
+  final List<Dispatch> dispatches;
 
-  const _BuyerHomeData({required this.orders});
+  const _BuyerHomeData({required this.orders, this.dispatches = const []});
 
   List<Order> get activeOrders => orders
       .where(
@@ -110,6 +120,15 @@ class _BuyerHomeData {
 
   int get cancelledCount =>
       orders.where((o) => o.status.toUpperCase() == 'CANCELLED').length;
+
+  Dispatch? dispatchForOrder(int orderId) {
+    for (final dispatch in dispatches) {
+      if (dispatch.orderId == orderId && dispatch.status != 'CANCELLED') {
+        return dispatch;
+      }
+    }
+    return null;
+  }
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────
@@ -159,6 +178,7 @@ class BuyerHome extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _BuyerOrderCard(
                     order: o,
+                    dispatch: data.dispatchForOrder(o.id),
                     onTap: () => context.push('/orders/${o.id}'),
                   ),
                 ),
@@ -324,13 +344,22 @@ class _SectionHeader extends StatelessWidget {
 
 class _BuyerOrderCard extends StatelessWidget {
   final Order order;
+  final Dispatch? dispatch;
   final VoidCallback onTap;
 
-  const _BuyerOrderCard({required this.order, required this.onTap});
+  const _BuyerOrderCard({
+    required this.order,
+    required this.onTap,
+    this.dispatch,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final chip = _orderStatusChip(order.status);
+    final display = LifecyclePresenter.forOrder(
+      order: order,
+      dispatch: dispatch,
+      role: LifecycleRole.buyer,
+    );
     final fmt = NumberFormat('#,##0.00');
 
     return InkWell(
@@ -382,13 +411,13 @@ class _BuyerOrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: chip.bg,
+                    color: display.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    chip.label,
+                    display.label,
                     style: AppTypography.caption.copyWith(
-                      color: chip.text,
+                      color: display.color,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -583,48 +612,3 @@ BoxDecoration _cardDecoration({Color? accent}) => BoxDecoration(
         ),
       ],
     );
-
-({Color bg, Color text, String label}) _orderStatusChip(String status) =>
-    switch (status.toUpperCase()) {
-      'PENDING' => (
-          bg: const Color(0xFFFFF3E0),
-          text: AppColors.amber600,
-          label: 'Pending',
-        ),
-      'CONFIRMED' => (
-          bg: const Color(0xFFE3F2FD),
-          text: AppColors.blue600,
-          label: 'Confirmed',
-        ),
-      'LOADING' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loading',
-        ),
-      'LOADED' || 'PARTIALLY_FULFILLED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loaded',
-        ),
-      'COMPLETED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: const Color(0xFF2E7D32),
-          label: 'Completed',
-        ),
-      'CANCELLED' => (
-          bg: const Color(0xFFFCE4EC),
-          text: const Color(0xFFB71C1C),
-          label: 'Cancelled',
-        ),
-      _ => (
-          bg: AppColors.border,
-          text: AppColors.textSecondary,
-          label: _prettyStatus(status),
-        ),
-    };
-
-String _prettyStatus(String status) => status
-    .toLowerCase()
-    .split('_')
-    .map((p) => p.isEmpty ? p : '${p[0].toUpperCase()}${p.substring(1)}')
-    .join(' ');

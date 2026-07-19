@@ -9,11 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../app/main_shell.dart';
+import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
 import 'nursery_setup_prompt.dart';
@@ -23,12 +25,18 @@ import 'nursery_setup_prompt.dart';
 final ownerHomeProvider =
     FutureProvider.autoDispose<_OwnerHomeData>((ref) async {
   final orderRepo = ref.watch(orderRepositoryProvider);
+  final dispatchRepo = ref.watch(dispatchRepositoryProvider);
   final quotationRepo = ref.watch(quotationRepositoryProvider);
   var orders = <Order>[];
+  var dispatches = <Dispatch>[];
   var pendingQuotations = <Quotation>[];
   try {
     final (items, _) = await orderRepo.listOrders(page: 1, perPage: 30);
     orders = items;
+  } catch (_) {}
+  try {
+    final (items, _) = await dispatchRepo.listDispatches(page: 1, perPage: 50);
+    dispatches = items;
   } catch (_) {}
   try {
     final (items, _) = await quotationRepo.listQuotations(page: 1, perPage: 10);
@@ -36,17 +44,27 @@ final ownerHomeProvider =
         .where((q) => q.status == 'DRAFT' || q.status == 'CUSTOMER_ACCEPTED')
         .toList();
   } catch (_) {}
-  return _OwnerHomeData(orders: orders, pendingQuotations: pendingQuotations);
+  return _OwnerHomeData(
+    orders: orders,
+    dispatches: dispatches,
+    pendingQuotations: pendingQuotations,
+  );
 });
 
 class _OwnerHomeData {
   final List<Order> orders;
+  final List<Dispatch> dispatches;
   final List<Quotation> pendingQuotations;
 
-  const _OwnerHomeData({required this.orders, required this.pendingQuotations});
+  const _OwnerHomeData({
+    required this.orders,
+    this.dispatches = const [],
+    required this.pendingQuotations,
+  });
 
   List<Order> get activeOrders => orders
-      .where((o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
+      .where(
+          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
       .toList();
 
   int get completedCount =>
@@ -54,6 +72,15 @@ class _OwnerHomeData {
 
   int get pendingCount =>
       orders.where((o) => o.status.toUpperCase() == 'PENDING').length;
+
+  Dispatch? dispatchForOrder(int orderId) {
+    for (final dispatch in dispatches) {
+      if (dispatch.orderId == orderId && dispatch.status != 'CANCELLED') {
+        return dispatch;
+      }
+    }
+    return null;
+  }
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────
@@ -226,13 +253,22 @@ class _SectionHeader extends StatelessWidget {
 
 class _OwnerOrderCard extends StatelessWidget {
   final Order order;
+  final Dispatch? dispatch;
   final VoidCallback onTap;
 
-  const _OwnerOrderCard({required this.order, required this.onTap});
+  const _OwnerOrderCard({
+    required this.order,
+    required this.onTap,
+    this.dispatch,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final chip = _orderStatusChip(order.status);
+    final display = LifecyclePresenter.forOrder(
+      order: order,
+      dispatch: dispatch,
+      role: LifecycleRole.operator,
+    );
     final fmt = NumberFormat('#,##0.00');
 
     return InkWell(
@@ -284,13 +320,13 @@ class _OwnerOrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: chip.bg,
+                    color: display.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    chip.label,
+                    display.label,
                     style: AppTypography.caption.copyWith(
-                      color: chip.text,
+                      color: display.color,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -472,7 +508,8 @@ class _EmptyOwnerState extends StatelessWidget {
       decoration: _cardDecoration(accent: AppColors.forest50),
       child: Column(
         children: [
-          const Icon(Icons.storefront_rounded, size: 54, color: AppColors.primaryMain),
+          const Icon(Icons.storefront_rounded,
+              size: 54, color: AppColors.primaryMain),
           const SizedBox(height: 16),
           Text(
             'Ready to take orders',
@@ -515,48 +552,3 @@ BoxDecoration _cardDecoration({Color? accent}) => BoxDecoration(
         ),
       ],
     );
-
-({Color bg, Color text, String label}) _orderStatusChip(String status) =>
-    switch (status.toUpperCase()) {
-      'PENDING' => (
-          bg: const Color(0xFFFFF3E0),
-          text: AppColors.amber600,
-          label: 'Pending',
-        ),
-      'CONFIRMED' => (
-          bg: const Color(0xFFE3F2FD),
-          text: AppColors.blue600,
-          label: 'Confirmed',
-        ),
-      'LOADING' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loading',
-        ),
-      'LOADED' || 'PARTIALLY_FULFILLED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loaded',
-        ),
-      'COMPLETED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: const Color(0xFF2E7D32),
-          label: 'Completed',
-        ),
-      'CANCELLED' => (
-          bg: const Color(0xFFFCE4EC),
-          text: const Color(0xFFB71C1C),
-          label: 'Cancelled',
-        ),
-      _ => (
-          bg: AppColors.border,
-          text: AppColors.textSecondary,
-          label: _prettyStatus(status),
-        ),
-    };
-
-String _prettyStatus(String status) => status
-    .toLowerCase()
-    .split('_')
-    .map((p) => p.isEmpty ? p : '${p[0].toUpperCase()}${p.substring(1)}')
-    .join(' ');

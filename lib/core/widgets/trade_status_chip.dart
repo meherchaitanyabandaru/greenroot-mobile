@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../domain/lifecycle_presenter.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -36,43 +37,14 @@ class TradeStatusChip extends StatelessWidget {
 
 typedef ChipData = ({Color bg, Color text, String label});
 
-ChipData orderChipData(String status) => switch (status.toUpperCase()) {
-      'PENDING' => (
-          bg: const Color(0xFFFFF3E0),
-          text: AppColors.amber600,
-          label: 'Pending'
-        ),
-      'CONFIRMED' => (
-          bg: const Color(0xFFE3F2FD),
-          text: AppColors.blue600,
-          label: 'Confirmed'
-        ),
-      'LOADING' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loading'
-        ),
-      'LOADED' || 'PARTIALLY_FULFILLED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: AppColors.primaryMain,
-          label: 'Loaded'
-        ),
-      'COMPLETED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: const Color(0xFF2E7D32),
-          label: 'Completed'
-        ),
-      'CANCELLED' => (
-          bg: const Color(0xFFFCE4EC),
-          text: const Color(0xFFB71C1C),
-          label: 'Cancelled'
-        ),
-      _ => (
-          bg: AppColors.border,
-          text: AppColors.textSecondary,
-          label: chipPretty(status)
-        ),
-    };
+ChipData orderChipData(String status) {
+  final display = LifecyclePresenter.forOrderStatus(status);
+  return (
+    bg: display.color.withValues(alpha: 0.12),
+    text: display.color,
+    label: display.label,
+  );
+}
 
 ChipData quotationChipData(String status) => switch (status.toUpperCase()) {
       'DRAFT' => (
@@ -117,38 +89,14 @@ ChipData quotationChipData(String status) => switch (status.toUpperCase()) {
         ),
     };
 
-ChipData dispatchChipData(String status) => switch (status.toUpperCase()) {
-      'PENDING' => (
-          bg: const Color(0xFFFFF3E0),
-          text: AppColors.amber600,
-          label: 'Pending'
-        ),
-      'ACCEPTED' => (
-          bg: const Color(0xFFE3F2FD),
-          text: AppColors.blue600,
-          label: 'Accepted'
-        ),
-      'DISPATCHED' || 'IN_TRANSIT' => (
-          bg: const Color(0xFFE3F2FD),
-          text: AppColors.blue600,
-          label: 'In Transit'
-        ),
-      'DELIVERED' || 'COMPLETED' => (
-          bg: const Color(0xFFE8F5E9),
-          text: const Color(0xFF2E7D32),
-          label: 'Delivered'
-        ),
-      'CANCELLED' => (
-          bg: const Color(0xFFFCE4EC),
-          text: const Color(0xFFB71C1C),
-          label: 'Cancelled'
-        ),
-      _ => (
-          bg: AppColors.border,
-          text: AppColors.textSecondary,
-          label: chipPretty(status)
-        ),
-    };
+ChipData dispatchChipData(String status) {
+  final display = LifecyclePresenter.forDispatchStatus(status);
+  return (
+    bg: display.color.withValues(alpha: 0.12),
+    text: display.color,
+    label: display.label,
+  );
+}
 
 String chipPretty(String s) => s
     .toLowerCase()
