@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/services/geocoding/geocoding_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../profile/address_map_picker_screen.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
@@ -55,6 +57,8 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
     required String? city,
     required String? state,
     required String? postalCode,
+    required double? latitude,
+    required double? longitude,
   }) async {
     this.state = this.state.copyWith(isLoading: true, error: null);
     try {
@@ -67,6 +71,8 @@ class _NurseryRegNotifier extends StateNotifier<_NurseryRegState> {
         city: city,
         state: state,
         postalCode: postalCode,
+        latitude: latitude,
+        longitude: longitude,
       );
       this.state = this.state.copyWith(isLoading: false, success: true);
     } on ServerError catch (e) {
@@ -115,6 +121,8 @@ class _NurseryRegistrationScreenState
   final _stateCtrl = TextEditingController();
   final _postalCodeCtrl = TextEditingController();
 
+  MapPickResult? _pickedLocation; // set after user confirms on map
+
   @override
   void initState() {
     super.initState();
@@ -145,6 +153,29 @@ class _NurseryRegistrationScreenState
 
   String? _nullIfEmpty(String val) => val.trim().isEmpty ? null : val.trim();
 
+  Future<void> _openMapPicker() async {
+    final result = await Navigator.push<MapPickResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddressMapPickerScreen(
+          initial: _pickedLocation,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _pickedLocation = result;
+        // Auto-fill city/state/postal from map result (user can still edit).
+        _cityCtrl.text = result.city;
+        _stateCtrl.text = result.state;
+        if (result.postalCode?.isNotEmpty == true) {
+          _postalCodeCtrl.text = result.postalCode!;
+        }
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(_nurseryRegProvider.notifier).submit(
@@ -156,6 +187,8 @@ class _NurseryRegistrationScreenState
           city: _nullIfEmpty(_cityCtrl.text),
           state: _nullIfEmpty(_stateCtrl.text),
           postalCode: _nullIfEmpty(_postalCodeCtrl.text),
+          latitude: _pickedLocation?.latitude,
+          longitude: _pickedLocation?.longitude,
         );
   }
 
@@ -308,14 +341,21 @@ class _NurseryRegistrationScreenState
               ),
               const SizedBox(height: AppSpacing.md),
 
+              // Map picker tile
+              _LocationPickerTile(
+                picked: _pickedLocation,
+                onTap: _openMapPicker,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
               AppTextField(
-                label: 'Address Line 1 *',
-                hint: 'Street, area, locality',
+                label: 'Street / Locality *',
+                hint: 'e.g. 42, Nursery Road, Jayanagar',
                 controller: _addressLine1Ctrl,
                 textInputAction: TextInputAction.next,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Address is required';
+                    return 'Street address is required';
                   }
                   return null;
                 },
@@ -456,5 +496,123 @@ class _SectionLabel extends StatelessWidget {
     return Text(label,
         style: AppTypography.label
             .copyWith(color: AppColors.textPrimary, letterSpacing: 0.4));
+  }
+}
+
+// ── Map picker tile ───────────────────────────────────────────────────────────
+// Shows "Pick on Map" CTA or a confirmed-location card once picked.
+
+class _LocationPickerTile extends StatelessWidget {
+  final MapPickResult? picked;
+  final VoidCallback onTap;
+
+  const _LocationPickerTile({required this.picked, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    if (picked == null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.lg),
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: AppColors.primaryMain.withValues(alpha: 0.5),
+                style: BorderStyle.solid),
+            borderRadius: BorderRadius.circular(12),
+            color: AppColors.forest100,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryMain,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.location_on_rounded,
+                    color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pick Location on Map',
+                        style: AppTypography.body
+                            .copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Auto-detects your current location. Drag to adjust.',
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.primaryMain),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Location picked — show confirmation card with change option.
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.forest100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle_rounded,
+              color: AppColors.primaryMain, size: 22),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${picked!.city}, ${picked!.state}',
+                  style: AppTypography.body
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (picked!.postalCode?.isNotEmpty == true) ...[
+                  const SizedBox(height: 2),
+                  Text('PIN: ${picked!.postalCode}',
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary)),
+                ],
+                const SizedBox(height: 2),
+                Text(
+                  'Lat: ${picked!.latitude.toStringAsFixed(5)}, Lng: ${picked!.longitude.toStringAsFixed(5)}',
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onTap,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text('Change',
+                style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primaryMain,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
   }
 }

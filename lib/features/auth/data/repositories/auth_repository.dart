@@ -230,6 +230,8 @@ class AuthRepository {
     String? city,
     String? state,
     String? postalCode,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       await _remote.createNursery(
@@ -241,6 +243,8 @@ class AuthRepository {
         city: city,
         state: state,
         postalCode: postalCode,
+        latitude: latitude,
+        longitude: longitude,
       );
       AppLogger.i('Nursery registration submitted: $name');
     } on AppError {
