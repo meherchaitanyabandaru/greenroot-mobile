@@ -1,3 +1,5 @@
+import '../errors/app_error.dart';
+
 // QR content classifier — pure functions, no Flutter dependency, no network.
 //
 // Every GreenRoot QR maps to exactly one QrType determined by content:
@@ -60,10 +62,8 @@ QrDetection classifyQr(String raw) {
 // ── Invite error message helper ───────────────────────────────────────────────
 
 String inviteErrorMessage(Object e) {
+  if (e is WrongTargetInviteError) return e.message;
   final s = e.toString().toLowerCase();
-  if (s.contains('wrong_target')) {
-    return 'This invite was sent to someone else. Ask the sender to create an invite for you.';
-  }
   if (s.contains('conflicting_role')) {
     return 'Role conflict: nursery owners cannot join as managers, and managers cannot become nursery owners.';
   }

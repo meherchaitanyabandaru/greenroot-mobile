@@ -46,3 +46,8 @@ class AccountSuspendedError extends AppError {
   const AccountSuspendedError({this.reason, this.suspendedAt})
       : super('Your account has been suspended. Contact support.');
 }
+
+class WrongTargetInviteError extends AppError {
+  const WrongTargetInviteError()
+      : super("This invite isn't for you. Ask the nursery to send a new invite to your number.");
+}

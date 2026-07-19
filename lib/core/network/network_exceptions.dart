@@ -53,6 +53,7 @@ class NetworkExceptions {
           }
           return AccountSuspendedError(reason: reason, suspendedAt: suspendedAt);
         }
+        if (code == 'wrong_target') return const WrongTargetInviteError();
         return ForbiddenError(message ?? 'You do not have permission to perform this action.');
       case 404:
         return NotFoundError(message ?? 'Not found.');
