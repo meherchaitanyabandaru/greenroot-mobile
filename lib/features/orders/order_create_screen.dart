@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../owner/customer_picker_sheet.dart';
+import '../owner/owner_members_screen.dart' show NurseryCustomer;
 import '../plants/plants.dart';
 import 'orders.dart';
 
@@ -21,6 +23,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
   final _nameCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final List<_ItemRow> _items = [];
+  NurseryCustomer? _selectedCustomer;
   bool _saving = false;
   String? _error;
 
@@ -47,6 +50,26 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
 
   double get _grandTotal =>
       _items.fold(0.0, (sum, r) => sum + r.lineTotal);
+
+  void _applyCustomer(NurseryCustomer customer) {
+    setState(() {
+      _selectedCustomer = customer;
+      _mobileCtrl.text = customer.mobile;
+      _nameCtrl.text = customer.displayName;
+    });
+  }
+
+  Future<void> _pickCustomer() async {
+    final nurseryId = ref.read(sessionProvider).nurseryId;
+    if (nurseryId == null) return;
+    final picked = await showModalBottomSheet<NurseryCustomer>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CustomerPickerSheet(nurseryId: nurseryId),
+    );
+    if (picked != null && mounted) _applyCustomer(picked);
+  }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -143,11 +166,68 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
             // Buyer details
             Text('Buyer', style: AppTypography.h4),
             const SizedBox(height: AppSpacing.sm),
+            GestureDetector(
+              onTap: _pickCustomer,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _selectedCustomer != null ? AppColors.primaryMain : AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: AppColors.forest100,
+                      child: Text(
+                        _selectedCustomer != null
+                            ? _selectedCustomer!.displayName[0].toUpperCase()
+                            : '+',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryMain,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedCustomer?.displayName ?? 'Select connected customer',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: _selectedCustomer != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (_selectedCustomer != null)
+                            Text(
+                              _selectedCustomer!.identityLabel,
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.textSecondary),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 18, color: AppColors.textMuted),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _mobileCtrl,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: _inputDecoration('Mobile number (10 digits)'),
+              onChanged: (_) => setState(() => _selectedCustomer = null),
               validator: (v) {
                 if (v == null || v.trim().length != 10) return 'Enter a valid 10-digit mobile number';
                 return null;
@@ -158,6 +238,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
               decoration: _inputDecoration('Buyer name (optional)'),
+              onChanged: (_) => setState(() => _selectedCustomer = null),
             ),
             const SizedBox(height: AppSpacing.x2l),
 
