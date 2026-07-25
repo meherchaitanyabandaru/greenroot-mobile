@@ -9,6 +9,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../qr/classifier.dart';
 import '../qr/scan_frame.dart';
 import '../qr/sheets/invite_sheet.dart';
+import '../qr/sheets/order_verify_sheet.dart';
 import '../qr/sheets/trip_sheet.dart';
 import '../qr/sheets/unknown_sheet.dart';
 import '../qr/sheets/verify_sheet.dart';
@@ -322,6 +323,10 @@ class _SheetShell extends StatelessWidget {
           onResult: (r) => Navigator.of(context).pop(r),
         ),
       QrType.quotationVerify => VerifySheet(
+          token: detection.verifyToken!,
+          onDone: close,
+        ),
+      QrType.orderVerify => OrderVerifySheet(
           token: detection.verifyToken!,
           onDone: close,
         ),

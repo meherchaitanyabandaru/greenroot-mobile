@@ -31,3 +31,19 @@ class QrVerifyData {
     this.validUntil,
   });
 }
+
+class OrderQrVerifyData {
+  final String authenticity;
+  final String orderCode;
+  final String orderStatus;
+  final String documentIntegrity;
+  final DateTime? issuedAt;
+
+  const OrderQrVerifyData({
+    required this.authenticity,
+    required this.orderCode,
+    required this.orderStatus,
+    required this.documentIntegrity,
+    this.issuedAt,
+  });
+}

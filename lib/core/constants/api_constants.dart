@@ -59,6 +59,8 @@ abstract class ApiConstants {
   static String orderConfirm(int id) => '$v1/orders/$id/confirm';
   static String orderItemById(int orderId, int itemId) =>
       '$v1/orders/$orderId/items/$itemId';
+  static String orderRenderedDocument(int id) =>
+      '$v1/orders/$id/documents/render';
 
   // Payments
   static const String payments = '$v1/payments';
@@ -144,6 +146,7 @@ abstract class ApiConstants {
   static String quotationByToken(String token) =>
       '$v1/quotations/by-token/$token';
   static String publicVerify(String token) => '$v1/verify/$token';
+  static String publicVerifyOrder(String token) => '$v1/verify-order/$token';
 
   // Notifications
   static const String notifications = '$v1/notifications';

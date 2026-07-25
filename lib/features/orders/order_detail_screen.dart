@@ -1,9 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart' show Options, ResponseType;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -14,8 +23,10 @@ import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../../core/services/geocoding/geocoding_service.dart' show MapPickResult;
 import '../dispatches/dispatches.dart';
 import '../plants/plants.dart';
+import '../profile/address_map_picker_screen.dart';
 import 'orders.dart';
 
 // Fetches dispatches for a single order, shown inline in the order detail.
@@ -114,6 +125,11 @@ class _OrderDetailBody extends StatelessWidget {
           isOwner: isOwner,
           isBuyer: isBuyer,
         ),
+
+        const SizedBox(height: AppSpacing.sm),
+
+        // ── PDF download/share row — always visible, any role/status ──────
+        _DownloadOrderPdfRow(order: order),
 
         const SizedBox(height: AppSpacing.x2l),
 
@@ -278,6 +294,16 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     await _doAction(
         () => ref.read(orderRepositoryProvider).confirmOrder(widget.orderId));
     if (mounted) _snack('Order confirmed', AppColors.primaryMain);
+  }
+
+  // Opens the delivery address form. Previously this button's label/icon
+  // switched to "Add Delivery Address First" but onTap still pointed at
+  // _confirm — tapping it just re-failed with the same warning instead of
+  // opening anything.
+  Future<void> _addDeliveryAddress() async {
+    setState(() => _busy = true);
+    await _openAndSaveDeliverySheet(context, ref, _order);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _startLoading() async {
@@ -448,7 +474,9 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
             color: needsDeliveryBeforeConfirm
                 ? AppColors.amber700
                 : AppColors.primaryMain,
-            onTap: _busy ? null : _confirm,
+            onTap: _busy
+                ? null
+                : (needsDeliveryBeforeConfirm ? _addDeliveryAddress : _confirm),
           );
           secondaryBtn = _OutlineButton(
             label: 'Cancel Order',
@@ -682,6 +710,200 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
         ],
       ),
     );
+  }
+}
+
+// ── PDF download/share row ──────────────────────────────────────────────────
+// Always visible regardless of role/status. Content shown in the PDF itself is
+// gated server-side (buyers get a receipt without internal notes/handler name);
+// the download action here is available to anyone who can view the order.
+
+class _DownloadOrderPdfRow extends ConsumerStatefulWidget {
+  final Order order;
+  const _DownloadOrderPdfRow({required this.order});
+
+  @override
+  ConsumerState<_DownloadOrderPdfRow> createState() =>
+      _DownloadOrderPdfRowState();
+}
+
+class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
+  bool _exporting = false;
+
+  Future<(List<int>, String)> _downloadPdfFromApi() async {
+    final response = await ApiClient.instance.dio.get<List<int>>(
+      ApiConstants.orderRenderedDocument(widget.order.id),
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf'},
+      ),
+    );
+    final bytes = List<int>.from(response.data ?? const <int>[]);
+    final filename = _filenameFromDisposition(
+          response.headers.value('content-disposition'),
+        ) ??
+        '${widget.order.orderCode}.pdf';
+    return (bytes, filename);
+  }
+
+  String? _filenameFromDisposition(String? disposition) {
+    if (disposition == null || disposition.isEmpty) return null;
+    final match = RegExp(r'filename="?([^";]+)"?').firstMatch(disposition);
+    return match?.group(1);
+  }
+
+  Future<void> _openWebPdf(List<int> bytes) async {
+    final dataUrl = 'data:application/pdf;base64,${base64Encode(bytes)}';
+    await launchUrl(Uri.parse(dataUrl), mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _downloadPdf() async {
+    setState(() => _exporting = true);
+    try {
+      final (bytes, filename) = await _downloadPdfFromApi();
+      if (kIsWeb) {
+        await _openWebPdf(bytes);
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Saved to Documents: $filename')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Download failed: $e'),
+              backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _shareViaWhatsApp() async {
+    setState(() => _exporting = true);
+    try {
+      final (bytes, filename) = await _downloadPdfFromApi();
+      if (kIsWeb) {
+        await _openWebPdf(bytes);
+        final msg = Uri.encodeComponent(
+          'Order ${widget.order.orderCode} — PDF downloaded to your device.',
+        );
+        await launchUrl(
+          Uri.parse('https://wa.me/?text=$msg'),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          text: 'Order ${widget.order.orderCode}',
+          subject: widget.order.orderCode,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('WhatsApp share failed: $e'),
+              backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _sharePdf() async {
+    setState(() => _exporting = true);
+    try {
+      final (bytes, filename) = await _downloadPdfFromApi();
+      if (kIsWeb) {
+        await _openWebPdf(bytes);
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: '${widget.order.orderCode} — GreenRoot Order',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Share failed: $e'),
+              backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: _exporting ? null : _downloadPdf,
+          icon: const Icon(Icons.download_rounded, size: 16),
+          label: const Text('Download PDF'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryMain,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            fixedSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      SizedBox(
+        width: 48,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: _exporting ? null : _shareViaWhatsApp,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF25D366),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          ),
+          child: SvgPicture.asset(
+            'assets/icons/whatsapp.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      SizedBox(
+        width: 48,
+        height: 48,
+        child: OutlinedButton(
+          onPressed: _exporting ? null : _sharePdf,
+          style: OutlinedButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          ),
+          child: const Icon(Icons.ios_share_rounded, size: 22),
+        ),
+      ),
+    ]);
   }
 }
 
@@ -1295,6 +1517,55 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+// Opens the delivery address sheet and saves the result. Shared by the Hero
+// card's "Add Delivery Address First" button and _DeliverySnapshotCard's edit
+// action, so both actually open the form instead of one of them silently
+// re-running an action that's guaranteed to fail without an address.
+Future<void> _openAndSaveDeliverySheet(
+    BuildContext context, WidgetRef ref, Order order) async {
+  final profile = ref.read(sessionProvider).user;
+  final profileName = profile?.name?.trim();
+  final profileMobile = profile?.mobile?.trim();
+  final result = await showModalBottomSheet<DeliverySnapshotRequest>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _DeliveryEditSheet(
+      snapshot: order.deliverySnapshot,
+      profileName: profileName,
+      profileMobile: profileMobile,
+    ),
+  );
+  if (result == null) return;
+  try {
+    await ref.read(orderRepositoryProvider).updateDeliverySnapshot(order.id, result);
+    ref.invalidate(orderDetailProvider(order.id));
+    ref.invalidate(_orderDispatchesProvider(order.id));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.emergencyUpdate
+              ? 'Emergency delivery update sent to driver.'
+              : 'Delivery address updated.'),
+          backgroundColor: AppColors.primaryMain,
+        ),
+      );
+    }
+  } on AppError catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red600),
+      );
+    }
+  }
+}
+
 class _DeliverySnapshotCard extends ConsumerStatefulWidget {
   final Order order;
   final bool canManage;
@@ -1313,53 +1584,9 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
   bool _busy = false;
 
   Future<void> _edit() async {
-    final profile = ref.read(sessionProvider).user;
-    final profileName = profile?.name?.trim();
-    final profileMobile = profile?.mobile?.trim();
-    final result = await showModalBottomSheet<DeliverySnapshotRequest>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _DeliveryEditSheet(
-        snapshot: widget.order.deliverySnapshot,
-        profileName: profileName,
-        profileMobile: profileMobile,
-      ),
-    );
-    if (result == null) return;
     setState(() => _busy = true);
-    try {
-      await ref
-          .read(orderRepositoryProvider)
-          .updateDeliverySnapshot(widget.order.id, result);
-      ref.invalidate(orderDetailProvider(widget.order.id));
-      ref.invalidate(_orderDispatchesProvider(widget.order.id));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.emergencyUpdate
-                ? 'Emergency delivery update sent to driver.'
-                : 'Delivery address updated.'),
-            backgroundColor: AppColors.primaryMain,
-          ),
-        );
-      }
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await _openAndSaveDeliverySheet(context, ref, widget.order);
+    if (mounted) setState(() => _busy = false);
   }
 
   @override
@@ -1489,6 +1716,9 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
   late final TextEditingController _instructions;
   bool _emergency = false;
   bool _useProfileContact = true;
+  MapPickResult? _mapResult;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
@@ -1515,6 +1745,41 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
     _postal = TextEditingController(text: s?.postalCode ?? '');
     _landmark = TextEditingController(text: s?.landmark ?? '');
     _instructions = TextEditingController(text: s?.deliveryInstructions ?? '');
+    _latitude = s?.latitude;
+    _longitude = s?.longitude;
+  }
+
+  Future<void> _pickOnMap() async {
+    final result = await Navigator.push<MapPickResult>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AddressMapPickerScreen(
+          initial: (_latitude != null && _longitude != null)
+              ? MapPickResult(
+                  latitude: _latitude!,
+                  longitude: _longitude!,
+                  city: _city.text,
+                  state: _state.text,
+                  postalCode: _postal.text.isEmpty ? null : _postal.text,
+                  country: _country.text,
+                )
+              : null,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _mapResult = result;
+      _city.text = result.city;
+      _state.text = result.state;
+      if (result.postalCode?.isNotEmpty == true) {
+        _postal.text = result.postalCode!;
+      }
+      _country.text = result.country;
+      _latitude = result.latitude;
+      _longitude = result.longitude;
+    });
   }
 
   @override
@@ -1551,6 +1816,9 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
         postalCode: _postal.text,
         landmark: _landmark.text,
         deliveryInstructions: _instructions.text,
+        latitude: _latitude,
+        longitude: _longitude,
+        locationSource: _mapResult != null ? 'map_selected' : null,
         emergencyUpdate: _emergency,
       ),
     );
@@ -1591,6 +1859,25 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
                 keyboardType: TextInputType.phone,
               ),
             ],
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: _pickOnMap,
+              icon: Icon(
+                _mapResult != null
+                    ? Icons.check_circle_rounded
+                    : Icons.map_outlined,
+                size: 18,
+                color: _mapResult != null ? AppColors.primaryMain : null,
+              ),
+              label: Text(_mapResult != null
+                  ? 'Location pinned - City, state & PIN filled'
+                  : 'Pick on map'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                shape:
+                    RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             _SheetField(controller: _line1, label: 'Address line 1'),
             _SheetField(controller: _line2, label: 'Address line 2'),

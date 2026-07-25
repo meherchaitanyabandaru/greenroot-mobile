@@ -67,6 +67,38 @@ void main() {
     });
   });
 
+  group('classifyQr — orderVerify (/verify-order/<64-hex> URL)', () {
+    const validToken =
+        'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+
+    test('URL containing /verify-order/<64hex> → orderVerify + token extracted', () {
+      final url = 'https://app.greenroot.in/verify-order/$validToken';
+      final r = classifyQr(url);
+      expect(r.type, QrType.orderVerify);
+      expect(r.verifyToken, validToken);
+    });
+
+    test('URL with mixed-case /verify-order/<hex> → orderVerify', () {
+      final url = 'https://app.greenroot.in/verify-order/${validToken.toUpperCase()}';
+      final r = classifyQr(url);
+      expect(r.type, QrType.orderVerify);
+      expect(r.verifyToken, validToken);
+    });
+
+    test('/verify-order/ never misclassified as quotationVerify', () {
+      final url = 'https://app.greenroot.in/verify-order/$validToken';
+      final r = classifyQr(url);
+      expect(r.type, isNot(QrType.quotationVerify));
+    });
+
+    test('bare 64-hex token still classifies as quotationVerify, not orderVerify', () {
+      // Ambiguous case: order PDFs always encode the full URL, so this doesn't
+      // affect real order QR codes — documented behavior, not a bug.
+      final r = classifyQr(validToken);
+      expect(r.type, QrType.quotationVerify);
+    });
+  });
+
   group('classifyQr — tripCode', () {
     test('dispatch code format → tripCode', () {
       final r = classifyQr('DSP-20260712-0001');
