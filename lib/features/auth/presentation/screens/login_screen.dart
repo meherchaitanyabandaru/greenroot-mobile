@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/testing/test_keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -134,6 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Mobile field
                 AppTextField(
+                  fieldKey: const Key(TestKeys.loginMobileField),
                   label: 'Mobile Number',
                   hint: '9876543210',
                   controller: _mobileCtrl,
@@ -175,6 +177,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 24,
                         height: 24,
                         child: Checkbox(
+                          key: const Key(TestKeys.loginAgreeCheckbox),
                           value: _agreedToTerms,
                           onChanged: (v) =>
                               setState(() => _agreedToTerms = v ?? false),
@@ -225,6 +228,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
 
                 AppButton(
+                  buttonKey: const Key(TestKeys.loginSendOtpButton),
                   label: 'Send OTP',
                   onPressed: _requestOtp,
                   isLoading: isLoading,

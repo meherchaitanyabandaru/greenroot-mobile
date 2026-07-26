@@ -19,11 +19,13 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
 import '../../core/domain/lifecycle_presenter.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
-import '../../core/services/geocoding/geocoding_service.dart' show MapPickResult;
+import '../../core/services/geocoding/geocoding_service.dart'
+    show MapPickResult;
 import '../dispatches/dispatches.dart';
 import '../plants/plants.dart';
 import '../profile/address_map_picker_screen.dart';
@@ -863,7 +865,8 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
             foregroundColor: Colors.white,
             elevation: 0,
             fixedSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
           ),
         ),
       ),
@@ -879,7 +882,8 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
             elevation: 0,
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
           ),
           child: SvgPicture.asset(
             'assets/icons/whatsapp.svg',
@@ -898,7 +902,8 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
           ),
           child: const Icon(Icons.ios_share_rounded, size: 22),
         ),
@@ -1538,7 +1543,9 @@ Future<void> _openAndSaveDeliverySheet(
   );
   if (result == null) return;
   try {
-    await ref.read(orderRepositoryProvider).updateDeliverySnapshot(order.id, result);
+    await ref
+        .read(orderRepositoryProvider)
+        .updateDeliverySnapshot(order.id, result);
     ref.invalidate(orderDetailProvider(order.id));
     ref.invalidate(_orderDispatchesProvider(order.id));
     if (context.mounted) {
@@ -1560,7 +1567,8 @@ Future<void> _openAndSaveDeliverySheet(
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red600),
+        SnackBar(
+            content: Text(e.toString()), backgroundColor: AppColors.red600),
       );
     }
   }
@@ -1874,8 +1882,8 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
                   : 'Pick on map'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                shape:
-                    RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -2809,6 +2817,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
           ),
           const SizedBox(height: AppSpacing.x2l),
           TextField(
+            key: const Key(TestKeys.dispatchCreateDestination),
             controller: _destCtrl,
             decoration: const InputDecoration(
               labelText: 'Destination Address (optional)',
@@ -2818,6 +2827,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(
+            key: const Key(TestKeys.dispatchCreateNotes),
             controller: _notesCtrl,
             decoration: const InputDecoration(
               labelText: 'Notes (optional)',
@@ -2830,6 +2840,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: ElevatedButton.icon(
+              key: const Key(TestKeys.dispatchCreateSubmit),
               onPressed: () => widget.onSubmit(
                 _destCtrl.text.trim().isEmpty ? null : _destCtrl.text.trim(),
                 _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),

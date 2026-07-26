@@ -89,6 +89,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -500,7 +501,8 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
     _tabController =
         TabController(length: 3, vsync: this, initialIndex: widget.initialTab);
     WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(membersProvider(widget.nurseryId).notifier).load(),);
+      (_) => ref.read(membersProvider(widget.nurseryId).notifier).load(),
+    );
   }
 
   @override
@@ -514,6 +516,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
     final state = ref.watch(membersProvider(widget.nurseryId));
 
     return Scaffold(
+      key: const Key(TestKeys.membersScreen),
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
@@ -546,15 +549,18 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
           labelStyle: AppTypography.label,
           unselectedLabelStyle: AppTypography.bodySmall,
           tabs: const [
-            Tab(text: 'Managers'),
-            Tab(text: 'Drivers'),
-            Tab(text: 'Customers (Party)'),
+            Tab(key: Key(TestKeys.membersManagersTab), text: 'Managers'),
+            Tab(key: Key(TestKeys.membersDriversTab), text: 'Drivers'),
+            Tab(
+                key: Key(TestKeys.membersCustomersTab),
+                text: 'Customers (Party)'),
           ],
         ),
       ),
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain),)
+              child: CircularProgressIndicator(color: AppColors.primaryMain),
+            )
           : state.error != null &&
                   state.managers.isEmpty &&
                   state.invites.isEmpty
@@ -584,8 +590,11 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                       nurseryName: widget.nurseryName,
                       customers: state.customers,
                       pendingInvites: state.invites
-                          .where((i) =>
-                              i.inviteType == 'CUSTOMER_INVITE' && i.isPending,)
+                          .where(
+                            (i) =>
+                                i.inviteType == 'CUSTOMER_INVITE' &&
+                                i.isPending,
+                          )
                           .toList(),
                     ),
                   ],
@@ -618,6 +627,7 @@ class _ManagersTab extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
           AppButton(
+            buttonKey: const Key(TestKeys.inviteManagerButton),
             label: 'Invite Manager / Gumastha',
             leadingIcon: Icons.person_add_rounded,
             onPressed: () => _showInviteSheet(context, ref, 'MANAGER_INVITE'),
@@ -670,7 +680,10 @@ class _ManagersTab extends ConsumerWidget {
   }
 
   void _showInviteSheet(
-      BuildContext context, WidgetRef ref, String inviteType,) {
+    BuildContext context,
+    WidgetRef ref,
+    String inviteType,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -686,7 +699,10 @@ class _ManagersTab extends ConsumerWidget {
   }
 
   Future<void> _confirmRemove(
-      BuildContext context, WidgetRef ref, NurseryManager m,) async {
+    BuildContext context,
+    WidgetRef ref,
+    NurseryManager m,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -773,7 +789,10 @@ class _DriversTab extends ConsumerWidget {
   }
 
   Future<void> _confirmDisconnect(
-      BuildContext context, WidgetRef ref, NurseryDriver d,) async {
+    BuildContext context,
+    WidgetRef ref,
+    NurseryDriver d,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -827,6 +846,7 @@ class _CustomersTab extends ConsumerWidget {
         children: [
           // Invite Customer button
           AppButton(
+            buttonKey: const Key(TestKeys.inviteCustomerButton),
             label: 'Invite Customer',
             leadingIcon: Icons.person_add_rounded,
             onPressed: () => _showInviteSheet(context, ref),
@@ -855,7 +875,9 @@ class _CustomersTab extends ConsumerWidget {
                   for (int i = 0; i < customers.length; i++) ...[
                     ListTile(
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md, vertical: 4,),
+                        horizontal: AppSpacing.md,
+                        vertical: 4,
+                      ),
                       leading: Container(
                         width: 40,
                         height: 40,
@@ -863,11 +885,16 @@ class _CustomersTab extends ConsumerWidget {
                           color: AppColors.forest100,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.shopping_bag_rounded,
-                            color: AppColors.primaryMain, size: 20,),
+                        child: const Icon(
+                          Icons.shopping_bag_rounded,
+                          color: AppColors.primaryMain,
+                          size: 20,
+                        ),
                       ),
-                      title: Text(customers[i].displayName,
-                          style: AppTypography.label,),
+                      title: Text(
+                        customers[i].displayName,
+                        style: AppTypography.label,
+                      ),
                       subtitle: Text(
                         customers[i].mobile.isNotEmpty
                             ? customers[i].mobile
@@ -877,16 +904,21 @@ class _CustomersTab extends ConsumerWidget {
                       ),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3,),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.forest600.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text('CUSTOMER',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.forest600,),),
+                        child: const Text(
+                          'CUSTOMER',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.forest600,
+                          ),
+                        ),
                       ),
                     ),
                     if (i < customers.length - 1)
@@ -1020,7 +1052,8 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
           ? _SuccessView(
               invite: _created!,
               onCopy: _copyUUID,
-              onDone: () => Navigator.pop(context),)
+              onDone: () => Navigator.pop(context),
+            )
           : _FormView(
               formKey: _formKey,
               nameCtrl: _nameCtrl,
@@ -1137,13 +1170,18 @@ class _FormView extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline_rounded,
-                      color: AppColors.errorText, size: 18,),
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.errorText,
+                    size: 18,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: Text(error!,
-                        style: AppTypography.body
-                            .copyWith(color: AppColors.errorText),),
+                    child: Text(
+                      error!,
+                      style: AppTypography.body
+                          .copyWith(color: AppColors.errorText),
+                    ),
                   ),
                 ],
               ),
@@ -1207,8 +1245,11 @@ class _SuccessView extends StatelessWidget {
             color: AppColors.successBg,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check_rounded,
-              color: AppColors.primaryMain, size: 36,),
+          child: const Icon(
+            Icons.check_rounded,
+            color: AppColors.primaryMain,
+            size: 36,
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
         const Text('Invite Created!', style: AppTypography.h3),
@@ -1249,8 +1290,11 @@ class _SuccessView extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded,
-                        color: AppColors.primaryMain, size: 20,),
+                    icon: const Icon(
+                      Icons.copy_rounded,
+                      color: AppColors.primaryMain,
+                      size: 20,
+                    ),
                     onPressed: onCopy,
                     tooltip: 'Copy UUID',
                   ),
@@ -1329,9 +1373,10 @@ class _RemovableMemberTile extends StatelessWidget {
         child: Icon(icon, color: AppColors.primaryMain, size: 20),
       ),
       title: Text(name, style: AppTypography.label),
-      subtitle: Text(subtitle,
-          style:
-              AppTypography.caption.copyWith(color: AppColors.textSecondary),),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1344,13 +1389,19 @@ class _RemovableMemberTile extends StatelessWidget {
             child: Text(
               badge,
               style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w700, color: badgeColor,),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: badgeColor,
+              ),
             ),
           ),
           const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.person_remove_outlined,
-                color: AppColors.red600, size: 20,),
+            icon: const Icon(
+              Icons.person_remove_outlined,
+              color: AppColors.red600,
+              size: 20,
+            ),
             tooltip: 'Remove',
             onPressed: onRemove,
           ),
@@ -1384,8 +1435,11 @@ class _InviteCard extends StatelessWidget {
               color: AppColors.warningBg,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.mail_outline_rounded,
-                color: AppColors.amber600, size: 20,),
+            child: const Icon(
+              Icons.mail_outline_rounded,
+              color: AppColors.amber600,
+              size: 20,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -1437,8 +1491,11 @@ class _InviteCard extends StatelessWidget {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.qr_code_rounded,
-                        size: 12, color: AppColors.primaryMain,),
+                    Icon(
+                      Icons.qr_code_rounded,
+                      size: 12,
+                      color: AppColors.primaryMain,
+                    ),
                     SizedBox(width: 3),
                     Text(
                       'QR / Share',

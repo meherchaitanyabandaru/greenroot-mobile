@@ -27,8 +27,15 @@ class AppTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final String? Function(String?)? validator;
 
+  /// Key applied to the inner [TextFormField] itself, distinct from the
+  /// widget's own [key]. Automation drivers (e.g. Appium's Flutter
+  /// integration driver) locate the actual editable control via this,
+  /// since [key] only marks this wrapper in the widget tree.
+  final Key? fieldKey;
+
   const AppTextField({
     super.key,
+    this.fieldKey,
     this.label,
     this.hint,
     this.errorText,
@@ -74,6 +81,7 @@ class _AppTextFieldState extends State<AppTextField> {
           const SizedBox(height: AppSpacing.xs),
         ],
         TextFormField(
+          key: widget.fieldKey,
           controller: widget.controller,
           focusNode: widget.focusNode,
           keyboardType: widget.keyboardType,

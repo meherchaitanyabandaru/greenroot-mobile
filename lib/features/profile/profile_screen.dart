@@ -45,6 +45,7 @@ class ProfileScreen extends ConsumerWidget {
     final isComplete = completionPct >= 1.0;
 
     return Scaffold(
+      key: const ValueKey('profile_screen'),
       backgroundColor: AppColors.background,
       // No notification bell here — accessible via the Account section below.
       appBar: AppBar(
@@ -680,6 +681,9 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = iconColor ?? AppColors.primaryMain;
     return ListTile(
+      key: ValueKey(
+        'profile_tile_${label.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'^_|_$'), '')}',
+      ),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
       leading: Container(

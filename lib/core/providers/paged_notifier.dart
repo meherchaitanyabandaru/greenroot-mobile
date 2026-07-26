@@ -36,6 +36,7 @@ abstract class PagedNotifier<T> extends StateNotifier<PagedState<T>> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final (items, pagination) = await _fetch(1, 20);
+      if (!mounted) return;
       _page = 1;
       state = PagedState(
         items: items,
@@ -44,6 +45,7 @@ abstract class PagedNotifier<T> extends StateNotifier<PagedState<T>> {
         hasMore: pagination.hasMore,
       );
     } on AppError catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e);
     }
   }
@@ -53,6 +55,7 @@ abstract class PagedNotifier<T> extends StateNotifier<PagedState<T>> {
     state = state.copyWith(isLoadingMore: true);
     try {
       final (items, pagination) = await _fetch(_page + 1, 20);
+      if (!mounted) return;
       _page++;
       state = state.copyWith(
         items: [...state.items, ...items],
@@ -60,6 +63,7 @@ abstract class PagedNotifier<T> extends StateNotifier<PagedState<T>> {
         hasMore: pagination.hasMore,
       );
     } on AppError {
+      if (!mounted) return;
       state = state.copyWith(isLoadingMore: false);
     }
   }

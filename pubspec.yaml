@@ -47,6 +47,10 @@ dev_dependencies:
   json_serializable: ^6.8.0
   riverpod_generator: ^2.4.0
   riverpod_lint: ^2.3.10
+  # Appium automation (see /Users/meharbandaru/Documents/GitHub/greenroot-e2e):
+  # embeds an HTTP server in integration-test builds so Appium's Flutter
+  # Integration Driver can locate widgets by Key and drive the app.
+  appium_flutter_server: ^0.0.33
 
 flutter:
   uses-material-design: true

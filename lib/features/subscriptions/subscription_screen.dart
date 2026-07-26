@@ -25,6 +25,7 @@ class SubscriptionScreen extends ConsumerWidget {
     final caps = ref.watch(sessionProvider).capabilities;
 
     return Scaffold(
+      key: const ValueKey('subscription_screen'),
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -40,7 +41,8 @@ class SubscriptionScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, UserCapabilities caps) {
+  Widget _buildBody(
+      BuildContext context, WidgetRef ref, UserCapabilities caps) {
     // Driver only (no sell/buy workspace) → free
     if (caps.isDriverOnly) return const _FreeView(role: _FreeRole.driver);
 
@@ -63,8 +65,10 @@ class SubscriptionScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(subscriptionProvider),
       ),
       data: (sub) => sub == null
-          ? _NoSubscription(onRefresh: () => ref.invalidate(subscriptionProvider))
-          : _SubscriptionBody(sub: sub, onRefresh: () => ref.invalidate(subscriptionProvider)),
+          ? _NoSubscription(
+              onRefresh: () => ref.invalidate(subscriptionProvider))
+          : _SubscriptionBody(
+              sub: sub, onRefresh: () => ref.invalidate(subscriptionProvider)),
     );
   }
 }
@@ -89,12 +93,11 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
     if (_downloading) return;
     setState(() => _downloading = true);
     try {
-      final boundary = _cardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
       final bytes = Uint8List.view(byteData.buffer);
       final session = ref.read(sessionProvider);
@@ -126,7 +129,11 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF0A2814), Color(0xFF16522A), Color(0xFF0C3518)],
+                      colors: [
+                        Color(0xFF0A2814),
+                        Color(0xFF16522A),
+                        Color(0xFF0C3518)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -143,292 +150,306 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                     borderRadius: BorderRadius.circular(20),
                     child: Stack(
                       children: [
-              // Watermark leaf
-              Positioned(
-                top: -16,
-                right: -8,
-                child: Opacity(
-                  opacity: 0.12,
-                  child: Icon(Icons.eco_rounded,
-                      size: 160, color: Colors.white),
-                ),
-              ),
-              // Flowing wave lines
-              Positioned.fill(
-                child: CustomPaint(painter: _CardWavesPainter()),
-              ),
-              // Card content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Top row: logo + NFC ──────────────────────────────────
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.eco_rounded,
-                            color: Color(0xFF76E07A), size: 22),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'GreenRoot',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                height: 1.1,
-                              ),
-                            ),
-                            Text(
-                              'Connect. Grow. Prosper.',
-                              style: TextStyle(
-                                color: Color(0xFF90D87A),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        const RotatedBox(
-                          quarterTurns: 1,
-                          child: Icon(Icons.wifi_rounded,
-                              color: Colors.white54, size: 20),
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(),
-
-                    // ── Data row: user info | subscription info ───────────────
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Left: user info
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Avatar
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: const Color(0xFF76E07A),
-                                        width: 1.5),
-                                  ),
-                                  child: const Icon(Icons.person_rounded,
-                                      color: Color(0xFF76E07A), size: 18),
-                                ),
-                                const SizedBox(height: 7),
-                                const Text(
-                                  'USER NAME',
-                                  style: TextStyle(
-                                    color: Color(0xFF90D87A),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                    height: 0.5,
-                                    color: Colors.white24),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'USER ID',
-                                  style: TextStyle(
-                                    color: Color(0xFF90D87A),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  userCode,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        // Watermark leaf
+                        Positioned(
+                          top: -16,
+                          right: -8,
+                          child: Opacity(
+                            opacity: 0.12,
+                            child: Icon(Icons.eco_rounded,
+                                size: 160, color: Colors.white),
                           ),
-
-                          // Vertical divider
-                          Container(
-                            width: 0.5,
-                            margin: const EdgeInsets.symmetric(horizontal: 14),
-                            color: Colors.white24,
-                          ),
-
-                          // Right: subscription info
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'SUBSCRIPTION TYPE',
-                                  style: TextStyle(
-                                    color: Color(0xFF90D87A),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2E7D32),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.verified_rounded,
-                                          size: 12, color: Color(0xFF76E07A)),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          widget.planLabel,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                        ),
+                        // Flowing wave lines
+                        Positioned.fill(
+                          child: CustomPaint(painter: _CardWavesPainter()),
+                        ),
+                        // Card content
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ── Top row: logo + NFC ──────────────────────────────────
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.eco_rounded,
+                                      color: Color(0xFF76E07A), size: 22),
+                                  const SizedBox(width: 6),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: const [
+                                      Text(
+                                        'GreenRoot',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Connect. Grow. Prosper.',
+                                        style: TextStyle(
+                                          color: Color(0xFF90D87A),
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.3,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                const Spacer(),
-                                const Text(
-                                  'VALID UNTIL',
-                                  style: TextStyle(
-                                    color: Color(0xFF90D87A),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.2,
+                                  const Spacer(),
+                                  const RotatedBox(
+                                    quarterTurns: 1,
+                                    child: Icon(Icons.wifi_rounded,
+                                        color: Colors.white54, size: 20),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
+                                ],
+                              ),
+
+                              const Spacer(),
+
+                              // ── Data row: user info | subscription info ───────────────
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    const Icon(
-                                        Icons.calendar_month_outlined,
-                                        size: 14,
-                                        color: Color(0xFF90D87A)),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      widget.validUntil ?? 'Lifetime',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
+                                    // Left: user info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Avatar
+                                          Container(
+                                            width: 34,
+                                            height: 34,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFF76E07A),
+                                                  width: 1.5),
+                                            ),
+                                            child: const Icon(
+                                                Icons.person_rounded,
+                                                color: Color(0xFF76E07A),
+                                                size: 18),
+                                          ),
+                                          const SizedBox(height: 7),
+                                          const Text(
+                                            'USER NAME',
+                                            style: TextStyle(
+                                              color: Color(0xFF90D87A),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                              height: 0.5,
+                                              color: Colors.white24),
+                                          const SizedBox(height: 8),
+                                          const Text(
+                                            'USER ID',
+                                            style: TextStyle(
+                                              color: Color(0xFF90D87A),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            userCode,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.8,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Vertical divider
+                                    Container(
+                                      width: 0.5,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 14),
+                                      color: Colors.white24,
+                                    ),
+
+                                    // Right: subscription info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'SUBSCRIPTION TYPE',
+                                            style: TextStyle(
+                                              color: Color(0xFF90D87A),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2E7D32),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                    Icons.verified_rounded,
+                                                    size: 12,
+                                                    color: Color(0xFF76E07A)),
+                                                const SizedBox(width: 5),
+                                                Flexible(
+                                                  child: Text(
+                                                    widget.planLabel,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          const Text(
+                                            'VALID UNTIL',
+                                            style: TextStyle(
+                                              color: Color(0xFF90D87A),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                  Icons.calendar_month_outlined,
+                                                  size: 14,
+                                                  color: Color(0xFF90D87A)),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                widget.validUntil ?? 'Lifetime',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                              ),
 
-                    const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                    // ── Bottom row ────────────────────────────────────────────
-                    Row(
-                      children: const [
-                        Text(
-                          'GREENROOT MEMBER',
-                          style: TextStyle(
-                            color: Color(0xFF8EE06A),
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 2,
+                              // ── Bottom row ────────────────────────────────────────────
+                              Row(
+                                children: const [
+                                  Text(
+                                    'GREENROOT MEMBER',
+                                    style: TextStyle(
+                                      color: Color(0xFF8EE06A),
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  Spacer(),
+                                  Icon(Icons.park_rounded,
+                                      size: 14, color: Color(0xFFCDAB41)),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'GreenRoot',
+                                    style: TextStyle(
+                                      color: Color(0xFFDAA520),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        Spacer(),
-                        Icon(Icons.park_rounded,
-                            size: 14, color: Color(0xFFCDAB41)),
-                        SizedBox(width: 5),
-                        Text(
-                          'GreenRoot',
-                          style: TextStyle(
-                            color: Color(0xFFDAA520),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ], // inner Stack children
+                    ), // inner Stack
+                  ), // ClipRRect
+                ), // Container
+              ), // AspectRatio
+            ), // RepaintBoundary
+
+            // Download button — floats over bottom-right of card, not captured in image
+            Positioned(
+              bottom: 10,
+              right: 10,
+              child: GestureDetector(
+                onTap: _downloadCard,
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 0.5),
+                  ),
+                  child: _downloading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 1.5, color: Colors.white),
+                        )
+                      : const Icon(Icons.download_rounded,
+                          color: Colors.white, size: 16),
                 ),
               ),
-            ],          // inner Stack children
-          ),            // inner Stack
-        ),              // ClipRRect
-      ),                // Container
-    ),                  // AspectRatio
-  ),                    // RepaintBoundary
-
-    // Download button — floats over bottom-right of card, not captured in image
-    Positioned(
-      bottom: 10,
-      right: 10,
-      child: GestureDetector(
-        onTap: _downloadCard,
-        child: Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.35),
-            shape: BoxShape.circle,
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25), width: 0.5),
-          ),
-          child: _downloading
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 1.5, color: Colors.white),
-                )
-              : const Icon(Icons.download_rounded,
-                  color: Colors.white, size: 16),
-        ),
-      ),
-    ),
-  ],         // close outer Stack children
-),           // close outer Stack
-],           // close Column children
-);           // close Column (return)
+            ),
+          ], // close outer Stack children
+        ), // close outer Stack
+      ], // close Column children
+    ); // close Column (return)
   }
 }
 
@@ -440,8 +461,8 @@ class _CardWavesPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 
-    void wave(double startX, double startY, double cpX, double cpY,
-        double endX, double endY) {
+    void wave(double startX, double startY, double cpX, double cpY, double endX,
+        double endY) {
       final p = Path()
         ..moveTo(startX * size.width, startY * size.height)
         ..quadraticBezierTo(cpX * size.width, cpY * size.height,
@@ -488,6 +509,8 @@ class _FreeView extends StatelessWidget {
           ];
 
     return ListView(
+      key: ValueKey(
+          isDriver ? 'subscription_free_driver' : 'subscription_free_buyer'),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // Membership card
@@ -622,12 +645,15 @@ class _ManagerView extends StatelessWidget {
     final nurseries = caps.managedNurseries;
 
     return ListView(
+      key: const ValueKey('subscription_manager_access'),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // Membership card
         _MembershipCard(
           planLabel: 'Manager Access',
-          validUntil: nurseries.isNotEmpty ? 'Via ${nurseries.first.nurseryName ?? 'Nursery'}' : 'Active',
+          validUntil: nurseries.isNotEmpty
+              ? 'Via ${nurseries.first.nurseryName ?? 'Nursery'}'
+              : 'Active',
         ),
         const SizedBox(height: AppSpacing.xl),
 
@@ -668,8 +694,8 @@ class _ManagerView extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF43A047),
                       borderRadius: BorderRadius.circular(20),
@@ -739,8 +765,8 @@ class _ManagerView extends StatelessWidget {
                             children: [
                               Text(
                                 n.nurseryName ?? 'Nursery',
-                                style: AppTypography.body.copyWith(
-                                    fontWeight: FontWeight.w600),
+                                style: AppTypography.body
+                                    .copyWith(fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 'Subscription active',
@@ -832,6 +858,7 @@ class _NoSubscription extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
+      key: const ValueKey('subscription_none'),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.x3l),
         child: Column(
@@ -848,12 +875,13 @@ class _NoSubscription extends StatelessWidget {
                   size: 40, color: AppColors.primaryMain),
             ),
             const SizedBox(height: AppSpacing.x2l),
-            const Text('No Subscription', style: AppTypography.h2,
-                textAlign: TextAlign.center),
+            const Text('No Subscription',
+                style: AppTypography.h2, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'You don\'t have an active subscription yet. Contact support or wait for your nursery to be approved.',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.x2l),
@@ -893,13 +921,15 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         sub.isTrial ||
         (sub.isActive && (sub.daysRemaining ?? 999) <= 30);
     final showCta = (sub.capabilities?.canRenew ?? true) && shouldPromptRenewal;
-    final canCancel = sub.capabilities?.canCancel ??
-        (!sub.isCancelled && !sub.isExpired);
+    final canCancel =
+        sub.capabilities?.canCancel ?? (!sub.isCancelled && !sub.isExpired);
 
     final fmt = DateFormat('d MMM yyyy');
-    final cardValidUntil = sub.endDate != null ? fmt.format(sub.endDate!) : null;
+    final cardValidUntil =
+        sub.endDate != null ? fmt.format(sub.endDate!) : null;
 
     return ListView(
+      key: const ValueKey('subscription_active'),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // ── Membership card ────────────────────────────────────────────────
@@ -921,7 +951,8 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
                 : sub.isTrial
                     ? 'Upgrade to Standard'
                     : 'Renew Now',
-            onPressed: () => context.push('/subscription/payment?subId=${sub.id}'),
+            onPressed: () =>
+                context.push('/subscription/payment?subId=${sub.id}'),
             trailingIcon: Icons.arrow_forward_rounded,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -975,8 +1006,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Cancel',
-                style: TextStyle(color: AppColors.red600)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -995,8 +1025,8 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
       }
     } on AppError catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } finally {
       if (mounted) setState(() => _cancelling = false);
@@ -1161,9 +1191,8 @@ class _PlanCard extends StatelessWidget {
               child: Text(
                 sub.planCode,
                 style: TextStyle(
-                  color: sub.isTrial
-                      ? AppColors.amber600
-                      : AppColors.primaryMain,
+                  color:
+                      sub.isTrial ? AppColors.amber600 : AppColors.primaryMain,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
@@ -1198,8 +1227,8 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text('Code: ${sub.subscriptionCode}',
-              style: AppTypography.caption
-                  .copyWith(color: AppColors.textMuted)),
+              style:
+                  AppTypography.caption.copyWith(color: AppColors.textMuted)),
         ],
       ),
     );
@@ -1227,8 +1256,7 @@ class _IncludedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("What's Included",
-              style: AppTypography.h4),
+          Text("What's Included", style: AppTypography.h4),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -1237,8 +1265,7 @@ class _IncludedCard extends StatelessWidget {
                 .map((f) => Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(f.$1,
-                            size: 14, color: AppColors.primaryMain),
+                        Icon(f.$1, size: 14, color: AppColors.primaryMain),
                         const SizedBox(width: 5),
                         Text(f.$2,
                             style: AppTypography.caption.copyWith(
@@ -1371,13 +1398,12 @@ class _PaymentRow extends StatelessWidget {
                   style: AppTypography.bodySmall
                       .copyWith(fontWeight: FontWeight.w700)),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                     color: bg, borderRadius: BorderRadius.circular(20)),
                 child: Text(payment.status,
-                    style: AppTypography.caption.copyWith(
-                        color: fg, fontWeight: FontWeight.w700)),
+                    style: AppTypography.caption
+                        .copyWith(color: fg, fontWeight: FontWeight.w700)),
               ),
             ],
           ),

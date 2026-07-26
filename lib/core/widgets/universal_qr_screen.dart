@@ -161,6 +161,7 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: const ValueKey('universal_qr_screen'),
       backgroundColor: Colors.black,
       body: Stack(
         children: [
@@ -171,7 +172,8 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.camera_alt_outlined, color: Colors.white54, size: 64),
+                  const Icon(Icons.camera_alt_outlined,
+                      color: Colors.white54, size: 64),
                   const SizedBox(height: 16),
                   Text(
                     'Camera unavailable\n${error.errorCode.name}',
@@ -188,9 +190,16 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 26),
+                  Semantics(
+                    button: true,
+                    label: 'Close scanner',
+                    child: IconButton(
+                      key: const ValueKey('qr_close_button'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close scanner',
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: Colors.white, size: 26),
+                    ),
                   ),
                   Expanded(
                     child: Text(
@@ -199,14 +208,21 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  IconButton(
-                    onPressed: _toggleTorch,
-                    icon: Icon(
-                      _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                      color: _torchOn ? Colors.yellow : Colors.white,
-                      size: 26,
+                  Semantics(
+                    button: true,
+                    label: _torchOn ? 'Turn off flash' : 'Turn on flash',
+                    child: IconButton(
+                      key: const ValueKey('qr_torch_button'),
+                      onPressed: _toggleTorch,
+                      icon: Icon(
+                        _torchOn
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                        color: _torchOn ? Colors.yellow : Colors.white,
+                        size: 26,
+                      ),
+                      tooltip: _torchOn ? 'Turn off flash' : 'Turn on flash',
                     ),
-                    tooltip: _torchOn ? 'Turn off flash' : 'Turn on flash',
                   ),
                 ],
               ),
@@ -226,25 +242,34 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
                       style: AppTypography.body.copyWith(color: Colors.white70),
                     ),
                     const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: _pickFromGallery,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.photo_library_outlined, color: Colors.white, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Choose from Gallery',
-                              style: AppTypography.button.copyWith(color: Colors.white),
-                            ),
-                          ],
+                    Semantics(
+                      key: const ValueKey('qr_gallery_button'),
+                      button: true,
+                      label: 'Choose QR code from gallery',
+                      child: GestureDetector(
+                        onTap: _pickFromGallery,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.photo_library_outlined,
+                                  color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Choose from Gallery',
+                                style: AppTypography.button
+                                    .copyWith(color: Colors.white),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

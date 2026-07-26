@@ -17,8 +17,15 @@ class AppButton extends StatelessWidget {
   final IconData? trailingIcon;
   final bool expand;
 
+  /// Key applied to the inner Elevated/Outlined/TextButton itself, distinct
+  /// from the widget's own [key]. Automation drivers (e.g. Appium's Flutter
+  /// integration driver) locate the actual tappable control via this, since
+  /// [key] only marks the outer sizing wrapper in the widget tree.
+  final Key? buttonKey;
+
   const AppButton({
     super.key,
+    this.buttonKey,
     required this.label,
     this.onPressed,
     this.variant = AppButtonVariant.primary,
@@ -31,6 +38,7 @@ class AppButton extends StatelessWidget {
 
   const AppButton.outlined({
     super.key,
+    this.buttonKey,
     required this.label,
     this.onPressed,
     this.size = AppButtonSize.md,
@@ -42,6 +50,7 @@ class AppButton extends StatelessWidget {
 
   const AppButton.ghost({
     super.key,
+    this.buttonKey,
     required this.label,
     this.onPressed,
     this.size = AppButtonSize.md,
@@ -53,6 +62,7 @@ class AppButton extends StatelessWidget {
 
   const AppButton.danger({
     super.key,
+    this.buttonKey,
     required this.label,
     this.onPressed,
     this.size = AppButtonSize.md,
@@ -109,6 +119,7 @@ class AppButton extends StatelessWidget {
       height: height,
       child: switch (variant) {
         AppButtonVariant.primary => ElevatedButton(
+            key: buttonKey,
             onPressed: effectiveOnPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
@@ -122,6 +133,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.outlined => OutlinedButton(
+            key: buttonKey,
             onPressed: effectiveOnPressed,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primaryMain,
@@ -137,6 +149,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.ghost => TextButton(
+            key: buttonKey,
             onPressed: effectiveOnPressed,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primaryMain,
@@ -148,6 +161,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.danger => ElevatedButton(
+            key: buttonKey,
             onPressed: effectiveOnPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.red600,

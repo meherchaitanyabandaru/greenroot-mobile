@@ -40,10 +40,15 @@ class GreenRootAppBar extends ConsumerWidget implements PreferredSizeWidget {
       toolbarHeight: _toolbarHeight,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: UserAvatar(
-          size: 36,
-          borderWidth: 1.5,
-          onTap: () => context.push('/profile'),
+        child: Semantics(
+          key: const ValueKey('app_bar_profile_button'),
+          button: true,
+          label: 'Open profile',
+          child: UserAvatar(
+            size: 36,
+            borderWidth: 1.5,
+            onTap: () => context.push('/profile'),
+          ),
         ),
       ),
       titleSpacing: 4,
@@ -66,6 +71,7 @@ class GreenRootAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         ...extraActions,
         IconButton(
+          key: const ValueKey('app_bar_notifications_button'),
           onPressed: () => context.push('/notifications'),
           icon: Badge.count(
             count: unread,
@@ -73,6 +79,7 @@ class GreenRootAppBar extends ConsumerWidget implements PreferredSizeWidget {
             child: const Icon(Icons.notifications_none_rounded),
           ),
           color: AppColors.textPrimary,
+          tooltip: 'Notifications',
         ),
         const SizedBox(width: 4),
       ],

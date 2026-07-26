@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/testing/test_keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -154,6 +155,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 children: List.generate(
                   AppConstants.otpLength,
                   (i) => _OtpBox(
+                    index: i,
                     controller: _controllers[i],
                     focusNode: _focusNodes[i],
                     hasError: verifyState.error != null,
@@ -186,6 +188,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               const SizedBox(height: AppSpacing.x3l),
 
               AppButton(
+                buttonKey: const Key(TestKeys.otpVerifyButton),
                 label: 'Verify OTP',
                 onPressed:
                     _otp.length == AppConstants.otpLength ? _verify : null,
@@ -222,6 +225,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 }
 
 class _OtpBox extends StatelessWidget {
+  final int index;
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool hasError;
@@ -229,6 +233,7 @@ class _OtpBox extends StatelessWidget {
   final VoidCallback onBackspace;
 
   const _OtpBox({
+    required this.index,
     required this.controller,
     required this.focusNode,
     required this.hasError,
@@ -251,6 +256,7 @@ class _OtpBox extends StatelessWidget {
           }
         },
         child: TextField(
+          key: Key('${TestKeys.otpCodeField}_$index'),
           controller: controller,
           focusNode: focusNode,
           keyboardType: TextInputType.number,

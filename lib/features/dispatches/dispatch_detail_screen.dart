@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -25,6 +26,7 @@ class DispatchDetailScreen extends ConsumerWidget {
     final caps = ref.watch(sessionProvider).capabilities;
 
     return Scaffold(
+      key: const Key(TestKeys.dispatchDetail),
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Trip Details'),
@@ -569,7 +571,8 @@ class _DetailContent extends StatelessWidget {
         // ── Owner: Status actions + Share QR + Track ──────────────────────────
         if (!isDriver) ...[
           // Owner-only: Mark Dispatched (PENDING or ACCEPTED → DISPATCHED)
-          if (!isManager && dispatch.capabilities?.canMarkDispatched == true) ...[
+          if (!isManager &&
+              dispatch.capabilities?.canMarkDispatched == true) ...[
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
@@ -595,7 +598,8 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Owner: confirm delivery when IN_TRANSIT
-          if (!isManager && dispatch.capabilities?.canMarkDelivered == true) ...[
+          if (!isManager &&
+              dispatch.capabilities?.canMarkDelivered == true) ...[
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,

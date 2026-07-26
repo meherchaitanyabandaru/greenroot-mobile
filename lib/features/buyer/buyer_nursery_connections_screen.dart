@@ -66,7 +66,10 @@ final _buyerNurseriesProvider =
 
   // Run orders and accepted invite connections in parallel
   final results = await Future.wait([
-    repo.listBuyingOrders(page: 1, perPage: 100).then((r) => r.$1).catchError((_) => <dynamic>[]),
+    repo
+        .listBuyingOrders(page: 1, perPage: 100)
+        .then((r) => r.$1)
+        .catchError((_) => <Order>[]),
     ApiClient.instance
         .get<Map<String, dynamic>>('/api/v1/me/connections')
         .catchError((_) => <String, dynamic>{}),

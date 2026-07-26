@@ -86,5 +86,24 @@ String inviteErrorMessage(Object e) {
   if (e is AlreadyMemberError) return e.message;
   if (e is NotFoundError) return 'This invite no longer exists. It may have been cancelled.';
   if (e is ForbiddenError) return "You don't have permission to accept this invite.";
+
+  // Preserve a useful message when an upstream adapter has not yet converted
+  // the backend error code into its typed AppError equivalent.
+  final raw = e.toString().toLowerCase();
+  if (raw.contains('wrong_target')) {
+    return 'This invite was sent to someone else.';
+  }
+  if (raw.contains('conflicting_role')) {
+    return 'Role conflict: this invite is not compatible with your current role.';
+  }
+  if (raw.contains('already_member')) {
+    return 'You are already a manager for this nursery.';
+  }
+  if (raw.contains('not_found')) {
+    return 'This invite no longer exists. It may have been cancelled.';
+  }
+  if (raw.contains('forbidden')) {
+    return "You don't have permission to accept this invite.";
+  }
   return 'Failed to accept invite. Please try again.';
 }

@@ -8,8 +8,10 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../data/models/user_models.dart';
+import '../../domain/rbac/roles.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
+import 'splash_screen.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
@@ -86,7 +88,12 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
 
       if (!mounted) return;
 
-      context.go('/account-ready');
+      final session = ref.read(sessionProvider);
+      if (session.roles.hasAnyRole([AppRole.admin, AppRole.superAdmin])) {
+        SplashScreen.routeAfterLogin(context, session);
+      } else {
+        context.go('/account-ready');
+      }
     } on AppError catch (e) {
       setState(() => _error = e.message);
     } finally {

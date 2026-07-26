@@ -326,6 +326,7 @@ class _CenterScanButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      key: const ValueKey('nav_scan_button'),
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Column(
@@ -465,6 +466,7 @@ class _BottomNavItem extends StatelessWidget {
     final color = selected ? AppColors.primaryMain : AppColors.textSecondary;
 
     return InkWell(
+      key: ValueKey('nav_tab_${tab.label.toLowerCase()}'),
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

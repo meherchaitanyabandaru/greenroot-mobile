@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/domain/lifecycle_presenter.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -65,6 +66,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
       ),
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
+              key: const Key(TestKeys.orderCreateButton),
               onPressed: () async {
                 final created = await context.push<bool>('/orders/create');
                 if (created == true && mounted) {
@@ -90,6 +92,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
             .load(nurseryId: widget.nurseryId),
         color: AppColors.primaryMain,
         child: CustomScrollView(
+          key: const Key(TestKeys.orderList),
           controller: _scrollCtrl,
           slivers: [
             SliverToBoxAdapter(

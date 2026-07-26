@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -342,6 +343,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
 
           // UUID input
           AppTextField(
+            fieldKey: const Key(TestKeys.inviteCodeField),
             controller: _uuidCtrl,
             label: 'Invite UUID',
             hint: 'e.g. 550e8400-e29b-41d4-a716-446655440000',
@@ -349,6 +351,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           AppButton(
+            buttonKey: const Key(TestKeys.inviteLookupButton),
             label: 'Look Up Invite',
             isLoading: state.isLoading,
             onPressed: _lookup,
@@ -367,6 +370,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
             const SizedBox(height: AppSpacing.lg),
             if (state.invite!.isPending)
               AppButton(
+                buttonKey: const Key(TestKeys.inviteAcceptButton),
                 label: 'Accept Invite',
                 isLoading: state.isAccepting,
                 onPressed: _accept,

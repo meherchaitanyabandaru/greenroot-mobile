@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/domain/lifecycle_presenter.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -54,6 +55,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
             .load(nurseryId: widget.nurseryId),
         color: AppColors.primaryMain,
         child: CustomScrollView(
+          key: const Key(TestKeys.dispatchList),
           controller: _scrollCtrl,
           slivers: [
             SliverToBoxAdapter(
@@ -73,6 +75,8 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: AppSpacing.sm),
                           child: _Chip(
+                            key: Key(
+                                'dispatch_filter_${value?.toLowerCase() ?? "all"}'),
                             label: label,
                             selected: listState.statusFilter == value,
                             onTap: () => ref
@@ -166,11 +170,15 @@ class _Chip extends StatelessWidget {
   final VoidCallback onTap;
 
   const _Chip(
-      {required this.label, required this.selected, required this.onTap});
+      {super.key,
+      required this.label,
+      required this.selected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      key: key,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),

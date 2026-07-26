@@ -361,16 +361,20 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final choice = await showQuotationTypeDialog(context);
-          if (choice == null || !context.mounted) return;
-          final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
-          final created = await context.push<bool>('/quotations/create?type=$type');
-          if (created == true) ref.read(quotationListProvider.notifier).load();
-        },
-        backgroundColor: AppColors.primaryMain,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Semantics(
+        button: true,
+        label: 'New quotation',
+        child: FloatingActionButton(
+          onPressed: () async {
+            final choice = await showQuotationTypeDialog(context);
+            if (choice == null || !context.mounted) return;
+            final type = choice == QuotationTypeChoice.internal ? 'INTERNAL' : 'CUSTOMER';
+            final created = await context.push<bool>('/quotations/create?type=$type');
+            if (created == true) ref.read(quotationListProvider.notifier).load();
+          },
+          backgroundColor: AppColors.primaryMain,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
       body: Builder(builder: (_) {
         if (paged.isLoading) {
