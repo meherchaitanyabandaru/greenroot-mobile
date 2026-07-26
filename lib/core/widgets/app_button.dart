@@ -127,8 +127,12 @@ class AppButton extends StatelessWidget {
               disabledBackgroundColor: AppColors.slate200,
               disabledForegroundColor: AppColors.slate400,
               shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
-              elevation: 0,
               padding: EdgeInsets.zero,
+              // No elevation override here -- falls through to
+              // ElevatedButtonThemeData's resolveWith (elevation 3, a
+              // primaryMain-tinted shadow), which this used to flatten to 0.
+              // A primary CTA with zero elevation reads as inert/disabled
+              // rather than the main action on the screen.
             ),
             child: child,
           ),
@@ -167,7 +171,10 @@ class AppButton extends StatelessWidget {
               backgroundColor: AppColors.red600,
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
-              elevation: 0,
+              // Explicit (not inherited from the theme, which shadows in
+              // primaryMain green -- wrong tint under a red button).
+              elevation: 3,
+              shadowColor: AppColors.red600.withValues(alpha: 0.28),
               padding: EdgeInsets.zero,
             ),
             child: child,

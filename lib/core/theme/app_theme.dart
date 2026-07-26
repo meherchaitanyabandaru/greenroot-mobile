@@ -185,7 +185,14 @@ abstract class AppTheme {
         focusElevation: 5,
         hoverElevation: 6,
         highlightElevation: 2,
-        shape: const CircleBorder(),
+        // No shape override: FloatingActionButtonThemeData has a single
+        // `shape` field shared by every FAB regardless of type, so a
+        // CircleBorder here was clipping every FloatingActionButton.extended
+        // in the app (New Quotation/New Order, etc.) into a small circle
+        // with its label cut off -- confirmed via a live emulator
+        // screenshot. Flutter's own per-widget default already resolves
+        // this correctly (CircleBorder for a plain FAB, StadiumBorder for
+        // .extended) when left unset.
       ),
 
       // ── Input Decoration ─────────────────────────────────────────────────────

@@ -175,7 +175,7 @@ class _ManagerWorkTabState extends ConsumerState<ManagerWorkTab>
               label: const Text('New Order'),
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
-              elevation: 2,
+              // No elevation override -- see owner_tab.dart's FAB.
             )
           : null,
       appBar: GreenRootAppBar(
@@ -448,7 +448,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
         label: const Text('New Quotation'),
         backgroundColor: AppColors.primaryMain,
         foregroundColor: Colors.white,
-        elevation: 2,
+        // No elevation override -- see owner_tab.dart's FAB.
       ),
       body: Column(
         children: [

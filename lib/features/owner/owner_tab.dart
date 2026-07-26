@@ -122,7 +122,9 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
         label: Text(_tabIndex == 0 ? 'New Quotation' : 'New Order'),
         backgroundColor: AppColors.primaryMain,
         foregroundColor: Colors.white,
-        elevation: 2,
+        // No elevation override -- FloatingActionButtonThemeData already
+        // gives this a much more visible elevation (5) than the 2 this used
+        // to hardcode.
       ),
       appBar: GreenRootAppBar(
         title: 'My Nursery',

@@ -183,10 +183,19 @@ class TopItemsScreen extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
             data: (items) => items.length < _maxItems
-                ? IconButton(
-                    icon: const Icon(Icons.add_rounded),
-                    tooltip: 'Add Plant',
-                    onPressed: () => _showPlantPicker(context, ref, items),
+                ? Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.md),
+                    child: IconButton.filled(
+                      icon: const Icon(Icons.add_rounded),
+                      tooltip: 'Add Plant',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.primaryMain,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: AppColors.primaryMain.withValues(alpha: 0.32),
+                      ),
+                      onPressed: () => _showPlantPicker(context, ref, items),
+                    ),
                   )
                 : Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),

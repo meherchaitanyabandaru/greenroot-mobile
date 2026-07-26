@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
@@ -1153,10 +1154,11 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _mkGreen,
                 foregroundColor: Colors.white,
-                elevation: 0,
+                elevation: 3,
+                shadowColor: _mkGreen.withValues(alpha: 0.32),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(AppRadius.x2l)),
               ),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Post New Ad',
