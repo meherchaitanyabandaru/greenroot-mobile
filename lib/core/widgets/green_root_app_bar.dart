@@ -71,6 +71,13 @@ class GreenRootAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         ...extraActions,
         IconButton(
+          key: const ValueKey('app_bar_search_button'),
+          onPressed: () => context.push('/search'),
+          icon: const Icon(Icons.search_rounded),
+          color: AppColors.textPrimary,
+          tooltip: 'Search',
+        ),
+        IconButton(
           key: const ValueKey('app_bar_notifications_button'),
           onPressed: () => context.push('/notifications'),
           icon: Badge.count(

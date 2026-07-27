@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -108,6 +109,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
       );
 
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Order created successfully'),
@@ -132,22 +134,21 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain),
-                  )
-                : const Text('Save', style: TextStyle(color: AppColors.primaryMain, fontWeight: FontWeight.w600)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
+        child: Column(
+          children: [
+            Expanded(child: _buildForm(context)),
+            _buildStickyFooter(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    return ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           children: [
             if (_error != null) ...[
@@ -271,16 +272,6 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                 onChanged: () => setState(() {}),
               )),
 
-            if (_items.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.md),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Total: ₹${_grandTotal.toStringAsFixed(2)}',
-                  style: AppTypography.h4.copyWith(color: AppColors.primaryMain),
-                ),
-              ),
-            ],
             const SizedBox(height: AppSpacing.x2l),
 
             // Notes
@@ -292,6 +283,62 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
               decoration: _inputDecoration('Optional notes'),
             ),
             const SizedBox(height: AppSpacing.x3l),
+          ],
+    );
+  }
+
+  // Fixed footer: total + primary action, always visible regardless of
+  // scroll position (rather than a "Save" TextButton buried in the AppBar,
+  // which had no visual weight as the screen's one primary action).
+  Widget _buildStickyFooter() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+          AppSpacing.md, AppSpacing.screenPadding, AppSpacing.lg),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total',
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    '₹${_grandTotal.toStringAsFixed(2)}',
+                    style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            SizedBox(
+              width: 160,
+              child: ElevatedButton(
+                onPressed: _saving ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Place Order',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
           ],
         ),
       ),

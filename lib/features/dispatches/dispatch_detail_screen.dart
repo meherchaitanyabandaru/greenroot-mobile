@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/services/recent_items.dart';
 import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -53,13 +54,27 @@ class DispatchDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (dispatch) => _DetailView(
-          dispatch: dispatch,
-          dispatchId: dispatchId,
-          isDriver:
-              caps.hasDriverProfile && !caps.isNurseryOwner && !caps.isManager,
-          isManager: caps.isManager,
-        ),
+        data: (dispatch) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(recentItemsProvider.notifier).record(RecentItem(
+                  type: RecentItemType.dispatch,
+                  id: dispatch.id,
+                  title: dispatch.dispatchCode,
+                  subtitle: dispatch.orderNumber != null
+                      ? 'Order ${dispatch.orderNumber}'
+                      : '',
+                  viewedAt: DateTime.now(),
+                ));
+          });
+          return _DetailView(
+            dispatch: dispatch,
+            dispatchId: dispatchId,
+            isDriver: caps.hasDriverProfile &&
+                !caps.isNurseryOwner &&
+                !caps.isManager,
+            isManager: caps.isManager,
+          );
+        },
       ),
     );
   }

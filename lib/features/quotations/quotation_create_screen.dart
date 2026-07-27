@@ -6,6 +6,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -398,6 +399,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
       }
 
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_isEdit ? 'Quotation updated' : 'Quotation created'),
           backgroundColor: AppColors.primaryMain,
@@ -456,21 +458,10 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primaryMain))
-                : Text('Save',
-                    style: AppTypography.body.copyWith(
-                        color: AppColors.primaryMain,
-                        fontWeight: FontWeight.w700)),
-          ),
-        ],
+        // No AppBar "Save" action -- the fixed footer below (total + Save
+        // Draft/Update) is this screen's one primary action. Having both
+        // visible at once was a confusing duplicate: same _save callback,
+        // two different visual weights.
       ),
       body: Form(
         key: _formKey,
@@ -844,7 +835,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                         .copyWith(color: AppColors.primaryMain)),
                 const Spacer(),
                 SizedBox(
-                  width: 130,
+                  width: 160,
                   child: ElevatedButton(
                     onPressed: _saving ? null : _save,
                     style: ElevatedButton.styleFrom(
@@ -852,7 +843,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                          borderRadius: AppRadius.buttonRadius),
                     ),
                     child: _saving
                         ? const SizedBox(

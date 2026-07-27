@@ -13,10 +13,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/recent_items.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/nursery_branding_badge.dart';
+import '../../core/widgets/order_timeline.dart' show QuotationTimeline;
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import '../profile/my_addresses_screen.dart';
@@ -34,6 +36,7 @@ class QuotationDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
+  int? _recordedRecentId;
   bool _deleting = false;
   bool _exporting = false;
   bool _buyerActing = false;
@@ -577,6 +580,18 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   }
 
   Widget _buildScaffold(Quotation q) {
+    if (_recordedRecentId != q.id) {
+      _recordedRecentId = q.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(recentItemsProvider.notifier).record(RecentItem(
+              type: RecentItemType.quotation,
+              id: q.id,
+              title: q.quotationCode,
+              subtitle: q.recipientName ?? q.nurseryName ?? '',
+              viewedAt: DateTime.now(),
+            ));
+      });
+    }
     final caps = ref.watch(sessionProvider).capabilities;
     final isBuyerView = !caps.canSell;
     final backendCaps = q.capabilities;
@@ -706,6 +721,11 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               ],
             ]),
           ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Timeline: same "what stage is this at, what's next" treatment
+          // as the order detail screen's OrderTimeline.
+          _InfoCard(child: QuotationTimeline(quotation: q)),
           const SizedBox(height: AppSpacing.sm),
 
           // Nursery
@@ -1628,13 +1648,29 @@ class _StatusBadge extends StatelessWidget {
         bg = AppColors.red100;
         fg = AppColors.red600;
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(label,
-          style: AppTypography.caption
-              .copyWith(color: fg, fontWeight: FontWeight.w700)),
+    // Fade+scale "pulse" on status change (same treatment as the shared
+    // StatusBadge in core/widgets/status_badge.dart) -- this screen has its
+    // own badge because quotation statuses map to bespoke labels/colors.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.85, end: 1.0).animate(animation),
+          child: child,
+        ),
+      ),
+      child: Container(
+        key: ValueKey(status),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        child: Text(label,
+            style: AppTypography.caption
+                .copyWith(color: fg, fontWeight: FontWeight.w700)),
+      ),
     );
   }
 }

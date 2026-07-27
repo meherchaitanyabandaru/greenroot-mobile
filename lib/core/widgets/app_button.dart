@@ -7,7 +7,7 @@ import '../theme/app_typography.dart';
 enum AppButtonVariant { primary, outlined, ghost, danger }
 enum AppButtonSize { sm, md, lg }
 
-class AppButton extends StatelessWidget {
+class AppButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
@@ -73,53 +73,72 @@ class AppButton extends StatelessWidget {
   }) : variant = AppButtonVariant.danger;
 
   @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton> {
+  // Tap-feedback scale: 1.0 -> 0.97 on press, matching the spec's
+  // "small scale change... 100-160ms" -- gives the button a tactile,
+  // physical feel instead of relying solely on the platform ripple.
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final height = switch (size) {
+    final height = switch (widget.size) {
       AppButtonSize.sm => AppSpacing.buttonHeightSm,
       AppButtonSize.md => AppSpacing.buttonHeight,
       AppButtonSize.lg => 60.0,
     };
 
-    final textStyle = size == AppButtonSize.sm
+    final textStyle = widget.size == AppButtonSize.sm
         ? AppTypography.buttonSm
         : AppTypography.button;
 
-    Widget child = isLoading
-        ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_loadingColor),
+    Widget child = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 150),
+      child: widget.isLoading
+          ? SizedBox(
+              key: const ValueKey('loading'),
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(_loadingColor),
+              ),
+            )
+          : Row(
+              key: const ValueKey('label'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.leadingIcon != null) ...[
+                  Icon(widget.leadingIcon, size: 18),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                Text(widget.label, style: textStyle),
+                if (widget.trailingIcon != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Icon(widget.trailingIcon, size: 18),
+                ],
+              ],
             ),
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (leadingIcon != null) ...[
-                Icon(leadingIcon, size: 18),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-              Text(label, style: textStyle),
-              if (trailingIcon != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                Icon(trailingIcon, size: 18),
-              ],
-            ],
-          );
+    );
 
-    if (expand) {
+    if (widget.expand) {
       child = Center(child: child);
     }
 
-    final effectiveOnPressed = isLoading ? null : onPressed;
+    final effectiveOnPressed = widget.isLoading ? null : widget.onPressed;
 
-    return SizedBox(
-      width: expand ? double.infinity : null,
+    final button = SizedBox(
+      width: widget.expand ? double.infinity : null,
       height: height,
-      child: switch (variant) {
+      child: switch (widget.variant) {
         AppButtonVariant.primary => ElevatedButton(
-            key: buttonKey,
+            key: widget.buttonKey,
             onPressed: effectiveOnPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryMain,
@@ -137,7 +156,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.outlined => OutlinedButton(
-            key: buttonKey,
+            key: widget.buttonKey,
             onPressed: effectiveOnPressed,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primaryMain,
@@ -153,7 +172,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.ghost => TextButton(
-            key: buttonKey,
+            key: widget.buttonKey,
             onPressed: effectiveOnPressed,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primaryMain,
@@ -165,7 +184,7 @@ class AppButton extends StatelessWidget {
             child: child,
           ),
         AppButtonVariant.danger => ElevatedButton(
-            key: buttonKey,
+            key: widget.buttonKey,
             onPressed: effectiveOnPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.red600,
@@ -181,9 +200,23 @@ class AppButton extends StatelessWidget {
           ),
       },
     );
+
+    if (effectiveOnPressed == null) return button;
+
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: button,
+      ),
+    );
   }
 
-  Color get _loadingColor => switch (variant) {
+  Color get _loadingColor => switch (widget.variant) {
     AppButtonVariant.primary || AppButtonVariant.danger => Colors.white,
     AppButtonVariant.outlined || AppButtonVariant.ghost => AppColors.primaryMain,
   };

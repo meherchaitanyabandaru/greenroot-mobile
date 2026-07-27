@@ -22,37 +22,54 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = _colors;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 3,
+    // Keyed by label+variant so a status transition (e.g. CONFIRMED ->
+    // LOADING) swaps to a distinct AnimatedSwitcher child -- a brief
+    // fade+scale "pulse" that gives the user visual confirmation the status
+    // actually changed, rather than the badge silently relabeling itself.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.85, end: 1.0).animate(animation),
+          child: child,
+        ),
       ),
-      decoration: BoxDecoration(
-        color: colors.bg,
-        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (dot) ...[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
+      child: Container(
+        key: ValueKey('$label-$variant'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 3,
+        ),
+        decoration: BoxDecoration(
+          color: colors.bg,
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (dot) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: colors.text,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
                 color: colors.text,
-                shape: BoxShape.circle,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 4),
           ],
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: colors.text,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

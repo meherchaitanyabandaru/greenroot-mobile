@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/status_badge.dart';
 import 'dispatches.dart';
 
@@ -116,16 +117,11 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
               )
             else if (paged.items.isEmpty)
               const SliverFillRemaining(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.local_shipping_outlined,
-                          size: 48, color: AppColors.textMuted),
-                      SizedBox(height: AppSpacing.md),
-                      Text('No dispatches found', style: AppTypography.h4),
-                    ],
-                  ),
+                child: EmptyState(
+                  icon: Icons.local_shipping_outlined,
+                  title: 'No trips yet',
+                  subtitle:
+                      'Create a dispatch from a loaded order to track its delivery here.',
                 ),
               )
             else ...[

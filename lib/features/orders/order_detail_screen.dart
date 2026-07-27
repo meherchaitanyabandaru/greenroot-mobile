@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/recent_items.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -81,14 +82,28 @@ class OrderDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (order) => _OrderDetailBody(
-          order: order,
-          orderId: orderId,
-          fmt: fmt,
-          canManage: canManage,
-          isOwner: isOwner,
-          isBuyer: isBuyer,
-        ),
+        data: (order) {
+          // "Continue Working" -- deferred to a post-frame callback rather
+          // than called directly in build(), since it writes to a provider
+          // another still-mounted screen (Home) may be watching.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(recentItemsProvider.notifier).record(RecentItem(
+                  type: RecentItemType.order,
+                  id: order.id,
+                  title: order.orderNumber,
+                  subtitle: order.buyerName ?? order.sellerNursery ?? '',
+                  viewedAt: DateTime.now(),
+                ));
+          });
+          return _OrderDetailBody(
+            order: order,
+            orderId: orderId,
+            fmt: fmt,
+            canManage: canManage,
+            isOwner: isOwner,
+            isBuyer: isBuyer,
+          );
+        },
       ),
     );
   }

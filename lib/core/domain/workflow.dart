@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../features/orders/orders.dart';
 import '../../features/dispatches/dispatches.dart';
+import '../../features/quotations/quotations.dart';
 
 // ── Step rendering state ───────────────────────────────────────────────────────
 
@@ -440,5 +441,100 @@ class DispatchWorkflow {
       ));
     }
     return steps;
+  }
+}
+
+// ── Quotation workflow ────────────────────────────────────────────────────────
+//
+// QUOTATION STATE MACHINE:
+//   CUSTOMER_DRAFT → CUSTOMER_SENT → CUSTOMER_ACCEPTED → CONVERTED
+//                                  ↘ CUSTOMER_REJECTED
+//   INTERNAL_DRAFT quotations skip the send/accept steps entirely -- they
+//   convert directly from draft, with no customer round trip.
+
+class QuotationWorkflow {
+  static List<WorkflowStep> stepsFor(Quotation quotation) {
+    final s = quotation.status;
+    final isInternal = quotation.quotationType == 'INTERNAL';
+    final rejected = s == 'CUSTOMER_REJECTED';
+    final sent = !rejected &&
+        {'CUSTOMER_SENT', 'SENT', 'CUSTOMER_ACCEPTED', 'ACCEPTED', 'CONVERTED'}
+            .contains(s);
+    final accepted = !rejected &&
+        {'CUSTOMER_ACCEPTED', 'ACCEPTED', 'CONVERTED'}.contains(s);
+    final converted = s == 'CONVERTED';
+
+    final steps = <WorkflowStep>[
+      WorkflowStep(
+        title: 'Quotation Created',
+        subtitle: _fmt(quotation.createdAt),
+        state: WorkflowStepState.completed,
+        icon: Icons.description_outlined,
+      ),
+    ];
+
+    if (!isInternal) {
+      steps.add(WorkflowStep(
+        title: 'Sent to Customer',
+        subtitle: quotation.sentAt != null
+            ? _fmtDt(quotation.sentAt)
+            : (sent ? null : 'Not sent yet'),
+        state: rejected
+            ? WorkflowStepState.completed
+            : (sent
+                ? WorkflowStepState.completed
+                : WorkflowStepState.current),
+        icon: Icons.send_outlined,
+      ));
+      steps.add(WorkflowStep(
+        title: rejected ? 'Rejected by Customer' : 'Customer Response',
+        subtitle: rejected
+            ? (quotation.rejectionReason?.isNotEmpty == true
+                ? quotation.rejectionReason
+                : (quotation.customerRespondedAt != null
+                    ? _fmtDt(quotation.customerRespondedAt)
+                    : null))
+            : (accepted
+                ? (quotation.customerRespondedAt != null
+                    ? _fmtDt(quotation.customerRespondedAt)
+                    : 'Accepted')
+                : (sent ? 'Awaiting customer response' : null)),
+        state: rejected
+            ? WorkflowStepState.cancelled
+            : (accepted
+                ? WorkflowStepState.completed
+                : (sent ? WorkflowStepState.current : WorkflowStepState.pending)),
+        icon: rejected ? Icons.cancel_rounded : Icons.task_alt_rounded,
+      ));
+    }
+
+    if (!rejected) {
+      steps.add(WorkflowStep(
+        title: 'Converted to Order',
+        subtitle: converted
+            ? (quotation.convertedOrderCode ?? _fmtDt(quotation.convertedAt))
+            : null,
+        state: converted
+            ? WorkflowStepState.completed
+            : ((isInternal || accepted)
+                ? WorkflowStepState.current
+                : WorkflowStepState.pending),
+        icon: Icons.receipt_long_rounded,
+      ));
+    }
+
+    return steps;
+  }
+
+  static String? _fmt(String? iso) {
+    if (iso == null) return null;
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return null;
+    return DateFormat('dd MMM, h:mm a').format(dt.toLocal());
+  }
+
+  static String? _fmtDt(DateTime? dt) {
+    if (dt == null) return null;
+    return DateFormat('dd MMM, h:mm a').format(dt.toLocal());
   }
 }

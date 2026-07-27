@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -153,17 +154,25 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                 ),
               )
             else if (paged.items.isEmpty)
-              const SliverFillRemaining(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.shopping_bag_outlined,
-                          size: 48, color: AppColors.textMuted),
-                      SizedBox(height: AppSpacing.md),
-                      Text('No orders found', style: AppTypography.h4),
-                    ],
-                  ),
+              SliverFillRemaining(
+                child: EmptyState(
+                  icon: Icons.shopping_bag_outlined,
+                  title: 'No orders yet',
+                  subtitle: caps.canSell
+                      ? 'Orders from your customers will show up here.'
+                      : 'Browse nurseries and place your first order.',
+                  actionLabel: canCreate ? createLabel : null,
+                  onAction: canCreate
+                      ? () async {
+                          final created =
+                              await context.push<bool>('/orders/create');
+                          if (created == true && mounted) {
+                            ref.read(orderListProvider.notifier).load(
+                                nurseryId: widget.nurseryId,
+                                statusFilter: widget.statusFilter);
+                          }
+                        }
+                      : null,
                 ),
               )
             else ...[

@@ -340,12 +340,14 @@ class OrderRepository {
     int perPage = 20,
     String? status,
     int? nurseryId,
+    String? search,
   }) async {
     final params = <String, dynamic>{
       'page': page,
       'per_page': perPage,
       if (status?.isNotEmpty == true) 'order_status': status,
       if (nurseryId != null) 'nursery_id': nurseryId,
+      if (search?.isNotEmpty == true) 'search': search,
     };
     return _client.get(
       ApiConstants.orders,

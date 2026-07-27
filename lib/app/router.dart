@@ -41,6 +41,7 @@ import '../features/plant_requests/request_list_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
 import '../features/nurseries/nursery_detail_screen.dart';
+import '../features/search/universal_search_screen.dart';
 import '../features/nurseries/nursery_list_screen.dart';
 import '../features/plants/plant_list_screen.dart';
 import '../features/profile/my_addresses_screen.dart';
@@ -356,6 +357,11 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationListScreen()),
+
+    // ── Universal search ─────────────────────────────────────────────────────
+    GoRoute(
+        path: '/search',
+        builder: (_, __) => const UniversalSearchScreen()),
 
     // ── Driver-only routes ────────────────────────────────────────────────────
     GoRoute(
