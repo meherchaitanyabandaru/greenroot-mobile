@@ -17,4 +17,6 @@ abstract class AppConstants {
   // OTP
   static const int otpLength = 6;
   static const int otpResendSeconds = 60;
+  // Matches otpTTL in greenroot-api auth/model.go.
+  static const int otpValidMinutes = 5;
 }

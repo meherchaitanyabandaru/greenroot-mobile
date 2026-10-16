@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -236,7 +237,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: AppSpacing.x2l),
 
-                // Dev hint
+                // Dev hint — debug builds only; release builds use real SMS OTPs.
+                if (kDebugMode)
                 Center(
                   child: Text(
                     'Dev: use 9300000000 (buyer) or 9000000000 (admin) / OTP 123456',

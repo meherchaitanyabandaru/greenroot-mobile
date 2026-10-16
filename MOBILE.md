@@ -166,6 +166,8 @@ lib/
 | Market ad capabilities: publish/pause/resume/archive/save driven by backend `capabilities` fields | ✅ |
 | Dispatch capabilities: accept/start-trip/complete-trip actions driven by backend `capabilities` fields | ✅ |
 | List providers set to `autoDispose` to prevent stale data across role contexts | ✅ |
+| SMS Preferences screen (`/sms-preferences`): OTP/payment SMS always on, promotional opt-in switch | ✅ |
+| OTP screen shows resend errors (cooldown / hourly limit / SMS down) and 5-minute validity; dev OTP hint only in debug builds | ✅ |
 
 ---
 

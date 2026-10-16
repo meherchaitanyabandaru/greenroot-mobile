@@ -147,6 +147,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 style:
                     AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'The code is valid for ${AppConstants.otpValidMinutes} minutes. Never share it with anyone.',
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.textMuted),
+              ),
               const SizedBox(height: AppSpacing.x3l),
 
               // OTP boxes
@@ -180,6 +186,17 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   verifyState.error!.message,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.errorText),
+                ),
+              ],
+              // Resend failures (cooldown, hourly limit, SMS gateway down)
+              // would otherwise be silent on this screen.
+              if (sendState.error != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  sendState.error!.message,
+                  key: const Key(TestKeys.otpResendError),
                   style: AppTypography.caption
                       .copyWith(color: AppColors.errorText),
                 ),

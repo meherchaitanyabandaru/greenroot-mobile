@@ -137,6 +137,12 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: 'Preferences, channels',
                 onTap: () => context.push('/notifications'),
               ),
+              _SettingsTile(
+                icon: Icons.sms_outlined,
+                label: 'SMS Preferences',
+                subtitle: 'OTP, payment alerts, offers',
+                onTap: () => context.push('/sms-preferences'),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.x2l),

@@ -15,6 +15,8 @@ class TestKeys {
   // Auth — OTP screen
   static const otpCodeField = 'otp_code_field';
   static const otpVerifyButton = 'otp_verify_button';
+  static const otpResendError = 'otp_resend_error';
+  static const smsPromotionalSwitch = 'sms_promotional_switch';
 
   // Commerce lists and lifecycle
   static const quotationList = 'quotation_list';

@@ -8,6 +8,7 @@ import '../features/auth/presentation/screens/account_ready_screen.dart';
 import '../features/auth/presentation/screens/create_profile_screen.dart';
 import '../features/subscriptions/subscription_screen.dart';
 import '../features/subscriptions/subscription_payment_screen.dart';
+import '../features/profile/sms_preferences_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
 import '../features/profile/complete_profile_screen.dart';
 import '../features/profile/profile_screen.dart';
@@ -419,6 +420,10 @@ final appRouter = GoRouter(
     ),
 
     // ── My Profile sub-screens ────────────────────────────────────────────────
+    GoRoute(
+      path: '/sms-preferences',
+      builder: (_, __) => const SmsPreferencesScreen(),
+    ),
     GoRoute(
       path: '/my-addresses',
       redirect: _driverGuard,

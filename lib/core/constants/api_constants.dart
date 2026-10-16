@@ -211,6 +211,9 @@ abstract class ApiConstants {
 
   // Ratings
   static const String ratingsApp = '$v1/ratings/app';
+
+  // SMS
+  static const String smsPreferencesMe = '$v1/sms/preferences/me';
   static String ratingsOrder(int orderId) => '$v1/ratings/order/$orderId';
   static String ratingsTrip(int dispatchId) => '$v1/ratings/trip/$dispatchId';
 }
