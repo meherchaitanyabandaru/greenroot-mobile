@@ -115,6 +115,9 @@ class OwnerHome extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeAsync = ref.watch(ownerHomeProvider);
     final recentItems = ref.watch(recentItemsProvider);
+    final session = ref.watch(sessionProvider);
+    final nurseryId = session.nurseryId;
+    final nurseryName = session.capabilities.ownedNurseryName ?? 'My Nursery';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,7 +129,15 @@ class OwnerHome extends ConsumerWidget {
           onNewQuotation: () => context.push('/quotations/create'),
           onNewMarketAd: () =>
               ref.read(mainTabIndexProvider.notifier).state = 3,
-          onInviteMember: () => context.push('/nursery/members'),
+          // Without id/name query params this defaults to nurseryId 0 (see
+          // MembersScreen's route builder) -- connections_screen.dart's
+          // "View All" links are the existing precedent for this exact
+          // navigation and source these the same way.
+          onInviteMember: nurseryId == null
+              ? null
+              : () => context.push(
+                  '/nursery/members?id=$nurseryId&name=${Uri.encodeComponent(nurseryName)}',
+                ),
         ),
         if (recentItems.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.x2l),
@@ -483,7 +494,7 @@ class _OwnerQuickActions extends StatelessWidget {
   final VoidCallback onNewOrder;
   final VoidCallback onNewQuotation;
   final VoidCallback onNewMarketAd;
-  final VoidCallback onInviteMember;
+  final VoidCallback? onInviteMember;
 
   const _OwnerQuickActions({
     required this.onNewOrder,
@@ -878,7 +889,7 @@ class _ActionCell extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ActionCell({
     required this.icon,

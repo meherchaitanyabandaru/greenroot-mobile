@@ -182,7 +182,7 @@ lib/
 
 | Missing API | Required By | Workaround |
 |---|---|---|
-| `GET /nurseries/{id}/customers` | Customer list in members screen | Use invites list (CUSTOMER_INVITE accepted) |
+| ~~`GET /nurseries/{id}/customers`~~ | ~~Customer list in members screen~~ | **Fixed** — route now exists in API |
 | ~~Nursery status in `/me/workspaces` response~~ | ~~Splash routing + approval status screen~~ | **Fixed** — `nursery_status` now inline in workspace |
 
 ---

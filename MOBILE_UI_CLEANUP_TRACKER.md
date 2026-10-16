@@ -67,6 +67,8 @@ Visual pass checklist for each major UI milestone:
 | 2026-06-28 | Manager Work | Added Plant Requests section to manager Work screen. Manager cannot write inventory — only owner sections link to `/inventory/add`. | Analyzer clean |
 | 2026-06-28 | Router | Added `/inventory`, `/requests`, `/orders/buy` routes with correct guards. | Analyzer clean |
 | 2026-06-28 | Visual validation | Captured 9 role screenshots via Flutter web (CDP token injection): Customer×3, Owner×2, Manager×2, Driver×2. All role tab shells verified: Customer(Owner mode) Home/Buying/Selling/Profile, Owner Home/Buying/Selling/Profile, Manager Home/Buying/Work/Profile, Driver Home/Driver/Scan QR/Profile. Content sections match API/RBAC rules. | Screenshots in `/private/tmp/greenroot-mobile-visuals` |
+| 2026-10-16 | Owner home | "Invite Member" quick action now opens `/nursery/members?id=&name=` with the owner's nursery; previously it opened without params and defaulted to nursery 0. Button is disabled when no nursery is in session. | `flutter test` 205/205; analyzer: no error/warning |
+| 2026-10-16 | Market (API) | `GET /market/ads/mine` now sorts by `created_at DESC` so new drafts stay on page 1 of My Ads instead of sorting after every published ad. | `go build ./...`; `go test ./internal/modules/market/...` |
 
 ## Visual Findings
 
@@ -116,3 +118,5 @@ _(none — visual validation milestone complete)_
 | 2026-06-28 | `flutter test` | Passed after buyer order flow + selling screen additions: 50 tests |
 | 2026-06-28 | `flutter build apk --debug` | Build passed (Kotlin plugin warning unrelated to our code) |
 | 2026-06-28 | Flutter web role screenshots | 9 screenshots captured via CDP (token injection + AES-256-GCM encryption): Customer×3, Owner×2, Manager×2, Driver×2. All tabs and content sections verified. Visual validation milestone complete. |
+| 2026-10-16 | `flutter test` | Passed: 205 tests (owner home invite fix) |
+| 2026-10-16 | `flutter analyze lib/features/owner/owner_home.dart` | No error/warning lines (info-level trailing-comma lints only, pre-existing) |
