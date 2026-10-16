@@ -115,7 +115,7 @@ Built in mock mode across api/admin/mobile/infra (commits `427eb67`, `fc15f55`, 
 | S4 | You | — | Choose SMS gateway / aggregator and bind it on DLT (PE–TM chain); enter its TM ID in admin | Required for delivery. Done when the admin Readiness checklist is all green. |
 | S5 | Dev | greenroot-api | Implement the chosen gateway as a `Provider` in `platform/sms` and register it in `sms.New`; deploy with `SMS_PROVIDER=<name>` and Redis | Switches on real OTP and payment SMS. Mock stays the default. |
 | S6 | Dev | greenroot-api | Delivery-report (DLR) webhook from the gateway → set `sms_messages.status = DELIVERED`, `delivered_at` | Columns exist; nothing updates them yet. Depends on S5. |
-| S7 | Dev | greenroot-api | Add `/sms/*` endpoints and new `send-otp` errors (`otp_cooldown`, `otp_rate_limited`, `otp_unavailable`, `invalid_mobile`) to `docs/swagger/openapi.yaml` | API.md is updated; Swagger is not. |
+| S7 | Dev | greenroot-api | Add `/sms/*` endpoints and new `send-otp` errors (`otp_cooldown`, `otp_rate_limited`, `otp_unavailable`, `invalid_mobile`) to `docs/swagger/openapi.yaml` | **Done 2026-10-16** — all 281 routes documented; drift test `internal/app/openapi_test.go`. |
 | S8 | Dev | greenroot-mobile | Capture on-device screenshots: Profile → SMS Preferences, and OTP screen resend error | Emulator ANR'd under host load on 2026-10-16; screen is covered only by `test/profile/sms_preferences_test.dart`. |
 | S9 | Dev | greenroot-mobile | Once header is approved, optionally name the sender (e.g. "SMS from GRROOT") on the OTP / SMS Preferences screens | Left out on purpose until the header is final. |
 | S10 | Later | greenroot-api + mobile | Android SMS auto-read of OTP (SMS Retriever) | Needs the app-signature hash as fixed text in the OTP template, which means re-registering that template on DLT. |
@@ -131,7 +131,7 @@ Messaging core (`internal/modules/messaging`) fans events to SMS and email; emai
 | E1 | You | — | Choose an email provider (SES / SendGrid / Postmark …) and verify the sending domain; publish SPF, DKIM, DMARC | Required before any real email. Done when Admin → Email → Sender has a From address and "Domain verified" is ticked (Readiness all green). |
 | E2 | Dev | greenroot-api | Implement the provider in `platform/email` and register it in `email.New`; deploy with `EMAIL_PROVIDER=<name>` and Redis | Switches on real verification codes and payment emails. |
 | E3 | Dev | greenroot-api | Bounce / complaint webhook → set `email_messages.status` DELIVERED/BOUNCED; un-verify addresses that hard-bounce | Columns exist; nothing updates them yet. Depends on E2. |
-| E4 | Dev | greenroot-api | Add `/email/*` and `/users/me/email/*` to `docs/swagger/openapi.yaml` | API.md is updated; Swagger is not (same as S7). |
+| E4 | Dev | greenroot-api | Add `/email/*` and `/users/me/email/*` to `docs/swagger/openapi.yaml` | **Done 2026-10-16** — all 281 routes documented; drift test `internal/app/openapi_test.go`. |
 | E5 | Dev | greenroot-mobile | On-device screenshots: Edit Profile → Verify email sheet (send code, wrong code, success) | Covered only by repository tests; emulator unreliable under host load. |
 | E6 | Dev | greenroot-mobile + api | Mobile-number change in Edit Profile is still a local placeholder (accepts 123456, calls no API) | Pre-dates this work; needs a real change-mobile OTP endpoint. |
 | E7 | Later | all | Marketing email (newsletters, promos) | Needs consent + `List-Unsubscribe`; only transactional email exists today. |
