@@ -102,6 +102,25 @@ _(none — visual validation milestone complete)_
 | 3 | Activity onboarding | Remove broad activity selector cards unless they map to real onboarding state and APIs | Prevent duplicate onboarding paths. |
 | 4 | Tests | Add widget/provider tests for role tabs and forbidden actions | Covers positive and negative UI cases. |
 
+### SMS / TRAI DLT — pending (added 2026-10-16)
+
+Built in mock mode across api/admin/mobile/infra (commits `427eb67`, `fc15f55`, `849ab53`, `4120891`). Full design and go-live steps: `greenroot-infra/docs/sms.md`.
+
+| # | Owner | Repo | Task | Why / done when |
+|---:|---|---|---|---|
+| S1 | You | — | Register Principal Entity on a DLT portal (Jio/Airtel/Vi/BSNL/Tata/SmartPing) | Every SMS needs a PE ID. Done when PE ID is entered in Admin → SMS / DLT → Principal Entity and status is APPROVED. |
+| S2 | You | — | Register header `GRROOT` (SERVICE, 6 letters) | Sender ID shown on phones as e.g. `JM-GRROOT-S`. Done when header is APPROVED in admin. |
+| S3 | You | — | Register the 6 system templates exactly as written (use "Copy for DLT" in admin), category SERVICE_IMPLICIT | Operators reject text that differs by even one character. Done when each has its DLT template ID and is APPROVED. |
+| S4 | You | — | Choose SMS gateway / aggregator and bind it on DLT (PE–TM chain); enter its TM ID in admin | Required for delivery. Done when the admin Readiness checklist is all green. |
+| S5 | Dev | greenroot-api | Implement the chosen gateway as a `Provider` in `platform/sms` and register it in `sms.New`; deploy with `SMS_PROVIDER=<name>` and Redis | Switches on real OTP and payment SMS. Mock stays the default. |
+| S6 | Dev | greenroot-api | Delivery-report (DLR) webhook from the gateway → set `sms_messages.status = DELIVERED`, `delivered_at` | Columns exist; nothing updates them yet. Depends on S5. |
+| S7 | Dev | greenroot-api | Add `/sms/*` endpoints and new `send-otp` errors (`otp_cooldown`, `otp_rate_limited`, `otp_unavailable`, `invalid_mobile`) to `docs/swagger/openapi.yaml` | API.md is updated; Swagger is not. |
+| S8 | Dev | greenroot-mobile | Capture on-device screenshots: Profile → SMS Preferences, and OTP screen resend error | Emulator ANR'd under host load on 2026-10-16; screen is covered only by `test/profile/sms_preferences_test.dart`. |
+| S9 | Dev | greenroot-mobile | Once header is approved, optionally name the sender (e.g. "SMS from GRROOT") on the OTP / SMS Preferences screens | Left out on purpose until the header is final. |
+| S10 | Later | greenroot-api + mobile | Android SMS auto-read of OTP (SMS Retriever) | Needs the app-signature hash as fixed text in the OTP template, which means re-registering that template on DLT. |
+| S11 | Later | all | Promotional SMS sending (e.g. promo blasts) | Consent, 10:00–21:00 IST window and opt-out rules are already enforced; there is no sending feature or promotional template yet. |
+| S12 | Pre-existing | greenroot-api | Fix 6 failing order/dispatch checks in `./test-api.sh` (start/complete-loading, buyer order create, cancel LOADED, delete CONFIRMED, dispatch create) | Not caused by SMS work — same failures on the commit before it. |
+
 ## Verification Log
 
 | Date | Command | Result |
