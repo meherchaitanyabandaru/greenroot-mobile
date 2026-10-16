@@ -166,6 +166,8 @@ lib/
 | Market ad capabilities: publish/pause/resume/archive/save driven by backend `capabilities` fields | ✅ |
 | Dispatch capabilities: accept/start-trip/complete-trip actions driven by backend `capabilities` fields | ✅ |
 | List providers set to `autoDispose` to prevent stale data across role contexts | ✅ |
+| Email verification in Edit Profile: "Verify" for an unverified email, "Change" for a verified one, both via `/users/me/email/send-code` + `/verify` (replaced the local-only 123456 placeholder) | ✅ |
+| Saving the profile no longer wipes a verified email (email omitted = unchanged) | ✅ |
 | SMS Preferences screen (`/sms-preferences`): OTP/payment SMS always on, promotional opt-in switch | ✅ |
 | OTP screen shows resend errors (cooldown / hourly limit / SMS down) and 5-minute validity; dev OTP hint only in debug builds | ✅ |
 

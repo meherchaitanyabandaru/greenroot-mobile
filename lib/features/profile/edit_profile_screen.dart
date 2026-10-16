@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/testing/test_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -108,7 +109,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
-  Future<void> _showSheet(_IdentityType type, String? current) async {
+  Future<void> _showSheet(_IdentityType type, String? current, {String? prefill}) async {
+    final repo = ref.read(authRepositoryProvider);
     final updated = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -116,17 +118,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       builder: (_) => _ChangeIdentitySheet(
         type: type,
         currentValue: current,
-        updateProfile: (email) async {
-          final user = ref.read(sessionProvider).user;
-          final repo = ref.read(authRepositoryProvider);
-          final updated = await repo.updateProfile(UpdateProfileRequest(
-            firstName: user?.firstName ?? '',
-            lastName: user?.lastName,
-            email: email,
-            gender: user?.gender,
-            profileImageUrl: user?.profileImageUrl,
-          ));
-          ref.read(sessionProvider.notifier).updateUser(updated);
+        prefill: prefill,
+        sendEmailCode: repo.sendEmailCode,
+        verifyEmailCode: (email, code) async {
+          final verified = await repo.verifyEmail(email, code);
+          ref.read(sessionProvider.notifier).updateUser(verified);
+          if (mounted) _emailCtrl.text = verified.email ?? '';
         },
       ),
     );
@@ -152,10 +149,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         UpdateProfileRequest(
           firstName: _firstNameCtrl.text.trim(),
           lastName: lastName.isEmpty ? null : lastName,
-          // Don't send email if verified — identity change requires a verification flow.
-          email: (user?.emailVerified == true)
-              ? null
-              : (email.isEmpty ? null : email),
+          // A verified email changes only through the verification sheet, so
+          // omit it (null = unchanged). An empty field clears an unverified one.
+          email: (user?.emailVerified == true) ? null : email,
           gender: _gender,
           // Preserve the current profileImageUrl — avatar is saved separately via uploadAvatar.
           profileImageUrl: user?.profileImageUrl,
@@ -323,6 +319,31 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     }
                     return null;
                   },
+                ),
+              if (!emailLocked && (user?.email?.isNotEmpty ?? false))
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.amber600),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          'Not verified — payment receipts are emailed only to a verified address.',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key(TestKeys.verifyEmailButton),
+                        onPressed: () => _showSheet(
+                          _IdentityType.email,
+                          null,
+                          prefill: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : user!.email,
+                        ),
+                        child: const Text('Verify'),
+                      ),
+                    ],
+                  ),
                 ),
               const SizedBox(height: AppSpacing.x2l),
 
@@ -624,12 +645,18 @@ enum _IdentityType { mobile, email }
 class _ChangeIdentitySheet extends StatefulWidget {
   final _IdentityType type;
   final String? currentValue;
-  final Future<void> Function(String newValue)? updateProfile;
+  /// Pre-filled address when verifying an existing, unverified email.
+  final String? prefill;
+  /// Email: real verification via the API. Returns the dev code in mock mode.
+  final Future<String?> Function(String email)? sendEmailCode;
+  final Future<void> Function(String email, String code)? verifyEmailCode;
 
   const _ChangeIdentitySheet({
     required this.type,
     this.currentValue,
-    this.updateProfile,
+    this.prefill,
+    this.sendEmailCode,
+    this.verifyEmailCode,
   });
 
   @override
@@ -648,6 +675,13 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
   Timer? _timer;
 
   bool get _isMobile => widget.type == _IdentityType.mobile;
+  bool get _isVerifyOnly => widget.prefill != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefill != null) _inputCtrl.text = widget.prefill!;
+  }
 
   @override
   void dispose() {
@@ -706,7 +740,17 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
     setState(() => _error = null);
     if (!_validateInput()) return;
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 600)); // simulate send
+    if (!_isMobile && widget.sendEmailCode != null) {
+      try {
+        await widget.sendEmailCode!(_inputCtrl.text.trim());
+      } on AppError catch (e) {
+        if (mounted) setState(() { _loading = false; _error = e.message; });
+        return;
+      }
+    } else {
+      // Mobile-number change is not wired to an API yet.
+      await Future.delayed(const Duration(milliseconds: 600));
+    }
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -723,32 +767,27 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
     if (_otp.length != 6) return;
     setState(() { _loading = true; _error = null; });
 
+    if (!_isMobile && widget.verifyEmailCode != null) {
+      try {
+        await widget.verifyEmailCode!(_inputCtrl.text.trim(), _otp);
+        if (mounted) Navigator.of(context).pop('Email verified.');
+      } on AppError catch (e) {
+        _clearOtp();
+        if (mounted) setState(() { _loading = false; _error = e.message; });
+      }
+      return;
+    }
+
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
-    // Dev mock: only 123456 is valid
+    // Mobile-number change is still a dev placeholder (no API): only 123456.
     if (_otp != '123456') {
       _clearOtp();
       setState(() { _loading = false; _error = 'Incorrect code. Use 123456 in dev.'; });
       return;
     }
-
-    try {
-      if (!_isMobile && widget.updateProfile != null) {
-        await widget.updateProfile!(_inputCtrl.text.trim());
-      }
-      if (mounted) {
-        Navigator.of(context).pop(
-          _isMobile
-              ? 'Mobile number updated successfully.'
-              : 'Email updated successfully.',
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() { _loading = false; _error = 'Update failed. Please try again.'; });
-      }
-    }
+    if (mounted) Navigator.of(context).pop('Mobile number updated successfully.');
   }
 
   @override
@@ -770,11 +809,11 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
   }
 
   Widget _buildStep1() {
-    final hint = _isMobile ? 'New mobile number' : 'New email address';
-    final label = _isMobile ? 'Change Mobile Number' : 'Change Email';
+    final hint = _isMobile ? 'New mobile number' : (_isVerifyOnly ? 'Email address' : 'New email address');
+    final label = _isMobile ? 'Change Mobile Number' : (_isVerifyOnly ? 'Verify Email' : 'Change Email');
     final subtitle = _isMobile
         ? 'We\'ll send a 6-digit verification code to your new number.'
-        : 'We\'ll send a 6-digit verification code to your new email.';
+        : 'We\'ll email a 6-digit code to this address. It is valid for 10 minutes.';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -907,7 +946,11 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
               : TextButton(
                   onPressed: () {
                     _clearOtp();
-                    _startTimer();
+                    if (_isMobile) {
+                      _startTimer();
+                    } else {
+                      _sendCode(); // real resend; restarts the timer on success
+                    }
                   },
                   child: Text(
                     'Resend Code',

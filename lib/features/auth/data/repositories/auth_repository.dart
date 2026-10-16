@@ -173,6 +173,32 @@ class AuthRepository {
     await SecureStorageService.saveActiveRole(role.value);
   }
 
+  /// Emails a 6-digit code proving the user owns [email]. Returns the dev
+  /// code in mock mode (null when real email is on).
+  Future<String?> sendEmailCode(String email) async {
+    try {
+      final res = await _remote.sendEmailCode(email);
+      return res['mock_code'] as String?;
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('sendEmailCode error', e);
+      throw const UnknownError();
+    }
+  }
+
+  /// Verifies the emailed code; the returned profile has email_verified=true.
+  Future<UserProfile> verifyEmail(String email, String code) async {
+    try {
+      return await _remote.verifyEmail(email, code);
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('verifyEmail error', e);
+      throw const UnknownError();
+    }
+  }
+
   Future<UserProfile> updateProfile(UpdateProfileRequest req) async {
     try {
       final userId = await SecureStorageService.getUserId();

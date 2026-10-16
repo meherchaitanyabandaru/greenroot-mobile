@@ -127,7 +127,7 @@ class _SmsPreferencesScreenState extends ConsumerState<SmsPreferencesScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'These are service messages needed to run your account, so they are always on.',
+              'These are service messages needed to run your account, so they are always on. Payment receipts are also emailed if your email is verified.',
               style: AppTypography.caption.copyWith(color: AppColors.textMuted),
             ),
             const SizedBox(height: AppSpacing.x2l),

@@ -11,6 +11,8 @@ abstract class ApiConstants {
   // Users
   static const String usersMe = '$v1/users/me';
   static const String usersMeOnboarding = '$v1/users/me/onboarding';
+  static const String usersMeEmailSendCode = '$v1/users/me/email/send-code';
+  static const String usersMeEmailVerify = '$v1/users/me/email/verify';
   static String userById(int id) => '$v1/users/$id';
   static String userRoles(int id) => '$v1/users/$id/roles';
   static String userAddresses(int id) => '$v1/users/$id/addresses';

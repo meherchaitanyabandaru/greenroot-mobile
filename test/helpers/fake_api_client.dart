@@ -29,6 +29,9 @@ enum FakeResponseType {
 
   /// HTTP 404 — maps to [NotFoundError].
   notFound,
+
+  /// HTTP 409 — maps to [ConflictingRoleError] (the app's generic 409 type).
+  conflict,
 }
 
 class _QueuedResponse {
@@ -166,6 +169,7 @@ class _FakeInterceptor extends Interceptor {
         FakeResponseType.forbidden => 403,
         FakeResponseType.serverError => 500,
         FakeResponseType.notFound => 404,
+        FakeResponseType.conflict => 409,
         _ => 500,
       };
 }

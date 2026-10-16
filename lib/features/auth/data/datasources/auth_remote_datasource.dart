@@ -55,6 +55,18 @@ class AuthRemoteDataSource {
         },
       );
 
+  Future<Map<String, dynamic>> sendEmailCode(String email) => _client.post(
+        ApiConstants.usersMeEmailSendCode,
+        data: {'email': email},
+        fromJson: (json) => json as Map<String, dynamic>,
+      );
+
+  Future<UserProfile> verifyEmail(String email, String code) => _client.post(
+        ApiConstants.usersMeEmailVerify,
+        data: {'email': email, 'code': code},
+        fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
+      );
+
   Future<UserProfile> updateProfile(int userId, UpdateProfileRequest req) =>
       _client.put(
         ApiConstants.usersMe,

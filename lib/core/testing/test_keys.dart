@@ -17,6 +17,7 @@ class TestKeys {
   static const otpVerifyButton = 'otp_verify_button';
   static const otpResendError = 'otp_resend_error';
   static const smsPromotionalSwitch = 'sms_promotional_switch';
+  static const verifyEmailButton = 'verify_email_button';
 
   // Commerce lists and lifecycle
   static const quotationList = 'quotation_list';

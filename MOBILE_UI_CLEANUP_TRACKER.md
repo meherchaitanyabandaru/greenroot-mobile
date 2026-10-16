@@ -70,6 +70,7 @@ Visual pass checklist for each major UI milestone:
 | 2026-10-16 | Owner home | "Invite Member" quick action now opens `/nursery/members?id=&name=` with the owner's nursery; previously it opened without params and defaulted to nursery 0. Button is disabled when no nursery is in session. | `flutter test` 205/205; analyzer: no error/warning |
 | 2026-10-16 | Market (API) | `GET /market/ads/mine` now sorts by `created_at DESC` so new drafts stay on page 1 of My Ads instead of sorting after every published ad. | `go build ./...`; `go test ./internal/modules/market/...` |
 | 2026-10-16 | SMS (TRAI DLT) | Added Profile → SMS Preferences (`/sms-preferences`): OTP and payment SMS shown as always on, "Offers & updates" promotional opt-in saved via `PUT /sms/preferences/me`. OTP screen now shows resend errors (cooldown / hourly cap / SMS unavailable) and the 5-minute validity. Login dev OTP hint shown only in debug builds. | `flutter test` 207/207 (new `test/profile/sms_preferences_test.dart`); analyzer clean on changed files; on-device screenshot pending (emulator ANR under host load) |
+| 2026-10-16 | Email verification | Edit Profile: unverified email shows "Not verified" + Verify; verified email "Change" sheet now calls `/users/me/email/send-code` + `/verify` (replaced local-only 123456 placeholder). Profile save no longer wipes a verified email. | `flutter test` 210/210 (new `test/profile/email_verification_test.dart`); analyzer: no new issues |
 
 ## Visual Findings
 
@@ -121,6 +122,21 @@ Built in mock mode across api/admin/mobile/infra (commits `427eb67`, `fc15f55`, 
 | S11 | Later | all | Promotional SMS sending (e.g. promo blasts) | Consent, 10:00–21:00 IST window and opt-out rules are already enforced; there is no sending feature or promotional template yet. |
 | S12 | Pre-existing | greenroot-api | Fix 6 failing order/dispatch checks in `./test-api.sh` (start/complete-loading, buyer order create, cancel LOADED, delete CONFIRMED, dispatch create) | Not caused by SMS work — same failures on the commit before it. |
 
+### Email + messaging core — pending (added 2026-10-16)
+
+Messaging core (`internal/modules/messaging`) fans events to SMS and email; email channel built in mock mode. Design and go-live steps: `greenroot-infra/docs/messaging.md`.
+
+| # | Owner | Repo | Task | Why / done when |
+|---:|---|---|---|---|
+| E1 | You | — | Choose an email provider (SES / SendGrid / Postmark …) and verify the sending domain; publish SPF, DKIM, DMARC | Required before any real email. Done when Admin → Email → Sender has a From address and "Domain verified" is ticked (Readiness all green). |
+| E2 | Dev | greenroot-api | Implement the provider in `platform/email` and register it in `email.New`; deploy with `EMAIL_PROVIDER=<name>` and Redis | Switches on real verification codes and payment emails. |
+| E3 | Dev | greenroot-api | Bounce / complaint webhook → set `email_messages.status` DELIVERED/BOUNCED; un-verify addresses that hard-bounce | Columns exist; nothing updates them yet. Depends on E2. |
+| E4 | Dev | greenroot-api | Add `/email/*` and `/users/me/email/*` to `docs/swagger/openapi.yaml` | API.md is updated; Swagger is not (same as S7). |
+| E5 | Dev | greenroot-mobile | On-device screenshots: Edit Profile → Verify email sheet (send code, wrong code, success) | Covered only by repository tests; emulator unreliable under host load. |
+| E6 | Dev | greenroot-mobile + api | Mobile-number change in Edit Profile is still a local placeholder (accepts 123456, calls no API) | Pre-dates this work; needs a real change-mobile OTP endpoint. |
+| E7 | Later | all | Marketing email (newsletters, promos) | Needs consent + `List-Unsubscribe`; only transactional email exists today. |
+| E8 | Pre-existing | greenroot-api | `go test ./tests/api` → `TestOrderLifecycle_AllRoles` gets `402 subscription_required` | Fails identically on the commit before the email work (data/date dependent), not caused by it. |
+
 ## Verification Log
 
 | Date | Command | Result |
@@ -142,3 +158,4 @@ Built in mock mode across api/admin/mobile/infra (commits `427eb67`, `fc15f55`, 
 | 2026-10-16 | `flutter analyze lib/features/owner/owner_home.dart` | No error/warning lines (info-level trailing-comma lints only, pre-existing) |
 | 2026-10-16 | `flutter test` | Passed: 207 tests (SMS preferences screen + repository) |
 | 2026-10-16 | `flutter build apk --release -t lib/main_dev.dart` | Build passed |
+| 2026-10-16 | `flutter test` | Passed: 210 tests (email verification repository tests) |
