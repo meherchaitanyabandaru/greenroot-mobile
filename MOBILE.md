@@ -170,10 +170,15 @@ lib/
 | Saving the profile no longer wipes a verified email (email omitted = unchanged) | ✅ |
 | SMS Preferences screen (`/sms-preferences`): OTP/payment SMS always on, promotional opt-in switch | ✅ |
 | OTP screen shows resend errors (cooldown / hourly limit / SMS down) and 5-minute validity; dev OTP hint only in debug builds | ✅ |
+| Owner home dashboard counts correct (API fix 2026-10-17: was showing 0 orders/inventory/drivers/customers) | ✅ |
+| CI (`flutter analyze`, `flutter test`), Dependabot (pub + Actions), PR template, `CODEOWNERS` | ✅ |
 
 ---
 
 ## Pending Work
+
+### Tracking access (API change 2026-10-17)
+- Tracking history is now permission-checked: vehicle history is admin-only; driver history is visible to the driver and connected nurseries; dispatch history to its driver, buyer and seller nursery. Other callers get `403` — screens that call these routes must show a "no access" state instead of an error.
 
 ### Select Starting Activity Screen
 - After login, users with no `initial_activity` on their account should be routed to a screen where they pick their first role (Buyer, Nursery Owner, Driver)
