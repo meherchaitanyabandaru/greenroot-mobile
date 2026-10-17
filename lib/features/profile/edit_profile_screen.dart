@@ -463,27 +463,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         style: AppTypography.label.copyWith(color: AppColors.textSecondary),
       );
 
-  static IconData _genderIcon(String g) {
-    switch (g) {
-      case 'MALE':
-        return Icons.male_rounded;
-      case 'FEMALE':
-        return Icons.female_rounded;
-      default:
-        return Icons.visibility_off_outlined;
-    }
-  }
-
-  static String _genderLabel(String g) {
-    switch (g) {
-      case 'MALE':
-        return 'Male';
-      case 'FEMALE':
-        return 'Female';
-      default:
-        return 'Prefer not to say';
-    }
-  }
 }
 
 // ── Locked field ──────────────────────────────────────────────────────────────

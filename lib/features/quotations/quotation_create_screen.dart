@@ -905,63 +905,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
 // ── Type badge ─────────────────────────────────────────────────────────────────
 
-class _TypeBadge extends StatelessWidget {
-  final bool isInternal;
-  const _TypeBadge({required this.isInternal});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isInternal ? AppColors.textSecondary : AppColors.primaryMain;
-    final bg = isInternal ? AppColors.border : AppColors.forest100;
-    final label = isInternal ? 'Internal Quotation' : 'Quotation';
-    final icon =
-        isInternal ? Icons.folder_outlined : Icons.request_quote_outlined;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 6),
-        Text(label,
-            style: AppTypography.caption
-                .copyWith(color: color, fontWeight: FontWeight.w700)),
-      ]),
-    );
-  }
-}
-
 // ── Caution banner ─────────────────────────────────────────────────────────────
-
-class _CautionBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFCD34D)),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Icon(Icons.info_outline, color: Color(0xFFD97706), size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'Note: GreenRoot does not set or verify any price rates. '
-            'All prices shown are as entered by the owner/user.',
-            style:
-                AppTypography.caption.copyWith(color: const Color(0xFF92400E)),
-          ),
-        ),
-      ]),
-    );
-  }
-}
 
 // ── Item card ──────────────────────────────────────────────────────────────────
 

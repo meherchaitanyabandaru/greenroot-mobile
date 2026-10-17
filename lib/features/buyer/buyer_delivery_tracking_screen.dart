@@ -21,9 +21,6 @@ String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
     : '${km.toStringAsFixed(1)} km';
 
-Color _dispatchStatusColor(String status) =>
-    LifecyclePresenter.forBuyerDispatchStatus(status).color;
-
 // ── Screen shell ───────────────────────────────────────────────────────────────
 
 class BuyerDeliveryTrackingScreen extends ConsumerWidget {

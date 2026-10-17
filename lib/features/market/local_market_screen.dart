@@ -850,14 +850,13 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
 
 class _BrowseAdCard extends ConsumerWidget {
   final MarketAd ad;
-  final bool isOwn;
-  const _BrowseAdCard({required this.ad, this.isOwn = false});
+  const _BrowseAdCard({required this.ad});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _AdDetailScreen(ad: ad, isOwn: isOwn))),
+          builder: (_) => _AdDetailScreen(ad: ad))),
       child: Container(
         decoration: BoxDecoration(
           color: _mkCard,
@@ -869,7 +868,7 @@ class _BrowseAdCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CardPhoto(ad: ad, isOwn: isOwn),
+            _CardPhoto(ad: ad, isOwn: false),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
@@ -944,7 +943,7 @@ class _CardPhoto extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
     final myNurseryId = ref
-        .watch(sessionProvider.select((s) => s?.capabilities.ownedNurseryId));
+        .watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
     final effectiveIsOwn =
         isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
 
@@ -1491,7 +1490,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
     final ad = widget.ad;
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
     final myNurseryId = ref
-        .watch(sessionProvider.select((s) => s?.capabilities.ownedNurseryId));
+        .watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
     final effectiveIsOwn =
         widget.isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
     final canSave = ad.capabilities?.canSave ?? !effectiveIsOwn;
