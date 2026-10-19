@@ -92,6 +92,25 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     SplashScreen.routeAfterLogin(context, session);
   }
 
+  /// One digit moves to the next box; a pasted or SMS-autofilled code
+  /// ("123456") is spread over the boxes from [index]. Verification starts
+  /// only when every box holds a digit.
+  void _onBoxChanged(int index, String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.length > 1) {
+      var i = index;
+      for (final d in digits.split('')) {
+        if (i >= AppConstants.otpLength) break;
+        _controllers[i].text = d;
+        i++;
+      }
+      _focusNodes[(i - 1).clamp(0, AppConstants.otpLength - 1)].requestFocus();
+    } else if (digits.isNotEmpty && index < AppConstants.otpLength - 1) {
+      _focusNodes[index + 1].requestFocus();
+    }
+    if (_otp.length == AppConstants.otpLength) _verify();
+  }
+
   void _clearOtp() {
     for (final c in _controllers) {
       c.clear();
@@ -165,14 +184,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     controller: _controllers[i],
                     focusNode: _focusNodes[i],
                     hasError: verifyState.error != null,
-                    onChanged: (val) {
-                      if (val.isNotEmpty && i < AppConstants.otpLength - 1) {
-                        _focusNodes[i + 1].requestFocus();
-                      }
-                      if (val.isNotEmpty && i == AppConstants.otpLength - 1) {
-                        _verify();
-                      }
-                    },
+                    onChanged: (val) => _onBoxChanged(i, val),
                     onBackspace: () {
                       if (i > 0) {
                         _focusNodes[i - 1].requestFocus();
@@ -278,7 +290,10 @@ class _OtpBox extends StatelessWidget {
           focusNode: focusNode,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          maxLength: 1,
+          // No maxLength: a pasted or autofilled code arrives in one box and is
+          // spread by the screen; one digit per box is kept below.
+          autofillHints: index == 0 ? const [AutofillHints.oneTimeCode] : null,
+          autofocus: index == 0, // keyboard opens on the first box
           style: AppTypography.h2.copyWith(color: AppColors.textPrimary),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: InputDecoration(

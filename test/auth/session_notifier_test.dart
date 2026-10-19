@@ -64,13 +64,10 @@ class _FakeAuthRepo extends AuthRepository {
   Future<List<Workspace>> getWorkspaces() async => fakeWorkspaces;
 
   @override
-  Future<List<AppRole>> getUserRoles() async => fakeRoles;
+  Future<List<AppRole>> getUserRoles(List<Workspace> workspaces) async => fakeRoles;
 
   @override
   Future<DriverApplicationStatus?> getDriverApplicationStatus() async => null;
-
-  @override
-  Future<int?> getNurseryId() async => null;
 
   @override
   Future<AppRole?> getStoredActiveRole() async => null;
@@ -137,6 +134,25 @@ void main() {
       expect(notifier.state.user?.id, kTestUserId);
       expect(notifier.state.user?.firstName, 'Ravi');
       expect(notifier.state.roles, contains(AppRole.buyer));
+    });
+
+    test('offline at launch keeps the session and flags isOffline (splash offers Retry)', () async {
+      final repo = _FakeAuthRepo(sessionValid: true, bootstrapError: const NetworkError());
+      final notifier = SessionNotifier(repo);
+      await notifier.bootstrap();
+      expect(notifier.state.isOffline, isTrue);
+      expect(await repo.hasValidSession(), isTrue, reason: 'no logout just because the network is down');
+    });
+
+    test('nursery id comes from the owned or managed workspace', () {
+      expect(AuthRepository.nurseryIdOf([Workspace.fromJson({'type': 'PERSONAL'})]), isNull);
+      expect(
+        AuthRepository.nurseryIdOf([
+          Workspace.fromJson({'type': 'PERSONAL'}),
+          Workspace.fromJson({'type': 'MANAGER_NURSERY', 'nursery_id': 7}),
+        ]),
+        7,
+      );
     });
 
     test('bootstrap: getCurrentUser throws UnauthorizedError → unauthenticated',

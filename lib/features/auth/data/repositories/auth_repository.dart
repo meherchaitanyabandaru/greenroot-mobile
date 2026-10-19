@@ -47,9 +47,8 @@ class AuthRepository {
   /// bootstrap so that any backend-side role changes (e.g. nursery approval) are
   /// reflected in the JWT before the first role-gated API call is made.
   ///
-  /// Errors are swallowed: if the refresh fails (network down, token expired) the
-  /// existing tokens stay in storage and bootstrap falls through to its normal
-  /// hasValidSession check which will push the user to login.
+  /// Errors are swallowed (network down, token expired): the existing tokens
+  /// stay and bootstrap carries on. A suspension is rethrown with its reason.
   Future<void> silentRefreshToken() async {
     try {
       final existing = await SecureStorageService.getRefreshToken();
@@ -61,6 +60,10 @@ class AuthRepository {
         userId: response.user.id,
       );
       AppLogger.i('Silent token refresh succeeded — roles updated in JWT');
+    } on AccountSuspendedError {
+      // Only this response carries the suspension reason and date: pass it on
+      // so the suspended screen can show them.
+      rethrow;
     } catch (e) {
       AppLogger.w(
           'Silent token refresh failed (continuing with existing token)', e,);
@@ -89,74 +92,47 @@ class AuthRepository {
     }
   }
 
-  Future<List<AppRole>> getUserRoles() async {
+  /// Business roles come from the workspaces (owner, manager, driver);
+  /// everyone else is a buyer. ADMIN/SUPER_ADMIN come from the roles endpoint.
+  Future<List<AppRole>> getUserRoles(List<Workspace> workspaces) async {
+    final roles = {
+      for (final ws in workspaces)
+        if (ws.isBusinessWorkspace) ws.appRole,
+    };
+    if (roles.isEmpty) roles.add(AppRole.buyer);
     try {
-      // V1: derive roles from workspace API (source of truth for role-based routing)
-      final workspaces = await _remote.getWorkspaces();
-      final roles = <AppRole>{};
-      for (final ws in workspaces) {
-        final type = ws['type'] as String? ?? '';
-        switch (type) {
-          case 'OWNED_NURSERY':
-            roles.add(AppRole.nurseryOwner);
-          case 'MANAGER_NURSERY':
-            roles.add(AppRole.manager);
-          case 'DRIVER':
-            roles.add(AppRole.driver);
-          case 'PERSONAL':
-            // Only add BUYER if no other role was found (handled below)
-            break;
+      final userId = await SecureStorageService.getUserId();
+      if (userId != null) {
+        final response = await _remote.getUserRoles(userId);
+        for (final r in response.roles) {
+          final role = AppRole.fromString(r.role);
+          if (role == AppRole.admin || role == AppRole.superAdmin) roles.add(role!);
         }
       }
-      // Fall back to BUYER if nothing else applies
-      if (roles.isEmpty) roles.add(AppRole.buyer);
-
-      // Also pick up ADMIN/SUPER_ADMIN from the old roles endpoint as a supplement
-      try {
-        final userId = await SecureStorageService.getUserId();
-        if (userId != null) {
-          final response = await _remote.getUserRoles(userId);
-          for (final r in response.roles) {
-            final role = AppRole.fromString(r.role);
-            if (role == AppRole.admin || role == AppRole.superAdmin) {
-              roles.add(role!);
-            }
-          }
-        }
-      } catch (_) {}
-
-      AppLogger.i(
-          'Resolved roles from workspaces: ${roles.map((r) => r.value).join(', ')}',);
-      return roles.toList();
-    } on AppError {
-      rethrow;
-    } catch (e) {
-      AppLogger.e('getUserRoles error', e);
-      throw const UnknownError();
-    }
-  }
-
-  Future<int?> getNurseryId() async {
-    try {
-      final workspaces = await _remote.getWorkspaces();
-      for (final ws in workspaces) {
-        if (ws['type'] == 'OWNED_NURSERY' || ws['type'] == 'MANAGER_NURSERY') {
-          final id = ws['nursery_id'];
-          if (id != null) return (id as num).toInt();
-        }
-      }
-      return null;
     } catch (_) {
-      return null;
+      // Admin roles only add the admin home; business roles above still hold.
     }
+    AppLogger.i('Resolved roles: ${roles.map((r) => r.value).join(', ')}');
+    return roles.toList();
   }
 
+  /// The nursery the user owns or manages, from the workspaces.
+  static int? nurseryIdOf(List<Workspace> workspaces) => workspaces
+      .where((w) => w.type == 'OWNED_NURSERY' || w.type == 'MANAGER_NURSERY')
+      .map((w) => w.nurseryId)
+      .whereType<int>()
+      .firstOrNull;
+
+  /// Fails loudly: an empty list would quietly turn an owner into a buyer.
   Future<List<Workspace>> getWorkspaces() async {
     try {
       final raw = await _remote.getWorkspaces();
       return raw.map(Workspace.fromJson).toList();
-    } catch (_) {
-      return [];
+    } on AppError {
+      rethrow;
+    } catch (e) {
+      AppLogger.e('getWorkspaces error', e);
+      throw const UnknownError();
     }
   }
 
@@ -198,6 +174,15 @@ class AuthRepository {
       throw const UnknownError();
     }
   }
+
+  /// Texts a code to the NEW sign-in number. Returns the dev code in mock mode.
+  Future<String?> sendMobileCode(String mobile) async {
+    final res = await _remote.sendMobileCode(mobile);
+    return res['mock_code'] as String?;
+  }
+
+  /// Verifies the code sent to the new number and makes it the sign-in number.
+  Future<UserProfile> changeMobile(String mobile, String code) => _remote.changeMobile(mobile, code);
 
   Future<UserProfile> updateProfile(UpdateProfileRequest req) async {
     try {

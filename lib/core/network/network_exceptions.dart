@@ -62,6 +62,11 @@ class NetworkExceptions {
       case 409:
         final code409 = _extractCode(response.data);
         if (code409 == 'already_member') return AlreadyMemberError(message ?? 'You are already a member of a nursery.');
+        if (code409 == 'account_deletion_blocked') {
+          return const ConflictingRoleError(
+            'Close or cancel your active orders and quotations, and close your nursery, before deleting your account.',
+          );
+        }
         return ConflictingRoleError(message ?? "Your current role doesn't allow you to accept this invite.");
       case 404:
         return NotFoundError(message ?? 'Not found.');
@@ -92,7 +97,14 @@ class NetworkExceptions {
     return error is Map<String, dynamic> ? error : null;
   }
 
+  /// The server's message, as a sentence for the user ("this number…" → "This number…").
   static String? _extractMessage(dynamic data) {
+    final m = _rawMessage(data);
+    if (m == null || m.isEmpty) return m;
+    return m[0].toUpperCase() + m.substring(1);
+  }
+
+  static String? _rawMessage(dynamic data) {
     if (data is! Map<String, dynamic>) return null;
     // Top-level message field
     final top = data['message'] as String? ?? data['msg'] as String?;

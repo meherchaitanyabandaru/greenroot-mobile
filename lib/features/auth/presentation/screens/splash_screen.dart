@@ -64,6 +64,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
+  bool _offline = false;
 
   @override
   void initState() {
@@ -90,8 +91,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _navigate();
   }
 
+  Future<void> _retry() async {
+    setState(() => _offline = false);
+    await ref.read(sessionProvider.notifier).bootstrap();
+    if (mounted) _navigate();
+  }
+
   void _navigate() {
     final session = ref.read(sessionProvider);
+    // Offline at launch: keep the signed-in session and offer a retry
+    // instead of sending the user back to OTP sign-in.
+    if (session.isOffline) {
+      setState(() => _offline = true);
+      return;
+    }
     if (!session.isAuthenticated) {
       context.go('/login');
       return;
@@ -154,6 +167,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     color: Colors.white.withValues(alpha: 0.65),
                   ),
                 ),
+                if (_offline) ...[
+                  const SizedBox(height: 32),
+                  Text(
+                    'No connection. Check your internet and try again.',
+                    style: AppTypography.bodySmall.copyWith(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: 200,
+                    child: OutlinedButton(
+                      onPressed: _retry,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

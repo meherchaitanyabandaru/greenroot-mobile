@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import '../../core/errors/app_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,8 +275,8 @@ class ProfileScreen extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     try {
       await ApiClient.instance.delete(ApiConstants.leaveNursery);
-      await ref.read(sessionProvider.notifier).bootstrap();
-      if (context.mounted) context.go('/home');
+      if (!context.mounted) return;
+      await _signOutAfterExit(context, ref, 'You left the nursery. Sign in again to continue as a buyer.');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -315,8 +315,8 @@ class ProfileScreen extends ConsumerWidget {
     try {
       await ApiClient.instance
           .delete(ApiConstants.disconnectDriver(nurseryId, userId));
-      await ref.read(sessionProvider.notifier).bootstrap();
-      if (context.mounted) context.go('/home');
+      if (!context.mounted) return;
+      await _signOutAfterExit(context, ref, 'You are disconnected from the nursery. Sign in again to continue.');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -325,6 +325,15 @@ class ProfileScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  /// Leaving or disconnecting ends all the user's sessions on the server, so
+  /// carrying on would fail at the next token refresh: sign out and explain.
+  Future<void> _signOutAfterExit(BuildContext context, WidgetRef ref, String message) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(sessionProvider.notifier).logout();
+    if (context.mounted) context.go('/login');
+    messenger.showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 5)));
   }
 
   Future<void> _confirmDeleteAccount(
@@ -359,17 +368,12 @@ class ProfileScreen extends ConsumerWidget {
           const SnackBar(content: Text('Account deleted. Goodbye.')),
         );
       }
-    } on DioException catch (e) {
+    } on AppError catch (e) {
+      // ApiClient turns HTTP errors into AppError; a blocked deletion (409)
+      // carries the reason to show.
       if (!context.mounted) return;
-      final body = e.response?.data;
-      final code = (body is Map && body['error'] is Map)
-          ? (body['error'] as Map)['code'] as String?
-          : null;
-      final message = code == 'account_deletion_blocked'
-          ? 'Close or cancel your active orders, quotations, and nursery before deleting your account.'
-          : 'Failed to delete account. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+        SnackBar(content: Text(e.message), duration: const Duration(seconds: 5)),
       );
     } catch (_) {
       if (context.mounted) {

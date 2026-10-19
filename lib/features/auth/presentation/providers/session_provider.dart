@@ -81,6 +81,10 @@ class SessionState {
   bool get isLoading => status == SessionStatus.loading;
   bool get isSuspended => status == SessionStatus.suspended;
 
+  /// Bootstrap failed only because the device is offline or the server is
+  /// unreachable: the stored session is kept, so the app can retry.
+  bool get isOffline => error is NetworkError || error is TimeoutError;
+
   // V1 workspace helpers — PERSONAL is the default customer context, not a
   // selectable workspace. Only OWNED_NURSERY, MANAGER_NURSERY, DRIVER show.
   List<Workspace> get mobileWorkspaces =>
@@ -108,6 +112,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
     try {
       ApiClient.authInterceptor.onMembershipRevoked = _onMembershipRevoked;
       ApiClient.authInterceptor.onAccountSuspended = _onAccountSuspended;
+      ApiClient.authInterceptor.onSessionExpired = _onSessionExpired;
     } catch (_) {
       // ApiClient not yet initialized in tests — safe to ignore.
     }
@@ -117,6 +122,16 @@ class SessionNotifier extends StateNotifier<SessionState> {
     Future.microtask(() async {
       if (state.status == SessionStatus.authenticated) {
         await logout();
+      }
+    });
+  }
+
+  // The refresh token was refused (expired, revoked, signed out elsewhere):
+  // storage is already cleared; send the user to login.
+  void _onSessionExpired() {
+    Future.microtask(() {
+      if (state.status == SessionStatus.authenticated) {
+        state = const SessionState(status: SessionStatus.unauthenticated);
       }
     });
   }
@@ -151,8 +166,8 @@ class SessionNotifier extends StateNotifier<SessionState> {
       final user = await _repo.getCurrentUser();
       final workspaces = await _repo.getWorkspaces();
       final driverApplication = await _repo.getDriverApplicationStatus();
-      final roles = await _repo.getUserRoles();
-      final nurseryId = await _repo.getNurseryId();
+      final roles = await _repo.getUserRoles(workspaces);
+      final nurseryId = AuthRepository.nurseryIdOf(workspaces);
       final storedActiveRole = await _repo.getStoredActiveRole();
       final mobileRoles = workspaces
           .where((w) => w.isBusinessWorkspace)

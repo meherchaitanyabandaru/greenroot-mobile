@@ -1,3 +1,4 @@
+import '../../core/utilities/indian_mobile.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -118,9 +119,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         type: type,
         currentValue: current,
         prefill: prefill,
-        sendEmailCode: repo.sendEmailCode,
-        verifyEmailCode: (email, code) async {
-          final verified = await repo.verifyEmail(email, code);
+        sendCode: type == _IdentityType.mobile ? repo.sendMobileCode : repo.sendEmailCode,
+        verifyCode: (value, code) async {
+          final verified = type == _IdentityType.mobile
+              ? await repo.changeMobile(value, code)
+              : await repo.verifyEmail(value, code);
           ref.read(sessionProvider.notifier).updateUser(verified);
           if (mounted) _emailCtrl.text = verified.email ?? '';
         },
@@ -625,16 +628,17 @@ class _ChangeIdentitySheet extends StatefulWidget {
   final String? currentValue;
   /// Pre-filled address when verifying an existing, unverified email.
   final String? prefill;
-  /// Email: real verification via the API. Returns the dev code in mock mode.
-  final Future<String?> Function(String email)? sendEmailCode;
-  final Future<void> Function(String email, String code)? verifyEmailCode;
+  /// Sends a code to the new number or address (returns the dev code in mock mode).
+  final Future<String?> Function(String value) sendCode;
+  /// Checks the code and saves the number or address.
+  final Future<void> Function(String value, String code) verifyCode;
 
   const _ChangeIdentitySheet({
     required this.type,
     this.currentValue,
     this.prefill,
-    this.sendEmailCode,
-    this.verifyEmailCode,
+    required this.sendCode,
+    required this.verifyCode,
   });
 
   @override
@@ -699,11 +703,12 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
   bool _validateInput() {
     final v = _inputCtrl.text.trim();
     if (_isMobile) {
-      if (v.length != 10 || int.tryParse(v) == null) {
-        setState(() => _error = 'Enter a valid 10-digit mobile number');
+      final invalid = validateIndianMobile(v);
+      if (invalid != null) {
+        setState(() => _error = invalid);
         return false;
       }
-      if (v == widget.currentValue?.replaceAll(RegExp(r'\D'), '')) {
+      if (normalizeIndianMobile(v) == normalizeIndianMobile(widget.currentValue ?? '')) {
         setState(() => _error = 'This is already your current number');
         return false;
       }
@@ -724,16 +729,11 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
     setState(() => _error = null);
     if (!_validateInput()) return;
     setState(() => _loading = true);
-    if (!_isMobile && widget.sendEmailCode != null) {
-      try {
-        await widget.sendEmailCode!(_inputCtrl.text.trim());
-      } on AppError catch (e) {
-        if (mounted) setState(() { _loading = false; _error = e.message; });
-        return;
-      }
-    } else {
-      // Mobile-number change is not wired to an API yet.
-      await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      await widget.sendCode(_inputCtrl.text.trim());
+    } on AppError catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.message; });
+      return;
     }
     if (!mounted) return;
     setState(() {
@@ -751,27 +751,17 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
     if (_otp.length != 6) return;
     setState(() { _loading = true; _error = null; });
 
-    if (!_isMobile && widget.verifyEmailCode != null) {
-      try {
-        await widget.verifyEmailCode!(_inputCtrl.text.trim(), _otp);
-        if (mounted) Navigator.of(context).pop('Email verified.');
-      } on AppError catch (e) {
-        _clearOtp();
-        if (mounted) setState(() { _loading = false; _error = e.message; });
+    try {
+      await widget.verifyCode(_inputCtrl.text.trim(), _otp);
+      if (mounted) {
+        Navigator.of(context).pop(
+          _isMobile ? 'Mobile number updated. Sign in with the new number from now on.' : 'Email verified.',
+        );
       }
-      return;
-    }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-
-    // Mobile-number change is still a dev placeholder (no API): only 123456.
-    if (_otp != '123456') {
+    } on AppError catch (e) {
       _clearOtp();
-      setState(() { _loading = false; _error = 'Incorrect code. Use 123456 in dev.'; });
-      return;
+      if (mounted) setState(() { _loading = false; _error = e.message; });
     }
-    if (mounted) Navigator.of(context).pop('Mobile number updated successfully.');
   }
 
   @override
@@ -813,8 +803,7 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
           controller: _inputCtrl,
           autofocus: true,
           keyboardType: _isMobile ? TextInputType.phone : TextInputType.emailAddress,
-          inputFormatters: _isMobile ? [FilteringTextInputFormatter.digitsOnly] : [],
-          maxLength: _isMobile ? 10 : null,
+          inputFormatters: _isMobile ? [IndianMobileInputFormatter()] : [],
           style: AppTypography.body,
           decoration: InputDecoration(
             counterText: '',

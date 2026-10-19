@@ -1,6 +1,6 @@
+import '../../../../core/utilities/indian_mobile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/storage/secure_storage_service.dart';
@@ -22,6 +22,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _mobileCtrl = TextEditingController();
+  String? _termsError;
   String? _mobileError;
   bool _agreedToTerms = false;
   bool _termsAlreadyAccepted = false; // true = returning user, hide checkbox
@@ -48,15 +49,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _requestOtp() async {
-    setState(() => _mobileError = null);
+    setState(() {
+      _mobileError = null;
+      _termsError = null;
+    });
+    if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
-      setState(
-        () => _mobileError =
-            'Please agree to the Terms & Conditions and Privacy Policy',
-      );
+      setState(() => _termsError = 'Please agree to the Terms & Conditions and Privacy Policy');
       return;
     }
-    if (!_formKey.currentState!.validate()) return;
     if (!_termsAlreadyAccepted) {
       await SecureStorageService.saveTermsAgreed();
     }
@@ -144,10 +145,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   textInputAction: TextInputAction.done,
                   errorText: _mobileError,
                   autofocus: true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                  ],
+                  inputFormatters: [IndianMobileInputFormatter()],
                   prefixIcon: const Text(
                     '+91',
                     style: TextStyle(
@@ -157,15 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   onSubmitted: (_) => _requestOtp(),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Mobile number is required';
-                    }
-                    if (val.trim().length != 10) {
-                      return 'Enter a valid 10-digit mobile number';
-                    }
-                    return null;
-                  },
+                  validator: validateIndianMobile,
                 ),
                 const SizedBox(height: AppSpacing.x2l),
 
@@ -180,8 +170,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Checkbox(
                           key: const Key(TestKeys.loginAgreeCheckbox),
                           value: _agreedToTerms,
-                          onChanged: (v) =>
-                              setState(() => _agreedToTerms = v ?? false),
+                          onChanged: (v) => setState(() {
+                            _agreedToTerms = v ?? false;
+                            _termsError = null;
+                          }),
                           activeColor: AppColors.primaryMain,
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
@@ -225,6 +217,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
                   ),
+                  if (_termsError != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(_termsError!, style: AppTypography.caption.copyWith(color: AppColors.errorText)),
+                  ],
                   const SizedBox(height: AppSpacing.x2l),
                 ],
 

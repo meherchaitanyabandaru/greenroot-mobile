@@ -60,11 +60,9 @@ class _FakeAuthRepo extends AuthRepository {
   @override
   Future<List<Workspace>> getWorkspaces() async => _workspaces;
   @override
-  Future<List<AppRole>> getUserRoles() async => [];
+  Future<List<AppRole>> getUserRoles(List<Workspace> workspaces) async => [];
   @override
   Future<DriverApplicationStatus?> getDriverApplicationStatus() async => null;
-  @override
-  Future<int?> getNurseryId() async => null;
   @override
   Future<AppRole?> getStoredActiveRole() async => null;
   @override

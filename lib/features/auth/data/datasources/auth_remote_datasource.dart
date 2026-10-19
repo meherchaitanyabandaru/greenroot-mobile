@@ -67,6 +67,18 @@ class AuthRemoteDataSource {
         fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
       );
 
+  Future<Map<String, dynamic>> sendMobileCode(String mobile) => _client.post(
+        ApiConstants.usersMeMobileSendCode,
+        data: {'mobile': mobile},
+        fromJson: (json) => json as Map<String, dynamic>,
+      );
+
+  Future<UserProfile> changeMobile(String mobile, String code) => _client.post(
+        ApiConstants.usersMeMobileVerify,
+        data: {'mobile': mobile, 'code': code},
+        fromJson: (json) => UserProfile.fromJson(json as Map<String, dynamic>),
+      );
+
   Future<UserProfile> updateProfile(int userId, UpdateProfileRequest req) =>
       _client.put(
         ApiConstants.usersMe,

@@ -25,6 +25,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  var _autovalidate = AutovalidateMode.disabled;
   bool _isLoading = false;
   String? _error;
 
@@ -62,6 +63,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   }
 
   Future<void> _save() async {
+    // After the first attempt, fields re-check as the user types.
+    setState(() => _autovalidate = AutovalidateMode.onUserInteraction);
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
@@ -110,6 +113,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           child: Form(
             key: _formKey,
+            autovalidateMode: _autovalidate,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
