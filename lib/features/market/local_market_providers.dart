@@ -39,6 +39,10 @@ class MarketAd {
 
   /// Why GreenRoot hid (SUSPENDED) or removed (REMOVED) the ad.
   final String? moderationNote;
+
+  /// Who posted it and their camera selfie, shown on the ad.
+  final String? postedByName;
+  final String? postedByPhoto;
   final DateTime? expiresAt;
   final DateTime? publishedAt;
   final DateTime createdAt;
@@ -70,6 +74,8 @@ class MarketAd {
     required this.isSavedByMe,
     this.myEnquiryId,
     this.moderationNote,
+    this.postedByName,
+    this.postedByPhoto,
     this.expiresAt,
     this.publishedAt,
     required this.createdAt,
@@ -104,6 +110,8 @@ class MarketAd {
         isSavedByMe: j['is_saved_by_me'] as bool? ?? false,
         myEnquiryId: (j['my_enquiry_id'] as num?)?.toInt(),
         moderationNote: j['moderation_note'] as String?,
+        postedByName: j['posted_by_name'] as String?,
+        postedByPhoto: j['posted_by_photo'] as String?,
         expiresAt: j['expires_at'] != null
             ? DateTime.tryParse(j['expires_at'] as String)
             : null,
@@ -180,6 +188,55 @@ class MarketAdSummary {
         isLive: j['is_live'] as bool? ?? false,
         isExpired: j['is_expired'] as bool? ?? false,
         daysRemaining: (j['days_remaining'] as num?)?.toInt(),
+      );
+}
+
+/// A nursery's public market page, opened from the seller photo on an ad.
+class SellerProfile {
+  final int nurseryId;
+  final String nurseryName;
+  final bool verified;
+  final String? description;
+  final String? city;
+  final String? ownerName;
+  final String? ownerPhoto;
+  final DateTime memberSince;
+  final int adsPosted;
+  final int liveAds;
+  final int dealsAgreed;
+  final List<MarketAd> ads;
+
+  const SellerProfile({
+    required this.nurseryId,
+    required this.nurseryName,
+    required this.verified,
+    this.description,
+    this.city,
+    this.ownerName,
+    this.ownerPhoto,
+    required this.memberSince,
+    required this.adsPosted,
+    required this.liveAds,
+    required this.dealsAgreed,
+    required this.ads,
+  });
+
+  factory SellerProfile.fromJson(Map<String, dynamic> j) => SellerProfile(
+        nurseryId: (j['nursery_id'] as num).toInt(),
+        nurseryName: j['nursery_name'] as String,
+        verified: j['verified'] as bool? ?? false,
+        description: j['description'] as String?,
+        city: j['city'] as String?,
+        ownerName: j['owner_name'] as String?,
+        ownerPhoto: j['owner_photo'] as String?,
+        memberSince: DateTime.parse(j['member_since'] as String),
+        adsPosted: (j['ads_posted'] as num?)?.toInt() ?? 0,
+        liveAds: (j['live_ads'] as num?)?.toInt() ?? 0,
+        dealsAgreed: (j['deals_agreed'] as num?)?.toInt() ?? 0,
+        ads: (j['ads'] as List?)
+                ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
       );
 }
 
@@ -393,6 +450,12 @@ class MarketRepository {
         ApiConstants.marketEnquiries,
         queryParameters: params,
       );
+
+  Future<SellerProfile> getSeller(int nurseryId) async {
+    final data = await _client.get<Map<String, dynamic>>(
+        '${ApiConstants.marketNurseries}/$nurseryId',);
+    return SellerProfile.fromJson(data['seller'] as Map<String, dynamic>);
+  }
 
   Future<MarketAd> getAd(int id) async {
     final data =
@@ -899,6 +962,11 @@ final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
           .toList() ??
       [];
 });
+
+final sellerProfileProvider =
+    FutureProvider.autoDispose.family<SellerProfile, int>(
+  (ref, nurseryId) => ref.watch(marketRepositoryProvider).getSeller(nurseryId),
+);
 
 /// The full ad as the viewer sees it, including their existing chat id.
 final adDetailProvider = FutureProvider.autoDispose.family<MarketAd, int>(

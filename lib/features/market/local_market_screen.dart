@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plant_picker.dart';
+import '../profile/profile_selfie.dart';
 import 'local_market_providers.dart';
 import '../top_items/top_items_screen.dart';
 
@@ -68,19 +69,24 @@ String _daysLeft(DateTime? exp) {
 InputDecoration _inputDec(String hint) => InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-          color: _mkTextSecondary.withValues(alpha: 0.6), fontSize: 14,),
+        color: _mkTextSecondary.withValues(alpha: 0.6),
+        fontSize: 14,
+      ),
       filled: true,
       fillColor: _mkCard,
       counterText: '',
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkBorder),),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _mkBorder),
+      ),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkBorder),),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _mkBorder),
+      ),
       focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkGreen, width: 1.5),),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _mkGreen, width: 1.5),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     );
 
@@ -106,8 +112,11 @@ class LocalMarketScreen extends ConsumerWidget {
             key: const ValueKey('local_market_settings_button'),
             icon: const Icon(Icons.settings_outlined, color: _mkTextSecondary),
             tooltip: 'Market Settings',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const _MarketSettingsScreen(),),),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const _MarketSettingsScreen(),
+              ),
+            ),
           ),
         ],
         bottom: const PreferredSize(
@@ -129,7 +138,8 @@ class LocalMarketScreen extends ConsumerWidget {
                   title: 'Latest Listings',
                   actionLabel: 'View All',
                   onAction: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const _BrowseScreen()),),
+                    MaterialPageRoute(builder: (_) => const _BrowseScreen()),
+                  ),
                 ),
               ),
             ),
@@ -137,8 +147,9 @@ class LocalMarketScreen extends ConsumerWidget {
               loading: () => const SliverToBoxAdapter(child: _SkeletonList()),
               error: (e, _) => SliverToBoxAdapter(
                 child: _ErrorState(
-                    message: e.toString(),
-                    onRetry: () => ref.invalidate(latestAdsProvider),),
+                  message: e.toString(),
+                  onRetry: () => ref.invalidate(latestAdsProvider),
+                ),
               ),
               data: (ads) {
                 if (ads.isEmpty) {
@@ -175,8 +186,11 @@ class LocalMarketScreen extends ConsumerWidget {
       button: true,
       label: 'Search market listings',
       child: GestureDetector(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => const _BrowseScreen(autoFocus: true),),),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const _BrowseScreen(autoFocus: true),
+          ),
+        ),
         child: Container(
           color: _mkCard,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -187,16 +201,22 @@ class LocalMarketScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _mkBorder),
             ),
-            child: Row(children: [
-              const Icon(Icons.search_rounded, color: _mkGreen, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text('Search plants...',
+            child: Row(
+              children: [
+                const Icon(Icons.search_rounded, color: _mkGreen, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Search plants...',
                     style: AppTypography.body.copyWith(
-                        color: _mkTextSecondary.withValues(alpha: 0.7),),),
-              ),
-              const Icon(Icons.tune_rounded, color: _mkTextSecondary, size: 18),
-            ],),
+                      color: _mkTextSecondary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                const Icon(Icons.tune_rounded,
+                    color: _mkTextSecondary, size: 18,),
+              ],
+            ),
           ),
         ),
       ),
@@ -241,14 +261,16 @@ class LocalMarketScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
       child: Row(
         children: items
-            .map((e) => Expanded(
-                  child: _QuickActionTile(
-                    e.$1,
-                    e.$2,
-                    e.$3,
-                    iconColor: e.$2 == 'Saved' ? _heartRed : null,
-                  ),
-                ),)
+            .map(
+              (e) => Expanded(
+                child: _QuickActionTile(
+                  e.$1,
+                  e.$2,
+                  e.$3,
+                  iconColor: e.$2 == 'Saved' ? _heartRed : null,
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -267,7 +289,8 @@ class _QuickActionTile extends StatelessWidget {
     final color = iconColor ?? _mkGreen;
     return InkWell(
       key: ValueKey(
-          'local_market_action_${label.toLowerCase().replaceAll(' ', '_')}',),
+        'local_market_action_${label.toLowerCase().replaceAll(' ', '_')}',
+      ),
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
@@ -279,15 +302,20 @@ class _QuickActionTile extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                  color: _mkLight,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _mkGreen.withValues(alpha: 0.18)),),
+                color: _mkLight,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _mkGreen.withValues(alpha: 0.18)),
+              ),
               child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(height: 7),
-            Text(label,
-                style: AppTypography.caption.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w600,),),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: _mkTextPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -359,8 +387,8 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content:
-                    Text('Location permission required for nearby search'),),
+              content: Text('Location permission required for nearby search'),
+            ),
           );
         }
         return;
@@ -407,11 +435,16 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       isScrollControlled: true,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.fromLTRB(
-              16, 8, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom,),
+            16,
+            8,
+            16,
+            24 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -423,100 +456,129 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                        color: _mkBorder,
-                        borderRadius: BorderRadius.circular(2),),
+                      color: _mkBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                Text('Filter Ads',
-                    style: AppTypography.h4.copyWith(
-                        color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
+                Text(
+                  'Filter Ads',
+                  style: AppTypography.h4.copyWith(
+                    color: _mkTextPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 20),
-                const Text('Category',
-                    style: TextStyle(
-                        color: _mkTextSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,),),
+                const Text(
+                  'Category',
+                  style: TextStyle(
+                    color: _mkTextSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     _catChip(
-                        'All', selCat == null, () => setS(() => selCat = null),),
+                      'All',
+                      selCat == null,
+                      () => setS(() => selCat = null),
+                    ),
                     for (final c in cats)
                       _catChip(c, selCat == c, () => setS(() => selCat = c)),
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text('Price Range (₹ per unit)',
-                    style: TextStyle(
-                        color: _mkTextSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,),),
+                const Text(
+                  'Price Range (₹ per unit)',
+                  style: TextStyle(
+                    color: _mkTextSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                Row(children: [
-                  Expanded(
+                Row(
+                  children: [
+                    Expanded(
                       child: TextField(
-                          controller: minCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDec('Min price'),),),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('–',
-                        style:
-                            TextStyle(color: _mkTextSecondary, fontSize: 18),),
-                  ),
-                  Expanded(
-                      child: TextField(
-                          controller: maxCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDec('Max price'),),),
-                ],),
-                const SizedBox(height: 24),
-                Row(children: [
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _mkTextSecondary,
-                      side: const BorderSide(color: _mkBorder),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12,),
+                        controller: minCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDec('Min price'),
+                      ),
                     ),
-                    onPressed: () {
-                      setS(() => selCat = null);
-                      minCtrl.clear();
-                      maxCtrl.clear();
-                    },
-                    child: const Text('Clear All'),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _mkGreen,
-                        foregroundColor: Colors.white,
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '–',
+                        style: TextStyle(color: _mkTextSecondary, fontSize: 18),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: maxCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDec('Max price'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _mkTextSecondary,
+                        side: const BorderSide(color: _mkBorder),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
                       onPressed: () {
-                        final min = double.tryParse(minCtrl.text.trim());
-                        final max = double.tryParse(maxCtrl.text.trim());
-                        ref.read(browseAdsProvider.notifier).setFilters(
-                              category: selCat,
-                              minPrice: min,
-                              maxPrice: max,
-                            );
-                        Navigator.of(ctx).pop();
+                        setS(() => selCat = null);
+                        minCtrl.clear();
+                        maxCtrl.clear();
                       },
-                      child: const Text('Apply Filters',
-                          style: TextStyle(fontWeight: FontWeight.w700),),
+                      child: const Text('Clear All'),
                     ),
-                  ),
-                ],),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _mkGreen,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        onPressed: () {
+                          final min = double.tryParse(minCtrl.text.trim());
+                          final max = double.tryParse(maxCtrl.text.trim());
+                          ref.read(browseAdsProvider.notifier).setFilters(
+                                category: selCat,
+                                minPrice: min,
+                                maxPrice: max,
+                              );
+                          Navigator.of(ctx).pop();
+                        },
+                        child: const Text(
+                          'Apply Filters',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -537,12 +599,14 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                 Border.all(color: selected ? _mkGreen : _mkBorder, width: 1.5),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(label,
-              style: TextStyle(
-                color: selected ? Colors.white : _mkTextPrimary,
-                fontSize: 13,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : _mkTextPrimary,
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
         ),
       );
 
@@ -553,7 +617,8 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       context: context,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
@@ -566,26 +631,34 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
+                  color: _mkBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Sort by',
-                  style: AppTypography.h4.copyWith(
-                      color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
+              child: Text(
+                'Sort by',
+                style: AppTypography.h4.copyWith(
+                  color: _mkTextPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             for (final s in MarketSort.values)
               ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text(s.label,
-                    style: TextStyle(
-                        color: currentSort == s ? _mkGreen : _mkTextPrimary,
-                        fontWeight: currentSort == s
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        fontSize: 15,),),
+                title: Text(
+                  s.label,
+                  style: TextStyle(
+                    color: currentSort == s ? _mkGreen : _mkTextPrimary,
+                    fontWeight:
+                        currentSort == s ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
                 trailing: currentSort == s
                     ? const Icon(Icons.check_rounded, color: _mkGreen, size: 20)
                     : null,
@@ -623,7 +696,9 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: _mkGreen,),
+                      strokeWidth: 2,
+                      color: _mkGreen,
+                    ),
                   ),
                 )
               : IconButton(
@@ -642,8 +717,10 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(Icons.tune_rounded,
-                    color: hasFilters ? _mkGreen : _mkTextSecondary,),
+                Icon(
+                  Icons.tune_rounded,
+                  color: hasFilters ? _mkGreen : _mkTextSecondary,
+                ),
                 if (hasFilters)
                   Positioned(
                     top: -4,
@@ -652,59 +729,72 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                       width: 16,
                       height: 16,
                       decoration: const BoxDecoration(
-                          color: _mkGreen, shape: BoxShape.circle,),
+                        color: _mkGreen,
+                        shape: BoxShape.circle,
+                      ),
                       alignment: Alignment.center,
-                      child: Text('$filterCount',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,),),
+                      child: Text(
+                        '$filterCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.sort_rounded,
-                color: browse.sort != MarketSort.newest
-                    ? _mkGreen
-                    : _mkTextSecondary,),
+            icon: Icon(
+              Icons.sort_rounded,
+              color: browse.sort != MarketSort.newest
+                  ? _mkGreen
+                  : _mkTextSecondary,
+            ),
             tooltip: 'Sort',
             onPressed: _showSortSheet,
           ),
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(hasFilters ? 101 : 57),
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: TextField(
-                controller: _searchCtrl,
-                focusNode: _focus,
-                onChanged: (q) =>
-                    ref.read(browseAdsProvider.notifier).onQueryChanged(q),
-                decoration: _inputDec('Search plants...').copyWith(
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: _mkGreen, size: 20,),
-                  suffixIcon: browse.query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            ref
-                                .read(browseAdsProvider.notifier)
-                                .onQueryChanged('');
-                          },)
-                      : null,
-                  filled: true,
-                  fillColor: _mkBg,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  focusNode: _focus,
+                  onChanged: (q) =>
+                      ref.read(browseAdsProvider.notifier).onQueryChanged(q),
+                  decoration: _inputDec('Search plants...').copyWith(
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: _mkGreen,
+                      size: 20,
+                    ),
+                    suffixIcon: browse.query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              ref
+                                  .read(browseAdsProvider.notifier)
+                                  .onQueryChanged('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: _mkBg,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
                 ),
               ),
-            ),
-            if (hasFilters) _activeFilterChips(browse),
-            const Divider(height: 1, color: _mkBorder),
-          ],),
+              if (hasFilters) _activeFilterChips(browse),
+              const Divider(height: 1, color: _mkBorder),
+            ],
+          ),
         ),
       ),
       body: _buildBody(browse),
@@ -725,12 +815,14 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
               onRemove: () => notifier.setNearby(),
             ),
           if (browse.category != null)
-            _activeChip(browse.category!,
-                onRemove: () => notifier.setFilters(
-                      category: null,
-                      minPrice: browse.minPrice,
-                      maxPrice: browse.maxPrice,
-                    ),),
+            _activeChip(
+              browse.category!,
+              onRemove: () => notifier.setFilters(
+                category: null,
+                minPrice: browse.minPrice,
+                maxPrice: browse.maxPrice,
+              ),
+            ),
           if (browse.minPrice != null || browse.maxPrice != null)
             _activeChip(
               '₹${browse.minPrice?.toStringAsFixed(0) ?? '0'}'
@@ -750,8 +842,10 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('Clear All',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),),
+            child: const Text(
+              'Clear All',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -770,9 +864,14 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label,
-                style: const TextStyle(
-                    color: _mkDark, fontSize: 12, fontWeight: FontWeight.w600,),),
+            Text(
+              label,
+              style: const TextStyle(
+                color: _mkDark,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: 4),
             GestureDetector(
               onTap: onRemove,
@@ -800,50 +899,59 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       );
     }
 
-    return Column(children: [
-      Container(
-        color: _mkCard,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(children: [
-          Text(
-            '${browse.total} result${browse.total == 1 ? '' : 's'}',
-            style: AppTypography.caption.copyWith(color: _mkTextSecondary),
-          ),
-          const Spacer(),
-          Text(
-            browse.sort.label,
-            style: AppTypography.caption
-                .copyWith(color: _mkGreen, fontWeight: FontWeight.w600),
-          ),
-        ],),
-      ),
-      const Divider(height: 1, color: _mkBorder),
-      Expanded(
-        child: RefreshIndicator(
-          color: _mkGreen,
-          backgroundColor: _mkCard,
-          onRefresh: () => ref.read(browseAdsProvider.notifier).refresh(),
-          child: ListView.separated(
-            controller: _scroll,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding, vertical: 16,),
-            itemCount: browse.ads.length + (browse.isLoadingMore ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
-            itemBuilder: (_, i) {
-              if (i == browse.ads.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                      child: CircularProgressIndicator(
-                          color: _mkGreen, strokeWidth: 2,),),
-                );
-              }
-              return _BrowseAdCard(ad: browse.ads[i]);
-            },
+    return Column(
+      children: [
+        Container(
+          color: _mkCard,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Text(
+                '${browse.total} result${browse.total == 1 ? '' : 's'}',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+              const Spacer(),
+              Text(
+                browse.sort.label,
+                style: AppTypography.caption
+                    .copyWith(color: _mkGreen, fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
         ),
-      ),
-    ],);
+        const Divider(height: 1, color: _mkBorder),
+        Expanded(
+          child: RefreshIndicator(
+            color: _mkGreen,
+            backgroundColor: _mkCard,
+            onRefresh: () => ref.read(browseAdsProvider.notifier).refresh(),
+            child: ListView.separated(
+              controller: _scroll,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+                vertical: 16,
+              ),
+              itemCount: browse.ads.length + (browse.isLoadingMore ? 1 : 0),
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (_, i) {
+                if (i == browse.ads.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: _mkGreen,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                }
+                return _BrowseAdCard(ad: browse.ads[i]);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -858,8 +966,11 @@ class _BrowseAdCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _AdDetailScreen(ad: ad),),),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => _AdDetailScreen(ad: ad),
+        ),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: _mkCard,
@@ -877,28 +988,44 @@ class _BrowseAdCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    if (ad.nurseryVerified)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(Icons.verified_rounded,
-                            size: 12, color: _mkGreen,),
+                  Row(
+                    children: [
+                      _SellerAvatar(
+                        photo: ad.postedByPhoto,
+                        name: ad.postedByName ?? ad.nurseryName,
+                        size: 20,
                       ),
-                    Expanded(
-                      child: Text(ad.nurseryName,
+                      const SizedBox(width: 6),
+                      if (ad.nurseryVerified)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.verified_rounded,
+                            size: 12,
+                            color: _mkGreen,
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          ad.nurseryName,
                           style: AppTypography.caption.copyWith(
-                              color: _mkTextSecondary,
-                              fontWeight: FontWeight.w500,),
+                            color: _mkTextSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,),
-                    ),
-                  ],),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 5),
-                  Text(ad.title,
-                      style: AppTypography.h4
-                          .copyWith(color: _mkTextPrimary, height: 1.3),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,),
+                  Text(
+                    ad.title,
+                    style: AppTypography.h4
+                        .copyWith(color: _mkTextPrimary, height: 1.3),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -907,14 +1034,17 @@ class _BrowseAdCard extends ConsumerWidget {
                         Text(
                           '₹${ad.pricePerUnit!.toStringAsFixed(0)}',
                           style: const TextStyle(
-                              color: _mkGreen,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,),
+                            color: _mkGreen,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
                         ),
                         if (ad.priceUnit != null)
-                          Text(' / ${ad.priceUnit}',
-                              style: AppTypography.caption
-                                  .copyWith(color: _mkTextSecondary),),
+                          Text(
+                            ' / ${ad.priceUnit}',
+                            style: AppTypography.caption
+                                .copyWith(color: _mkTextSecondary),
+                          ),
                         const SizedBox(width: 10),
                       ],
                       if (ad.quantity != null)
@@ -945,118 +1075,136 @@ class _CardPhoto extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
-    final myNurseryId = ref
-        .watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
+    final myNurseryId =
+        ref.watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
     final effectiveIsOwn =
         isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
 
-    return Stack(children: [
-      Container(
-        height: 196,
-        width: double.infinity,
-        color: _mkLight,
-        child: ad.photos.isNotEmpty
-            ? Image.network(ad.photos.first,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _photoPlaceholder(),)
-            : _photoPlaceholder(),
-      ),
-      Positioned(
-        bottom: 0,
-        left: 0,
-        right: 0,
-        child: Container(
-          height: 64,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Color(0x33000000)],
-            ),
-          ),
+    return Stack(
+      children: [
+        Container(
+          height: 196,
+          width: double.infinity,
+          color: _mkLight,
+          child: ad.photos.isNotEmpty
+              ? Image.network(
+                  ad.photos.first,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _photoPlaceholder(),
+                )
+              : _photoPlaceholder(),
         ),
-      ),
-      if (effectiveIsOwn)
-        Positioned(top: 10, left: 10, child: _StatusChip(status: ad.status)),
-      if (!effectiveIsOwn && _isNewAd(ad))
         Positioned(
-          top: 10,
-          left: 10,
+          bottom: 0,
+          left: 0,
+          right: 0,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _mkGreen,
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),),
-              ],
+            height: 64,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0x33000000)],
+              ),
             ),
-            child: const Text('NEW',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,),),
           ),
         ),
-      if (ad.photos.length > 1)
-        Positioned(
-          bottom: 10,
-          right: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xAA000000),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text('1/${ad.photos.length}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,),),
-          ),
-        ),
-      if (!effectiveIsOwn)
-        Positioned(
-          top: 8,
-          right: 8,
-          child: GestureDetector(
-            onTap: () => ref.read(toggleSaveProvider(ad.id).notifier).toggle(),
+        if (effectiveIsOwn)
+          Positioned(top: 10, left: 10, child: _StatusChip(status: ad.status)),
+        if (!effectiveIsOwn && _isNewAd(ad))
+          Positioned(
+            top: 10,
+            left: 10,
             child: Container(
-              width: 34,
-              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
-                shape: BoxShape.circle,
+                color: _mkGreen,
+                borderRadius: BorderRadius.circular(6),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,),
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
                 ],
               ),
-              child: Icon(
-                isSaved
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_border_rounded,
-                size: 18,
-                color: isSaved ? _heartRed : _mkTextSecondary,
+              child: const Text(
+                'NEW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
               ),
             ),
           ),
-        ),
-    ],);
+        if (ad.photos.length > 1)
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xAA000000),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '1/${ad.photos.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        if (!effectiveIsOwn)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () =>
+                  ref.read(toggleSaveProvider(ad.id).notifier).toggle(),
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isSaved
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  size: 18,
+                  color: isSaved ? _heartRed : _mkTextSecondary,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _photoPlaceholder() => const Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.local_florist_outlined, size: 44, color: _mkGreen),
-          SizedBox(height: 4),
-          Text('No photo',
-              style: TextStyle(fontSize: 11, color: _mkTextSecondary),),
-        ],),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.local_florist_outlined, size: 44, color: _mkGreen),
+            SizedBox(height: 4),
+            Text(
+              'No photo',
+              style: TextStyle(fontSize: 11, color: _mkTextSecondary),
+            ),
+          ],
+        ),
       );
 }
 
@@ -1071,9 +1219,14 @@ class _Chip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration:
             BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 11, color: fg, fontWeight: FontWeight.w600,),),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: fg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       );
 }
 
@@ -1090,8 +1243,13 @@ class _TrustBar extends StatelessWidget {
     ];
     if (ad.expiresAt != null) {
       items.add(const SizedBox(width: 12));
-      items.add(_ti(Icons.timer_outlined, _daysLeft(ad.expiresAt),
-          color: _daysLeft(ad.expiresAt) == 'Expired' ? _stExpired : null,),);
+      items.add(
+        _ti(
+          Icons.timer_outlined,
+          _daysLeft(ad.expiresAt),
+          color: _daysLeft(ad.expiresAt) == 'Expired' ? _stExpired : null,
+        ),
+      );
     }
     if (ad.enquiryCount > 0) {
       items.add(const SizedBox(width: 12));
@@ -1102,13 +1260,17 @@ class _TrustBar extends StatelessWidget {
 
   Widget _ti(IconData icon, String label, {Color? color}) {
     final c = color ?? _mkTextSecondary;
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 13, color: c),
-      const SizedBox(width: 3),
-      Text(label,
-          style:
-              TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),),
-    ],);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: c),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
   }
 }
 
@@ -1141,15 +1303,17 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder),),
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _mkBorder),
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           decoration: const BoxDecoration(
-              color: _mkCard,
-              border: Border(top: BorderSide(color: _mkBorder)),),
+            color: _mkCard,
+            border: Border(top: BorderSide(color: _mkBorder)),
+          ),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -1160,14 +1324,20 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
                 shadowColor: _mkGreen.withValues(alpha: 0.32),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.x2l),),
+                  borderRadius: BorderRadius.circular(AppRadius.x2l),
+                ),
               ),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Post New Ad',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              label: const Text(
+                'Post New Ad',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
                   builder: (_) => const _PostAdScreen(),
-                  fullscreenDialog: true,),),
+                  fullscreenDialog: true,
+                ),
+              ),
             ),
           ),
         ),
@@ -1175,83 +1345,95 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
       body: adsAsync.when(
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(myAdsProvider),),
+          message: e.toString(),
+          onRetry: () => ref.invalidate(myAdsProvider),
+        ),
         data: (all) {
           List<MarketAd> forTab(String tab) => switch (tab) {
                 'Live' => all
                     .where(
-                        (a) => const {'PUBLISHED', 'PAUSED', 'SUSPENDED'}
-                            .contains(a.status),)
+                      (a) => const {'PUBLISHED', 'PAUSED', 'SUSPENDED'}
+                          .contains(a.status),
+                    )
                     .toList(),
                 'Drafts' => all.where((a) => a.status == 'DRAFT').toList(),
                 'Closed' => all
                     .where(
-                        (a) => const {'EXPIRED', 'ARCHIVED', 'REMOVED'}
-                            .contains(a.status),)
+                      (a) => const {'EXPIRED', 'ARCHIVED', 'REMOVED'}
+                          .contains(a.status),
+                    )
                     .toList(),
                 _ => all,
               };
           final counts = {for (final f in _filters) f: forTab(f).length};
           final ads = forTab(_filter);
 
-          return Column(children: [
-            Container(
-              color: _mkCard,
-              child: SizedBox(
-                height: 50,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemCount: _filters.length,
-                  itemBuilder: (_, i) {
-                    final f = _filters[i];
-                    final n = counts[f] ?? 0;
-                    final sel = _filter == f;
-                    return ChoiceChip(
-                      label: Text('$f${n > 0 ? " ($n)" : ""}',
+          return Column(
+            children: [
+              Container(
+                color: _mkCard,
+                child: SizedBox(
+                  height: 50,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemCount: _filters.length,
+                    itemBuilder: (_, i) {
+                      final f = _filters[i];
+                      final n = counts[f] ?? 0;
+                      final sel = _filter == f;
+                      return ChoiceChip(
+                        label: Text(
+                          '$f${n > 0 ? " ($n)" : ""}',
                           style: TextStyle(
-                              color: sel ? Colors.white : _mkTextSecondary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,),),
-                      selected: sel,
-                      onSelected: (_) => setState(() => _filter = f),
-                      selectedColor: _mkGreen,
-                      backgroundColor: _mkBg,
-                      side: BorderSide(color: sel ? _mkGreen : _mkBorder),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),),
-                      showCheckmark: false,
-                    );
-                  },
+                            color: sel ? Colors.white : _mkTextSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        selected: sel,
+                        onSelected: (_) => setState(() => _filter = f),
+                        selectedColor: _mkGreen,
+                        backgroundColor: _mkBg,
+                        side: BorderSide(color: sel ? _mkGreen : _mkBorder),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        showCheckmark: false,
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            const Divider(height: 1, color: _mkBorder),
-            Expanded(
-              child: ads.isEmpty
-                  ? const _EmptyState(
-                      icon: Icons.inventory_2_outlined,
-                      title: 'No ads here',
-                      subtitle:
-                          'Post your first ad to connect with local nurseries',
-                    )
-                  : RefreshIndicator(
-                      color: _mkGreen,
-                      backgroundColor: _mkCard,
-                      onRefresh: () async => ref.invalidate(myAdsProvider),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14,),
-                        itemCount: ads.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _MyAdCard(ad: ads[i]),
+              const Divider(height: 1, color: _mkBorder),
+              Expanded(
+                child: ads.isEmpty
+                    ? const _EmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        title: 'No ads here',
+                        subtitle:
+                            'Post your first ad to connect with local nurseries',
+                      )
+                    : RefreshIndicator(
+                        color: _mkGreen,
+                        backgroundColor: _mkCard,
+                        onRefresh: () async => ref.invalidate(myAdsProvider),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          itemCount: ads.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (_, i) => _MyAdCard(ad: ads[i]),
+                        ),
                       ),
-                    ),
-            ),
-          ],);
+              ),
+            ],
+          );
         },
       ),
     );
@@ -1275,11 +1457,13 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
       await ref.read(adActionProvider.notifier).perform(widget.ad.id, action);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: _stExpired,
-          behavior: SnackBarBehavior.floating,
-        ),);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: _stExpired,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _actioning = false);
@@ -1334,136 +1518,189 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
         boxShadow: const [_cardShadow],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(children: [
-        InkWell(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => _AdDetailScreen(ad: ad, isOwn: true),),),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  color: _mkLight,
-                  child: ad.photos.isNotEmpty
-                      ? Image.network(ad.photos.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => _AdDetailScreen(ad: ad, isOwn: true),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      color: _mkLight,
+                      child: ad.photos.isNotEmpty
+                          ? Image.network(
+                              ad.photos.first,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.local_florist_outlined,
+                                color: _mkGreen,
+                                size: 30,
+                              ),
+                            )
+                          : const Icon(
                               Icons.local_florist_outlined,
                               color: _mkGreen,
-                              size: 30,),)
-                      : const Icon(Icons.local_florist_outlined,
-                          color: _mkGreen, size: 30,),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        _StatusChip(status: ad.status),
-                        const Spacer(),
-                        if (ad.expiresAt != null)
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.timer_outlined,
-                                size: 11, color: _mkTextSecondary,),
-                            const SizedBox(width: 2),
-                            Text(_daysLeft(ad.expiresAt),
-                                style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary),),
-                          ],),
-                      ],),
-                      const SizedBox(height: 6),
-                      Text(ad.title,
+                              size: 30,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _StatusChip(status: ad.status),
+                            const Spacer(),
+                            if (ad.expiresAt != null)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.timer_outlined,
+                                    size: 11,
+                                    color: _mkTextSecondary,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    _daysLeft(ad.expiresAt),
+                                    style: AppTypography.caption
+                                        .copyWith(color: _mkTextSecondary),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          ad.title,
                           style:
                               AppTypography.h4.copyWith(color: _mkTextPrimary),
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,),
-                      const SizedBox(height: 5),
-                      if (ad.pricePerUnit != null)
-                        Text(
-                          '₹${ad.pricePerUnit!.toStringAsFixed(0)} / ${ad.priceUnit ?? "unit"}',
-                          style: const TextStyle(
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 5),
+                        if (ad.pricePerUnit != null)
+                          Text(
+                            '₹${ad.pricePerUnit!.toStringAsFixed(0)} / ${ad.priceUnit ?? "unit"}',
+                            style: const TextStyle(
                               color: _mkGreen,
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,),
-                        ),
-                      if (ad.moderationNote != null) ...[
-                        const SizedBox(height: 6),
-                        Text(ad.moderationNote!,
+                              fontSize: 13,
+                            ),
+                          ),
+                        if (ad.moderationNote != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            ad.moderationNote!,
                             style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: ad.status == 'REMOVED'
-                                    ? _stExpired
-                                    : _stPaused,),),
-                      ],
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        _miniStat(Icons.visibility_outlined, '${ad.viewCount}'),
-                        const SizedBox(width: 10),
-                        _miniStat(
-                            Icons.bookmark_outline_rounded, '${ad.saveCount}',),
-                        if (ad.enquiryCount > 0) ...[
-                          const SizedBox(width: 10),
-                          _miniStat(
-                              Icons.mail_outline_rounded, '${ad.enquiryCount}',),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: ad.status == 'REMOVED'
+                                  ? _stExpired
+                                  : _stPaused,
+                            ),
+                          ),
                         ],
-                      ],),
-                    ],),
-              ),
-            ],),
-          ),
-        ),
-        if (_actions.isNotEmpty) ...[
-          const Divider(height: 1, color: _mkBorder),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: _actions.map((a) {
-                final isPositive =
-                    a.$1 == 'publish' || a.$1 == 'renew' || a.$1 == 'resume';
-                return Expanded(
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: isPositive ? _mkGreen : _mkTextSecondary,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            _miniStat(
+                                Icons.visibility_outlined, '${ad.viewCount}',),
+                            const SizedBox(width: 10),
+                            _miniStat(
+                              Icons.bookmark_outline_rounded,
+                              '${ad.saveCount}',
+                            ),
+                            if (ad.enquiryCount > 0) ...[
+                              const SizedBox(width: 10),
+                              _miniStat(
+                                Icons.mail_outline_rounded,
+                                '${ad.enquiryCount}',
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
-                    icon: _actioning && (a.$1 != 'edit' && a.$1 != 'enquiries')
-                        ? const SizedBox(
-                            width: 13,
-                            height: 13,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: _mkGreen,),)
-                        : Icon(a.$3, size: 14),
-                    label: Text(a.$2,
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600,),),
-                    onPressed: _actioning
-                        ? null
-                        : () {
-                            if (a.$1 == 'edit') {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) =>
-                                      _PostAdScreen(editingAd: widget.ad),
-                                  fullscreenDialog: true,),);
-                            } else if (a.$1 == 'enquiries') {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => const _EnquiriesScreen(),),);
-                            } else {
-                              _doAdAction(a.$1);
-                            }
-                          },
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
           ),
+          if (_actions.isNotEmpty) ...[
+            const Divider(height: 1, color: _mkBorder),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: _actions.map((a) {
+                  final isPositive =
+                      a.$1 == 'publish' || a.$1 == 'renew' || a.$1 == 'resume';
+                  return Expanded(
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor:
+                            isPositive ? _mkGreen : _mkTextSecondary,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      icon:
+                          _actioning && (a.$1 != 'edit' && a.$1 != 'enquiries')
+                              ? const SizedBox(
+                                  width: 13,
+                                  height: 13,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: _mkGreen,
+                                  ),
+                                )
+                              : Icon(a.$3, size: 14),
+                      label: Text(
+                        a.$2,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onPressed: _actioning
+                          ? null
+                          : () {
+                              if (a.$1 == 'edit') {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        _PostAdScreen(editingAd: widget.ad),
+                                    fullscreenDialog: true,
+                                  ),
+                                );
+                              } else if (a.$1 == 'enquiries') {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const _EnquiriesScreen(),
+                                  ),
+                                );
+                              } else {
+                                _doAdAction(a.$1);
+                              }
+                            },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
         ],
-      ],),
+      ),
     );
   }
 
@@ -1503,10 +1740,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   @override
   Widget build(BuildContext context) {
     // The list's copy first, then the full ad (it knows the viewer's chat).
-    final ad = ref.watch(adDetailProvider(widget.ad.id)).valueOrNull ?? widget.ad;
+    final ad =
+        ref.watch(adDetailProvider(widget.ad.id)).valueOrNull ?? widget.ad;
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
-    final myNurseryId = ref
-        .watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
+    final myNurseryId =
+        ref.watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
     final effectiveIsOwn =
         widget.isOwn || (myNurseryId != null && myNurseryId == ad.nurseryId);
     final canSave = ad.capabilities?.canSave ?? !effectiveIsOwn;
@@ -1545,9 +1783,12 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
               if (effectiveIsOwn)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
                       builder: (_) => _PostAdScreen(editingAd: ad),
-                      fullscreenDialog: true,),),
+                      fullscreenDialog: true,
+                    ),
+                  ),
                 ),
               const SizedBox(width: 4),
             ],
@@ -1556,51 +1797,59 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   ? Container(
                       color: _mkLight,
                       child: const Center(
-                        child: Icon(Icons.local_florist_outlined,
-                            size: 72, color: _mkGreen,),
-                      ),
-                    )
-                  : Stack(children: [
-                      PageView.builder(
-                        controller: _pageCtrl,
-                        itemCount: ad.photos.length,
-                        onPageChanged: (i) => setState(() => _photoPage = i),
-                        itemBuilder: (_, i) => Image.network(
-                          ad.photos[i],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: _mkLight,
-                            child: const Icon(Icons.broken_image_outlined,
-                                size: 48, color: _mkTextSecondary,),
-                          ),
+                        child: Icon(
+                          Icons.local_florist_outlined,
+                          size: 72,
+                          color: _mkGreen,
                         ),
                       ),
-                      if (ad.photos.length > 1)
-                        Positioned(
-                          bottom: 12,
-                          left: 0,
-                          right: 0,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              ad.photos.length,
-                              (i) => AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 3),
-                                width: i == _photoPage ? 18 : 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: i == _photoPage
-                                      ? Colors.white
-                                      : Colors.white.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
+                    )
+                  : Stack(
+                      children: [
+                        PageView.builder(
+                          controller: _pageCtrl,
+                          itemCount: ad.photos.length,
+                          onPageChanged: (i) => setState(() => _photoPage = i),
+                          itemBuilder: (_, i) => Image.network(
+                            ad.photos[i],
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: _mkLight,
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                size: 48,
+                                color: _mkTextSecondary,
                               ),
                             ),
                           ),
                         ),
-                    ],),
+                        if (ad.photos.length > 1)
+                          Positioned(
+                            bottom: 12,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                ad.photos.length,
+                                (i) => AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 3),
+                                  width: i == _photoPage ? 18 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: i == _photoPage
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
             ),
           ),
           SliverToBoxAdapter(
@@ -1610,73 +1859,108 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    _StatusChip(status: ad.status),
-                    const Spacer(),
-                    if (ad.expiresAt != null)
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.timer_outlined,
-                            size: 12, color: _mkTextSecondary,),
-                        const SizedBox(width: 3),
-                        Text(_daysLeft(ad.expiresAt),
-                            style: AppTypography.caption
-                                .copyWith(color: _mkTextSecondary),),
-                      ],),
-                  ],),
+                  Row(
+                    children: [
+                      _StatusChip(status: ad.status),
+                      const Spacer(),
+                      if (ad.expiresAt != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.timer_outlined,
+                              size: 12,
+                              color: _mkTextSecondary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _daysLeft(ad.expiresAt),
+                              style: AppTypography.caption
+                                  .copyWith(color: _mkTextSecondary),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
-                  Text(ad.title,
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: _mkTextPrimary,),),
+                  Text(
+                    ad.title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: _mkTextPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   if (ad.pricePerUnit != null)
                     Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text('₹${ad.pricePerUnit!.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: _mkGreen,),),
-                          if (ad.priceUnit != null)
-                            Text(' / ${ad.priceUnit}',
-                                style: AppTypography.body
-                                    .copyWith(color: _mkTextSecondary),),
-                        ],),
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '₹${ad.pricePerUnit!.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: _mkGreen,
+                          ),
+                        ),
+                        if (ad.priceUnit != null)
+                          Text(
+                            ' / ${ad.priceUnit}',
+                            style: AppTypography.body
+                                .copyWith(color: _mkTextSecondary),
+                          ),
+                      ],
+                    ),
                   const SizedBox(height: 12),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    if (ad.quantity != null)
-                      _Chip('${ad.quantity} available', _mkLight, _mkDark),
-                    if (ad.sizeDescription != null)
-                      _Chip(ad.sizeDescription!, _stDraftBg, _stDraft),
-                    if (ad.categoryName != null)
-                      _Chip(ad.categoryName!, _stPublishedBg, _stPublished),
-                    _Chip(ad.plantName, const Color(0xFFEFF6FF),
-                        const Color(0xFF2563EB),),
-                  ],),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (ad.quantity != null)
+                        _Chip('${ad.quantity} available', _mkLight, _mkDark),
+                      if (ad.sizeDescription != null)
+                        _Chip(ad.sizeDescription!, _stDraftBg, _stDraft),
+                      if (ad.categoryName != null)
+                        _Chip(ad.categoryName!, _stPublishedBg, _stPublished),
+                      _Chip(
+                        ad.plantName,
+                        const Color(0xFFEFF6FF),
+                        const Color(0xFF2563EB),
+                      ),
+                    ],
+                  ),
                   if (ad.description != null) ...[
                     const SizedBox(height: 16),
                     const Divider(color: _mkBorder),
                     const SizedBox(height: 12),
-                    Text(ad.description!,
-                        style: AppTypography.body.copyWith(
-                            color: _mkTextPrimary.withValues(alpha: 0.85),
-                            height: 1.6,),),
+                    Text(
+                      ad.description!,
+                      style: AppTypography.body.copyWith(
+                        color: _mkTextPrimary.withValues(alpha: 0.85),
+                        height: 1.6,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 16),
-                  Row(children: [
-                    _ti(Icons.visibility_outlined, '${ad.viewCount} views'),
-                    const SizedBox(width: 16),
-                    _ti(Icons.bookmark_outline_rounded,
-                        '${ad.saveCount} saved',),
-                    if (ad.enquiryCount > 0) ...[
+                  Row(
+                    children: [
+                      _ti(Icons.visibility_outlined, '${ad.viewCount} views'),
                       const SizedBox(width: 16),
-                      _ti(Icons.mail_outline_rounded,
-                          '${ad.enquiryCount} enquiries',),
+                      _ti(
+                        Icons.bookmark_outline_rounded,
+                        '${ad.saveCount} saved',
+                      ),
+                      if (ad.enquiryCount > 0) ...[
+                        const SizedBox(width: 16),
+                        _ti(
+                          Icons.mail_outline_rounded,
+                          '${ad.enquiryCount} enquiries',
+                        ),
+                      ],
                     ],
-                  ],),
+                  ),
                 ],
               ),
             ),
@@ -1695,99 +1979,125 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                          color: _mkLight, shape: BoxShape.circle,),
-                      child: Center(
-                        child: Text(
-                          ad.nurseryName.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                              color: _mkGreen,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 20,),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            _SellerProfileScreen(nurseryId: ad.nurseryId),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        _SellerAvatar(
+                          photo: ad.postedByPhoto,
+                          name: ad.postedByName ?? ad.nurseryName,
+                          size: 48,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            if (ad.nurseryVerified)
-                              const Padding(
-                                padding: EdgeInsets.only(right: 4),
-                                child: Icon(Icons.verified_rounded,
-                                    size: 13, color: _mkGreen,),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (ad.nurseryVerified)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 4),
+                                      child: Icon(
+                                        Icons.verified_rounded,
+                                        size: 13,
+                                        color: _mkGreen,
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      ad.nurseryName,
+                                      style: AppTypography.h4
+                                          .copyWith(color: _mkTextPrimary),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            Expanded(
-                              child: Text(ad.nurseryName,
-                                  style: AppTypography.h4
-                                      .copyWith(color: _mkTextPrimary),
-                                  overflow: TextOverflow.ellipsis,),
-                            ),
-                          ],),
-                          if (ad.nurseryMobile != null)
-                            Text(ad.nurseryMobile!,
+                              Text(
+                                [
+                                  if (ad.postedByName != null)
+                                    'Posted by ${ad.postedByName}',
+                                  if (ad.nurseryMobile != null)
+                                    ad.nurseryMobile!,
+                                ].join(' · '),
                                 style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary),)
-                          else
-                            Text('Nursery',
-                                style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary),),
-                        ],
-                      ),
+                                    .copyWith(color: _mkTextSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: _mkTextSecondary,
+                        ),
+                      ],
                     ),
-                  ],),
+                  ),
                   if (ad.nurseryMobile != null) ...[
                     const SizedBox(height: 14),
                     const Divider(color: _mkBorder, height: 1),
                     const SizedBox(height: 12),
-                    Row(children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: _mkGreen,
-                            side: const BorderSide(color: _mkGreen),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _mkGreen,
+                              side: const BorderSide(color: _mkGreen),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            icon: const Icon(Icons.phone_outlined, size: 16),
+                            label: const Text(
+                              'Call',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            onPressed: () => launchUrl(
+                              Uri(scheme: 'tel', path: ad.nurseryMobile!),
+                            ),
                           ),
-                          icon: const Icon(Icons.phone_outlined, size: 16),
-                          label: const Text('Call',
-                              style: TextStyle(fontWeight: FontWeight.w700),),
-                          onPressed: () => launchUrl(
-                              Uri(scheme: 'tel', path: ad.nurseryMobile!),),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            icon: const Icon(Icons.chat_outlined, size: 16),
+                            label: const Text(
+                              'WhatsApp',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            onPressed: () {
+                              final digits = ad.nurseryMobile!
+                                  .replaceAll(RegExp(r'\D'), '');
+                              final number = digits.startsWith('91')
+                                  ? digits
+                                  : '91$digits';
+                              launchUrl(
+                                Uri.parse('https://wa.me/$number'),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            },
                           ),
-                          icon: const Icon(Icons.chat_outlined, size: 16),
-                          label: const Text('WhatsApp',
-                              style: TextStyle(fontWeight: FontWeight.w700),),
-                          onPressed: () {
-                            final digits =
-                                ad.nurseryMobile!.replaceAll(RegExp(r'\D'), '');
-                            final number =
-                                digits.startsWith('91') ? digits : '91$digits';
-                            launchUrl(Uri.parse('https://wa.me/$number'),
-                                mode: LaunchMode.externalApplication,);
-                          },
                         ),
-                      ),
-                    ],),
+                      ],
+                    ),
                   ],
                 ],
               ),
@@ -1802,8 +2112,9 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                 decoration: const BoxDecoration(
-                    color: _mkCard,
-                    border: Border(top: BorderSide(color: _mkBorder)),),
+                  color: _mkCard,
+                  border: Border(top: BorderSide(color: _mkBorder)),
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -1813,15 +2124,18 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                    icon:
+                        const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                     label: Text(
-                        ad.myEnquiryId != null
-                            ? 'Open chat'
-                            : 'Chat with seller',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15,),),
+                      ad.myEnquiryId != null ? 'Open chat' : 'Chat with seller',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
                     onPressed: ad.myEnquiryId != null
                         ? () => _openChat(context, ad.myEnquiryId!, ad)
                         : (ad.capabilities?.canEnquire ?? true)
@@ -1839,8 +2153,10 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
         children: [
           Icon(icon, size: 13, color: _mkTextSecondary),
           const SizedBox(width: 4),
-          Text(label,
-              style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+          ),
         ],
       );
 
@@ -1849,7 +2165,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
       context: context,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -1861,13 +2178,19 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
+                  color: _mkBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
               ListTile(
                 leading: const Icon(Icons.flag_outlined, color: _stExpired),
-                title: const Text('Report this ad',
-                    style: TextStyle(
-                        color: _stExpired, fontWeight: FontWeight.w600,),),
+                title: const Text(
+                  'Report this ad',
+                  style: TextStyle(
+                    color: _stExpired,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showReportSheet(context, ad);
@@ -1903,11 +2226,16 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
       isScrollControlled: true,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.fromLTRB(
-              16, 12, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom,),
+            16,
+            12,
+            16,
+            16 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1918,20 +2246,29 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                      color: _mkBorder, borderRadius: BorderRadius.circular(2),),
+                    color: _mkBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              Row(children: [
-                const Icon(Icons.flag_outlined, color: _stExpired, size: 20),
-                const SizedBox(width: 8),
-                Text('Report Ad',
+              Row(
+                children: [
+                  const Icon(Icons.flag_outlined, color: _stExpired, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Report Ad',
                     style: AppTypography.h4.copyWith(
-                        color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
-              ],),
+                      color: _mkTextPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
-              Text('Help us understand the issue',
-                  style:
-                      AppTypography.caption.copyWith(color: _mkTextSecondary),),
+              Text(
+                'Help us understand the issue',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
               const SizedBox(height: 12),
               RadioGroup<String>(
                 groupValue: selected,
@@ -1942,13 +2279,16 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       RadioListTile<String>(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        title: Text(entry.value,
-                            style: TextStyle(
-                                color: _mkTextPrimary,
-                                fontWeight: selected == entry.key
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                fontSize: 14,),),
+                        title: Text(
+                          entry.value,
+                          style: TextStyle(
+                            color: _mkTextPrimary,
+                            fontWeight: selected == entry.key
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            fontSize: 14,
+                          ),
+                        ),
                         value: entry.key,
                         activeColor: _mkGreen,
                       ),
@@ -1973,7 +2313,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: selected == null || submitting
                       ? null
@@ -1996,9 +2337,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                               if (hidden) Navigator.of(context).pop();
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text(hidden
-                                      ? 'Thank you. The ad is hidden while GreenRoot reviews it.'
-                                      : 'Report submitted. GreenRoot will review it.',),
+                                  content: Text(
+                                    hidden
+                                        ? 'Thank you. The ad is hidden while GreenRoot reviews it.'
+                                        : 'Report submitted. GreenRoot will review it.',
+                                  ),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
@@ -2006,12 +2349,13 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           } catch (e) {
                             setS(() => submitting = false);
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                content: Text(e.toString()),
-                                backgroundColor: _stExpired,
-                                behavior: SnackBarBehavior.floating,
-                              ),);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString()),
+                                  backgroundColor: _stExpired,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
                           }
                         },
@@ -2020,10 +2364,17 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2,),)
-                      : const Text('Submit Report',
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Submit Report',
                           style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15,),),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -2034,6 +2385,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   }
 
   Future<void> _showEnquirySheet(BuildContext context, MarketAd ad) async {
+    if (!await ensureMarketSelfie(context, ref) || !context.mounted) return;
     final msgCtrl = TextEditingController(text: 'Is it still available?');
     final qtyCtrl = TextEditingController();
     final enquiryId = await showModalBottomSheet<int>(
@@ -2047,17 +2399,23 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   }
 
   void _openChat(BuildContext context, int enquiryId, MarketAd ad) =>
-      Navigator.of(context).push(MaterialPageRoute(
+      Navigator.of(context).push(
+        MaterialPageRoute(
           builder: (_) =>
-              _EnquiryDetailScreen(enquiryId: enquiryId, title: ad.nurseryName),),);
+              _EnquiryDetailScreen(enquiryId: enquiryId, title: ad.nurseryName),
+        ),
+      );
 }
 
 class _EnquirySheet extends ConsumerStatefulWidget {
   final MarketAd ad;
   final TextEditingController msgCtrl;
   final TextEditingController qtyCtrl;
-  const _EnquirySheet(
-      {required this.ad, required this.msgCtrl, required this.qtyCtrl,});
+  const _EnquirySheet({
+    required this.ad,
+    required this.msgCtrl,
+    required this.qtyCtrl,
+  });
 
   @override
   ConsumerState<_EnquirySheet> createState() => _EnquirySheetState();
@@ -2086,16 +2444,24 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
+                  color: _mkBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Chat with seller',
-                style: AppTypography.h3.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w800,),),
+            Text(
+              'Chat with seller',
+              style: AppTypography.h3.copyWith(
+                color: _mkTextPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(widget.ad.title,
-                style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+            Text(
+              widget.ad.title,
+              style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+            ),
             const SizedBox(height: 20),
             TextField(
               controller: widget.msgCtrl,
@@ -2119,7 +2485,8 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: _sending
                     ? null
@@ -2137,10 +2504,13 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
                                 content: Text(e.toString()),
                                 backgroundColor: _stExpired,
-                                behavior: SnackBarBehavior.floating,),);
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           }
                         } finally {
                           if (mounted) setState(() => _sending = false);
@@ -2151,10 +2521,17 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white,),)
-                    : const Text('Start chat',
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Start chat',
                         style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15,),),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -2239,8 +2616,11 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
 
   void _goTo(int step) {
     setState(() => _step = step);
-    _pageCtrl.animateToPage(step,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,);
+    _pageCtrl.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   bool get _step1Valid =>
@@ -2273,6 +2653,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   }
 
   Future<void> _saveDraft() async {
+    if (!await ensureMarketSelfie(context, ref)) return;
     setState(() => _saving = true);
     try {
       final uploaded = await _uploadNew();
@@ -2311,10 +2692,13 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating,),);
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -2322,6 +2706,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   }
 
   Future<void> _publish() async {
+    if (!await ensureMarketSelfie(context, ref)) return;
     setState(() => _publishing = true);
     try {
       final uploaded = await _uploadNew();
@@ -2370,10 +2755,13 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating,),);
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _publishing = false);
@@ -2401,42 +2789,46 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         surfaceTintColor: Colors.transparent,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: Row(
-                children: List.generate(3, (i) {
-                  final done = i < _step;
-                  final active = i == _step;
-                  return Expanded(
-                    child: Row(children: [
-                      Expanded(
-                        child: Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: done || active ? _mkGreen : _mkBorder,
-                            borderRadius: BorderRadius.circular(2),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: Row(
+                  children: List.generate(3, (i) {
+                    final done = i < _step;
+                    final active = i == _step;
+                    return Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: done || active ? _mkGreen : _mkBorder,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ),
-                        ),
+                          if (i < 2) const SizedBox(width: 6),
+                        ],
                       ),
-                      if (i < 2) const SizedBox(width: 6),
-                    ],),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _stepLabel(0, 'Details'),
-                  _stepLabel(1, 'Photos'),
-                  _stepLabel(2, 'Preview'),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _stepLabel(0, 'Details'),
+                    _stepLabel(1, 'Photos'),
+                    _stepLabel(2, 'Preview'),
+                  ],
+                ),
               ),
-            ),
-          ],),
+            ],
+          ),
         ),
       ),
       body: PageView(
@@ -2479,98 +2871,120 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           decoration: const BoxDecoration(
-              color: _mkCard,
-              border: Border(top: BorderSide(color: _mkBorder)),),
-          child: Row(children: [
-            if (_step > 0)
-              Expanded(
-                flex: 1,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _mkTextSecondary,
-                    side: const BorderSide(color: _mkBorder),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),),
+            color: _mkCard,
+            border: Border(top: BorderSide(color: _mkBorder)),
+          ),
+          child: Row(
+            children: [
+              if (_step > 0)
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _mkTextSecondary,
+                      side: const BorderSide(color: _mkBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed:
+                        _saving || _publishing ? null : () => _goTo(_step - 1),
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  onPressed:
-                      _saving || _publishing ? null : () => _goTo(_step - 1),
-                  child: const Text('Back',
-                      style: TextStyle(fontWeight: FontWeight.w700),),
                 ),
-              ),
-            if (_step > 0) const SizedBox(width: 12),
-            if (_step == 2) ...[
-              Expanded(
-                flex: 1,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _mkGreen,
-                    side: const BorderSide(color: _mkGreen),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),),
+              if (_step > 0) const SizedBox(width: 12),
+              if (_step == 2) ...[
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _mkGreen,
+                      side: const BorderSide(color: _mkGreen),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: _saving || _publishing ? null : _saveDraft,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _mkGreen,
+                            ),
+                          )
+                        : const Text(
+                            'Save Draft',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
                   ),
-                  onPressed: _saving || _publishing ? null : _saveDraft,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: _mkGreen,),)
-                      : const Text('Save Draft',
-                          style: TextStyle(fontWeight: FontWeight.w700),),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _mkGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _mkGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: _saving || _publishing ? null : _publish,
+                    child: _publishing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            widget.editingAd?.status == 'PUBLISHED' ||
+                                    widget.editingAd?.status == 'PAUSED'
+                                ? 'Save Changes'
+                                : 'Publish',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
                   ),
-                  onPressed: _saving || _publishing ? null : _publish,
-                  child: _publishing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white,),)
-                      : Text(
-                          widget.editingAd?.status == 'PUBLISHED' ||
-                                  widget.editingAd?.status == 'PAUSED'
-                              ? 'Save Changes'
-                              : 'Publish',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15,),),
                 ),
-              ),
-            ] else
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _mkGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),),
-                  ),
-                  onPressed: (_step == 0 && !_step1Valid)
-                      ? null
-                      : () => _goTo(_step + 1),
-                  child: const Text('Next',
+              ] else
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _mkGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: (_step == 0 && !_step1Valid)
+                        ? null
+                        : () => _goTo(_step + 1),
+                    child: const Text(
+                      'Next',
                       style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),),
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                  ),
                 ),
-              ),
-          ],),
+            ],
+          ),
         ),
       ),
     );
@@ -2578,11 +2992,14 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
 
   Widget _stepLabel(int i, String label) {
     final active = _step == i;
-    return Text(label,
-        style: TextStyle(
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? _mkGreen : _mkTextSecondary,),);
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+        color: active ? _mkGreen : _mkTextSecondary,
+      ),
+    );
   }
 }
 
@@ -2618,18 +3035,20 @@ class _DetailsStep extends StatelessWidget {
       children: [
         _label('Ad Title *'),
         TextField(
-            controller: titleCtrl,
-            maxLength: 120,
-            decoration: _inputDec('What are you selling?'),),
+          controller: titleCtrl,
+          maxLength: 120,
+          decoration: _inputDec('What are you selling?'),
+        ),
         const SizedBox(height: 14),
         _label('Plant *'),
         TextField(
-            controller: plantCtrl,
-            readOnly: true,
-            onTap: onPickPlant,
-            decoration: _inputDec('Search plants, e.g. Mango, Rose...').copyWith(
-              suffixIcon: const Icon(Icons.search_rounded),
-            ),),
+          controller: plantCtrl,
+          readOnly: true,
+          onTap: onPickPlant,
+          decoration: _inputDec('Search plants, e.g. Mango, Rose...').copyWith(
+            suffixIcon: const Icon(Icons.search_rounded),
+          ),
+        ),
         const SizedBox(height: 14),
         _label('Category'),
         Wrap(
@@ -2639,18 +3058,22 @@ class _DetailsStep extends StatelessWidget {
             ...categories.map((c) {
               final sel = selectedCategory == c;
               return ChoiceChip(
-                label: Text(c,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: sel ? Colors.white : _mkTextSecondary,),),
+                label: Text(
+                  c,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: sel ? Colors.white : _mkTextSecondary,
+                  ),
+                ),
                 selected: sel,
                 onSelected: (_) => onCategoryChanged(sel ? null : c),
                 selectedColor: _mkGreen,
                 backgroundColor: _mkCard,
                 side: BorderSide(color: sel ? _mkGreen : _mkBorder),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 showCheckmark: false,
               );
             }),
@@ -2659,53 +3082,68 @@ class _DetailsStep extends StatelessWidget {
         const SizedBox(height: 14),
         _label('Description'),
         TextField(
-            controller: descCtrl,
-            maxLines: 4,
-            maxLength: 500,
-            decoration: _inputDec(
-                'Describe the plants, condition, and any details...',),),
+          controller: descCtrl,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: _inputDec(
+            'Describe the plants, condition, and any details...',
+          ),
+        ),
         const SizedBox(height: 14),
-        Row(children: [
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _label('Quantity'),
-              TextField(
-                  controller: qtyCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDec('e.g. 50'),),
-            ],),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _label('Price / unit (₹)'),
-              TextField(
-                  controller: priceCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDec('e.g. 120'),),
-            ],),
-          ),
-        ],),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _label('Quantity'),
+                  TextField(
+                    controller: qtyCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: _inputDec('e.g. 50'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _label('Price / unit (₹)'),
+                  TextField(
+                    controller: priceCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: _inputDec('e.g. 120'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 14),
         _label('Size / Height'),
         TextField(
-            controller: sizeCtrl,
-            decoration: _inputDec('e.g. 3-4 ft, 2 years old...'),),
+          controller: sizeCtrl,
+          decoration: _inputDec('e.g. 3-4 ft, 2 years old...'),
+        ),
         const SizedBox(height: 24),
       ],
     );
   }
 
   Widget _label(String t) => Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(t,
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          t,
           style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _mkTextPrimary,),),);
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _mkTextPrimary,
+          ),
+        ),
+      );
 }
 
 class _PhotosStep extends StatelessWidget {
@@ -2728,12 +3166,16 @@ class _PhotosStep extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Photos',
-            style: AppTypography.h3
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
+        Text(
+          'Photos',
+          style: AppTypography.h3
+              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
+        ),
         const SizedBox(height: 4),
-        Text('Add up to 6 photos. First photo is the cover.',
-            style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+        Text(
+          'Add up to 6 photos. First photo is the cover.',
+          style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+        ),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -2742,22 +3184,32 @@ class _PhotosStep extends StatelessWidget {
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           children: [
-            ...existingPhotos.map((url) => _PhotoTile(
-                  child: Image.network(url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.broken_image_outlined,
-                          color: _mkTextSecondary,),),
-                  onRemove: () => onExistingRemoved(url),
-                ),),
-            ...pickedFiles.map((f) => _PhotoTile(
-                  child: Image.network(f.path,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.photo_outlined,
-                          color: _mkTextSecondary,),),
-                  onRemove: () => onNewRemoved(f),
-                ),),
+            ...existingPhotos.map(
+              (url) => _PhotoTile(
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: _mkTextSecondary,
+                  ),
+                ),
+                onRemove: () => onExistingRemoved(url),
+              ),
+            ),
+            ...pickedFiles.map(
+              (f) => _PhotoTile(
+                child: Image.network(
+                  f.path,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.photo_outlined,
+                    color: _mkTextSecondary,
+                  ),
+                ),
+                onRemove: () => onNewRemoved(f),
+              ),
+            ),
             if (existingPhotos.length + pickedFiles.length < 6)
               GestureDetector(
                 onTap: () async {
@@ -2775,14 +3227,20 @@ class _PhotosStep extends StatelessWidget {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_photo_alternate_outlined,
-                          color: _mkGreen, size: 28,),
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: _mkGreen,
+                        size: 28,
+                      ),
                       SizedBox(height: 4),
-                      Text('Add Photo',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: _mkGreen,
-                              fontWeight: FontWeight.w600,),),
+                      Text(
+                        'Add Photo',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _mkGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -2801,27 +3259,31 @@ class _PhotoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox.expand(child: child),
-      ),
-      Positioned(
-        top: 4,
-        right: 4,
-        child: GestureDetector(
-          onTap: onRemove,
-          child: Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-                color: Color(0xDD000000), shape: BoxShape.circle,),
-            child:
-                const Icon(Icons.close_rounded, color: Colors.white, size: 13),
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox.expand(child: child),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(
+                color: Color(0xDD000000),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded,
+                  color: Colors.white, size: 13,),
+            ),
           ),
         ),
-      ),
-    ],);
+      ],
+    );
   }
 }
 
@@ -2852,12 +3314,16 @@ class _PreviewStep extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Preview',
-            style: AppTypography.h3
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
+        Text(
+          'Preview',
+          style: AppTypography.h3
+              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
+        ),
         const SizedBox(height: 4),
-        Text('This is how your ad will look.',
-            style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+        Text(
+          'This is how your ad will look.',
+          style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+        ),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
@@ -2872,21 +3338,31 @@ class _PreviewStep extends StatelessWidget {
             children: [
               if (allPhotos.isNotEmpty)
                 SizedBox(
-                    height: 200,
-                    child: Image.network(allPhotos.first,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                            color: _mkLight,
-                            child: const Icon(Icons.local_florist_outlined,
-                                size: 56, color: _mkGreen,),),),)
+                  height: 200,
+                  child: Image.network(
+                    allPhotos.first,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: _mkLight,
+                      child: const Icon(
+                        Icons.local_florist_outlined,
+                        size: 56,
+                        color: _mkGreen,
+                      ),
+                    ),
+                  ),
+                )
               else
                 Container(
                   height: 160,
                   color: _mkLight,
                   child: const Center(
-                    child: Icon(Icons.local_florist_outlined,
-                        size: 56, color: _mkGreen,),
+                    child: Icon(
+                      Icons.local_florist_outlined,
+                      size: 56,
+                      color: _mkGreen,
+                    ),
                   ),
                 ),
               Padding(
@@ -2895,30 +3371,38 @@ class _PreviewStep extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        titleCtrl.text.trim().isEmpty
-                            ? 'Ad Title'
-                            : titleCtrl.text.trim(),
-                        style:
-                            AppTypography.h4.copyWith(color: _mkTextPrimary),),
+                      titleCtrl.text.trim().isEmpty
+                          ? 'Ad Title'
+                          : titleCtrl.text.trim(),
+                      style: AppTypography.h4.copyWith(color: _mkTextPrimary),
+                    ),
                     const SizedBox(height: 6),
                     if (priceCtrl.text.trim().isNotEmpty)
-                      Text('₹${priceCtrl.text.trim()} / unit',
-                          style: const TextStyle(
-                              color: _mkGreen,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,),),
+                      Text(
+                        '₹${priceCtrl.text.trim()} / unit',
+                        style: const TextStyle(
+                          color: _mkGreen,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
                     if (qtyCtrl.text.trim().isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      _Chip('${qtyCtrl.text.trim()} available', _mkLight,
-                          _mkDark,),
+                      _Chip(
+                        '${qtyCtrl.text.trim()} available',
+                        _mkLight,
+                        _mkDark,
+                      ),
                     ],
                     if (descCtrl.text.trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Text(descCtrl.text.trim(),
-                          style: AppTypography.body
-                              .copyWith(color: _mkTextPrimary, height: 1.5),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,),
+                      Text(
+                        descCtrl.text.trim(),
+                        style: AppTypography.body
+                            .copyWith(color: _mkTextPrimary, height: 1.5),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ],
                 ),
@@ -2952,14 +3436,16 @@ class _SavedAdsScreen extends ConsumerWidget {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder),),
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _mkBorder),
+        ),
       ),
       body: adsAsync.when(
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(savedAdsProvider),),
+          message: e.toString(),
+          onRetry: () => ref.invalidate(savedAdsProvider),
+        ),
         data: (ads) {
           if (ads.isEmpty) {
             return const _EmptyState(
@@ -3036,7 +3522,9 @@ class _EnquiryList extends ConsumerWidget {
     return async.when(
       loading: () => const _SkeletonList(),
       error: (e, _) => _ErrorState(
-          message: e.toString(), onRetry: () => ref.invalidate(provider),),
+        message: e.toString(),
+        onRetry: () => ref.invalidate(provider),
+      ),
       data: (enquiries) {
         if (enquiries.isEmpty) {
           return _EmptyState(
@@ -3073,12 +3561,15 @@ class _EnquiryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
           builder: (_) => _EnquiryDetailScreen(
-              enquiryId: enquiry.id,
-              title: isReceived
-                  ? enquiry.enquiryNurseryName
-                  : enquiry.adNurseryName,),),),
+            enquiryId: enquiry.id,
+            title:
+                isReceived ? enquiry.enquiryNurseryName : enquiry.adNurseryName,
+          ),
+        ),
+      ),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -3087,67 +3578,86 @@ class _EnquiryCard extends StatelessWidget {
           border: Border.all(color: _mkBorder),
           boxShadow: const [_cardShadow],
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration:
-                const BoxDecoration(color: _mkLight, shape: BoxShape.circle),
-            child: Center(
-              child: Text(
-                isReceived
-                    ? enquiry.enquiryNurseryName.substring(0, 1).toUpperCase()
-                    : enquiry.adNurseryName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                    color: _mkGreen, fontWeight: FontWeight.w800, fontSize: 18,),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration:
+                  const BoxDecoration(color: _mkLight, shape: BoxShape.circle),
+              child: Center(
+                child: Text(
+                  isReceived
+                      ? enquiry.enquiryNurseryName.substring(0, 1).toUpperCase()
+                      : enquiry.adNurseryName.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    color: _mkGreen,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Expanded(
-                    child: Text(
-                      isReceived
-                          ? enquiry.enquiryNurseryName
-                          : enquiry.adNurseryName,
-                      style: AppTypography.label.copyWith(
-                          color: _mkTextPrimary, fontWeight: FontWeight.w700,),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          isReceived
+                              ? enquiry.enquiryNurseryName
+                              : enquiry.adNurseryName,
+                          style: AppTypography.label.copyWith(
+                            color: _mkTextPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        _timeAgo(enquiry.createdAt),
+                        style: AppTypography.caption
+                            .copyWith(color: _mkTextSecondary),
+                      ),
+                    ],
                   ),
-                  Text(_timeAgo(enquiry.createdAt),
-                      style: AppTypography.caption
-                          .copyWith(color: _mkTextSecondary),),
-                ],),
-                const SizedBox(height: 2),
-                Text(enquiry.adTitle,
+                  const SizedBox(height: 2),
+                  Text(
+                    enquiry.adTitle,
                     style:
                         AppTypography.caption.copyWith(color: _mkTextSecondary),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,),
-                const SizedBox(height: 6),
-                Text(enquiry.message,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    enquiry.message,
                     style: AppTypography.body
                         .copyWith(color: _mkTextPrimary, fontSize: 13),
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis,),
-                const SizedBox(height: 8),
-                Row(children: [
-                  _EnquiryStatusChip(status: enquiry.status),
-                  if (enquiry.quantityNeeded != null) ...[
-                    const SizedBox(width: 6),
-                    _Chip('Qty: ${enquiry.quantityNeeded}', _mkLight, _mkDark),
-                  ],
-                ],),
-              ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _EnquiryStatusChip(status: enquiry.status),
+                      if (enquiry.quantityNeeded != null) ...[
+                        const SizedBox(width: 6),
+                        _Chip('Qty: ${enquiry.quantityNeeded}', _mkLight,
+                            _mkDark,),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],),
+          ],
+        ),
       ),
     );
   }
@@ -3181,8 +3691,10 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
     super.initState();
     // shortcut: polls every 5 s while the chat is open; switch to push or a
     // websocket when chat traffic grows.
-    _poll = Timer.periodic(const Duration(seconds: 5),
-        (_) => ref.invalidate(enquiryDetailProvider(widget.enquiryId)),);
+    _poll = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => ref.invalidate(enquiryDetailProvider(widget.enquiryId)),
+    );
   }
 
   @override
@@ -3204,10 +3716,13 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating,),);
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
       return false;
     } finally {
@@ -3221,7 +3736,8 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
     if (await _act(() => _chat.reply(body))) _replyCtrl.clear();
   }
 
-  Future<void> _offer(MarketEnquiry enquiry, {MarketEnquiryMessage? countering}) async {
+  Future<void> _offer(MarketEnquiry enquiry,
+      {MarketEnquiryMessage? countering,}) async {
     final result = await showModalBottomSheet<(double, int?)>(
       context: context,
       isScrollControlled: true,
@@ -3246,12 +3762,15 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         content: const Text('Nobody can send messages or offers after this.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep chatting'),),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep chatting'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(seller ? 'Close chat' : 'Cancel enquiry',
-                style: const TextStyle(color: _stExpired),),
+            child: Text(
+              seller ? 'Close chat' : 'Cancel enquiry',
+              style: const TextStyle(color: _stExpired),
+            ),
           ),
         ],
       ),
@@ -3303,78 +3822,86 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                 PopupMenuItem(
                   value: 'end',
                   child: Text(
-                      (caps?.canClose ?? false) ? 'Close chat' : 'Cancel enquiry',),
+                    (caps?.canClose ?? false) ? 'Close chat' : 'Cancel enquiry',
+                  ),
                 ),
               ],
             ),
         ],
         bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder),),
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _mkBorder),
+        ),
       ),
       body: detailAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator(color: _mkGreen)),
         error: (e, _) => _ErrorState(
-            message: e.toString(),
-            onRetry: () =>
-                ref.invalidate(enquiryDetailProvider(widget.enquiryId)),),
+          message: e.toString(),
+          onRetry: () =>
+              ref.invalidate(enquiryDetailProvider(widget.enquiryId)),
+        ),
         data: (enquiry) {
           final caps = enquiry.capabilities;
           final canReply = caps?.canReply ?? false;
-          return Column(children: [
-            _EnquiryDetailHeader(enquiry: enquiry),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollCtrl,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                itemCount: enquiry.messages.length,
-                itemBuilder: (_, i) {
-                  final msg = enquiry.messages[i];
-                  if (msg.isSystem) return _SystemNote(text: msg.body);
-                  if (msg.isOffer) {
-                    return _OfferCard(
-                      msg: msg,
-                      priceUnit: enquiry.adPriceUnit,
-                      busy: _busy,
-                      onAccept: () => _act(
-                          () => _chat.respond(msg.id, accept: true),),
-                      onDecline: () => _act(
-                          () => _chat.respond(msg.id, accept: false),),
-                      onCounter: (caps?.canOffer ?? false)
-                          ? () => _offer(enquiry, countering: msg)
-                          : null,
+          return Column(
+            children: [
+              _EnquiryDetailHeader(enquiry: enquiry),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollCtrl,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: enquiry.messages.length,
+                  itemBuilder: (_, i) {
+                    final msg = enquiry.messages[i];
+                    if (msg.isSystem) return _SystemNote(text: msg.body);
+                    if (msg.isOffer) {
+                      return _OfferCard(
+                        msg: msg,
+                        priceUnit: enquiry.adPriceUnit,
+                        busy: _busy,
+                        onAccept: () => _act(
+                          () => _chat.respond(msg.id, accept: true),
+                        ),
+                        onDecline: () => _act(
+                          () => _chat.respond(msg.id, accept: false),
+                        ),
+                        onCounter: (caps?.canOffer ?? false)
+                            ? () => _offer(enquiry, countering: msg)
+                            : null,
+                      );
+                    }
+                    return _MessageBubble(
+                      body: msg.body,
+                      senderName: msg.senderName.isEmpty
+                          ? msg.nurseryName
+                          : '${msg.senderName} · ${msg.nurseryName}',
+                      isMe: msg.isMine,
+                      time: msg.createdAt,
                     );
-                  }
-                  return _MessageBubble(
-                    body: msg.body,
-                    senderName: msg.senderName.isEmpty
-                        ? msg.nurseryName
-                        : '${msg.senderName} · ${msg.nurseryName}',
-                    isMe: msg.isMine,
-                    time: msg.createdAt,
-                  );
-                },
+                  },
+                ),
               ),
-            ),
-            if (canReply)
-              _ReplyInput(
-                controller: _replyCtrl,
-                replying: _busy,
-                onSend: () => _send(_replyCtrl.text),
-                quickReplies: _quickReplies(enquiry, isSeller: isSeller),
-                onQuickReply: _send,
-                onOffer: (caps?.canOffer ?? false) ? () => _offer(enquiry) : null,
-              )
-            else
-              _ReadOnlyBar(
-                reason: caps?.readOnlyReason ??
-                    (enquiry.status == 'CANCELLED'
-                        ? 'this enquiry was cancelled'
-                        : 'this chat is closed'),
-              ),
-          ],);
+              if (canReply)
+                _ReplyInput(
+                  controller: _replyCtrl,
+                  replying: _busy,
+                  onSend: () => _send(_replyCtrl.text),
+                  quickReplies: _quickReplies(enquiry, isSeller: isSeller),
+                  onQuickReply: _send,
+                  onOffer:
+                      (caps?.canOffer ?? false) ? () => _offer(enquiry) : null,
+                )
+              else
+                _ReadOnlyBar(
+                  reason: caps?.readOnlyReason ??
+                      (enquiry.status == 'CANCELLED'
+                          ? 'this enquiry was cancelled'
+                          : 'this chat is closed'),
+                ),
+            ],
+          );
         },
       ),
     );
@@ -3383,11 +3910,24 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
   static List<String> _quickReplies(MarketEnquiry e, {required bool isSeller}) {
     if (e.isDealAgreed) {
       return isSeller
-          ? const ['Ready for pickup', 'Sharing the location', 'Please confirm the date']
-          : const ['When can I pick up?', 'Please share the location', 'On my way'];
+          ? const [
+              'Ready for pickup',
+              'Sharing the location',
+              'Please confirm the date',
+            ]
+          : const [
+              'When can I pick up?',
+              'Please share the location',
+              'On my way',
+            ];
     }
     return isSeller
-        ? const ['Yes, it is available', 'Price is fixed', 'Pickup only', 'Sorry, sold out']
+        ? const [
+            'Yes, it is available',
+            'Price is fixed',
+            'Pickup only',
+            'Sorry, sold out',
+          ]
         : const [
             'Is it still available?',
             'What is your best price?',
@@ -3400,8 +3940,9 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
 String _rupees(double v) =>
     '₹${v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2)}';
 
-String _unitLabel(String? unit) =>
-    unit == null || unit.isEmpty ? 'each' : unit.toLowerCase().replaceAll('_', ' ');
+String _unitLabel(String? unit) => unit == null || unit.isEmpty
+    ? 'each'
+    : unit.toLowerCase().replaceAll('_', ' ');
 
 /// The ad this chat is about, its live status, and the agreed deal if any.
 class _EnquiryDetailHeader extends StatelessWidget {
@@ -3417,70 +3958,90 @@ class _EnquiryDetailHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: enquiry.adPhoto != null
-                    ? Image.network(enquiry.adPhoto!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const ColoredBox(
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: enquiry.adPhoto != null
+                      ? Image.network(
+                          enquiry.adPhoto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const ColoredBox(
                             color: _mkLight,
-                            child: Icon(Icons.local_florist_outlined,
-                                color: _mkGreen,),),)
-                    : const ColoredBox(
-                        color: _mkLight,
-                        child:
-                            Icon(Icons.local_florist_outlined, color: _mkGreen),),
+                            child: Icon(
+                              Icons.local_florist_outlined,
+                              color: _mkGreen,
+                            ),
+                          ),
+                        )
+                      : const ColoredBox(
+                          color: _mkLight,
+                          child: Icon(Icons.local_florist_outlined,
+                              color: _mkGreen,),
+                        ),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(enquiry.adTitle,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      enquiry.adTitle,
                       style: AppTypography.label.copyWith(
-                          color: _mkTextPrimary, fontWeight: FontWeight.w700,),
+                        color: _mkTextPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,),
-                  const SizedBox(height: 2),
-                  Text(
-                    [
-                      if (enquiry.adPricePerUnit != null)
-                        '${_rupees(enquiry.adPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}',
-                      if (!live) 'Ad no longer active',
-                    ].join(' · '),
-                    style: AppTypography.caption.copyWith(
-                        color: live ? _mkTextSecondary : _stExpired,),
-                  ),
-                ],
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (enquiry.adPricePerUnit != null)
+                          '${_rupees(enquiry.adPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}',
+                        if (!live) 'Ad no longer active',
+                      ].join(' · '),
+                      style: AppTypography.caption.copyWith(
+                        color: live ? _mkTextSecondary : _stExpired,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _EnquiryStatusChip(status: enquiry.status),
-          ],),
+              const SizedBox(width: 8),
+              _EnquiryStatusChip(status: enquiry.status),
+            ],
+          ),
           if (enquiry.isDealAgreed && enquiry.agreedPricePerUnit != null) ...[
             const SizedBox(height: 10),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                  color: _mkLight, borderRadius: BorderRadius.circular(10),),
-              child: Row(children: [
-                const Icon(Icons.handshake_outlined, size: 18, color: _mkGreen),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Deal agreed: ${_rupees(enquiry.agreedPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}'
-                    '${enquiry.agreedQuantity != null ? ' × ${enquiry.agreedQuantity}' : ''}',
-                    style: const TextStyle(
-                        color: _mkDark, fontWeight: FontWeight.w700,),
+                color: _mkLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.handshake_outlined,
+                      size: 18, color: _mkGreen,),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Deal agreed: ${_rupees(enquiry.agreedPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}'
+                      '${enquiry.agreedQuantity != null ? ' × ${enquiry.agreedQuantity}' : ''}',
+                      style: const TextStyle(
+                        color: _mkDark,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ],),
+                ],
+              ),
             ),
           ],
         ],
@@ -3528,71 +4089,94 @@ class _OfferCard extends StatelessWidget {
           color: _mkCard,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: msg.offerStatus == 'PENDING' ? _mkGreen : _mkBorder,
-              width: msg.offerStatus == 'PENDING' ? 1.5 : 1,),
+            color: msg.offerStatus == 'PENDING' ? _mkGreen : _mkBorder,
+            width: msg.offerStatus == 'PENDING' ? 1.5 : 1,
+          ),
           boxShadow: const [_cardShadow],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              const Icon(Icons.local_offer_outlined, size: 16, color: _mkGreen),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(who,
-                    style: AppTypography.caption.copyWith(
-                        color: _mkTextSecondary, fontWeight: FontWeight.w600,),),
-              ),
-            ],),
-            const SizedBox(height: 6),
-            Text('${_rupees(price)} ${_unitLabel(priceUnit)}',
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: _mkTextPrimary,),),
-            if (qty != null)
-              Text('× $qty  =  ${_rupees(price * qty)} total',
-                  style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
-            const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700, color: color,),),
-            if (msg.canRespond) ...[
-              const SizedBox(height: 10),
-              Row(children: [
+            Row(
+              children: [
+                const Icon(Icons.local_offer_outlined,
+                    size: 16, color: _mkGreen,),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: busy ? null : onDecline,
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: _stExpired,
-                        side: const BorderSide(color: _mkBorder),),
-                    child: const Text('Decline'),
+                  child: Text(
+                    who,
+                    style: AppTypography.caption.copyWith(
+                      color: _mkTextSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                if (onCounter != null) ...[
-                  const SizedBox(width: 6),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${_rupees(price)} ${_unitLabel(priceUnit)}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: _mkTextPrimary,
+              ),
+            ),
+            if (qty != null)
+              Text(
+                '× $qty  =  ${_rupees(price * qty)} total',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            if (msg.canRespond) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: busy ? null : onCounter,
+                      onPressed: busy ? null : onDecline,
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: _stExpired,
+                        side: const BorderSide(color: _mkBorder),
+                      ),
+                      child: const Text('Decline'),
+                    ),
+                  ),
+                  if (onCounter != null) ...[
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: busy ? null : onCounter,
+                        style: OutlinedButton.styleFrom(
                           foregroundColor: _mkGreen,
-                          side: const BorderSide(color: _mkGreen),),
-                      child: const Text('Counter'),
+                          side: const BorderSide(color: _mkGreen),
+                        ),
+                        child: const Text('Counter'),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: busy ? null : onAccept,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _mkGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                      ),
+                      child: const Text('Accept'),
                     ),
                   ),
                 ],
-                const SizedBox(width: 6),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: busy ? null : onAccept,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: _mkGreen,
-                        foregroundColor: Colors.white,
-                        elevation: 0,),
-                    child: const Text('Accept'),
-                  ),
-                ),
-              ],),
+              ),
             ],
           ],
         ),
@@ -3611,10 +4195,17 @@ class _SystemNote extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-              color: _mkLight, borderRadius: BorderRadius.circular(20),),
-          child: Text(text,
-              style: const TextStyle(
-                  fontSize: 12, color: _mkDark, fontWeight: FontWeight.w600,),),
+            color: _mkLight,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _mkDark,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       );
 }
@@ -3628,20 +4219,28 @@ class _ReadOnlyBar extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: const BoxDecoration(
-            color: _mkCard, border: Border(top: BorderSide(color: _mkBorder)),),
+          color: _mkCard,
+          border: Border(top: BorderSide(color: _mkBorder)),
+        ),
         child: SafeArea(
           top: false,
-          child: Row(children: [
-            const Icon(Icons.lock_outline_rounded,
-                size: 16, color: _mkTextSecondary,),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Read-only: ${reason[0].toUpperCase()}${reason.substring(1)}.',
-                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: _mkTextSecondary,
               ),
-            ),
-          ],),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Read-only: ${reason[0].toUpperCase()}${reason.substring(1)}.',
+                  style:
+                      AppTypography.caption.copyWith(color: _mkTextSecondary),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -3666,10 +4265,14 @@ class _OfferSheet extends StatefulWidget {
 
 class _OfferSheetState extends State<_OfferSheet> {
   late final _priceCtrl = TextEditingController(
-      text: widget.initialPrice == null
-          ? ''
-          : widget.initialPrice!.toStringAsFixed(
-              widget.initialPrice! == widget.initialPrice!.roundToDouble() ? 0 : 2,),);
+    text: widget.initialPrice == null
+        ? ''
+        : widget.initialPrice!.toStringAsFixed(
+            widget.initialPrice! == widget.initialPrice!.roundToDouble()
+                ? 0
+                : 2,
+          ),
+  );
   late final _qtyCtrl =
       TextEditingController(text: widget.initialQuantity?.toString() ?? '');
 
@@ -3687,9 +4290,12 @@ class _OfferSheetState extends State<_OfferSheet> {
   Widget build(BuildContext context) {
     final price = _price;
     final qty = _qty;
-    final valid = price != null && price > 0 && (_qtyCtrl.text.trim().isEmpty || (qty != null && qty > 0));
+    final valid = price != null &&
+        price > 0 &&
+        (_qtyCtrl.text.trim().isEmpty || (qty != null && qty > 0));
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
           color: _mkCard,
@@ -3702,9 +4308,13 @@ class _OfferSheetState extends State<_OfferSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.isCounter ? 'Counter offer' : 'Make an offer',
-                  style: AppTypography.h3.copyWith(
-                      color: _mkTextPrimary, fontWeight: FontWeight.w800,),),
+              Text(
+                widget.isCounter ? 'Counter offer' : 'Make an offer',
+                style: AppTypography.h3.copyWith(
+                  color: _mkTextPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 widget.enquiry.adPricePerUnit == null
@@ -3719,8 +4329,9 @@ class _OfferSheetState extends State<_OfferSheet> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: _inputDec('Your price').copyWith(
-                    prefixText: '₹ ',
-                    suffixText: _unitLabel(widget.enquiry.adPriceUnit),),
+                  prefixText: '₹ ',
+                  suffixText: _unitLabel(widget.enquiry.adPriceUnit),
+                ),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
@@ -3732,9 +4343,13 @@ class _OfferSheetState extends State<_OfferSheet> {
               ),
               if (price != null && qty != null && qty > 0) ...[
                 const SizedBox(height: 8),
-                Text('Total ${_rupees(price * qty)}',
-                    style: const TextStyle(
-                        color: _mkDark, fontWeight: FontWeight.w700,),),
+                Text(
+                  'Total ${_rupees(price * qty)}',
+                  style: const TextStyle(
+                    color: _mkDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
               const SizedBox(height: 18),
               SizedBox(
@@ -3746,14 +4361,19 @@ class _OfferSheetState extends State<_OfferSheet> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onPressed: valid
                       ? () => Navigator.of(context).pop((price, qty))
                       : null,
-                  child: Text(widget.isCounter ? 'Send counter offer' : 'Send offer',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15,),),
+                  child: Text(
+                    widget.isCounter ? 'Send counter offer' : 'Send offer',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -3795,9 +4415,10 @@ class _MessageBubble extends StatelessWidget {
                 child: Text(
                   senderName.substring(0, 1).toUpperCase(),
                   style: const TextStyle(
-                      color: _mkGreen,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,),
+                    color: _mkGreen,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -3811,10 +4432,13 @@ class _MessageBubble extends StatelessWidget {
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 3, left: 2),
-                    child: Text(senderName,
-                        style: AppTypography.caption.copyWith(
-                            color: _mkTextSecondary,
-                            fontWeight: FontWeight.w600,),),
+                    child: Text(
+                      senderName,
+                      style: AppTypography.caption.copyWith(
+                        color: _mkTextSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 Container(
                   padding:
@@ -3830,16 +4454,22 @@ class _MessageBubble extends StatelessWidget {
                     border: isMe ? null : Border.all(color: _mkBorder),
                     boxShadow: const [_cardShadow],
                   ),
-                  child: Text(body,
-                      style: TextStyle(
-                          color: isMe ? Colors.white : _mkTextPrimary,
-                          fontSize: 14,
-                          height: 1.45,),),
+                  child: Text(
+                    body,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : _mkTextPrimary,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 3),
-                Text(_timeAgo(time),
-                    style: AppTypography.caption.copyWith(
-                        color: _mkTextSecondary.withValues(alpha: 0.7),),),
+                Text(
+                  _timeAgo(time),
+                  style: AppTypography.caption.copyWith(
+                    color: _mkTextSecondary.withValues(alpha: 0.7),
+                  ),
+                ),
               ],
             ),
           ),
@@ -3873,81 +4503,286 @@ class _ReplyInput extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: const BoxDecoration(
-          color: _mkCard, border: Border(top: BorderSide(color: _mkBorder)),),
+        color: _mkCard,
+        border: Border(top: BorderSide(color: _mkBorder)),
+      ),
       child: SafeArea(
         top: false,
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(
-            height: 34,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: quickReplies.length + (onOffer != null ? 1 : 0),
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (_, i) {
-                if (onOffer != null && i == 0) {
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 34,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: quickReplies.length + (onOffer != null ? 1 : 0),
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (_, i) {
+                  if (onOffer != null && i == 0) {
+                    return ActionChip(
+                      avatar: const Icon(
+                        Icons.local_offer_outlined,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      label: const Text('Make offer'),
+                      labelStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      backgroundColor: _mkGreen,
+                      side: BorderSide.none,
+                      onPressed: replying ? null : onOffer,
+                    );
+                  }
+                  final text = quickReplies[i - (onOffer != null ? 1 : 0)];
                   return ActionChip(
-                    avatar: const Icon(Icons.local_offer_outlined,
-                        size: 16, color: Colors.white,),
-                    label: const Text('Make offer'),
-                    labelStyle: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700,),
-                    backgroundColor: _mkGreen,
+                    label: Text(text),
+                    labelStyle: const TextStyle(color: _mkDark, fontSize: 12),
+                    backgroundColor: _mkLight,
                     side: BorderSide.none,
-                    onPressed: replying ? null : onOffer,
+                    onPressed: replying ? null : () => onQuickReply(text),
                   );
-                }
-                final text = quickReplies[i - (onOffer != null ? 1 : 0)];
-                return ActionChip(
-                  label: Text(text),
-                  labelStyle: const TextStyle(color: _mkDark, fontSize: 12),
-                  backgroundColor: _mkLight,
-                  side: BorderSide.none,
-                  onPressed: replying ? null : () => onQuickReply(text),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                maxLines: 4,
-                minLines: 1,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-                decoration: _inputDec('Write a message...').copyWith(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
+                },
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              width: 44,
-              height: 44,
-              decoration:
-                  const BoxDecoration(color: _mkGreen, shape: BoxShape.circle),
-              child: replying
-                  ? const Center(
-                      child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white,),
-                    ),)
-                  : IconButton(
-                      tooltip: 'Send message',
-                      icon: const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 18,),
-                      onPressed: onSend,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    minLines: 1,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    decoration: _inputDec('Write a message...').copyWith(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10,),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                      color: _mkGreen, shape: BoxShape.circle,),
+                  child: replying
+                      ? const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          tooltip: 'Send message',
+                          icon: const Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onPressed: onSend,
+                        ),
+                ),
+              ],
             ),
-          ],),
-        ],),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// The poster's camera selfie in a circle; their initial when there is none.
+class _SellerAvatar extends StatelessWidget {
+  final String? photo;
+  final String name;
+  final double size;
+  const _SellerAvatar(
+      {required this.photo, required this.name, required this.size,});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = Center(
+      child: Text(
+        name.isEmpty ? '?' : name[0].toUpperCase(),
+        style: TextStyle(
+          color: _mkGreen,
+          fontWeight: FontWeight.w800,
+          fontSize: size * 0.42,
+        ),
+      ),
+    );
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(color: _mkLight, shape: BoxShape.circle),
+      clipBehavior: Clip.antiAlias,
+      child: photo == null || photo!.isEmpty
+          ? initial
+          : Image.network(
+              photo!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => initial,
+            ),
+    );
+  }
+}
+
+/// A nursery's public market page: who runs it, how long it has been here,
+/// its activity and its live ads.
+class _SellerProfileScreen extends ConsumerWidget {
+  final int nurseryId;
+  const _SellerProfileScreen({required this.nurseryId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(sellerProfileProvider(nurseryId));
+    return Scaffold(
+      backgroundColor: _mkBg,
+      appBar: AppBar(
+        title: const Text('Seller'),
+        backgroundColor: _mkCard,
+        foregroundColor: _mkTextPrimary,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: async.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: _mkGreen)),
+        error: (e, _) => _ErrorState(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(sellerProfileProvider(nurseryId)),
+        ),
+        data: (p) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
+              child: _SellerAvatar(
+                photo: p.ownerPhoto,
+                name: p.ownerName ?? p.nurseryName,
+                size: 96,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (p.verified)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child:
+                        Icon(Icons.verified_rounded, size: 18, color: _mkGreen),
+                  ),
+                Flexible(
+                  child: Text(
+                    p.nurseryName,
+                    style: AppTypography.h3.copyWith(color: _mkTextPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              [
+                if (p.ownerName != null) p.ownerName!,
+                if (p.city != null) p.city!,
+                'On GreenRoot since ${_monthYear(p.memberSince)}',
+              ].join(' · '),
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+            ),
+            if (p.description != null && p.description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                p.description!,
+                textAlign: TextAlign.center,
+                style: AppTypography.body.copyWith(color: _mkTextPrimary),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _sellerStat('${p.liveAds}', 'Live ads'),
+                _sellerStat('${p.adsPosted}', 'Ads posted'),
+                _sellerStat('${p.dealsAgreed}', 'Deals agreed'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Live ads',
+              style: AppTypography.h4.copyWith(color: _mkTextPrimary),
+            ),
+            const SizedBox(height: 10),
+            if (p.ads.isEmpty)
+              Text(
+                'No live ads right now.',
+                style: AppTypography.body.copyWith(color: _mkTextSecondary),
+              )
+            else
+              for (final ad in p.ads)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _BrowseAdCard(ad: ad),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _monthYear(DateTime d) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[d.month - 1]} ${d.year}';
+  }
+
+  static Widget _sellerStat(String value, String label) => Expanded(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: _mkCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _mkBorder),
+          ),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: _mkTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3979,8 +4814,9 @@ class _MarketSettingsState extends State<_MarketSettingsScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder),),
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _mkBorder),
+        ),
       ),
       body: ListView(
         children: [
@@ -4039,11 +4875,14 @@ class _MarketSettingsState extends State<_MarketSettingsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-          child: Text(title,
-              style: AppTypography.caption.copyWith(
-                  color: _mkTextSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,),),
+          child: Text(
+            title,
+            style: AppTypography.caption.copyWith(
+              color: _mkTextSecondary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -4078,11 +4917,15 @@ class _SwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       secondary: Icon(icon, color: _mkGreen, size: 22),
-      title: Text(title,
-          style: AppTypography.label
-              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w600),),
-      subtitle: Text(subtitle,
-          style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+      title: Text(
+        title,
+        style: AppTypography.label
+            .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+      ),
       value: value,
       onChanged: onChanged,
       activeThumbColor: _mkGreen,
@@ -4114,9 +4957,10 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(label,
-          style:
-              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
@@ -4139,9 +4983,10 @@ class _EnquiryStatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(label,
-          style:
-              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
@@ -4154,23 +4999,33 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Expanded(
-        child: Text(title,
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
             style: AppTypography.h4
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
-      ),
-      if (actionLabel != null && onAction != null)
-        TextButton(
-          style: TextButton.styleFrom(
-              foregroundColor: _mkGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 4),),
-          onPressed: onAction,
-          child: Text(actionLabel!,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _mkGreen,),),
+                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
+          ),
         ),
-    ],);
+        if (actionLabel != null && onAction != null)
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: _mkGreen,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            onPressed: onAction,
+            child: Text(
+              actionLabel!,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _mkGreen,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -4178,8 +5033,11 @@ class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  const _EmptyState(
-      {required this.icon, required this.title, required this.subtitle,});
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -4197,15 +5055,21 @@ class _EmptyState extends StatelessWidget {
               child: Icon(icon, size: 38, color: _mkGreen),
             ),
             const SizedBox(height: 20),
-            Text(title,
-                style: AppTypography.h3.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w800,),
-                textAlign: TextAlign.center,),
+            Text(
+              title,
+              style: AppTypography.h3.copyWith(
+                color: _mkTextPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text(subtitle,
-                style: AppTypography.body
-                    .copyWith(color: _mkTextSecondary, height: 1.5),
-                textAlign: TextAlign.center,),
+            Text(
+              subtitle,
+              style: AppTypography.body
+                  .copyWith(color: _mkTextSecondary, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -4226,29 +5090,41 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded,
-                size: 48, color: _mkTextSecondary,),
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: _mkTextSecondary,
+            ),
             const SizedBox(height: 16),
-            Text('Something went wrong',
-                style: AppTypography.h4.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
+            Text(
+              'Something went wrong',
+              style: AppTypography.h4.copyWith(
+                color: _mkTextPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(message,
-                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,),
+            Text(
+              message,
+              style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: _mkGreen,
                 side: const BorderSide(color: _mkGreen),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Try Again',
-                  style: TextStyle(fontWeight: FontWeight.w700),),
+              label: const Text(
+                'Try Again',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               onPressed: onRetry,
             ),
           ],

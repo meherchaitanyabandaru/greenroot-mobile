@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/testing/test_keys.dart';
@@ -15,6 +14,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../auth/data/models/user_models.dart';
 import '../auth/presentation/providers/auth_provider.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import 'profile_selfie.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -33,7 +33,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String? _error;
 
   // Avatar state — bytes for local preview after pick
-  Uint8List? _pickedBytes;
   bool _uploadingImage = false;
   String? _imageError;
 
@@ -66,44 +65,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  /// Pick an image, upload via POST /api/v1/users/me/avatar (multipart).
-  /// The API uploads to MinIO and updates profile_image_url in one step.
-  /// Session is updated immediately — no need to wait for Save.
+  /// Takes a new profile selfie with the camera; the session updates at once.
   Future<void> _pickAndUploadImage() async {
-    setState(() => _imageError = null);
-    XFile? picked;
-    try {
-      picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-    } catch (_) {
-      if (mounted) setState(() => _imageError = 'Could not open image picker.');
-      return;
-    }
-    if (picked == null) return;
+    setState(() {
+      _imageError = null;
+      _uploadingImage = true;
+    });
+    final ok = await takeProfileSelfie(context, ref);
+    if (ok) _imageError = null;
+    if (mounted) setState(() => _uploadingImage = false);
+  }
 
+  Future<void> _removePhoto() async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete your photo?'),
+        content: const Text(
+            'The photo is deleted from GreenRoot. You will need a new selfie '
+            'to post market ads or start market chats.',),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep'),),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete'),),
+        ],
+      ),
+    );
+    if (sure != true) return;
     setState(() => _uploadingImage = true);
     try {
-      final bytes = await picked.readAsBytes();
-      final ext = picked.name.split('.').last.toLowerCase();
-      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
-      final fileName = 'avatar-${DateTime.now().millisecondsSinceEpoch}.$ext';
-
-      final updated = await ref
-          .read(storageServiceProvider)
-          .uploadAvatar(bytes, fileName, contentType);
-
+      final updated = await ref.read(storageServiceProvider).deleteAvatar();
       ref.read(sessionProvider.notifier).updateUser(updated);
-      if (mounted) setState(() => _pickedBytes = bytes);
     } on AppError catch (e) {
       if (mounted) setState(() => _imageError = e.message);
-    } catch (_) {
-      if (mounted) {
-        setState(() => _imageError = 'Upload failed. Please try again.');
-      }
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
     }
@@ -270,9 +267,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      _uploadingImage ? 'Uploading…' : 'Tap to change photo',
+                      _uploadingImage ? 'Uploading…' : 'Tap to take a new selfie',
                       style: AppTypography.caption
                           .copyWith(color: AppColors.textMuted),
+                    ),
+                    if (!_uploadingImage &&
+                        (user?.profileImageUrl?.isNotEmpty ?? false))
+                      TextButton(
+                        onPressed: _removePhoto,
+                        child: const Text('Remove photo'),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        selfiePrivacyNote,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textMuted),
+                      ),
                     ),
                     if (_imageError != null) ...[
                       const SizedBox(height: 4),
@@ -429,16 +441,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildAvatarContent(UserProfile? user) {
-    // 1. Local bytes preview (just picked, session already updated)
-    if (_pickedBytes != null) {
-      return Image.memory(
-        _pickedBytes!,
-        width: 96,
-        height: 96,
-        fit: BoxFit.cover,
-      );
-    }
-    // 2. Network image from session
+    // Network image from session
     final url = user?.profileImageUrl;
     if (url != null && url.isNotEmpty) {
       return Image.network(

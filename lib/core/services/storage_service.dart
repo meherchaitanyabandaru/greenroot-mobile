@@ -33,6 +33,13 @@ class StorageService {
     return UserProfile.fromJson(data);
   }
 
+  /// DELETE /api/v1/users/me/avatar — removes the photo and its stored file.
+  Future<UserProfile> deleteAvatar() async {
+    final data =
+        await _api.delete<Map<String, dynamic>>('/api/v1/users/me/avatar');
+    return UserProfile.fromJson(data);
+  }
+
   /// Uploads a nursery logo to MinIO via presigned URL.
   /// Returns the permanent file_url to persist on the nursery.
   Future<String> uploadNurseryLogo(
