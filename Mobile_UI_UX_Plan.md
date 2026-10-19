@@ -571,7 +571,7 @@ Allowed API data:
 | Own orders | `GET /api/v1/orders?buying=true` | `orders`, `order_items` |
 | Delivery tracking | `GET /api/v1/dispatches/{id}/tracking/latest` | `driver_locations` |
 | Public tracking (no auth needed) | `GET /api/v1/track/{uuid}` | `trip_tracking_links` |
-| Plant catalogue browse | `GET /api/v1/plants`, `GET /api/v1/plants/{id}` | `plants`, `plant_names`, `plant_images` |
+| Plant catalogue browse | `GET /api/v1/plants`, `GET /api/v1/plants/{id}` | `plants`, `plant_images` |
 | Invite accept | `GET /api/v1/invites/{uuid}`, `POST /api/v1/invites/{uuid}/accept` | `invites` |
 
 Customer Home cards:
