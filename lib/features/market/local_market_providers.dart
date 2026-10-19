@@ -33,6 +33,9 @@ class MarketAd {
   final int saveCount;
   final int enquiryCount;
   final bool isSavedByMe;
+
+  /// The viewer's existing chat about this ad; open it instead of enquiring.
+  final int? myEnquiryId;
   final DateTime? expiresAt;
   final DateTime? publishedAt;
   final DateTime createdAt;
@@ -62,6 +65,7 @@ class MarketAd {
     required this.saveCount,
     required this.enquiryCount,
     required this.isSavedByMe,
+    this.myEnquiryId,
     this.expiresAt,
     this.publishedAt,
     required this.createdAt,
@@ -94,6 +98,7 @@ class MarketAd {
         saveCount: (j['save_count'] as num?)?.toInt() ?? 0,
         enquiryCount: (j['enquiry_count'] as num?)?.toInt() ?? 0,
         isSavedByMe: j['is_saved_by_me'] as bool? ?? false,
+        myEnquiryId: (j['my_enquiry_id'] as num?)?.toInt(),
         expiresAt: j['expires_at'] != null
             ? DateTime.tryParse(j['expires_at'] as String)
             : null,
@@ -177,23 +182,53 @@ class MarketEnquiryMessage {
   final int id;
   final int sentByNurseryId;
   final String nurseryName;
+  final String senderName;
+
+  /// TEXT, OFFER or SYSTEM (e.g. "Deal agreed …").
+  final String type;
   final String body;
+  final double? offerPrice;
+  final int? offerQuantity;
+
+  /// PENDING, ACCEPTED, DECLINED or WITHDRAWN (replaced by a newer offer).
+  final String? offerStatus;
+  final bool isMine;
+
+  /// The viewer can accept or decline this offer.
+  final bool canRespond;
   final DateTime createdAt;
 
   const MarketEnquiryMessage({
     required this.id,
     required this.sentByNurseryId,
     required this.nurseryName,
+    this.senderName = '',
+    this.type = 'TEXT',
     required this.body,
+    this.offerPrice,
+    this.offerQuantity,
+    this.offerStatus,
+    this.isMine = false,
+    this.canRespond = false,
     required this.createdAt,
   });
+
+  bool get isOffer => type == 'OFFER';
+  bool get isSystem => type == 'SYSTEM';
 
   factory MarketEnquiryMessage.fromJson(Map<String, dynamic> j) =>
       MarketEnquiryMessage(
         id: (j['id'] as num).toInt(),
         sentByNurseryId: (j['sent_by_nursery_id'] as num).toInt(),
         nurseryName: j['nursery_name'] as String,
+        senderName: j['sender_name'] as String? ?? '',
+        type: j['type'] as String? ?? 'TEXT',
         body: j['body'] as String,
+        offerPrice: (j['offer_price_per_unit'] as num?)?.toDouble(),
+        offerQuantity: (j['offer_quantity'] as num?)?.toInt(),
+        offerStatus: j['offer_status'] as String?,
+        isMine: j['is_mine'] as bool? ?? false,
+        canRespond: j['can_respond'] as bool? ?? false,
         createdAt: DateTime.parse(j['created_at'] as String),
       );
 }
@@ -203,11 +238,17 @@ class MarketEnquiry {
   final String code;
   final int adId;
   final String adTitle;
+  final String adStatus;
+  final double? adPricePerUnit;
+  final String? adPriceUnit;
+  final String? adPhoto;
   final String adNurseryName;
   final String enquiryNurseryName;
   final String message;
   final int? quantityNeeded;
   final String status;
+  final double? agreedPricePerUnit;
+  final int? agreedQuantity;
   final DateTime createdAt;
   final List<MarketEnquiryMessage> messages;
   final BackendLifecycle? lifecycle;
@@ -219,11 +260,17 @@ class MarketEnquiry {
     required this.code,
     required this.adId,
     required this.adTitle,
+    this.adStatus = 'PUBLISHED',
+    this.adPricePerUnit,
+    this.adPriceUnit,
+    this.adPhoto,
     required this.adNurseryName,
     required this.enquiryNurseryName,
     required this.message,
     this.quantityNeeded,
     required this.status,
+    this.agreedPricePerUnit,
+    this.agreedQuantity,
     required this.createdAt,
     this.messages = const [],
     this.lifecycle,
@@ -231,11 +278,17 @@ class MarketEnquiry {
     this.summary,
   });
 
+  bool get isDealAgreed => status == 'DEAL_AGREED';
+
   factory MarketEnquiry.fromJson(Map<String, dynamic> j) => MarketEnquiry(
         id: (j['id'] as num).toInt(),
         code: j['code'] as String,
         adId: (j['ad_id'] as num).toInt(),
         adTitle: j['ad_title'] as String,
+        adStatus: j['ad_status'] as String? ?? 'PUBLISHED',
+        adPricePerUnit: (j['ad_price_per_unit'] as num?)?.toDouble(),
+        adPriceUnit: j['ad_price_unit'] as String?,
+        adPhoto: j['ad_photo'] as String?,
         adNurseryName: j['ad_nursery_name'] as String,
         enquiryNurseryName: j['enquiring_nursery_name'] as String,
         message: j['message'] as String,
@@ -243,6 +296,8 @@ class MarketEnquiry {
             ? (j['quantity_needed'] as num).toInt()
             : null,
         status: j['status'] as String,
+        agreedPricePerUnit: (j['agreed_price_per_unit'] as num?)?.toDouble(),
+        agreedQuantity: (j['agreed_quantity'] as num?)?.toInt(),
         createdAt: DateTime.parse(j['created_at'] as String),
         messages: (j['messages'] as List?)
                 ?.map((e) =>
@@ -266,26 +321,28 @@ class MarketEnquiry {
 
 class MarketEnquiryCapabilities {
   final bool canReply;
+  final bool canOffer;
   final bool canClose;
   final bool canCancel;
-  final bool canCreateQuotation;
-  final bool canViewQuotation;
+
+  /// Why nobody can write, e.g. "this ad is no longer active".
+  final String? readOnlyReason;
 
   const MarketEnquiryCapabilities({
     this.canReply = false,
+    this.canOffer = false,
     this.canClose = false,
     this.canCancel = false,
-    this.canCreateQuotation = false,
-    this.canViewQuotation = false,
+    this.readOnlyReason,
   });
 
   factory MarketEnquiryCapabilities.fromJson(Map<String, dynamic> j) =>
       MarketEnquiryCapabilities(
         canReply: j['can_reply'] as bool? ?? false,
+        canOffer: j['can_offer'] as bool? ?? false,
         canClose: j['can_close'] as bool? ?? false,
         canCancel: j['can_cancel'] as bool? ?? false,
-        canCreateQuotation: j['can_create_quotation'] as bool? ?? false,
-        canViewQuotation: j['can_view_quotation'] as bool? ?? false,
+        readOnlyReason: j['read_only_reason'] as String?,
       );
 }
 
@@ -332,6 +389,12 @@ class MarketRepository {
         queryParameters: params,
       );
 
+  Future<MarketAd> getAd(int id) async {
+    final data =
+        await _client.get<Map<String, dynamic>>(ApiConstants.marketAdById(id));
+    return MarketAd.fromJson(data['ad'] as Map<String, dynamic>);
+  }
+
   Future<Map<String, dynamic>> getEnquiryById(int id) =>
       _client.get<Map<String, dynamic>>(ApiConstants.marketEnquiryById(id));
 
@@ -346,10 +409,33 @@ class MarketRepository {
         ApiConstants.marketAdAction(adId, 'save'),
       );
 
-  Future<void> sendEnquiry(int adId, String message, {int? qty}) =>
+  /// Starts the chat about [adId] and returns its id.
+  Future<int> sendEnquiry(int adId, String message, {int? qty}) async {
+    final data = await _client.post<Map<String, dynamic>>(
+      ApiConstants.marketAdAction(adId, 'enquiries'),
+      data: {'message': message, if (qty != null) 'quantity_needed': qty},
+    );
+    return ((data['enquiry'] as Map<String, dynamic>)['id'] as num).toInt();
+  }
+
+  Future<void> makeOffer(int enquiryId, double price, {int? quantity}) =>
       _client.post<Map<String, dynamic>>(
-        ApiConstants.marketAdAction(adId, 'enquiries'),
-        data: {'message': message, if (qty != null) 'quantity_needed': qty},
+        ApiConstants.marketEnquiryAction(enquiryId, 'offers'),
+        data: {'price_per_unit': price, if (quantity != null) 'quantity': quantity},
+      );
+
+  Future<void> respondToOffer(int enquiryId, int messageId, {required bool accept}) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketEnquiryAction(
+          enquiryId,
+          'offers/$messageId/${accept ? 'accept' : 'decline'}',
+        ),
+      );
+
+  /// [action] is `close` (seller) or `cancel` (buyer).
+  Future<void> endEnquiry(int enquiryId, String action) =>
+      _client.post<Map<String, dynamic>>(
+        ApiConstants.marketEnquiryAction(enquiryId, action),
       );
 
   Future<void> reportAd(int adId, String reason, {String? notes}) =>
@@ -809,6 +895,11 @@ final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
       [];
 });
 
+/// The full ad as the viewer sees it, including their existing chat id.
+final adDetailProvider = FutureProvider.autoDispose.family<MarketAd, int>(
+  (ref, id) => ref.watch(marketRepositoryProvider).getAd(id),
+);
+
 final enquiryDetailProvider =
     FutureProvider.family<MarketEnquiry, int>((ref, id) async {
   final data = await ref.watch(marketRepositoryProvider).getEnquiryById(id);
@@ -817,17 +908,32 @@ final enquiryDetailProvider =
 
 // ── Reply to Enquiry ──────────────────────────────────────────
 
-class _ReplyEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
+class EnquiryChatNotifier extends StateNotifier<AsyncValue<void>> {
   final int enquiryId;
   final Ref _ref;
 
-  _ReplyEnquiryNotifier(this.enquiryId, this._ref)
+  EnquiryChatNotifier(this.enquiryId, this._ref)
       : super(const AsyncValue.data(null));
 
-  Future<void> reply(String body) async {
+  MarketRepository get _repo => _ref.read(marketRepositoryProvider);
+
+  Future<void> reply(String body) =>
+      _run(() => _repo.replyToEnquiry(enquiryId, body));
+
+  Future<void> offer(double price, {int? quantity}) =>
+      _run(() => _repo.makeOffer(enquiryId, price, quantity: quantity));
+
+  Future<void> respond(int messageId, {required bool accept}) =>
+      _run(() => _repo.respondToOffer(enquiryId, messageId, accept: accept));
+
+  Future<void> end(String action) =>
+      _run(() => _repo.endEnquiry(enquiryId, action));
+
+  /// Runs a chat action, then reloads the chat and both inbox lists.
+  Future<void> _run(Future<void> Function() action) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(marketRepositoryProvider).replyToEnquiry(enquiryId, body);
+      await action();
       _ref.invalidate(enquiryDetailProvider(enquiryId));
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
@@ -840,8 +946,8 @@ class _ReplyEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final replyEnquiryProvider =
-    StateNotifierProvider.family<_ReplyEnquiryNotifier, AsyncValue<void>, int>(
-  (ref, id) => _ReplyEnquiryNotifier(id, ref),
+    StateNotifierProvider.family<EnquiryChatNotifier, AsyncValue<void>, int>(
+  (ref, id) => EnquiryChatNotifier(id, ref),
 );
 
 // ── Per-ad Saved State ────────────────────────────────────────
@@ -883,15 +989,17 @@ class _SendEnquiryNotifier extends StateNotifier<AsyncValue<void>> {
   _SendEnquiryNotifier(this.adId, this._ref)
       : super(const AsyncValue.data(null));
 
-  Future<void> send(String message, {int? qty}) async {
+  /// Returns the new chat's id so the caller can open it.
+  Future<int> send(String message, {int? qty}) async {
     state = const AsyncValue.loading();
     try {
-      await _ref
+      final enquiryId = await _ref
           .read(marketRepositoryProvider)
           .sendEnquiry(adId, message, qty: qty);
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
       state = const AsyncValue.data(null);
+      return enquiryId;
     } catch (e, s) {
       state = AsyncValue.error(e, s);
       rethrow;

@@ -1490,7 +1490,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ad = widget.ad;
+    // The list's copy first, then the full ad (it knows the viewer's chat).
+    final ad = ref.watch(adDetailProvider(widget.ad.id)).valueOrNull ?? widget.ad;
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
     final myNurseryId = ref
         .watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
@@ -1802,11 +1803,18 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),),
                     ),
-                    icon: const Icon(Icons.mail_outline_rounded, size: 18),
-                    label: const Text('Send Enquiry',
-                        style: TextStyle(
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                    label: Text(
+                        ad.myEnquiryId != null
+                            ? 'Open chat'
+                            : 'Chat with seller',
+                        style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15,),),
-                    onPressed: () => _showEnquirySheet(context, ad),
+                    onPressed: ad.myEnquiryId != null
+                        ? () => _openChat(context, ad.myEnquiryId!, ad)
+                        : (ad.capabilities?.canEnquire ?? true)
+                            ? () => _showEnquirySheet(context, ad)
+                            : null,
                   ),
                 ),
               ),
@@ -2001,16 +2009,23 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
     );
   }
 
-  void _showEnquirySheet(BuildContext context, MarketAd ad) {
-    final msgCtrl = TextEditingController();
+  Future<void> _showEnquirySheet(BuildContext context, MarketAd ad) async {
+    final msgCtrl = TextEditingController(text: 'Is it still available?');
     final qtyCtrl = TextEditingController();
-    showModalBottomSheet(
+    final enquiryId = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _EnquirySheet(ad: ad, msgCtrl: msgCtrl, qtyCtrl: qtyCtrl),
     );
+    ref.invalidate(adDetailProvider(ad.id));
+    if (enquiryId != null && context.mounted) _openChat(context, enquiryId, ad);
   }
+
+  void _openChat(BuildContext context, int enquiryId, MarketAd ad) =>
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) =>
+              _EnquiryDetailScreen(enquiryId: enquiryId, title: ad.nurseryName),),);
 }
 
 class _EnquirySheet extends ConsumerStatefulWidget {
@@ -2051,7 +2066,7 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Send Enquiry',
+            Text('Chat with seller',
                 style: AppTypography.h3.copyWith(
                     color: _mkTextPrimary, fontWeight: FontWeight.w800,),),
             const SizedBox(height: 4),
@@ -2090,10 +2105,12 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                         setState(() => _sending = true);
                         try {
                           final qty = int.tryParse(widget.qtyCtrl.text.trim());
-                          await ref
+                          final enquiryId = await ref
                               .read(sendEnquiryProvider(widget.ad.id).notifier)
                               .send(msg, qty: qty);
-                          if (context.mounted) Navigator.of(context).pop();
+                          if (context.mounted) {
+                            Navigator.of(context).pop(enquiryId);
+                          }
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2111,7 +2128,7 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                         height: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white,),)
-                    : const Text('Send Enquiry',
+                    : const Text('Start chat',
                         style: TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15,),),
               ),
@@ -3033,8 +3050,11 @@ class _EnquiryCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) =>
-              _EnquiryDetailScreen(enquiry: enquiry, isAdOwner: isReceived),),),
+          builder: (_) => _EnquiryDetailScreen(
+              enquiryId: enquiry.id,
+              title: isReceived
+                  ? enquiry.enquiryNurseryName
+                  : enquiry.adNurseryName,),),),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -3113,10 +3133,13 @@ class _EnquiryCard extends StatelessWidget {
 // 9. ENQUIRY DETAIL SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 
+/// One chat between two nurseries about one ad, opened by its enquiry id.
+/// Both sides talk, bargain with offers (accept / counter / decline), and the
+/// chat turns read-only once it ends or the ad stops being live.
 class _EnquiryDetailScreen extends ConsumerStatefulWidget {
-  final MarketEnquiry enquiry;
-  final bool isAdOwner;
-  const _EnquiryDetailScreen({required this.enquiry, required this.isAdOwner});
+  final int enquiryId;
+  final String title;
+  const _EnquiryDetailScreen({required this.enquiryId, required this.title});
 
   @override
   ConsumerState<_EnquiryDetailScreen> createState() =>
@@ -3126,7 +3149,7 @@ class _EnquiryDetailScreen extends ConsumerStatefulWidget {
 class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
   final _replyCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  bool _replying = false;
+  bool _busy = false;
   Timer? _poll;
 
   @override
@@ -3135,7 +3158,7 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
     // shortcut: polls every 5 s while the chat is open; switch to push or a
     // websocket when chat traffic grows.
     _poll = Timer.periodic(const Duration(seconds: 5),
-        (_) => ref.invalidate(enquiryDetailProvider(widget.enquiry.id)),);
+        (_) => ref.invalidate(enquiryDetailProvider(widget.enquiryId)),);
   }
 
   @override
@@ -3146,15 +3169,15 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _sendReply() async {
-    final body = _replyCtrl.text.trim();
-    if (body.isEmpty) return;
-    setState(() => _replying = true);
+  EnquiryChatNotifier get _chat =>
+      ref.read(replyEnquiryProvider(widget.enquiryId).notifier);
+
+  /// Runs a chat action with a spinner, showing the API message on failure.
+  Future<bool> _act(Future<void> Function() action) async {
+    setState(() => _busy = true);
     try {
-      await ref
-          .read(replyEnquiryProvider(widget.enquiry.id).notifier)
-          .reply(body);
-      _replyCtrl.clear();
+      await action();
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -3162,16 +3185,61 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
             backgroundColor: _stExpired,
             behavior: SnackBarBehavior.floating,),);
       }
+      return false;
     } finally {
-      if (mounted) setState(() => _replying = false);
+      if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _send(String text) async {
+    final body = text.trim();
+    if (body.isEmpty || _busy) return;
+    if (await _act(() => _chat.reply(body))) _replyCtrl.clear();
+  }
+
+  Future<void> _offer(MarketEnquiry enquiry, {MarketEnquiryMessage? countering}) async {
+    final result = await showModalBottomSheet<(double, int?)>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _OfferSheet(
+        enquiry: enquiry,
+        initialPrice: countering?.offerPrice ?? enquiry.adPricePerUnit,
+        initialQuantity: countering?.offerQuantity ?? enquiry.quantityNeeded,
+        isCounter: countering != null,
+      ),
+    );
+    if (result == null) return;
+    await _act(() => _chat.offer(result.$1, quantity: result.$2));
+  }
+
+  Future<void> _end(MarketEnquiry enquiry) async {
+    final seller = enquiry.capabilities?.canClose ?? false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(seller ? 'Close this chat?' : 'Cancel this enquiry?'),
+        content: const Text('Nobody can send messages or offers after this.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep chatting'),),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(seller ? 'Close chat' : 'Cancel enquiry',
+                style: const TextStyle(color: _stExpired),),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await _act(() => _chat.end(seller ? 'close' : 'cancel'));
   }
 
   @override
   Widget build(BuildContext context) {
-    final detailAsync = ref.watch(enquiryDetailProvider(widget.enquiry.id));
+    final detailAsync = ref.watch(enquiryDetailProvider(widget.enquiryId));
     // Scroll to the newest message when one arrives, ours or theirs.
-    ref.listen(enquiryDetailProvider(widget.enquiry.id), (prev, next) {
+    ref.listen(enquiryDetailProvider(widget.enquiryId), (prev, next) {
       if (next.valueOrNull?.messages.length ==
           prev?.valueOrNull?.messages.length) {
         return;
@@ -3187,14 +3255,35 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
       });
     });
 
+    final enquiry = detailAsync.valueOrNull;
+    final isSeller = enquiry?.summary?.isSeller ?? false;
+    final other = enquiry == null
+        ? widget.title
+        : (isSeller ? enquiry.enquiryNurseryName : enquiry.adNurseryName);
+    final caps = enquiry?.capabilities;
+
     return Scaffold(
       backgroundColor: _mkBg,
       appBar: AppBar(
-        title: Text(widget.enquiry.adTitle, overflow: TextOverflow.ellipsis),
+        title: Text(other, overflow: TextOverflow.ellipsis),
         backgroundColor: _mkCard,
         foregroundColor: _mkTextPrimary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          if (enquiry != null &&
+              ((caps?.canClose ?? false) || (caps?.canCancel ?? false)))
+            PopupMenuButton<String>(
+              onSelected: (_) => _end(enquiry),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'end',
+                  child: Text(
+                      (caps?.canClose ?? false) ? 'Close chat' : 'Cancel enquiry',),
+                ),
+              ],
+            ),
+        ],
         bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
             child: Divider(height: 1, color: _mkBorder),),
@@ -3205,12 +3294,10 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         error: (e, _) => _ErrorState(
             message: e.toString(),
             onRetry: () =>
-                ref.invalidate(enquiryDetailProvider(widget.enquiry.id)),),
+                ref.invalidate(enquiryDetailProvider(widget.enquiryId)),),
         data: (enquiry) {
-          final myNurseryName = widget.isAdOwner
-              ? enquiry.adNurseryName
-              : enquiry.enquiryNurseryName;
-
+          final caps = enquiry.capabilities;
+          final canReply = caps?.canReply ?? false;
           return Column(children: [
             _EnquiryDetailHeader(enquiry: enquiry),
             Expanded(
@@ -3218,94 +3305,437 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                 controller: _scrollCtrl,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                itemCount: enquiry.messages.length + 1,
+                itemCount: enquiry.messages.length,
                 itemBuilder: (_, i) {
-                  if (i == 0) {
-                    return _MessageBubble(
-                      body: enquiry.message,
-                      senderName: enquiry.enquiryNurseryName,
-                      isMe: !widget.isAdOwner,
-                      time: enquiry.createdAt,
+                  final msg = enquiry.messages[i];
+                  if (msg.isSystem) return _SystemNote(text: msg.body);
+                  if (msg.isOffer) {
+                    return _OfferCard(
+                      msg: msg,
+                      priceUnit: enquiry.adPriceUnit,
+                      busy: _busy,
+                      onAccept: () => _act(
+                          () => _chat.respond(msg.id, accept: true),),
+                      onDecline: () => _act(
+                          () => _chat.respond(msg.id, accept: false),),
+                      onCounter: (caps?.canOffer ?? false)
+                          ? () => _offer(enquiry, countering: msg)
+                          : null,
                     );
                   }
-                  final msg = enquiry.messages[i - 1];
                   return _MessageBubble(
                     body: msg.body,
-                    senderName: msg.nurseryName,
-                    isMe: msg.nurseryName == myNurseryName,
+                    senderName: msg.senderName.isEmpty
+                        ? msg.nurseryName
+                        : '${msg.senderName} · ${msg.nurseryName}',
+                    isMe: msg.isMine,
                     time: msg.createdAt,
                   );
                 },
               ),
             ),
-            if (enquiry.capabilities?.canReply ??
-                !const {'CLOSED', 'CANCELLED'}.contains(enquiry.status))
+            if (canReply)
               _ReplyInput(
                 controller: _replyCtrl,
-                replying: _replying,
-                onSend: _sendReply,
+                replying: _busy,
+                onSend: () => _send(_replyCtrl.text),
+                quickReplies: _quickReplies(enquiry, isSeller: isSeller),
+                onQuickReply: _send,
+                onOffer: (caps?.canOffer ?? false) ? () => _offer(enquiry) : null,
               )
             else
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: const BoxDecoration(
-                    color: _mkCard,
-                    border: Border(top: BorderSide(color: _mkBorder)),),
-                child: SafeArea(
-                  top: false,
-                  child: Row(children: [
-                    const Icon(Icons.lock_outline_rounded,
-                        size: 16, color: _mkTextSecondary,),
-                    const SizedBox(width: 8),
-                    Text(
-                      enquiry.status == 'CANCELLED'
-                          ? 'This enquiry was cancelled'
-                          : 'This enquiry is closed',
-                      style: AppTypography.caption
-                          .copyWith(color: _mkTextSecondary),
-                    ),
-                  ],),
-                ),
+              _ReadOnlyBar(
+                reason: caps?.readOnlyReason ??
+                    (enquiry.status == 'CANCELLED'
+                        ? 'this enquiry was cancelled'
+                        : 'this chat is closed'),
               ),
           ],);
         },
       ),
     );
   }
+
+  static List<String> _quickReplies(MarketEnquiry e, {required bool isSeller}) {
+    if (e.isDealAgreed) {
+      return isSeller
+          ? const ['Ready for pickup', 'Sharing the location', 'Please confirm the date']
+          : const ['When can I pick up?', 'Please share the location', 'On my way'];
+    }
+    return isSeller
+        ? const ['Yes, it is available', 'Price is fixed', 'Pickup only', 'Sorry, sold out']
+        : const [
+            'Is it still available?',
+            'What is your best price?',
+            'Can you deliver?',
+            'Please share more photos',
+          ];
+  }
 }
 
+String _rupees(double v) =>
+    '₹${v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2)}';
+
+String _unitLabel(String? unit) =>
+    unit == null || unit.isEmpty ? 'each' : unit.toLowerCase().replaceAll('_', ' ');
+
+/// The ad this chat is about, its live status, and the agreed deal if any.
 class _EnquiryDetailHeader extends StatelessWidget {
   final MarketEnquiry enquiry;
   const _EnquiryDetailHeader({required this.enquiry});
 
   @override
   Widget build(BuildContext context) {
+    final live = enquiry.adStatus == 'PUBLISHED';
     return Container(
       color: _mkCard,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(children: [
-        Expanded(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: enquiry.adPhoto != null
+                    ? Image.network(enquiry.adPhoto!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const ColoredBox(
+                            color: _mkLight,
+                            child: Icon(Icons.local_florist_outlined,
+                                color: _mkGreen,),),)
+                    : const ColoredBox(
+                        color: _mkLight,
+                        child:
+                            Icon(Icons.local_florist_outlined, color: _mkGreen),),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(enquiry.adTitle,
+                      style: AppTypography.label.copyWith(
+                          color: _mkTextPrimary, fontWeight: FontWeight.w700,),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      if (enquiry.adPricePerUnit != null)
+                        '${_rupees(enquiry.adPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}',
+                      if (!live) 'Ad no longer active',
+                    ].join(' · '),
+                    style: AppTypography.caption.copyWith(
+                        color: live ? _mkTextSecondary : _stExpired,),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _EnquiryStatusChip(status: enquiry.status),
+          ],),
+          if (enquiry.isDealAgreed && enquiry.agreedPricePerUnit != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                  color: _mkLight, borderRadius: BorderRadius.circular(10),),
+              child: Row(children: [
+                const Icon(Icons.handshake_outlined, size: 18, color: _mkGreen),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Deal agreed: ${_rupees(enquiry.agreedPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}'
+                    '${enquiry.agreedQuantity != null ? ' × ${enquiry.agreedQuantity}' : ''}',
+                    style: const TextStyle(
+                        color: _mkDark, fontWeight: FontWeight.w700,),
+                  ),
+                ),
+              ],),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// An offer in the chat. The nursery that did not make it can accept,
+/// counter (a new offer back) or decline while it is pending.
+class _OfferCard extends StatelessWidget {
+  final MarketEnquiryMessage msg;
+  final String? priceUnit;
+  final bool busy;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+  final VoidCallback? onCounter;
+  const _OfferCard({
+    required this.msg,
+    required this.priceUnit,
+    required this.busy,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onCounter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final price = msg.offerPrice ?? 0;
+    final qty = msg.offerQuantity;
+    final (label, color) = switch (msg.offerStatus) {
+      'ACCEPTED' => ('Accepted', _stPublished),
+      'DECLINED' => ('Declined', _stExpired),
+      'WITHDRAWN' => ('Replaced by a newer offer', _mkTextSecondary),
+      _ => (msg.isMine ? 'Waiting for reply' : 'Waiting for you', _stPaused),
+    };
+    final who = msg.isMine ? 'Your offer' : 'Offer from ${msg.nurseryName}';
+    return Align(
+      alignment: msg.isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _mkCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: msg.offerStatus == 'PENDING' ? _mkGreen : _mkBorder,
+              width: msg.offerStatus == 'PENDING' ? 1.5 : 1,),
+          boxShadow: const [_cardShadow],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.local_offer_outlined, size: 16, color: _mkGreen),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(who,
+                    style: AppTypography.caption.copyWith(
+                        color: _mkTextSecondary, fontWeight: FontWeight.w600,),),
+              ),
+            ],),
+            const SizedBox(height: 6),
+            Text('${_rupees(price)} ${_unitLabel(priceUnit)}',
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: _mkTextPrimary,),),
+            if (qty != null)
+              Text('× $qty  =  ${_rupees(price * qty)} total',
+                  style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
+            const SizedBox(height: 8),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: color,),),
+            if (msg.canRespond) ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : onDecline,
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: _stExpired,
+                        side: const BorderSide(color: _mkBorder),),
+                    child: const Text('Decline'),
+                  ),
+                ),
+                if (onCounter != null) ...[
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : onCounter,
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: _mkGreen,
+                          side: const BorderSide(color: _mkGreen),),
+                      child: const Text('Counter'),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: busy ? null : onAccept,
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: _mkGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 0,),
+                    child: const Text('Accept'),
+                  ),
+                ),
+              ],),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SystemNote extends StatelessWidget {
+  final String text;
+  const _SystemNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+              color: _mkLight, borderRadius: BorderRadius.circular(20),),
+          child: Text(text,
+              style: const TextStyle(
+                  fontSize: 12, color: _mkDark, fontWeight: FontWeight.w600,),),
+        ),
+      );
+}
+
+class _ReadOnlyBar extends StatelessWidget {
+  final String reason;
+  const _ReadOnlyBar({required this.reason});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: const BoxDecoration(
+            color: _mkCard, border: Border(top: BorderSide(color: _mkBorder)),),
+        child: SafeArea(
+          top: false,
+          child: Row(children: [
+            const Icon(Icons.lock_outline_rounded,
+                size: 16, color: _mkTextSecondary,),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Read-only: ${reason[0].toUpperCase()}${reason.substring(1)}.',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+            ),
+          ],),
+        ),
+      );
+}
+
+/// Price (pre-filled with the ad's price or the offer being countered) and an
+/// optional quantity. Pops (price, quantity).
+class _OfferSheet extends StatefulWidget {
+  final MarketEnquiry enquiry;
+  final double? initialPrice;
+  final int? initialQuantity;
+  final bool isCounter;
+  const _OfferSheet({
+    required this.enquiry,
+    required this.initialPrice,
+    required this.initialQuantity,
+    required this.isCounter,
+  });
+
+  @override
+  State<_OfferSheet> createState() => _OfferSheetState();
+}
+
+class _OfferSheetState extends State<_OfferSheet> {
+  late final _priceCtrl = TextEditingController(
+      text: widget.initialPrice == null
+          ? ''
+          : widget.initialPrice!.toStringAsFixed(
+              widget.initialPrice! == widget.initialPrice!.roundToDouble() ? 0 : 2,),);
+  late final _qtyCtrl =
+      TextEditingController(text: widget.initialQuantity?.toString() ?? '');
+
+  @override
+  void dispose() {
+    _priceCtrl.dispose();
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
+
+  double? get _price => double.tryParse(_priceCtrl.text.trim());
+  int? get _qty => int.tryParse(_qtyCtrl.text.trim());
+
+  @override
+  Widget build(BuildContext context) {
+    final price = _price;
+    final qty = _qty;
+    final valid = price != null && price > 0 && (_qtyCtrl.text.trim().isEmpty || (qty != null && qty > 0));
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: _mkCard,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: SafeArea(
+          top: false,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(enquiry.adTitle,
-                  style: AppTypography.label.copyWith(
-                      color: _mkTextPrimary, fontWeight: FontWeight.w700,),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,),
-              const SizedBox(height: 2),
-              Row(children: [
-                Text('${enquiry.enquiryNurseryName} → ${enquiry.adNurseryName}',
-                    style: AppTypography.caption
-                        .copyWith(color: _mkTextSecondary),),
-              ],),
+              Text(widget.isCounter ? 'Counter offer' : 'Make an offer',
+                  style: AppTypography.h3.copyWith(
+                      color: _mkTextPrimary, fontWeight: FontWeight.w800,),),
+              const SizedBox(height: 4),
+              Text(
+                widget.enquiry.adPricePerUnit == null
+                    ? widget.enquiry.adTitle
+                    : 'Listed at ${_rupees(widget.enquiry.adPricePerUnit!)} ${_unitLabel(widget.enquiry.adPriceUnit)}',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _priceCtrl,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: _inputDec('Your price').copyWith(
+                    prefixText: '₹ ',
+                    suffixText: _unitLabel(widget.enquiry.adPriceUnit),),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _qtyCtrl,
+                keyboardType: TextInputType.number,
+                decoration: _inputDec('Quantity (optional)'),
+                onChanged: (_) => setState(() {}),
+              ),
+              if (price != null && qty != null && qty > 0) ...[
+                const SizedBox(height: 8),
+                Text('Total ${_rupees(price * qty)}',
+                    style: const TextStyle(
+                        color: _mkDark, fontWeight: FontWeight.w700,),),
+              ],
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _mkGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),),
+                  ),
+                  onPressed: valid
+                      ? () => Navigator.of(context).pop((price, qty))
+                      : null,
+                  child: Text(widget.isCounter ? 'Send counter offer' : 'Send offer',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15,),),
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
-        _EnquiryStatusChip(status: enquiry.status),
-      ],),
+      ),
     );
   }
 }
@@ -3400,36 +3830,76 @@ class _ReplyInput extends StatelessWidget {
   final TextEditingController controller;
   final bool replying;
   final VoidCallback onSend;
-  const _ReplyInput(
-      {required this.controller, required this.replying, required this.onSend,});
+  final List<String> quickReplies;
+  final ValueChanged<String> onQuickReply;
+
+  /// Null when offers are not allowed, e.g. after a deal is agreed.
+  final VoidCallback? onOffer;
+  const _ReplyInput({
+    required this.controller,
+    required this.replying,
+    required this.onSend,
+    required this.quickReplies,
+    required this.onQuickReply,
+    required this.onOffer,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom,),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: const BoxDecoration(
           color: _mkCard, border: Border(top: BorderSide(color: _mkBorder)),),
       child: SafeArea(
         top: false,
-        child: Row(children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              decoration: _inputDec('Write a reply...').copyWith(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: quickReplies.length + (onOffer != null ? 1 : 0),
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                if (onOffer != null && i == 0) {
+                  return ActionChip(
+                    avatar: const Icon(Icons.local_offer_outlined,
+                        size: 16, color: Colors.white,),
+                    label: const Text('Make offer'),
+                    labelStyle: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w700,),
+                    backgroundColor: _mkGreen,
+                    side: BorderSide.none,
+                    onPressed: replying ? null : onOffer,
+                  );
+                }
+                final text = quickReplies[i - (onOffer != null ? 1 : 0)];
+                return ActionChip(
+                  label: Text(text),
+                  labelStyle: const TextStyle(color: _mkDark, fontSize: 12),
+                  backgroundColor: _mkLight,
+                  side: BorderSide.none,
+                  onPressed: replying ? null : () => onQuickReply(text),
+                );
+              },
             ),
           ),
-          const SizedBox(width: 8),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 150),
-            opacity: 1.0,
-            child: Container(
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                maxLines: 4,
+                minLines: 1,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+                decoration: _inputDec('Write a message...').copyWith(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
               width: 44,
               height: 44,
               decoration:
@@ -3442,17 +3912,14 @@ class _ReplyInput extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white,),
                     ),)
-                  : Semantics(
-                      button: true,
-                      label: 'Send reply',
-                      child: IconButton(
-                        icon: const Icon(Icons.send_rounded,
-                            color: Colors.white, size: 18,),
-                        onPressed: onSend,
-                      ),
+                  : IconButton(
+                      tooltip: 'Send message',
+                      icon: const Icon(Icons.send_rounded,
+                          color: Colors.white, size: 18,),
+                      onPressed: onSend,
                     ),
             ),
-          ),
+          ],),
         ],),
       ),
     );
@@ -3637,11 +4104,7 @@ class _EnquiryStatusChip extends StatelessWidget {
     final (label, fg, bg) = switch (status) {
       'NEW' => ('New', _stPublished, _stPublishedBg),
       'IN_PROGRESS' => ('In Progress', _stPaused, _stPausedBg),
-      'QUOTATION_CREATED' => (
-          'Quoted',
-          const Color(0xFF7C3AED),
-          const Color(0xFFEDE9FE)
-        ),
+      'DEAL_AGREED' => ('Deal agreed', _stPublished, _stPublishedBg),
       'CLOSED' => ('Closed', _stArchived, _stArchivedBg),
       'CANCELLED' => ('Cancelled', _stExpired, _stExpiredBg),
       _ => (status, _stDraft, _stDraftBg),
