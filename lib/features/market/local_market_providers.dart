@@ -18,6 +18,7 @@ class MarketAd {
   final String nurseryName;
   final bool nurseryVerified;
   final String? nurseryMobile;
+  final int? plantId;
   final String plantName;
   final String? categoryName;
   final String title;
@@ -46,6 +47,7 @@ class MarketAd {
     required this.nurseryName,
     required this.nurseryVerified,
     this.nurseryMobile,
+    this.plantId,
     required this.plantName,
     this.categoryName,
     required this.title,
@@ -75,6 +77,7 @@ class MarketAd {
         nurseryName: j['nursery_name'] as String,
         nurseryVerified: j['nursery_verified'] as bool? ?? false,
         nurseryMobile: j['nursery_mobile'] as String?,
+        plantId: (j['plant_id'] as num?)?.toInt(),
         plantName: j['plant_name'] as String,
         categoryName: j['category_name'] as String?,
         title: j['title'] as String,
@@ -356,6 +359,7 @@ class MarketRepository {
       );
 
   Future<Map<String, dynamic>> createAd({
+    int? plantId,
     required String plantName,
     required String title,
     String? categoryName,
@@ -366,6 +370,7 @@ class MarketRepository {
     List<String> photos = const [],
   }) =>
       _client.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
+        if (plantId != null) 'plant_id': plantId,
         'plant_name': plantName,
         'title': title,
         if (categoryName != null) 'category_name': categoryName,
@@ -378,6 +383,7 @@ class MarketRepository {
 
   Future<void> updateAd(
     int adId, {
+    int? plantId,
     String? plantName,
     String? title,
     String? categoryName,
@@ -390,6 +396,7 @@ class MarketRepository {
       _client.patch<Map<String, dynamic>>(
         ApiConstants.marketAdById(adId),
         data: {
+          if (plantId != null) 'plant_id': plantId,
           if (plantName != null) 'plant_name': plantName,
           if (title != null) 'title': title,
           if (categoryName != null) 'category_name': categoryName,
@@ -931,6 +938,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
   _PostAdNotifier(this._ref) : super(const AsyncValue.data(null));
 
   Future<int> create({
+    int? plantId,
     required String plantName,
     required String title,
     String? categoryName,
@@ -943,6 +951,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final resp = await _ref.read(marketRepositoryProvider).createAd(
+            plantId: plantId,
             plantName: plantName,
             title: title,
             categoryName: categoryName,
@@ -966,6 +975,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
 
   Future<void> update(
     int adId, {
+    int? plantId,
     String? plantName,
     String? title,
     String? categoryName,
@@ -979,6 +989,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _ref.read(marketRepositoryProvider).updateAd(
             adId,
+            plantId: plantId,
             plantName: plantName,
             title: title,
             categoryName: categoryName,

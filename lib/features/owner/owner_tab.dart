@@ -178,10 +178,11 @@ class _SellerQuotationsTab extends ConsumerWidget {
     }
 
     if (paged.items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.request_quote_outlined,
         title: 'No quotations yet',
         subtitle: 'Tap New Quotation to create your first one.',
+        onRefresh: () => ref.read(_sellerQuotationProvider.notifier).load(),
       );
     }
 

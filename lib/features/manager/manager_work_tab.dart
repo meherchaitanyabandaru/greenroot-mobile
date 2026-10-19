@@ -546,10 +546,12 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
           // ── List ────────────────────────────────────────────────────────
           Expanded(
             child: paged.items.isEmpty && !paged.isLoading
-                ? const EmptyState(
+                ? EmptyState(
                     icon: Icons.request_quote_outlined,
                     title: 'No quotations yet',
                     subtitle: 'Tap + to create your first quotation.',
+                    onRefresh: () =>
+                        ref.read(_mgrQuotationProvider.notifier).load(),
                   )
                 : RefreshIndicator(
                     color: AppColors.primaryMain,

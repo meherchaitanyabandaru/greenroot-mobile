@@ -407,10 +407,11 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
               },
             );
           }
-          return const EmptyState(
+          return EmptyState(
             icon: Icons.description_outlined,
             title: 'No quotations yet',
             subtitle: 'Tap + to create your first quotation',
+            onRefresh: () => ref.read(quotationListProvider.notifier).load(),
           );
         }
 

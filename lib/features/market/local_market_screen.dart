@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,6 +10,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../plants/plant_picker.dart';
 import 'local_market_providers.dart';
 import '../top_items/top_items_screen.dart';
 
@@ -2138,6 +2141,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
 
   // Form fields
   final _plantCtrl = TextEditingController();
+  int? _plantId;
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _qtyCtrl = TextEditingController();
@@ -2165,6 +2169,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
     final ad = widget.editingAd;
     if (ad != null) {
       _plantCtrl.text = ad.plantName;
+      _plantId = ad.plantId;
       _titleCtrl.text = ad.title;
       _descCtrl.text = ad.description ?? '';
       _qtyCtrl.text = ad.quantity?.toString() ?? '';
@@ -2197,7 +2202,29 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,);
   }
 
-  bool get _step1Valid => _titleCtrl.text.trim().isNotEmpty;
+  bool get _step1Valid =>
+      _titleCtrl.text.trim().isNotEmpty && _plantCtrl.text.trim().isNotEmpty;
+
+  void _pickPlant() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => PlantPickerSheet(
+        title: 'Which plant are you selling?',
+        onSelected: (plant) {
+          Navigator.of(sheetContext).pop();
+          setState(() {
+            _plantId = plant.id;
+            _plantCtrl.text = plant.displayName;
+            if (_titleCtrl.text.trim().isEmpty) {
+              _titleCtrl.text = plant.displayName;
+            }
+          });
+        },
+      ),
+    );
+  }
 
   String get _effectivePlantName {
     final p = _plantCtrl.text.trim();
@@ -2213,6 +2240,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       if (widget.editingAd != null) {
         await ref.read(postAdProvider.notifier).update(
               widget.editingAd!.id,
+              plantId: _plantId,
               plantName: plantName.isNotEmpty ? plantName : null,
               title: _titleCtrl.text.trim(),
               categoryName: _selectedCategory,
@@ -2226,6 +2254,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
             );
       } else {
         await ref.read(postAdProvider.notifier).create(
+              plantId: _plantId,
               plantName: plantName,
               title: _titleCtrl.text.trim(),
               categoryName: _selectedCategory,
@@ -2261,6 +2290,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       if (widget.editingAd != null) {
         await ref.read(postAdProvider.notifier).update(
               widget.editingAd!.id,
+              plantId: _plantId,
               plantName: plantName.isNotEmpty ? plantName : null,
               title: _titleCtrl.text.trim(),
               categoryName: _selectedCategory,
@@ -2275,6 +2305,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         adId = widget.editingAd!.id;
       } else {
         adId = await ref.read(postAdProvider.notifier).create(
+              plantId: _plantId,
               plantName: plantName,
               title: _titleCtrl.text.trim(),
               categoryName: _selectedCategory,
@@ -2372,6 +2403,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           _DetailsStep(
+            onPickPlant: _pickPlant,
             plantCtrl: _plantCtrl,
             titleCtrl: _titleCtrl,
             descCtrl: _descCtrl,
@@ -2523,8 +2555,10 @@ class _DetailsStep extends StatelessWidget {
   final String? selectedCategory;
   final List<String> categories;
   final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onPickPlant;
 
   const _DetailsStep({
+    required this.onPickPlant,
     required this.plantCtrl,
     required this.titleCtrl,
     required this.descCtrl,
@@ -2547,10 +2581,14 @@ class _DetailsStep extends StatelessWidget {
             maxLength: 120,
             decoration: _inputDec('What are you selling?'),),
         const SizedBox(height: 14),
-        _label('Plant Name'),
+        _label('Plant *'),
         TextField(
             controller: plantCtrl,
-            decoration: _inputDec('e.g. Mango, Rose, Gulmohar...'),),
+            readOnly: true,
+            onTap: onPickPlant,
+            decoration: _inputDec('Search plants, e.g. Mango, Rose...').copyWith(
+              suffixIcon: const Icon(Icons.search_rounded),
+            ),),
         const SizedBox(height: 14),
         _label('Category'),
         Wrap(
@@ -3089,9 +3127,20 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
   final _replyCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _replying = false;
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    // shortcut: polls every 5 s while the chat is open; switch to push or a
+    // websocket when chat traffic grows.
+    _poll = Timer.periodic(const Duration(seconds: 5),
+        (_) => ref.invalidate(enquiryDetailProvider(widget.enquiry.id)),);
+  }
 
   @override
   void dispose() {
+    _poll?.cancel();
     _replyCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -3106,15 +3155,6 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
           .read(replyEnquiryProvider(widget.enquiry.id).notifier)
           .reply(body);
       _replyCtrl.clear();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollCtrl.hasClients) {
-          _scrollCtrl.animateTo(
-            _scrollCtrl.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -3130,6 +3170,22 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(enquiryDetailProvider(widget.enquiry.id));
+    // Scroll to the newest message when one arrives, ours or theirs.
+    ref.listen(enquiryDetailProvider(widget.enquiry.id), (prev, next) {
+      if (next.valueOrNull?.messages.length ==
+          prev?.valueOrNull?.messages.length) {
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollCtrl.hasClients) {
+          _scrollCtrl.animateTo(
+            _scrollCtrl.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    });
 
     return Scaffold(
       backgroundColor: _mkBg,

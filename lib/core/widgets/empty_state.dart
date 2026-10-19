@@ -11,6 +11,10 @@ class EmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// When set, the empty screen can be pulled down to reload, so a list that
+  /// was empty when it loaded picks up items created since.
+  final Future<void> Function()? onRefresh;
+
   const EmptyState({
     super.key,
     required this.icon,
@@ -18,10 +22,29 @@ class EmptyState extends StatelessWidget {
     this.subtitle,
     this.actionLabel,
     this.onAction,
+    this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
+    final content = _content();
+    if (onRefresh == null) return content;
+    return RefreshIndicator(
+      color: AppColors.primaryMain,
+      onRefresh: onRefresh!,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: content,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _content() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.x3l),

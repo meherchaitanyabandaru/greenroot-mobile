@@ -162,10 +162,11 @@ class _OffersTab extends ConsumerWidget {
     }
 
     if (paged.items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.request_quote_outlined,
         title: 'No quotations yet',
         subtitle: 'When a nursery sends you a quotation, it will appear here.',
+        onRefresh: () => ref.read(_buyerQuotationProvider.notifier).load(),
       );
     }
 
@@ -633,10 +634,11 @@ class _OrdersTab extends ConsumerWidget {
     }
 
     if (paged.items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No orders yet',
         subtitle: 'Your orders from nurseries will appear here.',
+        onRefresh: () => ref.read(_buyerOrderProvider.notifier).load(),
       );
     }
 
@@ -893,11 +895,12 @@ class _DeliveriesTab extends ConsumerWidget {
     }
 
     if (paged.items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.local_shipping_outlined,
         title: 'No active deliveries',
         subtitle:
             'Once a nursery dispatches your order, it will appear here — tap to track the driver live.',
+        onRefresh: () => ref.read(_buyerDispatchProvider.notifier).load(),
       );
     }
 
