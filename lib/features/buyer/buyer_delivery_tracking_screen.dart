@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/company_contact.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -189,7 +190,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
           },
           options: Options(
             headers: {
-              'User-Agent': 'GreenRoot/1.0 (support@greenroot.in)',
+              'User-Agent': 'GreenRoot/1.0 (${CompanyContact.email})',
               'Accept': 'application/json',
             },
             connectTimeout: const Duration(seconds: 10),

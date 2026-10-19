@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/company_contact.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
+
+const _mobileChangeFaqAnswer =
+    'Go to Profile → Edit Profile → Change Mobile Number, then verify the code sent to your new number.';
+const _emailChangeFaqAnswer =
+    'Once your email is verified it is locked for security. Contact support at ${CompanyContact.email} to request a change.';
 
 class HelpSupportScreen extends ConsumerWidget {
   const HelpSupportScreen({super.key});
@@ -68,10 +74,10 @@ class HelpSupportScreen extends ConsumerWidget {
             iconBg: const Color(0xFFE8F5E9),
             iconColor: const Color(0xFF25D366),
             title: 'WhatsApp Support',
-            subtitle: '+91 90000 00000',
-            copyValue: '+91 90000 00000',
+            subtitle: CompanyContact.formattedMobile,
+            copyValue: CompanyContact.formattedMobile,
             onTap: () => _launch(
-              'https://wa.me/919000000000'
+              'https://wa.me/${CompanyContact.internationalMobile}'
               '?text=Hi%20GreenRoot%20Support%2C%20I%20need%20help%20with...',
             ),
           ),
@@ -81,10 +87,10 @@ class HelpSupportScreen extends ConsumerWidget {
             iconBg: const Color(0xFFE3F2FD),
             iconColor: AppColors.blue600,
             title: 'Email Support',
-            subtitle: 'support@greenroot.in',
-            copyValue: 'support@greenroot.in',
+            subtitle: CompanyContact.email,
+            copyValue: CompanyContact.email,
             onTap: () => _launch(
-              'mailto:support@greenroot.in'
+              'mailto:${CompanyContact.email}'
               '?subject=GreenRoot%20Support%20Request',
             ),
           ),
@@ -94,9 +100,9 @@ class HelpSupportScreen extends ConsumerWidget {
             iconBg: const Color(0xFFF3E5F5),
             iconColor: const Color(0xFF7B1FA2),
             title: 'Call Us',
-            subtitle: '+91 90000 00000',
-            copyValue: '+91 90000 00000',
-            onTap: () => _launch('tel:+919000000000'),
+            subtitle: CompanyContact.formattedMobile,
+            copyValue: CompanyContact.formattedMobile,
+            onTap: () => _launch('tel:+91${CompanyContact.mobile}'),
           ),
           const SizedBox(height: AppSpacing.x2l),
 
@@ -117,16 +123,11 @@ class HelpSupportScreen extends ConsumerWidget {
               ),
               _FaqItem(
                 question: 'Can I change my mobile number?',
-                answer:
-                    'No. Your mobile number is your login identity and is verified via OTP. '
-                    'It cannot be changed after registration. Please contact support if you '
-                    'need assistance.',
+                answer: _mobileChangeFaqAnswer,
               ),
               _FaqItem(
                 question: 'Can I change my email once it\'s verified?',
-                answer:
-                    'Once your email is verified it is locked for security. '
-                    'Contact support at support@greenroot.in to request a change.',
+                answer: _emailChangeFaqAnswer,
               ),
             ],
           ),

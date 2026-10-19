@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../constants/company_contact.dart';
 import 'geocoding_service.dart';
 
 // ── Nominatim (OpenStreetMap) implementation ──────────────────────────────────
@@ -13,7 +14,7 @@ import 'geocoding_service.dart';
 
 class NominatimGeocodingService implements GeocodingService {
   static const _baseUrl = 'https://nominatim.openstreetmap.org';
-  static const _userAgent = 'GreenRoot/1.0 (support@greenroot.in)';
+  static const _userAgent = 'GreenRoot/1.0 (${CompanyContact.email})';
 
   late final Dio _dio;
 

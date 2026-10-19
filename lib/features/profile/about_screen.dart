@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/company_contact.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -245,8 +246,15 @@ class AboutScreen extends StatelessWidget {
                         _LinkTile(
                           icon: Icons.email_outlined,
                           label: 'Contact',
-                          value: 'hello@greenroot.in',
-                          onTap: () => _launch('mailto:hello@greenroot.in'),
+                          value: CompanyContact.email,
+                          onTap: () => _launch('mailto:${CompanyContact.email}'),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _LinkTile(
+                          icon: Icons.phone_outlined,
+                          label: 'Phone',
+                          value: CompanyContact.formattedMobile,
+                          onTap: () => _launch('tel:+91${CompanyContact.mobile}'),
                         ),
                       ],
                     ),

@@ -30,6 +30,7 @@ import '../dispatches/dispatches.dart';
 import '../plants/plants.dart';
 import '../plants/plant_picker.dart';
 import '../profile/address_map_picker_screen.dart';
+import '../ratings/ratings.dart';
 import 'orders.dart';
 
 // Fetches dispatches for a single order, shown inline in the order detail.
@@ -2059,12 +2060,53 @@ class _SheetField extends StatelessWidget {
 
 // ── Rate Order Card (shown for buyers on COMPLETED orders) ───────────────────
 
-class _RateOrderCard extends ConsumerWidget {
+class _RateOrderCard extends ConsumerStatefulWidget {
   final Order order;
   const _RateOrderCard({required this.order});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RateOrderCard> createState() => _RateOrderCardState();
+}
+
+class _RateOrderCardState extends ConsumerState<_RateOrderCard> {
+  late Future<Rating?> _ratingFuture;
+  bool _ratedHere = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ratingFuture = _loadRating();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RateOrderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.order.id != widget.order.id) {
+      _ratedHere = false;
+      _ratingFuture = _loadRating();
+    }
+  }
+
+  Future<Rating?> _loadRating() =>
+      ref.read(ratingRepositoryProvider).getMyOrderRating(widget.order.id);
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Rating?>(
+        future: _ratingFuture,
+        builder: (context, snapshot) {
+          // Only offer rating when the API confirms there isn't one already.
+          if (_ratedHere ||
+              snapshot.connectionState != ConnectionState.done ||
+              snapshot.hasError ||
+              snapshot.data != null) {
+            return const SizedBox.shrink();
+          }
+
+          return _buildPrompt(context);
+        },
+      );
+
+  Widget _buildPrompt(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -2096,8 +2138,14 @@ class _RateOrderCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.push(
-                      '/ratings/order/${order.id}?code=${order.orderNumber}',),
+                  onPressed: () async {
+                    final submitted = await context.push<bool>(
+                      '/ratings/order/${widget.order.id}?code=${widget.order.orderNumber}',
+                    );
+                    if (mounted && submitted == true) {
+                      setState(() => _ratedHere = true);
+                    }
+                  },
                   icon: const Icon(Icons.inventory_2_outlined, size: 16),
                   label: const Text('Rate Order'),
                 ),

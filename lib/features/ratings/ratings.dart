@@ -144,19 +144,15 @@ class RatingRepository {
   }
 
   Future<Rating?> getMyOrderRating(int orderId) async {
-    try {
-      return await _client.get(
-        ApiConstants.ratingsOrder(orderId),
-        fromJson: (data) {
-          final d = data as Map<String, dynamic>;
-          final r = d['rating'];
-          if (r == null) return null;
-          return Rating.fromJson(r as Map<String, dynamic>);
-        },
-      );
-    } on AppError {
-      return null;
-    }
+    return _client.get(
+      ApiConstants.ratingsOrder(orderId),
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        final r = d['rating'];
+        if (r == null) return null;
+        return Rating.fromJson(r as Map<String, dynamic>);
+      },
+    );
   }
 
   Future<Rating?> getMyTripRating(int dispatchId) async {

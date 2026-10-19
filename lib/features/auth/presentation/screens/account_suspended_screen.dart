@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/company_contact.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -120,15 +121,35 @@ class AccountSuspendedScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.email_outlined,
-                          color: AppColors.primaryMain, size: 20,),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        'support@greenroot.in',
-                        style: AppTypography.body
-                            .copyWith(color: AppColors.primaryMain),
+                      Row(
+                        children: [
+                          const Icon(Icons.email_outlined,
+                              color: AppColors.primaryMain, size: 20,),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              CompanyContact.email,
+                              style: AppTypography.body
+                                  .copyWith(color: AppColors.primaryMain),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined,
+                              color: AppColors.primaryMain, size: 20,),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            CompanyContact.formattedMobile,
+                            style: AppTypography.body
+                                .copyWith(color: AppColors.primaryMain),
+                          ),
+                        ],
                       ),
                     ],
                   ),
