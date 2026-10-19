@@ -1181,12 +1181,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
           List<MarketAd> forTab(String tab) => switch (tab) {
                 'Live' => all
                     .where(
-                        (a) => a.status == 'PUBLISHED' || a.status == 'PAUSED',)
+                        (a) => const {'PUBLISHED', 'PAUSED', 'SUSPENDED'}
+                            .contains(a.status),)
                     .toList(),
                 'Drafts' => all.where((a) => a.status == 'DRAFT').toList(),
                 'Closed' => all
                     .where(
-                        (a) => a.status == 'EXPIRED' || a.status == 'ARCHIVED',)
+                        (a) => const {'EXPIRED', 'ARCHIVED', 'REMOVED'}
+                            .contains(a.status),)
                     .toList(),
                 _ => all,
               };
@@ -1389,6 +1391,16 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                               fontWeight: FontWeight.w700,
                               fontSize: 13,),
                         ),
+                      if (ad.moderationNote != null) ...[
+                        const SizedBox(height: 6),
+                        Text(ad.moderationNote!,
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: ad.status == 'REMOVED'
+                                    ? _stExpired
+                                    : _stPaused,),),
+                      ],
                       const SizedBox(height: 6),
                       Row(children: [
                         _miniStat(Icons.visibility_outlined, '${ad.viewCount}'),
@@ -1870,10 +1882,15 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
 
   void _showReportSheet(BuildContext context, MarketAd ad) {
     // Keys are API codes; values are display labels
+    // EXPLICIT_CONTENT and PROHIBITED hide the ad at once until GreenRoot
+    // reviews it; the rest wait for review.
     const reasons = {
-      'SPAM': 'Spam or misleading',
-      'FRAUD': 'Fake listing / fraud',
+      'EXPLICIT_CONTENT': 'Nude or sexual images',
+      'PROHIBITED': 'Banned or illegal item',
+      'SCAM': 'Scam (e.g. asks for advance payment)',
+      'FRAUD': 'Fake information',
       'WRONG_PLANT': 'Wrong plant / misleading info',
+      'SPAM': 'Spam',
       'DUPLICATE': 'Duplicate listing',
       'OTHER': 'Other',
     };
@@ -1971,10 +1988,17 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                                   notes: notes.isEmpty ? null : notes,
                                 );
                             if (ctx.mounted) {
+                              final hidden = selected == 'EXPLICIT_CONTENT' ||
+                                  selected == 'PROHIBITED';
+                              final messenger = ScaffoldMessenger.of(context);
                               Navigator.of(ctx).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Report submitted. Thank you.'),
+                              // The ad is gone for everyone; leave its page.
+                              if (hidden) Navigator.of(context).pop();
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(hidden
+                                      ? 'Thank you. The ad is hidden while GreenRoot reviews it.'
+                                      : 'Report submitted. GreenRoot will review it.',),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
@@ -4082,6 +4106,8 @@ class _StatusChip extends StatelessWidget {
       'PAUSED' => ('Paused', _stPaused, _stPausedBg),
       'EXPIRED' => ('Expired', _stExpired, _stExpiredBg),
       'ARCHIVED' => ('Archived', _stArchived, _stArchivedBg),
+      'SUSPENDED' => ('Under review', _stPaused, _stPausedBg),
+      'REMOVED' => ('Removed by GreenRoot', _stExpired, _stExpiredBg),
       _ => (status, _stDraft, _stDraftBg),
     };
     return Container(

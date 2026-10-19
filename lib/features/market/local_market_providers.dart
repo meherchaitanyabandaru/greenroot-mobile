@@ -36,6 +36,9 @@ class MarketAd {
 
   /// The viewer's existing chat about this ad; open it instead of enquiring.
   final int? myEnquiryId;
+
+  /// Why GreenRoot hid (SUSPENDED) or removed (REMOVED) the ad.
+  final String? moderationNote;
   final DateTime? expiresAt;
   final DateTime? publishedAt;
   final DateTime createdAt;
@@ -66,6 +69,7 @@ class MarketAd {
     required this.enquiryCount,
     required this.isSavedByMe,
     this.myEnquiryId,
+    this.moderationNote,
     this.expiresAt,
     this.publishedAt,
     required this.createdAt,
@@ -99,6 +103,7 @@ class MarketAd {
         enquiryCount: (j['enquiry_count'] as num?)?.toInt() ?? 0,
         isSavedByMe: j['is_saved_by_me'] as bool? ?? false,
         myEnquiryId: (j['my_enquiry_id'] as num?)?.toInt(),
+        moderationNote: j['moderation_note'] as String?,
         expiresAt: j['expires_at'] != null
             ? DateTime.tryParse(j['expires_at'] as String)
             : null,
@@ -1026,6 +1031,10 @@ class _ReportNotifier extends StateNotifier<AsyncValue<void>> {
       await _ref
           .read(marketRepositoryProvider)
           .reportAd(adId, reason, notes: notes);
+      // A serious report hides the ad at once; drop it from the lists now.
+      _ref.invalidate(browseAdsProvider);
+      _ref.invalidate(latestAdsProvider);
+      _ref.invalidate(adDetailProvider(adId));
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
