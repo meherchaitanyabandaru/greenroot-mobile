@@ -39,7 +39,7 @@ class PermissionService {
   bool canAccessScreen(String screenName) => switch (screenName) {
         'plants' => hasPermission(AppPermission.plantsRead),
         'nurseries' => hasPermission(AppPermission.nurseriesRead),
-        'inventory' => hasPermission(AppPermission.inventoryRead),
+        'top-items' => hasPermission(AppPermission.topItemsRead),
         'requests' => hasAnyPermission([
             AppPermission.requestCreate,
             AppPermission.requestRead,

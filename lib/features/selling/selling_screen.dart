@@ -18,7 +18,7 @@
 //
 //   caps.isNurseryOwner == true   →  OwnerTab
 //       Owners see "Selling" tab label with a storefront icon.
-//       Full operations: orders, quotations, inventory, team, sourcing, dispatch.
+//       Full operations: orders, quotations, top items, team, sourcing, dispatch.
 //
 // BUYER AND DRIVER EXCLUSION
 // ───────────────────────────
@@ -47,7 +47,7 @@
 //   Routes navigated to from this tab:
 //     _canSellGuard    — blocks buyers/drivers from seller-create routes
 //     _ownerGuard      — blocks managers (and all non-owners) from owner-only routes
-//                         e.g. /nursery/members, /inventory/add
+//                         e.g. /nursery/members
 //   This wrapper itself has no route guard — canSell users always have this tab.
 //
 // SEE ALSO

@@ -44,7 +44,7 @@
 //   Routes navigated to FROM this tab carry their own guards:
 //     _buyerGuard      — blocks drivers and sellers from buyer-only routes (e.g. /my-payments)
 //     _canSellGuard    — blocks buyers and drivers from seller-create routes
-//     _ownerGuard      — blocks non-owners from owner-only routes (/nursery/members, /inventory/add)
+//     _ownerGuard      — blocks non-owners from owner-only routes (/nursery/members)
 //
 // SEE ALSO
 // ─────────

@@ -108,7 +108,7 @@ lib/
     ├── sourcing/       # Plant Sourcing Network discovery + posts
     ├── nurseries/      # Nursery list, detail
     ├── plants/         # Plant list, detail
-    ├── inventory/      # Inventory add, detail
+    ├── top_items/      # My Top Items (showcase, max 20; owner + managers edit)
     └── notifications/  # Notifications list
 ```
 
@@ -136,7 +136,7 @@ lib/
 | Plant request list, create, detail | ✅ |
 | Nursery list, detail | ✅ |
 | Plant list, detail | ✅ |
-| Inventory add, detail | ✅ |
+| My Top Items (size, price, notes; tap to edit) — replaced inventory 2026-10-19 | ✅ |
 | Notifications list | ✅ |
 | Members management screen (`/nursery/members?id=&tab=0\|1`) | ✅ |
 | Manager tab: list active managers + pending invites + "Invite Manager" CTA | ✅ |

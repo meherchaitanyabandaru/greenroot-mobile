@@ -51,16 +51,14 @@ class QuoteMetrics {
       );
 }
 
-class InventoryMetrics {
-  final int totalItems;
-  final int available;
+/// How many top items (max 20) the nursery lists.
+class TopItemMetrics {
+  final int total;
 
-  const InventoryMetrics({this.totalItems = 0, this.available = 0});
+  const TopItemMetrics({this.total = 0});
 
-  factory InventoryMetrics.fromJson(Map<String, dynamic> j) => InventoryMetrics(
-        totalItems: (j['total_items'] as num?)?.toInt() ?? 0,
-        available: (j['available'] as num?)?.toInt() ?? 0,
-      );
+  factory TopItemMetrics.fromJson(Map<String, dynamic> j) =>
+      TopItemMetrics(total: (j['total'] as num?)?.toInt() ?? 0);
 }
 
 class ConnectionMetrics {
@@ -86,7 +84,7 @@ class OwnerDashboardData {
   final OrderMetrics buyOrders;
   final QuoteMetrics sellQuotations;
   final QuoteMetrics buyQuotations;
-  final InventoryMetrics inventory;
+  final TopItemMetrics topItems;
   final ConnectionMetrics connections;
 
   const OwnerDashboardData({
@@ -96,7 +94,7 @@ class OwnerDashboardData {
     required this.buyOrders,
     required this.sellQuotations,
     required this.buyQuotations,
-    required this.inventory,
+    required this.topItems,
     required this.connections,
   });
 
@@ -107,7 +105,7 @@ class OwnerDashboardData {
         buyOrders: OrderMetrics.fromJson(j['buy_orders'] as Map<String, dynamic>? ?? {}),
         sellQuotations: QuoteMetrics.fromJson(j['sell_quotations'] as Map<String, dynamic>? ?? {}),
         buyQuotations: QuoteMetrics.fromJson(j['buy_quotations'] as Map<String, dynamic>? ?? {}),
-        inventory: InventoryMetrics.fromJson(j['inventory'] as Map<String, dynamic>? ?? {}),
+        topItems: TopItemMetrics.fromJson(j['top_items'] as Map<String, dynamic>? ?? {}),
         connections: ConnectionMetrics.fromJson(j['connections'] as Map<String, dynamic>? ?? {}),
       );
 
@@ -116,7 +114,7 @@ class OwnerDashboardData {
     buyOrders: OrderMetrics(),
     sellQuotations: QuoteMetrics(),
     buyQuotations: QuoteMetrics(),
-    inventory: InventoryMetrics(),
+    topItems: TopItemMetrics(),
     connections: ConnectionMetrics(),
   );
 }

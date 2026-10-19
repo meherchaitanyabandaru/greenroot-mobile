@@ -7,7 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../auth/domain/rbac/roles.dart';
 import '../../auth/presentation/providers/session_provider.dart';
 import '../../dispatches/dispatch_list_screen.dart';
-import '../../inventory/inventory_list_screen.dart';
+import '../../top_items/top_items_screen.dart';
 import '../../orders/order_list_screen.dart';
 import '../../quotations/quotation_list_screen.dart';
 import '../../plant_requests/request_list_screen.dart';
@@ -88,10 +88,10 @@ class OwnerDashboard extends ConsumerWidget {
           inBottomNav: false,
         ),
         const RoleNavItem(
-          icon: Icons.inventory_2_outlined,
-          activeIcon: Icons.inventory_2_rounded,
-          label: 'Inventory',
-          screen: InventoryListScreen(canEdit: true),
+          icon: Icons.star_outline_rounded,
+          activeIcon: Icons.star_rounded,
+          label: 'Top Items',
+          screen: TopItemsScreen(),
           inBottomNav: false,
         ),
         const RoleNavItem(
@@ -251,11 +251,11 @@ class _OwnerHomeTab extends ConsumerWidget {
                 onTap: gotoDrivers,
               ),
               QuickActionCard(
-                label: 'Inventory',
-                icon: Icons.inventory_2_outlined,
+                label: 'Top Items',
+                icon: Icons.star_outline_rounded,
                 iconColor: AppColors.primaryMain,
                 iconBg: AppColors.forest100,
-                onTap: () => context.push('/inventory/add'),
+                onTap: () => context.push('/nursery/top-items'),
               ),
               QuickActionCard(
                 label: 'Dispatches',

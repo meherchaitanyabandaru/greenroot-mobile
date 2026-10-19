@@ -362,7 +362,7 @@ class _NearbyNurseryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final plants =
-        nursery.featuredPlants.take(3).map((p) => p.plantName).join(', ');
+        nursery.topItems.take(3).map((p) => p.plantName).join(', ');
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,

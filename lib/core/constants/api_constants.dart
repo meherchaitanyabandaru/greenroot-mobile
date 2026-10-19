@@ -37,9 +37,10 @@ abstract class ApiConstants {
   static String nurseryAddressById(int addressId) =>
       '$v1/nurseries/addresses/$addressId';
 
-  // Inventory
-  static const String inventory = '$v1/inventory';
-  static String inventoryById(int id) => '$v1/inventory/$id';
+  // Top items (the nursery's showcase, max 20 — not stock)
+  static const String topItems = '$v1/top-items';
+  static String topItemById(int id) => '$v1/top-items/$id';
+  static String nurseryTopItems(int nurseryId) => '$v1/nurseries/$nurseryId/top-items?per_page=20';
 
   // Plant Requests
   static const String plantRequests = '$v1/plant-requests';
@@ -198,10 +199,6 @@ abstract class ApiConstants {
   // Plant Sourcing Network
   static String sourcingMembership(int nurseryId) =>
       '$v1/nurseries/$nurseryId/sourcing-membership';
-  static String featuredPlants(int nurseryId) =>
-      '$v1/nurseries/$nurseryId/featured-plants';
-  static String featuredPlantById(int nurseryId, int featuredId) =>
-      '$v1/nurseries/$nurseryId/featured-plants/$featuredId';
   static const String sourcingNetworkNurseries =
       '$v1/sourcing-network/nurseries';
   static String sourcingNetworkNursery(int nurseryId) =>

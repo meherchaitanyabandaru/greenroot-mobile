@@ -4,33 +4,31 @@ import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
 
-class FeaturedPlant {
-  final int id;
+/// One of a network nursery's top items (its showcase — not stock).
+class NetworkTopItem {
   final int plantId;
   final String plantName;
-  final int displayOrder;
-  final int? approximateQuantity;
-  final String? approximateSize;
+  final String sizeName;
+  final double? unitPrice;
   final String? qualityNotes;
+  final List<String> photos;
 
-  const FeaturedPlant({
-    required this.id,
+  const NetworkTopItem({
     required this.plantId,
     required this.plantName,
-    required this.displayOrder,
-    this.approximateQuantity,
-    this.approximateSize,
+    required this.sizeName,
+    this.unitPrice,
     this.qualityNotes,
+    this.photos = const [],
   });
 
-  factory FeaturedPlant.fromJson(Map<String, dynamic> j) => FeaturedPlant(
-        id: (j['id'] as num).toInt(),
+  factory NetworkTopItem.fromJson(Map<String, dynamic> j) => NetworkTopItem(
         plantId: (j['plant_id'] as num).toInt(),
         plantName: j['plant_name'] as String? ?? 'Plant',
-        displayOrder: (j['display_order'] as num?)?.toInt() ?? 0,
-        approximateQuantity: (j['approximate_quantity'] as num?)?.toInt(),
-        approximateSize: j['approximate_size'] as String?,
+        sizeName: j['size_name'] as String? ?? '',
+        unitPrice: (j['unit_price'] as num?)?.toDouble(),
         qualityNotes: j['quality_notes'] as String?,
+        photos: (j['photos'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(),
       );
 }
 
@@ -42,7 +40,7 @@ class NearbyNursery {
   final bool roadAccessible;
   final bool lorryAccessible;
   final String? contactNumber;
-  final List<FeaturedPlant> featuredPlants;
+  final List<NetworkTopItem> topItems;
 
   const NearbyNursery({
     required this.nurseryId,
@@ -52,7 +50,7 @@ class NearbyNursery {
     required this.roadAccessible,
     required this.lorryAccessible,
     this.contactNumber,
-    required this.featuredPlants,
+    required this.topItems,
   });
 
   factory NearbyNursery.fromJson(Map<String, dynamic> j) => NearbyNursery(
@@ -63,8 +61,8 @@ class NearbyNursery {
         roadAccessible: j['road_accessible'] as bool? ?? false,
         lorryAccessible: j['lorry_accessible'] as bool? ?? false,
         contactNumber: j['contact_number'] as String?,
-        featuredPlants: (j['featured_plants'] as List<dynamic>?)
-                ?.map((e) => FeaturedPlant.fromJson(e as Map<String, dynamic>))
+        topItems: (j['top_items'] as List<dynamic>?)
+                ?.map((e) => NetworkTopItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
       );

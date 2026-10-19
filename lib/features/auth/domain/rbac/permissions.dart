@@ -8,9 +8,9 @@ enum AppPermission {
   nurseriesRead('nurseries.read'),
   nurseriesWrite('nurseries.write'),
 
-  // Inventory
-  inventoryRead('inventory.read'),
-  inventoryWrite('inventory.write'),
+  // Top items (the nursery's showcase)
+  topItemsRead('top_items.read'),
+  topItemsWrite('top_items.write'),
 
   // Plant sourcing network
   sourcingRead('sourcing.read'),
@@ -66,8 +66,8 @@ const Map<AppRole, Set<AppPermission>> rolePermissions = {
     AppPermission.plantsRead,
     AppPermission.nurseriesRead,
     AppPermission.nurseriesWrite,
-    AppPermission.inventoryRead,
-    AppPermission.inventoryWrite,
+    AppPermission.topItemsRead,
+    AppPermission.topItemsWrite,
     AppPermission.requestCreate,
     AppPermission.requestRead,
     AppPermission.requestRespond,
@@ -85,7 +85,8 @@ const Map<AppRole, Set<AppPermission>> rolePermissions = {
   AppRole.manager: {
     AppPermission.plantsRead,
     AppPermission.nurseriesRead,
-    AppPermission.inventoryRead,
+    AppPermission.topItemsRead,
+    AppPermission.topItemsWrite,
     AppPermission.requestCreate,
     AppPermission.requestRead,
     AppPermission.requestRespond,

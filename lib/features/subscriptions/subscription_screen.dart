@@ -798,7 +798,7 @@ class _ManagerView extends StatelessWidget {
                 (Icons.receipt_long_outlined, 'Order Management'),
                 (Icons.request_quote_outlined, 'Quotations'),
                 (Icons.local_shipping_outlined, 'Dispatch & Delivery'),
-                (Icons.inventory_2_outlined, 'Inventory Management'),
+                (Icons.star_outline_rounded, 'Top Items Showcase'),
                 (Icons.people_outline_rounded, 'Team Coordination'),
                 (Icons.storefront_outlined, 'Market Listings'),
               ].map((f) => Padding(
@@ -1051,7 +1051,7 @@ class _IncludedCard extends StatelessWidget {
       (Icons.request_quote_outlined, 'Quotations'),
       (Icons.local_shipping_outlined, 'Dispatch & Delivery'),
       (Icons.storefront_outlined, 'Market Listings'),
-      (Icons.inventory_2_outlined, 'Inventory'),
+      (Icons.star_outline_rounded, 'Top Items'),
       (Icons.people_outline_rounded, 'Team & Connections'),
     ];
 

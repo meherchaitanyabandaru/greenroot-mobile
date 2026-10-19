@@ -34,10 +34,7 @@ import '../features/drivers/driver_trips_screen.dart';
 import '../features/drivers/driver_trip_map_screen.dart';
 import '../features/drivers/trip_event_screen.dart';
 import '../features/drivers/trip_preview_screen.dart';
-import '../features/inventory/inventory_add_screen.dart';
-import '../features/inventory/inventory_detail_screen.dart';
-import '../features/inventory/inventory_list_screen.dart';
-import '../features/manager/top_items_screen.dart';
+import '../features/top_items/top_items_screen.dart';
 import '../features/plant_requests/request_list_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
@@ -153,8 +150,7 @@ String? _orderCreateGuard(BuildContext context, GoRouterState state) {
 // Blocks: managers (canSell=true but isNurseryOwner=false), buyers, drivers.
 // Applied on: owner-exclusive routes:
 //   /nursery/members    → team management, MANAGER_INVITE (owner-only API)
-//   /inventory/add      → add inventory items (owner-only API)
-// API equivalent: POST /api/v1/invites (MANAGER_INVITE), POST /api/v1/nurseries/:id/inventory
+// API equivalent: POST /api/v1/invites (MANAGER_INVITE)
 String? _ownerGuard(BuildContext context, GoRouterState state) {
   final driverRedirect = _driverGuard(context, state);
   if (driverRedirect != null) return driverRedirect;
@@ -441,29 +437,11 @@ final appRouter = GoRouter(
       builder: (_, __) => const BuyerPaymentsScreen(),
     ),
 
-    // ── Top Items (My Top 20 Plants) ──────────────────────────────────────────
+    // ── Top Items (the nursery's top 20; owner and managers edit) ────────────
     GoRoute(
       path: '/nursery/top-items',
-      redirect: _ownerGuard,
+      redirect: _canSellGuard,
       builder: (_, __) => const TopItemsScreen(),
-    ),
-
-    // ── Inventory ─────────────────────────────────────────────────────────────
-    GoRoute(
-      path: '/inventory',
-      redirect: _canSellGuard,
-      builder: (_, __) => const InventoryListScreen(),
-    ),
-    GoRoute(
-      path: '/inventory/add',
-      redirect: _ownerGuard,
-      builder: (_, __) => const InventoryAddScreen(),
-    ),
-    GoRoute(
-      path: '/inventory/:id',
-      redirect: _canSellGuard,
-      builder: (_, state) =>
-          InventoryDetailScreen(itemId: int.parse(state.pathParameters['id']!)),
     ),
 
     // ── Requests ──────────────────────────────────────────────────────────────

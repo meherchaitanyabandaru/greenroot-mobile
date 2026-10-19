@@ -164,7 +164,7 @@ class AboutScreen extends StatelessWidget {
                     iconBg: AppColors.forest100,
                     title: 'Nursery Network',
                     body:
-                        'Verified nurseries list their inventory and connect directly '
+                        'Verified nurseries show their top plants and connect directly '
                         'with buyers — no middlemen, no guesswork.',
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -189,13 +189,13 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   const _FeatureTile(
-                    icon: Icons.inventory_2_outlined,
+                    icon: Icons.star_outline_rounded,
                     iconColor: AppColors.amber700,
                     iconBg: AppColors.amber100,
-                    title: 'Inventory Management',
+                    title: 'Top Items',
                     body:
-                        'Nursery owners and managers maintain a live plant inventory '
-                        'with sizes, pricing, and availability.',
+                        'Each nursery shows up to 20 plants it is known for, '
+                        'with sizes, indicative prices, and quality notes.',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   const _FeatureTile(
@@ -393,7 +393,7 @@ class _RoleGrid extends StatelessWidget {
       (
         Icons.local_florist_rounded,
         'Nursery Owners',
-        'Manage inventory, orders & team',
+        'Manage top items, orders & team',
         Color(0xFF7B1FA2),
         Color(0xFFF3E5F5)
       ),

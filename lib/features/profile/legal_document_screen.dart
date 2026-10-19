@@ -152,7 +152,7 @@ const _privacyPolicy = _LegalDocument(
       title: 'Information We Collect',
       items: [
         'Account details such as name, mobile number, email, profile photo, role, and verification status.',
-        'Nursery details such as business name, address, branding, inventory, members, quotations, orders, dispatches, and payments.',
+        'Nursery details such as business name, address, branding, top items, members, quotations, orders, dispatches, and payments.',
         'Operational data such as device, login, audit, notification, and usage information required to run the platform securely.',
       ],
     ),

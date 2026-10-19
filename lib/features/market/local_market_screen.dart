@@ -9,7 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'local_market_providers.dart';
-import '../manager/top_items_screen.dart';
+import '../top_items/top_items_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _mkGreen = Color(0xFF00A86B);

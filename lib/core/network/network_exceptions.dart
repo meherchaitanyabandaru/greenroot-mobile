@@ -36,6 +36,10 @@ class NetworkExceptions {
       case 400:
         return ValidationError(message ?? 'Invalid request.');
       case 401:
+        // A wrong or expired OTP is not a lost session.
+        if (_extractCode(response.data) == 'invalid_otp') {
+          return const ValidationError('That code is wrong or has expired. Check it and try again.');
+        }
         return const UnauthorizedError();
       case 403:
         final code = _extractCode(response.data);

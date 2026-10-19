@@ -42,7 +42,7 @@
 // │  ✅  View quotations                   GET  /api/v1/quotations               │
 // │  ✅  Approve quotation                 POST /api/v1/quotations/:id/approve   │
 // │  ✅  Convert accepted quotation→order  POST /api/v1/quotations/:id/convert-to-order│
-// │  ✅  View inventory (read-only)        GET  /api/v1/nurseries/:id/inventory  │
+// │  ✅  Manage top items                  GET/POST/PUT/DELETE /api/v1/top-items │
 // │  ✅  Create dispatches                 POST /api/v1/dispatches               │
 // │  ✅  View dispatches                   GET  /api/v1/dispatches               │
 // │  ✅  Invite customers                  POST /api/v1/invites  (CUSTOMER_INVITE)│
@@ -55,11 +55,9 @@
 // │  ❌  View team list   GET /api/v1/nurseries/:id/managers     — owner only   │
 // │  ❌  Delete orders    DELETE /api/v1/orders/:id               — owner only  │
 // │  ❌  Delete quotations DELETE /api/v1/quotations/:id          — owner only  │
-// │  ❌  Modify inventory  POST/PUT/DELETE /api/v1/inventory       — owner only │
 // │  ❌  Update nursery settings PUT /api/v1/nurseries/:id         — owner only │
 // │  ❌  Register nursery POST /api/v1/nurseries  (409 conflicting_role)        │
 // │  ❌  Access /nursery/members route (blocked by _ownerGuard in router.dart)  │
-// │  ❌  Access /inventory/add route (blocked by _ownerGuard in router.dart)    │
 // └─────────────────────────────────────────────────────────────────────────────┘
 //
 // API CALLS — ON LOAD & PULL-TO-REFRESH
@@ -95,7 +93,6 @@
 //   • Never show "Invite Manager" option — MANAGER_INVITE is owner-only
 //   • Never show "Delete Order" button — not permitted
 //   • Never navigate to /nursery/members — _ownerGuard redirects to /home
-//   • Show inventory in READ-ONLY mode (no add/edit/delete controls)
 //   • Loading queue is the primary manager home card (loading is the core work)
 //
 // SEE ALSO
@@ -195,7 +192,7 @@ class _ManagerHomeData {
 
 /// Manager home section rendered inside HomeScreen for managers (Gumastha).
 /// Same "what should I do next" Action Center treatment as OwnerHome, minus
-/// anything owner-only (no team/inventory management, no Invite Manager).
+/// anything owner-only (no team management, no Invite Manager).
 class ManagerHome extends ConsumerWidget {
   const ManagerHome({super.key});
 
