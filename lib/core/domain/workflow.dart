@@ -75,7 +75,7 @@ class OrderWorkflow {
         {'LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED'}.contains(s);
     final delivered = !cancelled && s == 'COMPLETED';
 
-    WorkflowStepState _s(bool done, bool active) => cancelled
+    WorkflowStepState s0(bool done, bool active) => cancelled
         ? WorkflowStepState.pending
         : (done ? WorkflowStepState.completed : (active ? WorkflowStepState.current : WorkflowStepState.pending));
 
@@ -91,7 +91,7 @@ class OrderWorkflow {
         subtitle: accepted
             ? 'Your order was confirmed'
             : 'Awaiting nursery confirmation',
-        state: _s(accepted, !accepted && !cancelled),
+        state: s0(accepted, !accepted && !cancelled),
         icon: Icons.verified_user_outlined,
       ),
       WorkflowStep(
@@ -134,7 +134,7 @@ class OrderWorkflow {
             : null,
         state: WorkflowStepState.cancelled,
         icon: Icons.cancel_rounded,
-      ));
+      ),);
     }
 
     return steps;
@@ -227,7 +227,7 @@ class OrderWorkflow {
                 : null),
         state: WorkflowStepState.cancelled,
         icon: Icons.cancel_rounded,
-      ));
+      ),);
     }
 
     return steps;
@@ -258,7 +258,7 @@ enum DispatchTimelineRole { seller, driver, buyer }
 
 class DispatchWorkflow {
   static List<WorkflowStep> stepsFor(
-      Dispatch dispatch, DispatchTimelineRole role) {
+      Dispatch dispatch, DispatchTimelineRole role,) {
     switch (role) {
       case DispatchTimelineRole.buyer:
         return _buyerSteps(dispatch);
@@ -282,7 +282,7 @@ class DispatchWorkflow {
     final cancelled = s == 'CANCELLED';
 
     return _buildSteps(cancelled, [
-      WorkflowStep(
+      const WorkflowStep(
         title: 'Dispatch Created',
         subtitle: 'Your order is packed and ready',
         state: WorkflowStepState.completed,
@@ -316,7 +316,7 @@ class DispatchWorkflow {
         state: delivered ? WorkflowStepState.completed : WorkflowStepState.pending,
         icon: Icons.check_circle_rounded,
       ),
-    ], cancelled, 'Dispatch cancelled');
+    ], cancelled, 'Dispatch cancelled',);
   }
 
   static List<WorkflowStep> _driverSteps(Dispatch d) {
@@ -368,7 +368,7 @@ class DispatchWorkflow {
         state: delivered ? WorkflowStepState.completed : WorkflowStepState.pending,
         icon: Icons.check_circle_rounded,
       ),
-    ], cancelled, 'Trip cancelled');
+    ], cancelled, 'Trip cancelled',);
   }
 
   static List<WorkflowStep> _sellerSteps(Dispatch d) {
@@ -389,7 +389,7 @@ class DispatchWorkflow {
       WorkflowStep(
         title: 'Driver Accepted',
         subtitle: accepted
-            ? (d.driverName != null ? d.driverName : 'Driver accepted trip')
+            ? (d.driverName ?? 'Driver accepted trip')
             : 'Awaiting driver to scan QR',
         state: accepted
             ? WorkflowStepState.completed
@@ -424,7 +424,7 @@ class DispatchWorkflow {
         state: delivered ? WorkflowStepState.completed : WorkflowStepState.pending,
         icon: Icons.check_circle_rounded,
       ),
-    ], cancelled, 'Dispatch cancelled');
+    ], cancelled, 'Dispatch cancelled',);
   }
 
   static List<WorkflowStep> _buildSteps(
@@ -438,7 +438,7 @@ class DispatchWorkflow {
         title: cancelLabel,
         state: WorkflowStepState.cancelled,
         icon: Icons.cancel_rounded,
-      ));
+      ),);
     }
     return steps;
   }
@@ -485,7 +485,7 @@ class QuotationWorkflow {
                 ? WorkflowStepState.completed
                 : WorkflowStepState.current),
         icon: Icons.send_outlined,
-      ));
+      ),);
       steps.add(WorkflowStep(
         title: rejected ? 'Rejected by Customer' : 'Customer Response',
         subtitle: rejected
@@ -505,7 +505,7 @@ class QuotationWorkflow {
                 ? WorkflowStepState.completed
                 : (sent ? WorkflowStepState.current : WorkflowStepState.pending)),
         icon: rejected ? Icons.cancel_rounded : Icons.task_alt_rounded,
-      ));
+      ),);
     }
 
     if (!rejected) {
@@ -520,7 +520,7 @@ class QuotationWorkflow {
                 ? WorkflowStepState.current
                 : WorkflowStepState.pending),
         icon: Icons.receipt_long_rounded,
-      ));
+      ),);
     }
 
     return steps;

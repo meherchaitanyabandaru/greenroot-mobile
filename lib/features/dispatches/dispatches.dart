@@ -173,7 +173,7 @@ class Dispatch {
             : null,
         capabilities: j['capabilities'] is Map<String, dynamic>
             ? DispatchCapabilities.fromJson(
-                j['capabilities'] as Map<String, dynamic>)
+                j['capabilities'] as Map<String, dynamic>,)
             : null,
         items: (j['items'] as List<dynamic>?)
                 ?.map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
@@ -317,7 +317,7 @@ class DispatchRepository {
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return TripEvent.fromJson(
-            (d['trip_event'] ?? d) as Map<String, dynamic>);
+            (d['trip_event'] ?? d) as Map<String, dynamic>,);
       },
     );
   }
@@ -391,7 +391,7 @@ class DispatchListState {
   final int? nurseryId;
 
   const DispatchListState(
-      {required this.paged, this.statusFilter, this.nurseryId});
+      {required this.paged, this.statusFilter, this.nurseryId,});
 
   DispatchListState copyWith({
     PagedState<Dispatch>? paged,
@@ -435,7 +435,7 @@ class DispatchListNotifier extends StateNotifier<DispatchListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 
@@ -446,7 +446,7 @@ class DispatchListNotifier extends StateNotifier<DispatchListState> {
       final (items, pagination) = await _repo.listDispatches(
           page: _page + 1,
           status: state.statusFilter,
-          nurseryId: state.nurseryId);
+          nurseryId: state.nurseryId,);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
@@ -491,7 +491,7 @@ final activeDriverTripProvider =
         dispatches.where((d) => activeStatuses.contains(d.status)).toList();
     if (active.length > 1) {
       return const ActiveTripState(
-          trip: null, result: ActiveTripResult.integrityError);
+          trip: null, result: ActiveTripResult.integrityError,);
     }
     return ActiveTripState(
       trip: active.firstOrNull,

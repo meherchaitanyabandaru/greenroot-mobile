@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [master, main]
@@ -24,10 +27,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Errors and warnings fail the build. Style infos (trailing commas,
-      # const constructors) are reported but not blocking yet.
+      # Any analyzer finding fails the build, including infos (style,
+      # deprecations, BuildContext used across async gaps).
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze
 
       - name: Unit and widget tests
         run: flutter test

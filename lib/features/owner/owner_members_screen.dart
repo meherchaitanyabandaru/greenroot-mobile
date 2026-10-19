@@ -553,7 +553,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
             Tab(key: Key(TestKeys.membersDriversTab), text: 'Drivers'),
             Tab(
                 key: Key(TestKeys.membersCustomersTab),
-                text: 'Customers (Party)'),
+                text: 'Customers (Party)',),
           ],
         ),
       ),

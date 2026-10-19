@@ -237,7 +237,7 @@ class _AppDrawer extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 6),
+                      horizontal: 16, vertical: 6,),
                   child: Text(
                     'MENU',
                     style: TextStyle(
@@ -265,7 +265,7 @@ class _AppDrawer extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 const Padding(
                   padding: EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 6),
+                      horizontal: 16, vertical: 6,),
                   child: Text(
                     'MORE',
                     style: TextStyle(
@@ -296,7 +296,7 @@ class _AppDrawer extends StatelessWidget {
           const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: AppSpacing.sm),
+                horizontal: 8, vertical: AppSpacing.sm,),
             child: ListTile(
               leading: Container(
                 width: 36,
@@ -306,17 +306,17 @@ class _AppDrawer extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.logout_rounded,
-                    color: AppColors.red600, size: 18),
+                    color: AppColors.red600, size: 18,),
               ),
               title: const Text('Sign Out',
                   style: TextStyle(
                     color: AppColors.red600,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                  )),
+                  ),),
               onTap: onSignOut,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -393,7 +393,7 @@ class _DrawerHeader extends StatelessWidget {
                 const SizedBox(height: 3),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                      horizontal: 8, vertical: 2,),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -462,7 +462,7 @@ class _DrawerNavTile extends StatelessWidget {
         trailing: !inBottomNav
             ? Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
+                    horizontal: 6, vertical: 2,),
                 decoration: BoxDecoration(
                   color: AppColors.amber100,
                   borderRadius: BorderRadius.circular(8),
@@ -482,7 +482,7 @@ class _DrawerNavTile extends StatelessWidget {
         selected: isActive,
         selectedTileColor: AppColors.forest50,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(10),),
       ),
     );
   }
@@ -543,7 +543,7 @@ class _DrawerActionTile extends StatelessWidget {
             : null,
         onTap: onTap,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(10),),
       ),
     );
   }

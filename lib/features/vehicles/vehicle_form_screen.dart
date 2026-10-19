@@ -121,7 +121,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
                 _Field(
                   label: 'Vehicle Type',
                   child: DropdownButtonFormField<String>(
-                    value: _vehicleType,
+                    initialValue: _vehicleType,
                     hint: const Text('Select type'),
                     decoration: _inputDecoration(null),
                     items: _types
@@ -171,7 +171,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
                 _Field(
                   label: 'Vehicle Status',
                   child: DropdownButtonFormField<String>(
-                    value: _status,
+                    initialValue: _status,
                     decoration: _inputDecoration(null),
                     items: _statuses
                         .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -192,18 +192,18 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 child: _saving
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                            color: Colors.white, strokeWidth: 2,),
                       )
                     : Text(_isEdit ? 'Update Vehicle' : 'Add Vehicle',
-                        style: AppTypography.label),
+                        style: AppTypography.label,),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -218,18 +218,18 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-        border: OutlineInputBorder(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
+        border: const OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.primaryMain, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primaryMain, width: 1.5),
         ),
       );
 }
@@ -277,7 +277,7 @@ class _Field extends StatelessWidget {
       children: [
         Text(label,
             style: AppTypography.caption
-                .copyWith(color: AppColors.textSecondary)),
+                .copyWith(color: AppColors.textSecondary),),
         const SizedBox(height: AppSpacing.xs),
         child,
       ],

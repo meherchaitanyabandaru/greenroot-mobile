@@ -103,7 +103,7 @@ void main() {
       'DISPATCHED',
       'IN_TRANSIT',
       'DELIVERED',
-      'CANCELLED'
+      'CANCELLED',
     ];
 
     for (final status in statuses) {
@@ -184,14 +184,14 @@ void main() {
     for (final path in forbidden) {
       test('$path is forbidden for driver', () {
         expect(isDriverForbidden(path), isTrue,
-            reason: '$path should be blocked for driver role');
+            reason: '$path should be blocked for driver role',);
       });
     }
 
     for (final path in allowed) {
       test('$path is allowed for driver', () {
         expect(isDriverForbidden(path), isFalse,
-            reason: '$path should be accessible for driver role');
+            reason: '$path should be accessible for driver role',);
       });
     }
   });
@@ -226,7 +226,7 @@ void main() {
 
   // ── Notification unread count ───────────────────────────────────────────────
   group('NotificationListState unread count', () {
-    AppNotification _makeNotif(int id, {bool read = false}) {
+    AppNotification makeNotif(int id, {bool read = false}) {
       return AppNotification(
         id: id,
         notificationCode: 'NTF-$id',
@@ -240,11 +240,11 @@ void main() {
 
     test('unread count reflects only unread notifications', () {
       final notifs = [
-        _makeNotif(1, read: false),
-        _makeNotif(2, read: true),
-        _makeNotif(3, read: false),
-        _makeNotif(4, read: true),
-        _makeNotif(5, read: false),
+        makeNotif(1, read: false),
+        makeNotif(2, read: true),
+        makeNotif(3, read: false),
+        makeNotif(4, read: true),
+        makeNotif(5, read: false),
       ];
 
       final unread = notifs.where((n) => n.isUnread).length;
@@ -252,18 +252,18 @@ void main() {
     });
 
     test('all read → unread count is 0', () {
-      final notifs = List.generate(5, (i) => _makeNotif(i, read: true));
+      final notifs = List.generate(5, (i) => makeNotif(i, read: true));
       final unread = notifs.where((n) => n.isUnread).length;
       expect(unread, 0);
     });
 
     test('isUnread true when readAt is null', () {
-      final n = _makeNotif(1, read: false);
+      final n = makeNotif(1, read: false);
       expect(n.isUnread, isTrue);
     });
 
     test('isUnread false when readAt is set', () {
-      final n = _makeNotif(1, read: true);
+      final n = makeNotif(1, read: true);
       expect(n.isUnread, isFalse);
     });
   });
@@ -272,21 +272,21 @@ void main() {
   group('One-active-trip rule', () {
     test('accepts when no active trip exists', () {
       // Driver has no current active trip → can accept new one
-      final activeTrip = null; // getActiveTrip() returns null
-      final canAccept = activeTrip == null;
+      const activeTrip = null; // getActiveTrip() returns null
+      const canAccept = activeTrip == null;
       expect(canAccept, isTrue);
     });
 
     test('blocks accept when different active trip exists', () {
       final currentActive = _makeDispatch(id: 99, status: 'IN_TRANSIT');
-      final newTripId = 42;
+      const newTripId = 42;
       final canAccept = currentActive.id == newTripId;
       expect(canAccept, isFalse);
     });
 
     test('allows viewing own already-accepted trip', () {
       final currentActive = _makeDispatch(id: 42, status: 'ACCEPTED');
-      final newTripId = 42; // same trip
+      const newTripId = 42; // same trip
       final canAccept = currentActive.id == newTripId;
       expect(canAccept, isTrue);
     });

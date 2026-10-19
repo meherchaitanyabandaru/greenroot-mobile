@@ -167,7 +167,7 @@ class _SellerQuotationsTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain));
+          child: CircularProgressIndicator(color: AppColors.primaryMain),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -190,7 +190,7 @@ class _SellerQuotationsTab extends ConsumerWidget {
       onRefresh: () => ref.read(_sellerQuotationProvider.notifier).load(),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg),
+            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg,),
         itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, i) {
@@ -232,8 +232,9 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
           .read(quotationRepositoryProvider)
           .approveQuotation(widget.quotation.id);
       ref.read(_sellerQuotationProvider.notifier).updateItem(updated);
-      if (mounted)
+      if (mounted) {
         _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
+      }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
     } finally {
@@ -262,7 +263,7 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),),
             ),
             child: const Text('Convert'),
           ),
@@ -278,8 +279,9 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
       ref.read(_sellerQuotationProvider.notifier).load();
       if (mounted) {
         _snack('Order created successfully', AppColors.primaryMain);
-        if (q.convertedOrderId != null)
+        if (q.convertedOrderId != null) {
           context.push('/orders/${q.convertedOrderId}');
+        }
       }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
@@ -349,7 +351,7 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2))
+                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2),),
           ],
         ),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -360,10 +362,10 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
               children: [
                 Expanded(
                   child: Text(q.quotationCode,
-                      style: AppTypography.h4, overflow: TextOverflow.ellipsis),
+                      style: AppTypography.h4, overflow: TextOverflow.ellipsis,),
                 ),
                 TradeStatusChip(
-                    status: q.status, kind: TradeChipKind.quotation),
+                    status: q.status, kind: TradeChipKind.quotation,),
                 if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
                   const SizedBox(width: 4),
                   Container(
@@ -377,7 +379,7 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                         style: AppTypography.caption.copyWith(
                             color: AppColors.red600,
                             fontWeight: FontWeight.w700,
-                            fontSize: 10)),
+                            fontSize: 10,),),
                   ),
                 ],
               ],
@@ -387,13 +389,13 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
               Row(
                 children: [
                   const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary,),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(q.recipientName!,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
-                        overflow: TextOverflow.ellipsis),
+                        overflow: TextOverflow.ellipsis,),
                   ),
                 ],
               ),
@@ -403,7 +405,7 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
               children: [
                 if (q.items.isNotEmpty) ...[
                   const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
@@ -414,16 +416,16 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                 ],
                 if (date != null) ...[
                   const Icon(Icons.schedule_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(dateFmt.format(date),
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
                 const Spacer(),
                 Text(fmt.format(q.totalAmount),
                     style: AppTypography.h3
-                        .copyWith(color: AppColors.primaryMain)),
+                        .copyWith(color: AppColors.primaryMain),),
               ],
             ),
             if (_canApprove || _canConvert || _canDelete) ...[
@@ -444,7 +446,7 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                           IconButton(
                             onPressed: _delete,
                             icon: const Icon(Icons.delete_outline_rounded,
-                                color: AppColors.red600, size: 20),
+                                color: AppColors.red600, size: 20,),
                             tooltip: 'Delete',
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -459,10 +461,10 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                                 backgroundColor: AppColors.primaryMain,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size.fromHeight(
-                                    AppSpacing.buttonHeightSm),
+                                    AppSpacing.buttonHeightSm,),
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                    borderRadius: BorderRadius.circular(8),),
                               ),
                               child: const Text('Approve & Send'),
                             ),
@@ -472,16 +474,16 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
                             child: ElevatedButton.icon(
                               onPressed: _convert,
                               icon: const Icon(Icons.swap_horiz_rounded,
-                                  size: 16),
+                                  size: 16,),
                               label: const Text('Convert to Order'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.blue600,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size.fromHeight(
-                                    AppSpacing.buttonHeightSm),
+                                    AppSpacing.buttonHeightSm,),
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                    borderRadius: BorderRadius.circular(8),),
                               ),
                             ),
                           ),
@@ -508,7 +510,7 @@ class _SellerOrdersTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain));
+          child: CircularProgressIndicator(color: AppColors.primaryMain),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -531,7 +533,7 @@ class _SellerOrdersTab extends ConsumerWidget {
       onRefresh: () => ref.read(_sellerOrderProvider.notifier).load(),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg),
+            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg,),
         itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, i) {
@@ -570,7 +572,7 @@ class _SellerOrderCard extends ConsumerWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2))
+                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2),),
           ],
         ),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -581,7 +583,7 @@ class _SellerOrderCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(o.orderNumber,
-                      style: AppTypography.h4, overflow: TextOverflow.ellipsis),
+                      style: AppTypography.h4, overflow: TextOverflow.ellipsis,),
                 ),
                 TradeStatusChip(status: o.status, kind: TradeChipKind.order),
               ],
@@ -591,13 +593,13 @@ class _SellerOrderCard extends ConsumerWidget {
               Row(
                 children: [
                   const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary,),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(o.buyerName!,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
-                        overflow: TextOverflow.ellipsis),
+                        overflow: TextOverflow.ellipsis,),
                   ),
                 ],
               ),
@@ -607,7 +609,7 @@ class _SellerOrderCard extends ConsumerWidget {
               children: [
                 if (o.items.isNotEmpty) ...[
                   const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
@@ -618,16 +620,16 @@ class _SellerOrderCard extends ConsumerWidget {
                 ],
                 if (date != null) ...[
                   const Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(dateFmt.format(date),
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
                 const Spacer(),
                 Text(fmt.format(o.totalAmount),
                     style: AppTypography.h3
-                        .copyWith(color: AppColors.primaryMain)),
+                        .copyWith(color: AppColors.primaryMain),),
               ],
             ),
             SellerOrderCardActions(

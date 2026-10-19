@@ -153,7 +153,7 @@ class _BuyerOrderCreateScreenState
                 quantity: double.parse(r.qtyCtrl.text.trim()),
                 unitPrice: double.parse(r.priceCtrl.text.trim()),
                 totalPrice: r.lineTotal,
-              ))
+              ),)
           .toList();
 
       await ref.read(orderRepositoryProvider).createBuyerOrder(
@@ -199,7 +199,7 @@ class _BuyerOrderCreateScreenState
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           children: [
             // ── Nursery picker ────────────────────────────────────────────
-            _SectionLabel('Select Nursery'),
+            const _SectionLabel('Select Nursery'),
             _NurseryPickerTile(
               selected: _selectedNursery,
               onSelected: (n) => setState(() {
@@ -210,7 +210,7 @@ class _BuyerOrderCreateScreenState
             const SizedBox(height: AppSpacing.md),
 
             // ── Profile contact ───────────────────────────────────────────
-            _SectionLabel('Profile Contact'),
+            const _SectionLabel('Profile Contact'),
             _ProfileContactCard(
               name: profileName,
               mobile: profileMobile,
@@ -218,7 +218,7 @@ class _BuyerOrderCreateScreenState
             const SizedBox(height: AppSpacing.md),
 
             // ── Delivery address ──────────────────────────────────────────
-            _SectionLabel('Deliver To'),
+            const _SectionLabel('Deliver To'),
             _DeliveryAddressSelector(
               addresses: _addresses,
               loading: _loadingAddresses,
@@ -231,7 +231,7 @@ class _BuyerOrderCreateScreenState
             // ── Items ─────────────────────────────────────────────────────
             Row(
               children: [
-                Expanded(child: _SectionLabel('Plants')),
+                const Expanded(child: _SectionLabel('Plants')),
                 TextButton.icon(
                   onPressed: _addItem,
                   icon: const Icon(Icons.add, size: 18),
@@ -260,11 +260,11 @@ class _BuyerOrderCreateScreenState
                   index: e.key,
                   onRemove: () => _removeItem(e.key),
                   onChanged: () => setState(() {}),
-                )),
+                ),),
             const SizedBox(height: AppSpacing.sm),
 
             // ── Notes ─────────────────────────────────────────────────────
-            _SectionLabel('Notes (optional)'),
+            const _SectionLabel('Notes (optional)'),
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
@@ -286,7 +286,7 @@ class _BuyerOrderCreateScreenState
                     Text('Order Total',
                         style: AppTypography.label.copyWith(
                             color: AppColors.primaryHover,
-                            fontWeight: FontWeight.bold)),
+                            fontWeight: FontWeight.bold,),),
                     Text(
                       '₹${_grandTotal.toStringAsFixed(2)}',
                       style: AppTypography.h4
@@ -307,7 +307,7 @@ class _BuyerOrderCreateScreenState
                 ),
                 child: Text(_error!,
                     style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.errorText)),
+                        .copyWith(color: AppColors.errorText),),
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
@@ -322,18 +322,18 @@ class _BuyerOrderCreateScreenState
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),),
                 ),
                 child: _saving
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                            color: Colors.white, strokeWidth: 2,),
                       )
                     : const Text('Place Order',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                            fontSize: 16, fontWeight: FontWeight.bold,),),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -454,7 +454,7 @@ class _DeliveryAddressSelector extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.location_off_outlined,
-                    color: AppColors.amber700),
+                    color: AppColors.amber700,),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -573,7 +573,7 @@ class _SelectedAddressCard extends StatelessWidget {
                   if (address.isDefault)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                          horizontal: 8, vertical: 3,),
                       decoration: BoxDecoration(
                         color: AppColors.forest100,
                         borderRadius: BorderRadius.circular(999),
@@ -632,7 +632,7 @@ class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),),
       builder: (_) => const _NurseryPickerSheet(),
     );
     if (result != null) widget.onSelected(result);
@@ -647,10 +647,10 @@ class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           border: Border.all(
-              color: n != null ? AppColors.primaryMain : AppColors.border),
+              color: n != null ? AppColors.primaryMain : AppColors.border,),
           borderRadius: BorderRadius.circular(8),
           color: n != null
-              ? AppColors.primaryLight.withOpacity(0.4)
+              ? AppColors.primaryLight.withValues(alpha: 0.4)
               : AppColors.surface,
         ),
         child: Row(
@@ -658,7 +658,7 @@ class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
             Icon(Icons.storefront_rounded,
                 color: n != null
                     ? AppColors.primaryMain
-                    : AppColors.textSecondary),
+                    : AppColors.textSecondary,),
             const SizedBox(width: 12),
             Expanded(
               child: n != null
@@ -667,19 +667,19 @@ class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
                       children: [
                         Text(n.name,
                             style: AppTypography.label
-                                .copyWith(color: AppColors.primaryHover)),
+                                .copyWith(color: AppColors.primaryHover),),
                         if (n.cityState.isNotEmpty)
                           Text(n.cityState,
                               style: AppTypography.bodySmall
-                                  .copyWith(color: AppColors.textSecondary)),
+                                  .copyWith(color: AppColors.textSecondary),),
                       ],
                     )
                   : Text('Choose a nursery',
                       style: AppTypography.body
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
             ),
             const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textSecondary),
+                color: AppColors.textSecondary,),
           ],
         ),
       ),
@@ -723,7 +723,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
       final (nurseries, _) = await ref
           .read(nurseryRepositoryProvider)
           .listNurseries(
-              search: query.isEmpty ? null : query, status: 'active');
+              search: query.isEmpty ? null : query, status: 'active',);
       if (mounted) setState(() => _results = nurseries);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -746,7 +746,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
               height: 4,
               decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2))),
+                  borderRadius: BorderRadius.circular(2),),),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -765,12 +765,12 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
                     ? Center(
                         child: Text(_error!,
                             style: AppTypography.bodySmall
-                                .copyWith(color: AppColors.errorText)))
+                                .copyWith(color: AppColors.errorText),),)
                     : _results.isEmpty
                         ? Center(
                             child: Text('No nurseries found',
                                 style: AppTypography.body
-                                    .copyWith(color: AppColors.textSecondary)))
+                                    .copyWith(color: AppColors.textSecondary),),)
                         : ListView.separated(
                             controller: controller,
                             itemCount: _results.length,
@@ -782,12 +782,12 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
                                 leading: const CircleAvatar(
                                   backgroundColor: AppColors.primaryLight,
                                   child: Icon(Icons.local_florist,
-                                      color: AppColors.primaryMain, size: 20),
+                                      color: AppColors.primaryMain, size: 20,),
                                 ),
                                 title: Text(n.name, style: AppTypography.label),
                                 subtitle: n.cityState.isNotEmpty
                                     ? Text(n.cityState,
-                                        style: AppTypography.bodySmall)
+                                        style: AppTypography.bodySmall,)
                                     : null,
                                 onTap: () => Navigator.of(context).pop(n),
                               );
@@ -850,7 +850,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),),
       builder: (_) => const _PlantPickerSheet(),
     );
     if (result != null) {
@@ -876,12 +876,12 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
             children: [
               Text('Item ${widget.index + 1}',
                   style: AppTypography.label
-                      .copyWith(color: AppColors.textSecondary)),
+                      .copyWith(color: AppColors.textSecondary),),
               const Spacer(),
               GestureDetector(
                 onTap: widget.onRemove,
                 child: const Icon(Icons.remove_circle_outline,
-                    color: AppColors.errorText, size: 22),
+                    color: AppColors.errorText, size: 22,),
               ),
             ],
           ),
@@ -894,7 +894,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                 border: Border.all(
                     color: row.plant != null
                         ? AppColors.primaryMain
-                        : AppColors.border),
+                        : AppColors.border,),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -903,7 +903,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                       size: 18,
                       color: row.plant != null
                           ? AppColors.primaryMain
-                          : AppColors.textSecondary),
+                          : AppColors.textSecondary,),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -915,7 +915,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                     ),
                   ),
                   const Icon(Icons.chevron_right_rounded,
-                      color: AppColors.textSecondary),
+                      color: AppColors.textSecondary,),
                 ],
               ),
             ),
@@ -929,7 +929,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
                   decoration: _inputDeco('Qty').copyWith(labelText: 'Qty'),
                   validator: (v) {
@@ -946,7 +946,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
                   decoration:
                       _inputDeco('Price ₹').copyWith(labelText: 'Price ₹'),
@@ -1029,7 +1029,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
               height: 4,
               decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2))),
+                  borderRadius: BorderRadius.circular(2),),),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1048,7 +1048,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                     ? Center(
                         child: Text('No plants found',
                             style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary)))
+                                .copyWith(color: AppColors.textSecondary),),)
                     : ListView.separated(
                         controller: controller,
                         itemCount: _results.length,
@@ -1059,7 +1059,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                             leading: const CircleAvatar(
                               backgroundColor: AppColors.primaryLight,
                               child: Icon(Icons.eco,
-                                  color: AppColors.primaryMain, size: 20),
+                                  color: AppColors.primaryMain, size: 20,),
                             ),
                             title:
                                 Text(p.displayName, style: AppTypography.label),
@@ -1067,7 +1067,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                     p.scientificName != p.displayName
                                 ? Text(p.scientificName,
                                     style: AppTypography.bodySmall
-                                        .copyWith(fontStyle: FontStyle.italic))
+                                        .copyWith(fontStyle: FontStyle.italic),)
                                 : null,
                             onTap: () => Navigator.of(context).pop(p),
                           );
@@ -1091,7 +1091,7 @@ class _SectionLabel extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
             style:
-                AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                AppTypography.label.copyWith(color: AppColors.textSecondary),),
       );
 }
 
@@ -1101,9 +1101,9 @@ InputDecoration _inputDeco(String hint) => InputDecoration(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border)),
+          borderSide: const BorderSide(color: AppColors.border),),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide:
-              const BorderSide(color: AppColors.primaryMain, width: 1.5)),
+              const BorderSide(color: AppColors.primaryMain, width: 1.5),),
     );

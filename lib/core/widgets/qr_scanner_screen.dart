@@ -120,7 +120,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.camera_alt_outlined,
-                        color: Colors.white54, size: 64),
+                        color: Colors.white54, size: 64,),
                     const SizedBox(height: 16),
                     Text(
                       'Camera unavailable\n${error.errorCode.name}',
@@ -145,7 +145,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white, size: 26),
+                        color: Colors.white, size: 26,),
                   ),
                   Expanded(
                     child: Text(
@@ -191,18 +191,18 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                       onTap: _pickFromGallery,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                            horizontal: 24, vertical: 12,),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3)),
+                              color: Colors.white.withValues(alpha: 0.3),),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.photo_library_outlined,
-                                color: Colors.white, size: 20),
+                                color: Colors.white, size: 20,),
                             const SizedBox(width: 8),
                             Text(
                               'Choose from Gallery',
@@ -285,7 +285,7 @@ class _ScanOverlay extends StatelessWidget {
           ),
         ],
       );
-    });
+    },);
   }
 }
 
@@ -330,7 +330,7 @@ class _Corners extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
+      child: const CustomPaint(
         painter: _CornerPainter(arm: arm, thick: thick, radius: r, color: color),
       ),
     );
@@ -347,7 +347,7 @@ class _CornerPainter extends CustomPainter {
       {required this.arm,
       required this.thick,
       required this.radius,
-      required this.color});
+      required this.color,});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -369,8 +369,8 @@ class _CornerPainter extends CustomPainter {
           ..lineTo(0, arm)
           ..moveTo(0, 0 + radius)
           ..arcToPoint(Offset(radius, 0),
-              radius: Radius.circular(radius), clockwise: false),
-        paint);
+              radius: Radius.circular(radius), clockwise: false,),
+        paint,);
 
     // Top-right
     canvas.drawPath(
@@ -378,9 +378,9 @@ class _CornerPainter extends CustomPainter {
           ..moveTo(w - arm, 0)
           ..lineTo(w - radius, 0)
           ..arcToPoint(Offset(w, radius),
-              radius: Radius.circular(radius), clockwise: true)
+              radius: Radius.circular(radius), clockwise: true,)
           ..lineTo(w, arm),
-        paint);
+        paint,);
 
     // Bottom-left
     canvas.drawPath(
@@ -388,9 +388,9 @@ class _CornerPainter extends CustomPainter {
           ..moveTo(0, h - arm)
           ..lineTo(0, h - radius)
           ..arcToPoint(Offset(radius, h),
-              radius: Radius.circular(radius), clockwise: true)
+              radius: Radius.circular(radius), clockwise: true,)
           ..lineTo(arm, h),
-        paint);
+        paint,);
 
     // Bottom-right
     canvas.drawPath(
@@ -398,9 +398,9 @@ class _CornerPainter extends CustomPainter {
           ..moveTo(w - arm, h)
           ..lineTo(w - radius, h)
           ..arcToPoint(Offset(w, h - radius),
-              radius: Radius.circular(radius), clockwise: false)
+              radius: Radius.circular(radius), clockwise: false,)
           ..lineTo(w, h - arm),
-        paint);
+        paint,);
   }
 
   @override

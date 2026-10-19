@@ -42,7 +42,7 @@ class SubscriptionScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(
-      BuildContext context, WidgetRef ref, UserCapabilities caps) {
+      BuildContext context, WidgetRef ref, UserCapabilities caps,) {
     // Driver only (no sell/buy workspace) → free
     if (caps.isDriverOnly) return const _FreeView(role: _FreeRole.driver);
 
@@ -66,9 +66,9 @@ class SubscriptionScreen extends ConsumerWidget {
       ),
       data: (sub) => sub == null
           ? _NoSubscription(
-              onRefresh: () => ref.invalidate(subscriptionProvider))
+              onRefresh: () => ref.invalidate(subscriptionProvider),)
           : _SubscriptionBody(
-              sub: sub, onRefresh: () => ref.invalidate(subscriptionProvider)),
+              sub: sub, onRefresh: () => ref.invalidate(subscriptionProvider),),
     );
   }
 }
@@ -132,7 +132,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                       colors: [
                         Color(0xFF0A2814),
                         Color(0xFF16522A),
-                        Color(0xFF0C3518)
+                        Color(0xFF0C3518),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -151,13 +151,13 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                     child: Stack(
                       children: [
                         // Watermark leaf
-                        Positioned(
+                        const Positioned(
                           top: -16,
                           right: -8,
                           child: Opacity(
                             opacity: 0.12,
                             child: Icon(Icons.eco_rounded,
-                                size: 160, color: Colors.white),
+                                size: 160, color: Colors.white,),
                           ),
                         ),
                         // Flowing wave lines
@@ -171,16 +171,16 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // ── Top row: logo + NFC ──────────────────────────────────
-                              Row(
+                              const Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.eco_rounded,
-                                      color: Color(0xFF76E07A), size: 22),
-                                  const SizedBox(width: 6),
+                                  Icon(Icons.eco_rounded,
+                                      color: Color(0xFF76E07A), size: 22,),
+                                  SizedBox(width: 6),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
-                                    children: const [
+                                    children: [
                                       Text(
                                         'GreenRoot',
                                         style: TextStyle(
@@ -201,11 +201,11 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                       ),
                                     ],
                                   ),
-                                  const Spacer(),
-                                  const RotatedBox(
+                                  Spacer(),
+                                  RotatedBox(
                                     quarterTurns: 1,
                                     child: Icon(Icons.wifi_rounded,
-                                        color: Colors.white54, size: 20),
+                                        color: Colors.white54, size: 20,),
                                   ),
                                 ],
                               ),
@@ -233,12 +233,12 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                               border: Border.all(
                                                   color:
                                                       const Color(0xFF76E07A),
-                                                  width: 1.5),
+                                                  width: 1.5,),
                                             ),
                                             child: const Icon(
                                                 Icons.person_rounded,
                                                 color: Color(0xFF76E07A),
-                                                size: 18),
+                                                size: 18,),
                                           ),
                                           const SizedBox(height: 7),
                                           const Text(
@@ -264,7 +264,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                           const SizedBox(height: 8),
                                           Container(
                                               height: 0.5,
-                                              color: Colors.white24),
+                                              color: Colors.white24,),
                                           const SizedBox(height: 8),
                                           const Text(
                                             'USER ID',
@@ -293,7 +293,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                     Container(
                                       width: 0.5,
                                       margin: const EdgeInsets.symmetric(
-                                          horizontal: 14),
+                                          horizontal: 14,),
                                       color: Colors.white24,
                                     ),
 
@@ -315,7 +315,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                           const SizedBox(height: 6),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 5),
+                                                horizontal: 10, vertical: 5,),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFF2E7D32),
                                               borderRadius:
@@ -327,7 +327,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                                 const Icon(
                                                     Icons.verified_rounded,
                                                     size: 12,
-                                                    color: Color(0xFF76E07A)),
+                                                    color: Color(0xFF76E07A),),
                                                 const SizedBox(width: 5),
                                                 Flexible(
                                                   child: Text(
@@ -362,7 +362,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                               const Icon(
                                                   Icons.calendar_month_outlined,
                                                   size: 14,
-                                                  color: Color(0xFF90D87A)),
+                                                  color: Color(0xFF90D87A),),
                                               const SizedBox(width: 5),
                                               Text(
                                                 widget.validUntil ?? 'Lifetime',
@@ -384,8 +384,8 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                               const SizedBox(height: 12),
 
                               // ── Bottom row ────────────────────────────────────────────
-                              Row(
-                                children: const [
+                              const Row(
+                                children: [
                                   Text(
                                     'GREENROOT MEMBER',
                                     style: TextStyle(
@@ -397,7 +397,7 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                   ),
                                   Spacer(),
                                   Icon(Icons.park_rounded,
-                                      size: 14, color: Color(0xFFCDAB41)),
+                                      size: 14, color: Color(0xFFCDAB41),),
                                   SizedBox(width: 5),
                                   Text(
                                     'GreenRoot',
@@ -432,17 +432,17 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                     shape: BoxShape.circle,
                     border: Border.all(
                         color: Colors.white.withValues(alpha: 0.25),
-                        width: 0.5),
+                        width: 0.5,),
                   ),
                   child: _downloading
                       ? const SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
-                              strokeWidth: 1.5, color: Colors.white),
+                              strokeWidth: 1.5, color: Colors.white,),
                         )
                       : const Icon(Icons.download_rounded,
-                          color: Colors.white, size: 16),
+                          color: Colors.white, size: 16,),
                 ),
               ),
             ),
@@ -462,11 +462,11 @@ class _CardWavesPainter extends CustomPainter {
       ..strokeWidth = 1.2;
 
     void wave(double startX, double startY, double cpX, double cpY, double endX,
-        double endY) {
+        double endY,) {
       final p = Path()
         ..moveTo(startX * size.width, startY * size.height)
         ..quadraticBezierTo(cpX * size.width, cpY * size.height,
-            endX * size.width, endY * size.height);
+            endX * size.width, endY * size.height,);
       canvas.drawPath(p, paint);
     }
 
@@ -510,7 +510,7 @@ class _FreeView extends StatelessWidget {
 
     return ListView(
       key: ValueKey(
-          isDriver ? 'subscription_free_driver' : 'subscription_free_buyer'),
+          isDriver ? 'subscription_free_driver' : 'subscription_free_buyer',),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // Membership card
@@ -549,7 +549,7 @@ class _FreeView extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check_circle_rounded,
-                    color: Colors.white, size: 36),
+                    color: Colors.white, size: 36,),
               ),
               const SizedBox(height: 16),
               Text(
@@ -583,7 +583,7 @@ class _FreeView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("What's Included — Free", style: AppTypography.h4),
+              const Text("What's Included — Free", style: AppTypography.h4),
               const SizedBox(height: 14),
               ...features.map((f) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -597,13 +597,13 @@ class _FreeView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(f.$1,
-                              size: 17, color: AppColors.primaryMain),
+                              size: 17, color: AppColors.primaryMain,),
                         ),
                         const SizedBox(width: 12),
                         Text(f.$2, style: AppTypography.body),
                       ],
                     ),
-                  )),
+                  ),),
             ],
           ),
         ),
@@ -614,7 +614,7 @@ class _FreeView extends StatelessWidget {
           child: Row(
             children: [
               const Icon(Icons.verified_outlined,
-                  size: 18, color: AppColors.primaryMain),
+                  size: 18, color: AppColors.primaryMain,),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -682,7 +682,7 @@ class _ManagerView extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.manage_accounts_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20,),
                   const SizedBox(width: 8),
                   const Text(
                     'Manager Access',
@@ -742,7 +742,7 @@ class _ManagerView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Your Workspace${nurseries.length > 1 ? 's' : ''}',
-                  style: AppTypography.h4),
+                  style: AppTypography.h4,),
               const SizedBox(height: 12),
               ...nurseries.map((n) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -756,7 +756,7 @@ class _ManagerView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.storefront_rounded,
-                              size: 20, color: Color(0xFF1565C0)),
+                              size: 20, color: Color(0xFF1565C0),),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -772,16 +772,16 @@ class _ManagerView extends StatelessWidget {
                                 'Subscription active',
                                 style: AppTypography.caption.copyWith(
                                     color: AppColors.primaryMain,
-                                    fontWeight: FontWeight.w500),
+                                    fontWeight: FontWeight.w500,),
                               ),
                             ],
                           ),
                         ),
                         const Icon(Icons.check_circle_rounded,
-                            size: 18, color: AppColors.primaryMain),
+                            size: 18, color: AppColors.primaryMain,),
                       ],
                     ),
-                  )),
+                  ),),
             ],
           ),
         ),
@@ -792,7 +792,7 @@ class _ManagerView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Your Access Includes", style: AppTypography.h4),
+              const Text('Your Access Includes', style: AppTypography.h4),
               const SizedBox(height: 14),
               ...[
                 (Icons.receipt_long_outlined, 'Order Management'),
@@ -813,13 +813,13 @@ class _ManagerView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(f.$1,
-                              size: 17, color: AppColors.primaryMain),
+                              size: 17, color: AppColors.primaryMain,),
                         ),
                         const SizedBox(width: 12),
                         Text(f.$2, style: AppTypography.body),
                       ],
                     ),
-                  )),
+                  ),),
             ],
           ),
         ),
@@ -831,7 +831,7 @@ class _ManagerView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(Icons.info_outline_rounded,
-                  size: 18, color: AppColors.textSecondary),
+                  size: 18, color: AppColors.textSecondary,),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -872,11 +872,11 @@ class _NoSubscription extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.workspace_premium_rounded,
-                  size: 40, color: AppColors.primaryMain),
+                  size: 40, color: AppColors.primaryMain,),
             ),
             const SizedBox(height: AppSpacing.x2l),
             const Text('No Subscription',
-                style: AppTypography.h2, textAlign: TextAlign.center),
+                style: AppTypography.h2, textAlign: TextAlign.center,),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'You don\'t have an active subscription yet. Contact support or wait for your nursery to be approved.',
@@ -998,7 +998,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
       builder: (_) => AlertDialog(
         title: const Text('Cancel Subscription?'),
         content: const Text(
-            'Your access will end immediately. This cannot be undone.'),
+            'Your access will end immediately. This cannot be undone.',),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1006,7 +1006,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Cancel', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -1017,14 +1017,14 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
     try {
       final ds = ref.read(subscriptionDataSourceProvider);
       await ds.cancelSubscription(widget.sub.id, null);
-      if (mounted) {
+      if (context.mounted) {
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Subscription cancelled.')),
         );
       }
     } on AppError catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
       }
@@ -1059,7 +1059,7 @@ class _IncludedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("What's Included", style: AppTypography.h4),
+          const Text("What's Included", style: AppTypography.h4),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -1074,9 +1074,9 @@ class _IncludedCard extends StatelessWidget {
                             style: AppTypography.caption.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w500,
-                            )),
+                            ),),
                       ],
-                    ))
+                    ),)
                 .toList(),
           ),
           if (isTrial) ...[
@@ -1086,7 +1086,7 @@ class _IncludedCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.star_rounded,
-                    size: 15, color: AppColors.amber600),
+                    size: 15, color: AppColors.amber600,),
                 const SizedBox(width: 6),
                 Text(
                   'Upgrade to Standard for unlimited access after trial.',
@@ -1126,7 +1126,7 @@ class _PaymentHistorySection extends ConsumerWidget {
           onTap: onToggle,
           child: Row(
             children: [
-              Text('Payment History', style: AppTypography.h4),
+              const Text('Payment History', style: AppTypography.h4),
               const Spacer(),
               Icon(
                 expanded
@@ -1143,15 +1143,15 @@ class _PaymentHistorySection extends ConsumerWidget {
                 loading: () => const Center(
                     child: Padding(
                         padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator())),
+                        child: CircularProgressIndicator(),),),
                 error: (_, __) => Text('Failed to load payments',
                     style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 data: (payments) => payments.isEmpty
                     ? _Card(
                         child: Text('No payments recorded.',
                             style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary)))
+                                .copyWith(color: AppColors.textSecondary),),)
                     : _Card(
                         child: Column(
                           children: payments
@@ -1187,10 +1187,10 @@ class _PaymentRow extends StatelessWidget {
               children: [
                 Text(payment.paymentCode ?? '—',
                     style: AppTypography.bodySmall
-                        .copyWith(fontWeight: FontWeight.w700)),
+                        .copyWith(fontWeight: FontWeight.w700),),
                 Text(payment.paymentMethod,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
               ],
             ),
           ),
@@ -1199,14 +1199,14 @@ class _PaymentRow extends StatelessWidget {
             children: [
               Text('₹${payment.amount.toStringAsFixed(2)}',
                   style: AppTypography.bodySmall
-                      .copyWith(fontWeight: FontWeight.w700)),
+                      .copyWith(fontWeight: FontWeight.w700),),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                    color: bg, borderRadius: BorderRadius.circular(20)),
+                    color: bg, borderRadius: BorderRadius.circular(20),),
                 child: Text(payment.status,
                     style: AppTypography.caption
-                        .copyWith(color: fg, fontWeight: FontWeight.w700)),
+                        .copyWith(color: fg, fontWeight: FontWeight.w700),),
               ),
             ],
           ),
@@ -1232,12 +1232,12 @@ class _ErrorBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline_rounded,
-                size: 48, color: AppColors.red600),
+                size: 48, color: AppColors.red600,),
             const SizedBox(height: AppSpacing.md),
             Text(message,
                 textAlign: TextAlign.center,
                 style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.textSecondary),),
             const SizedBox(height: AppSpacing.x2l),
             AppButton(label: 'Retry', onPressed: onRetry),
           ],

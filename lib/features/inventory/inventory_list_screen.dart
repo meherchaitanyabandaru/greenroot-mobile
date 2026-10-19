@@ -122,7 +122,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               const SliverFillRemaining(
                 child: Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.primaryMain)),
+                        color: AppColors.primaryMain,),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -131,7 +131,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(paged.error!.message, style: AppTypography.body),
                       TextButton(
@@ -150,7 +150,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.inventory_2_outlined,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       SizedBox(height: AppSpacing.md),
                       Text('No inventory items', style: AppTypography.h4),
                     ],
@@ -160,7 +160,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => Padding(
@@ -182,7 +182,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.primaryMain)),
+                            color: AppColors.primaryMain,),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x5l)),
@@ -200,7 +200,7 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   const _FilterChip(
-      {required this.label, required this.selected, required this.onTap});
+      {required this.label, required this.selected, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -209,11 +209,11 @@ class _FilterChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryMain : AppColors.surface,
           border: Border.all(
-              color: selected ? AppColors.primaryMain : AppColors.border),
+              color: selected ? AppColors.primaryMain : AppColors.border,),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
@@ -234,7 +234,7 @@ class _InventoryCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _InventoryCard(
-      {required this.item, required this.canEdit, required this.onTap});
+      {required this.item, required this.canEdit, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +262,7 @@ class _InventoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.local_florist_outlined,
-                  color: AppColors.primaryMain, size: 24),
+                  color: AppColors.primaryMain, size: 24,),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

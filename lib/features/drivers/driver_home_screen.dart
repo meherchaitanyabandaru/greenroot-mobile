@@ -60,7 +60,7 @@ final _driverDashboardProvider =
   ActiveTripState tripState;
   if (active.length > 1) {
     tripState = const ActiveTripState(
-        trip: null, result: ActiveTripResult.integrityError);
+        trip: null, result: ActiveTripResult.integrityError,);
   } else if (active.isNotEmpty) {
     tripState =
         ActiveTripState(trip: active.first, result: ActiveTripResult.found);
@@ -112,7 +112,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         child: dashAsync.when(
           loading: () => const _DashboardSkeleton(),
           error: (_, __) => _OfflineState(
-              onRetry: () => ref.invalidate(_driverDashboardProvider)),
+              onRetry: () => ref.invalidate(_driverDashboardProvider),),
           data: (data) => _DashboardBody(data: data),
         ),
       ),
@@ -169,7 +169,7 @@ class _DashboardBody extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             _ActiveTripActions(trip: trip),
             const SizedBox(height: AppSpacing.md),
-            _ActiveTripTip(),
+            const _ActiveTripTip(),
           ],
         ] else if (!isConnected)
           const _DriverNotConnectedCard()
@@ -235,7 +235,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
               Container(
                 width: 64,
                 height: 64,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.forest100,
                   shape: BoxShape.circle,
                 ),
@@ -368,7 +368,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.forest100,
                     shape: BoxShape.circle,
                   ),
@@ -502,9 +502,9 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
                   horizontal: 16,
                   vertical: 14,
                 ),
-                border: OutlineInputBorder(
+                border: const OutlineInputBorder(
                   borderRadius: AppRadius.inputRadius,
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: AppRadius.inputRadius,
@@ -523,14 +523,14 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
                     width: 1.5,
                   ),
                 ),
-                errorBorder: OutlineInputBorder(
+                errorBorder: const OutlineInputBorder(
                   borderRadius: AppRadius.inputRadius,
-                  borderSide: const BorderSide(color: AppColors.red600),
+                  borderSide: BorderSide(color: AppColors.red600),
                 ),
-                focusedErrorBorder: OutlineInputBorder(
+                focusedErrorBorder: const OutlineInputBorder(
                   borderRadius: AppRadius.inputRadius,
                   borderSide:
-                      const BorderSide(color: AppColors.red600, width: 1.5),
+                      BorderSide(color: AppColors.red600, width: 1.5),
                 ),
               ),
             ),
@@ -544,7 +544,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
                 onPressed: _joining ? null : _joinTrip,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                     borderRadius: AppRadius.buttonRadius,
                   ),
                 ),
@@ -623,7 +623,7 @@ class _WaitingForLoadingCardState
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.amber100,
                     shape: BoxShape.circle,
                   ),
@@ -706,7 +706,7 @@ class _WaitingForLoadingCardState
               Row(
                 children: [
                   const Icon(Icons.location_on_rounded,
-                      size: 13, color: AppColors.textMuted),
+                      size: 13, color: AppColors.textMuted,),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -730,13 +730,13 @@ class _WaitingForLoadingCardState
                 color: AppColors.amber100,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded,
-                      color: AppColors.amber600, size: 16),
-                  const SizedBox(width: AppSpacing.sm),
-                  const Expanded(
+                  Icon(Icons.info_outline_rounded,
+                      color: AppColors.amber600, size: 16,),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
                     child: Text(
                       'Your trip has been accepted. The nursery is preparing the plants. You will receive a notification once loading is completed.',
                       style: TextStyle(
@@ -765,7 +765,7 @@ class _WaitingForLoadingCardState
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primaryMain,
                         side: const BorderSide(color: AppColors.primaryMain),
-                        shape: RoundedRectangleBorder(
+                        shape: const RoundedRectangleBorder(
                           borderRadius: AppRadius.buttonRadius,
                         ),
                       ),
@@ -783,7 +783,7 @@ class _WaitingForLoadingCardState
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textSecondary,
                         side: const BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(
+                        shape: const RoundedRectangleBorder(
                           borderRadius: AppRadius.buttonRadius,
                         ),
                       ),
@@ -792,7 +792,7 @@ class _WaitingForLoadingCardState
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: AppColors.textMuted),
+                                  strokeWidth: 2, color: AppColors.textMuted,),
                             )
                           : const Icon(Icons.refresh_rounded, size: 18),
                       label: const Text('Refresh'),
@@ -841,7 +841,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Failed to start: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -877,7 +877,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
             Row(
               children: [
                 const Icon(Icons.local_shipping_rounded,
-                    color: Colors.white, size: 18),
+                    color: Colors.white, size: 18,),
                 const SizedBox(width: 6),
                 Text(
                   'Ready to Depart',
@@ -939,7 +939,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
               child: Row(
                 children: [
                   const Icon(Icons.check_circle_rounded,
-                      color: Colors.white, size: 16),
+                      color: Colors.white, size: 16,),
                   const SizedBox(width: 8),
                   Text(
                     'Loading complete! All plants are loaded.',
@@ -953,7 +953,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
             const Divider(color: Colors.white24, height: 1),
             const SizedBox(height: AppSpacing.md),
 
-            _TripInfoRow(
+            const _TripInfoRow(
               icon: Icons.store_outlined,
               label: 'Pickup',
               value: 'Nursery',
@@ -984,7 +984,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.primaryMain,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                     borderRadius: AppRadius.buttonRadius,
                   ),
                 ),
@@ -1023,7 +1023,7 @@ class _WaitingTip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.amber100,
         borderRadius: AppRadius.cardRadius,
       ),
@@ -1031,7 +1031,7 @@ class _WaitingTip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.manage_accounts_rounded,
-              size: 16, color: AppColors.amber600),
+              size: 16, color: AppColors.amber600,),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -1052,7 +1052,7 @@ class _DepartTip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.forest100,
         borderRadius: AppRadius.cardRadius,
       ),
@@ -1060,7 +1060,7 @@ class _DepartTip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.drive_eta_rounded,
-              size: 16, color: AppColors.primaryMain),
+              size: 16, color: AppColors.primaryMain,),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -1101,7 +1101,7 @@ class _HowItWorksCard extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.forest100,
               shape: BoxShape.circle,
             ),
@@ -1204,7 +1204,7 @@ class _DriverNotConnectedCard extends StatelessWidget {
               backgroundColor: AppColors.primaryMain,
               minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),),
             ),
           ),
           const SizedBox(height: 12),
@@ -1288,7 +1288,7 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
             Row(
               children: [
                 const Icon(Icons.local_shipping_rounded,
-                    color: Colors.white, size: 18),
+                    color: Colors.white, size: 18,),
                 const SizedBox(width: 6),
                 Text(
                   'Active Trip',
@@ -1350,7 +1350,7 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.primaryMain,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                     borderRadius: AppRadius.buttonRadius,
                   ),
                 ),
@@ -1370,7 +1370,7 @@ class _TripInfoRow extends StatelessWidget {
   final String label;
   final String value;
   const _TripInfoRow(
-      {required this.icon, required this.label, required this.value});
+      {required this.icon, required this.label, required this.value,});
 
   @override
   Widget build(BuildContext context) {
@@ -1385,9 +1385,9 @@ class _TripInfoRow extends StatelessWidget {
             children: [
               Text(label,
                   style: AppTypography.caption
-                      .copyWith(color: Colors.white.withValues(alpha: 0.6))),
+                      .copyWith(color: Colors.white.withValues(alpha: 0.6)),),
               Text(value,
-                  style: AppTypography.label.copyWith(color: Colors.white)),
+                  style: AppTypography.label.copyWith(color: Colors.white),),
             ],
           ),
         ),
@@ -1490,7 +1490,7 @@ class _ActiveTripTip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.forest100,
         borderRadius: AppRadius.cardRadius,
       ),
@@ -1498,7 +1498,7 @@ class _ActiveTripTip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.lightbulb_outline_rounded,
-              size: 16, color: AppColors.primaryMain),
+              size: 16, color: AppColors.primaryMain,),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -1550,13 +1550,13 @@ class _DashboardSkeletonState extends State<_DashboardSkeleton>
       animation: _anim,
       builder: (_, __) => Opacity(
         opacity: _anim.value,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: const Padding(
+          padding: EdgeInsets.all(AppSpacing.screenPadding),
           child: Column(
             children: [
-              const SizedBox(height: AppSpacing.sm),
+              SizedBox(height: AppSpacing.sm),
               _Bone(height: 340, radius: 16),
-              const SizedBox(height: AppSpacing.md),
+              SizedBox(height: AppSpacing.md),
               _Bone(height: 80, radius: 12),
             ],
           ),
@@ -1596,10 +1596,10 @@ class _OfflineState extends StatelessWidget {
       children: [
         const SizedBox(height: 80),
         const Icon(Icons.cloud_off_outlined,
-            size: 64, color: AppColors.textMuted),
+            size: 64, color: AppColors.textMuted,),
         const SizedBox(height: AppSpacing.x2l),
         const Text('Unable to connect',
-            style: AppTypography.h3, textAlign: TextAlign.center),
+            style: AppTypography.h3, textAlign: TextAlign.center,),
         const SizedBox(height: AppSpacing.sm),
         Text(
           'Check your internet connection and try again.',

@@ -45,7 +45,7 @@ class _AppRatingScreenState extends ConsumerState<AppRatingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Thank you for your feedback!'),
-            backgroundColor: AppColors.primaryMain),
+            backgroundColor: AppColors.primaryMain,),
       );
       Navigator.pop(context, true);
     } on AppError catch (e) {
@@ -94,8 +94,8 @@ class _AppRatingScreenState extends ConsumerState<AppRatingScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.x2l),
-            Text('Would you recommend GreenRoot to others?',
-                style: AppTypography.label),
+            const Text('Would you recommend GreenRoot to others?',
+                style: AppTypography.label,),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -124,7 +124,7 @@ class _AppRatingScreenState extends ConsumerState<AppRatingScreen> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Text('Submit Feedback'),
               ),
             ),
@@ -149,7 +149,7 @@ class TripRatingScreen extends ConsumerStatefulWidget {
   final String? dispatchCode;
 
   const TripRatingScreen(
-      {super.key, required this.dispatchId, this.dispatchCode});
+      {super.key, required this.dispatchId, this.dispatchCode,});
 
   @override
   ConsumerState<TripRatingScreen> createState() => _TripRatingScreenState();
@@ -182,7 +182,7 @@ class _TripRatingScreenState extends ConsumerState<TripRatingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Trip rated. Thank you!'),
-            backgroundColor: AppColors.primaryMain),
+            backgroundColor: AppColors.primaryMain,),
       );
       Navigator.pop(context, true);
     } on AppError catch (e) {
@@ -260,7 +260,7 @@ class _TripRatingScreenState extends ConsumerState<TripRatingScreen> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Text('Submit Rating'),
               ),
             ),
@@ -320,7 +320,7 @@ class _OrderRatingScreenState extends ConsumerState<OrderRatingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Order rated. Thank you!'),
-            backgroundColor: AppColors.primaryMain),
+            backgroundColor: AppColors.primaryMain,),
       );
       Navigator.pop(context, true);
     } on AppError catch (e) {
@@ -380,8 +380,8 @@ class _OrderRatingScreenState extends ConsumerState<OrderRatingScreen> {
               onChanged: (v) => setState(() => _overallExperience = v),
             ),
             const SizedBox(height: AppSpacing.x2l),
-            Text('Would you buy from this nursery again?',
-                style: AppTypography.label),
+            const Text('Would you buy from this nursery again?',
+                style: AppTypography.label,),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -419,7 +419,7 @@ class _OrderRatingScreenState extends ConsumerState<OrderRatingScreen> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Text('Submit Rating'),
               ),
             ),
@@ -442,7 +442,7 @@ class _OrderRatingScreenState extends ConsumerState<OrderRatingScreen> {
 Widget _header(
     {required IconData icon,
     required String title,
-    String? subtitle}) {
+    String? subtitle,}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -450,12 +450,12 @@ Widget _header(
       const SizedBox(height: AppSpacing.md),
       Text(title,
           style:
-              AppTypography.h3.copyWith(color: AppColors.textPrimary)),
+              AppTypography.h3.copyWith(color: AppColors.textPrimary),),
       if (subtitle != null) ...[
         const SizedBox(height: AppSpacing.xs),
         Text(subtitle,
             style: AppTypography.bodySmall
-                .copyWith(color: AppColors.textSecondary)),
+                .copyWith(color: AppColors.textSecondary),),
       ],
     ],
   );
@@ -528,7 +528,7 @@ class _SubRatingRow extends StatelessWidget {
               Text(label, style: AppTypography.label),
               Text(subtitle,
                   style: AppTypography.caption
-                      .copyWith(color: AppColors.textSecondary)),
+                      .copyWith(color: AppColors.textSecondary),),
             ],
           ),
         ),
@@ -590,12 +590,12 @@ class _YesNoButton extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 18,
-                color: selected ? Colors.white : AppColors.textSecondary),
+                color: selected ? Colors.white : AppColors.textSecondary,),
             const SizedBox(width: 6),
             Text(label,
                 style: AppTypography.label.copyWith(
                     color:
-                        selected ? Colors.white : AppColors.textPrimary)),
+                        selected ? Colors.white : AppColors.textPrimary,),),
           ],
         ),
       ),

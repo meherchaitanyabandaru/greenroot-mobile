@@ -63,7 +63,7 @@ class AuthRepository {
       AppLogger.i('Silent token refresh succeeded — roles updated in JWT');
     } catch (e) {
       AppLogger.w(
-          'Silent token refresh failed (continuing with existing token)', e);
+          'Silent token refresh failed (continuing with existing token)', e,);
     }
   }
 
@@ -126,7 +126,7 @@ class AuthRepository {
       } catch (_) {}
 
       AppLogger.i(
-          'Resolved roles from workspaces: ${roles.map((r) => r.value).join(', ')}');
+          'Resolved roles from workspaces: ${roles.map((r) => r.value).join(', ')}',);
       return roles.toList();
     } on AppError {
       rethrow;

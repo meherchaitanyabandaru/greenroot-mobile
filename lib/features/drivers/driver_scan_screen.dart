@@ -65,8 +65,8 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
             onTap: _openScanner,
             child: Container(
               height: 180,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
                   colors: [AppColors.primaryMain, AppColors.primaryHover],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -77,7 +77,7 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.qr_code_scanner_rounded,
-                      color: Colors.white, size: 56),
+                      color: Colors.white, size: 56,),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Tap to Scan QR Code',
@@ -109,12 +109,12 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
               ),
             ),
             const Expanded(child: Divider()),
-          ]),
+          ],),
 
           const SizedBox(height: AppSpacing.x2l),
 
           // Manual code entry
-          Text('Enter Trip Code Manually', style: AppTypography.h4),
+          const Text('Enter Trip Code Manually', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _codeController,
@@ -123,14 +123,14 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
               TextInputFormatter.withFunction((old, next) =>
-                  next.copyWith(text: next.text.toUpperCase())),
+                  next.copyWith(text: next.text.toUpperCase()),),
             ],
             decoration: InputDecoration(
               hintText: 'e.g. DSP-20250001',
               hintStyle:
                   AppTypography.body.copyWith(color: AppColors.textMuted),
               prefixIcon: const Icon(Icons.tag_rounded,
-                  color: AppColors.textSecondary),
+                  color: AppColors.textSecondary,),
               suffixIcon: ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _codeController,
                 builder: (_, value, __) {
@@ -143,18 +143,18 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
               ),
               filled: true,
               fillColor: AppColors.surface,
-              border: OutlineInputBorder(
+              border: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              enabledBorder: OutlineInputBorder(
+              enabledBorder: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              focusedBorder: OutlineInputBorder(
+              focusedBorder: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
                 borderSide:
-                    const BorderSide(color: AppColors.primaryMain, width: 2),
+                    BorderSide(color: AppColors.primaryMain, width: 2),
               ),
             ),
             onSubmitted: (_) => _submitCode(),
@@ -172,7 +172,7 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
                   style:
                       FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
                   icon: const Icon(Icons.search_rounded),
-                  label: Text('Find Trip', style: AppTypography.label),
+                  label: const Text('Find Trip', style: AppTypography.label),
                 );
               },
             ),

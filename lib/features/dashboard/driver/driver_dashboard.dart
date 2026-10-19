@@ -81,7 +81,7 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
         children: [
           const SizedBox(height: AppSpacing.sm),
           Text("Hello, ${user?.firstName ?? 'Driver'}",
-              style: AppTypography.h2),
+              style: AppTypography.h2,),
           const SizedBox(height: AppSpacing.xs),
           Text(
             "Ready for today's deliveries?",
@@ -116,7 +116,7 @@ class _DriverHomeTabState extends ConsumerState<_DriverHomeTab> {
               child: Row(
                 children: [
                   const Icon(Icons.delivery_dining_rounded,
-                      color: Colors.white, size: 40),
+                      color: Colors.white, size: 40,),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
@@ -268,7 +268,7 @@ class _ActiveTripBanner extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.delivery_dining_rounded,
-                  color: Colors.white, size: 22),
+                  color: Colors.white, size: 22,),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -302,7 +302,7 @@ class _ActiveTripBanner extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.location_on_outlined,
-                    size: 14, color: Colors.white70),
+                    size: 14, color: Colors.white70,),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -330,7 +330,7 @@ class _ActiveTripBanner extends StatelessWidget {
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.amber600,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),),
               ),
               icon: const Icon(Icons.my_location_rounded, size: 18),
               label: const Text('Open Active Trip'),
@@ -354,7 +354,7 @@ class _DriverProfileTab extends ConsumerWidget {
           const ProfileTabContent(role: AppRole.driver),
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding),
+                horizontal: AppSpacing.screenPadding,),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

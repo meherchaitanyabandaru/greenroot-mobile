@@ -95,7 +95,7 @@ class NurseryBrandingScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Text(err.toString(), style: AppTypography.body),
         ),
@@ -168,13 +168,13 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
             logoUrl: url,
             clearIcon: true,
             saving: false,
-          ));
+          ),);
     } catch (e) {
       if (!mounted) return;
       setState(() => _bs = _bs.with_(
             saving: false,
             error: 'Upload failed. Please try again.',
-          ));
+          ),);
     }
   }
 
@@ -199,7 +199,7 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
       setState(() => _bs = _bs.with_(
             saving: false,
             error: 'Save failed. Please try again.',
-          ));
+          ),);
     }
   }
 
@@ -213,10 +213,10 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
             width: double.infinity,
             color: AppColors.errorBg,
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.lg, vertical: AppSpacing.sm,),
             child: Text(_bs.error!,
                 style:
-                    AppTypography.caption.copyWith(color: AppColors.errorText)),
+                    AppTypography.caption.copyWith(color: AppColors.errorText),),
           ),
         TabBar(
           controller: _tabs,
@@ -245,7 +245,7 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
                 onIconSelected: (key) => setState(() => _bs = _bs.with_(
                       brandIconKey: key,
                       clearLogo: true,
-                    )),
+                    ),),
                 onColorSelected: (color) =>
                     setState(() => _bs = _bs.with_(brandColor: color)),
               ),
@@ -304,7 +304,7 @@ class _PreviewStrip extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(subtitle,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
               ],
             ),
           ),
@@ -349,7 +349,7 @@ class _UploadTab extends StatelessWidget {
                 color: AppColors.forest100,
                 borderRadius: AppRadius.cardRadius,
                 border: Border.all(
-                    color: AppColors.primaryMain.withAlpha(76), width: 2),
+                    color: AppColors.primaryMain.withAlpha(76), width: 2,),
               ),
               child: currentLogoUrl != null
                   ? ClipRRect(
@@ -379,7 +379,7 @@ class _UploadTab extends StatelessWidget {
         const SizedBox(height: AppSpacing.x2l),
         Container(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.infoBg,
             borderRadius: AppRadius.cardRadius,
           ),
@@ -387,7 +387,7 @@ class _UploadTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(Icons.info_outline_rounded,
-                  size: 16, color: AppColors.infoText),
+                  size: 16, color: AppColors.infoText,),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -441,7 +441,7 @@ class _IconTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        Text('Choose an icon', style: AppTypography.label),
+        const Text('Choose an icon', style: AppTypography.label),
         const SizedBox(height: AppSpacing.md),
         GridView.count(
           crossAxisCount: MediaQuery.sizeOf(context).width < 380 ? 4 : 5,
@@ -497,7 +497,7 @@ class _IconTab extends StatelessWidget {
           }).toList(),
         ),
         const SizedBox(height: AppSpacing.x2l),
-        Text('Choose a color', style: AppTypography.label),
+        const Text('Choose a color', style: AppTypography.label),
         const SizedBox(height: AppSpacing.md),
         Wrap(
           spacing: AppSpacing.md,
@@ -525,7 +525,7 @@ class _IconTab extends StatelessWidget {
                           BoxShadow(
                               color: color.withAlpha(102),
                               blurRadius: 8,
-                              spreadRadius: 2),
+                              spreadRadius: 2,),
                         ]
                       : null,
                 ),

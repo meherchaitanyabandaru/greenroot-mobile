@@ -45,11 +45,11 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Delete Vehicle'),
         content: Text(
-            'Remove ${vehicle.vehicleNumber}? This cannot be undone.'),
+            'Remove ${vehicle.vehicleNumber}? This cannot be undone.',),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.red600),
@@ -103,7 +103,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   Widget _buildBody(PagedState<Vehicle> paged) {
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain));
+          child: CircularProgressIndicator(color: AppColors.primaryMain),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -130,13 +130,13 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.directions_bus_outlined,
-                size: 64, color: AppColors.textMuted),
+                size: 64, color: AppColors.textMuted,),
             const SizedBox(height: AppSpacing.md),
-            Text('No vehicles yet', style: AppTypography.h4),
+            const Text('No vehicles yet', style: AppTypography.h4),
             const SizedBox(height: AppSpacing.xs),
             Text('Tap + to add your first vehicle',
                 style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.textSecondary),),
           ],
         ),
       );
@@ -155,7 +155,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 child: Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
               child: CircularProgressIndicator(color: AppColors.primaryMain),
-            ));
+            ),);
           }
           final vehicle = paged.items[index];
           return Padding(
@@ -166,12 +166,12 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
               background: Container(
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: AppSpacing.lg),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.red100,
                   borderRadius: AppRadius.cardRadius,
                 ),
                 child: const Icon(Icons.delete_outline_rounded,
-                    color: AppColors.red600),
+                    color: AppColors.red600,),
               ),
               confirmDismiss: (_) async {
                 await _confirmDelete(vehicle);
@@ -223,7 +223,7 @@ class _VehicleCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.directions_bus_rounded,
-                  color: AppColors.primaryMain, size: 26),
+                  color: AppColors.primaryMain, size: 26,),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -237,11 +237,11 @@ class _VehicleCard extends StatelessWidget {
                       if (vehicle.vehicleType != null) ...[
                         Text(vehicle.vehicleType!,
                             style: AppTypography.caption
-                                .copyWith(color: AppColors.textSecondary)),
+                                .copyWith(color: AppColors.textSecondary),),
                         if (vehicle.capacityKG != null)
                           Text(' · ${vehicle.capacityKG!.toInt()} kg',
                               style: AppTypography.caption
-                                  .copyWith(color: AppColors.textSecondary)),
+                                  .copyWith(color: AppColors.textSecondary),),
                       ],
                     ],
                   ),
@@ -249,7 +249,7 @@ class _VehicleCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(vehicle.ownerName!,
                         style: AppTypography.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: AppColors.textMuted),),
                   ],
                 ],
               ),
@@ -259,7 +259,7 @@ class _VehicleCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                      horizontal: 8, vertical: 3,),
                   decoration: BoxDecoration(
                     color: statusBg,
                     borderRadius: BorderRadius.circular(20),
@@ -267,13 +267,13 @@ class _VehicleCard extends StatelessWidget {
                   child: Text(
                     vehicle.status,
                     style: AppTypography.caption.copyWith(
-                        color: statusColor, fontWeight: FontWeight.w600),
+                        color: statusColor, fontWeight: FontWeight.w600,),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(vehicle.vehicleCode,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: AppColors.textMuted),),
               ],
             ),
           ],

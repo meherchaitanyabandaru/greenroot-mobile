@@ -173,7 +173,7 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.camera_alt_outlined,
-                      color: Colors.white54, size: 64),
+                      color: Colors.white54, size: 64,),
                   const SizedBox(height: 16),
                   Text(
                     'Camera unavailable\n${error.errorCode.name}',
@@ -198,7 +198,7 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
                       onPressed: () => Navigator.of(context).pop(),
                       tooltip: 'Close scanner',
                       icon: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white, size: 26),
+                          color: Colors.white, size: 26,),
                     ),
                   ),
                   Expanded(
@@ -250,18 +250,18 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
                         onTap: _pickFromGallery,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
+                              horizontal: 24, vertical: 12,),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(100),
                             border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3)),
+                                color: Colors.white.withValues(alpha: 0.3),),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.photo_library_outlined,
-                                  color: Colors.white, size: 20),
+                                  color: Colors.white, size: 20,),
                               const SizedBox(width: 8),
                               Text(
                                 'Choose from Gallery',

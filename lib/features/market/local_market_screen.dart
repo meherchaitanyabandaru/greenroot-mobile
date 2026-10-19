@@ -65,19 +65,19 @@ String _daysLeft(DateTime? exp) {
 InputDecoration _inputDec(String hint) => InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-          color: _mkTextSecondary.withValues(alpha: 0.6), fontSize: 14),
+          color: _mkTextSecondary.withValues(alpha: 0.6), fontSize: 14,),
       filled: true,
       fillColor: _mkCard,
       counterText: '',
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkBorder)),
+          borderSide: const BorderSide(color: _mkBorder),),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkBorder)),
+          borderSide: const BorderSide(color: _mkBorder),),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _mkGreen, width: 1.5)),
+          borderSide: const BorderSide(color: _mkGreen, width: 1.5),),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     );
 
@@ -104,7 +104,7 @@ class LocalMarketScreen extends ConsumerWidget {
             icon: const Icon(Icons.settings_outlined, color: _mkTextSecondary),
             tooltip: 'Market Settings',
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const _MarketSettingsScreen())),
+                builder: (_) => const _MarketSettingsScreen(),),),
           ),
         ],
         bottom: const PreferredSize(
@@ -117,8 +117,8 @@ class LocalMarketScreen extends ConsumerWidget {
         onRefresh: () async => ref.invalidate(latestAdsProvider),
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _HomeSearchBar(context)),
-            SliverToBoxAdapter(child: _HomeQuickActions(context)),
+            SliverToBoxAdapter(child: _homeSearchBar(context)),
+            SliverToBoxAdapter(child: _homeQuickActions(context)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
@@ -126,7 +126,7 @@ class LocalMarketScreen extends ConsumerWidget {
                   title: 'Latest Listings',
                   actionLabel: 'View All',
                   onAction: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const _BrowseScreen())),
+                      MaterialPageRoute(builder: (_) => const _BrowseScreen()),),
                 ),
               ),
             ),
@@ -135,7 +135,7 @@ class LocalMarketScreen extends ConsumerWidget {
               error: (e, _) => SliverToBoxAdapter(
                 child: _ErrorState(
                     message: e.toString(),
-                    onRetry: () => ref.invalidate(latestAdsProvider)),
+                    onRetry: () => ref.invalidate(latestAdsProvider),),
               ),
               data: (ads) {
                 if (ads.isEmpty) {
@@ -166,14 +166,14 @@ class LocalMarketScreen extends ConsumerWidget {
     );
   }
 
-  Widget _HomeSearchBar(BuildContext context) {
+  Widget _homeSearchBar(BuildContext context) {
     return Semantics(
       key: const ValueKey('local_market_search_button'),
       button: true,
       label: 'Search market listings',
       child: GestureDetector(
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => const _BrowseScreen(autoFocus: true))),
+            builder: (_) => const _BrowseScreen(autoFocus: true),),),
         child: Container(
           color: _mkCard,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -190,17 +190,17 @@ class LocalMarketScreen extends ConsumerWidget {
               Expanded(
                 child: Text('Search plants...',
                     style: AppTypography.body.copyWith(
-                        color: _mkTextSecondary.withValues(alpha: 0.7))),
+                        color: _mkTextSecondary.withValues(alpha: 0.7),),),
               ),
               const Icon(Icons.tune_rounded, color: _mkTextSecondary, size: 18),
-            ]),
+            ],),
           ),
         ),
       ),
     );
   }
 
-  Widget _HomeQuickActions(BuildContext context) {
+  Widget _homeQuickActions(BuildContext context) {
     final items = [
       (
         Icons.grid_view_rounded,
@@ -245,7 +245,7 @@ class LocalMarketScreen extends ConsumerWidget {
                     e.$3,
                     iconColor: e.$2 == 'Saved' ? _heartRed : null,
                   ),
-                ))
+                ),)
             .toList(),
       ),
     );
@@ -264,7 +264,7 @@ class _QuickActionTile extends StatelessWidget {
     final color = iconColor ?? _mkGreen;
     return InkWell(
       key: ValueKey(
-          'local_market_action_${label.toLowerCase().replaceAll(' ', '_')}'),
+          'local_market_action_${label.toLowerCase().replaceAll(' ', '_')}',),
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
@@ -278,13 +278,13 @@ class _QuickActionTile extends StatelessWidget {
               decoration: BoxDecoration(
                   color: _mkLight,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _mkGreen.withValues(alpha: 0.18))),
+                  border: Border.all(color: _mkGreen.withValues(alpha: 0.18)),),
               child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(height: 7),
             Text(label,
                 style: AppTypography.caption.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w600)),
+                    color: _mkTextPrimary, fontWeight: FontWeight.w600,),),
           ],
         ),
       ),
@@ -357,7 +357,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
                 content:
-                    Text('Location permission required for nearby search')),
+                    Text('Location permission required for nearby search'),),
           );
         }
         return;
@@ -396,7 +396,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       'Fruit Plants',
       'Flower Plants',
       'Forest Plants',
-      'Ornamentals'
+      'Ornamentals',
     ];
 
     showModalBottomSheet<void>(
@@ -404,11 +404,11 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       isScrollControlled: true,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.fromLTRB(
-              16, 8, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom),
+              16, 8, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom,),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -421,26 +421,26 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                         color: _mkBorder,
-                        borderRadius: BorderRadius.circular(2)),
+                        borderRadius: BorderRadius.circular(2),),
                   ),
                 ),
                 Text('Filter Ads',
                     style: AppTypography.h4.copyWith(
-                        color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+                        color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
                 const SizedBox(height: 20),
                 const Text('Category',
                     style: TextStyle(
                         color: _mkTextSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5)),
+                        letterSpacing: 0.5,),),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     _catChip(
-                        'All', selCat == null, () => setS(() => selCat = null)),
+                        'All', selCat == null, () => setS(() => selCat = null),),
                     for (final c in cats)
                       _catChip(c, selCat == c, () => setS(() => selCat = c)),
                   ],
@@ -451,26 +451,26 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                         color: _mkTextSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5)),
+                        letterSpacing: 0.5,),),
                 const SizedBox(height: 10),
                 Row(children: [
                   Expanded(
                       child: TextField(
                           controller: minCtrl,
                           keyboardType: TextInputType.number,
-                          decoration: _inputDec('Min price'))),
+                          decoration: _inputDec('Min price'),),),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text('–',
                         style:
-                            TextStyle(color: _mkTextSecondary, fontSize: 18)),
+                            TextStyle(color: _mkTextSecondary, fontSize: 18),),
                   ),
                   Expanded(
                       child: TextField(
                           controller: maxCtrl,
                           keyboardType: TextInputType.number,
-                          decoration: _inputDec('Max price'))),
-                ]),
+                          decoration: _inputDec('Max price'),),),
+                ],),
                 const SizedBox(height: 24),
                 Row(children: [
                   OutlinedButton(
@@ -478,9 +478,9 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                       foregroundColor: _mkTextSecondary,
                       side: const BorderSide(color: _mkBorder),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                          horizontal: 20, vertical: 12,),
                     ),
                     onPressed: () {
                       setS(() => selCat = null);
@@ -496,7 +496,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                         backgroundColor: _mkGreen,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10),),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
                       onPressed: () {
@@ -510,10 +510,10 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                         Navigator.of(ctx).pop();
                       },
                       child: const Text('Apply Filters',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                          style: TextStyle(fontWeight: FontWeight.w700),),
                     ),
                   ),
-                ]),
+                ],),
               ],
             ),
           ),
@@ -539,7 +539,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                 color: selected ? Colors.white : _mkTextPrimary,
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              )),
+              ),),
         ),
       );
 
@@ -550,7 +550,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       context: context,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
@@ -563,14 +563,14 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text('Sort by',
                   style: AppTypography.h4.copyWith(
-                      color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+                      color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
             ),
             for (final s in MarketSort.values)
               ListTile(
@@ -582,7 +582,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                         fontWeight: currentSort == s
                             ? FontWeight.w700
                             : FontWeight.w500,
-                        fontSize: 15)),
+                        fontSize: 15,),),
                 trailing: currentSort == s
                     ? const Icon(Icons.check_rounded, color: _mkGreen, size: 20)
                     : null,
@@ -620,7 +620,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: _mkGreen),
+                        strokeWidth: 2, color: _mkGreen,),
                   ),
                 )
               : IconButton(
@@ -640,7 +640,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
               clipBehavior: Clip.none,
               children: [
                 Icon(Icons.tune_rounded,
-                    color: hasFilters ? _mkGreen : _mkTextSecondary),
+                    color: hasFilters ? _mkGreen : _mkTextSecondary,),
                 if (hasFilters)
                   Positioned(
                     top: -4,
@@ -649,13 +649,13 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                       width: 16,
                       height: 16,
                       decoration: const BoxDecoration(
-                          color: _mkGreen, shape: BoxShape.circle),
+                          color: _mkGreen, shape: BoxShape.circle,),
                       alignment: Alignment.center,
                       child: Text('$filterCount',
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w800,),),
                     ),
                   ),
               ],
@@ -665,7 +665,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
             icon: Icon(Icons.sort_rounded,
                 color: browse.sort != MarketSort.newest
                     ? _mkGreen
-                    : _mkTextSecondary),
+                    : _mkTextSecondary,),
             tooltip: 'Sort',
             onPressed: _showSortSheet,
           ),
@@ -682,7 +682,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                     ref.read(browseAdsProvider.notifier).onQueryChanged(q),
                 decoration: _inputDec('Search plants...').copyWith(
                   prefixIcon: const Icon(Icons.search_rounded,
-                      color: _mkGreen, size: 20),
+                      color: _mkGreen, size: 20,),
                   suffixIcon: browse.query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 18),
@@ -691,7 +691,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                             ref
                                 .read(browseAdsProvider.notifier)
                                 .onQueryChanged('');
-                          })
+                          },)
                       : null,
                   filled: true,
                   fillColor: _mkBg,
@@ -701,7 +701,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
             ),
             if (hasFilters) _activeFilterChips(browse),
             const Divider(height: 1, color: _mkBorder),
-          ]),
+          ],),
         ),
       ),
       body: _buildBody(browse),
@@ -727,7 +727,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                       category: null,
                       minPrice: browse.minPrice,
                       maxPrice: browse.maxPrice,
-                    )),
+                    ),),
           if (browse.minPrice != null || browse.maxPrice != null)
             _activeChip(
               '₹${browse.minPrice?.toStringAsFixed(0) ?? '0'}'
@@ -748,7 +748,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text('Clear All',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),),
           ),
         ],
       ),
@@ -769,7 +769,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
           children: [
             Text(label,
                 style: const TextStyle(
-                    color: _mkDark, fontSize: 12, fontWeight: FontWeight.w600)),
+                    color: _mkDark, fontSize: 12, fontWeight: FontWeight.w600,),),
             const SizedBox(width: 4),
             GestureDetector(
               onTap: onRemove,
@@ -812,7 +812,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
             style: AppTypography.caption
                 .copyWith(color: _mkGreen, fontWeight: FontWeight.w600),
           ),
-        ]),
+        ],),
       ),
       const Divider(height: 1, color: _mkBorder),
       Expanded(
@@ -823,7 +823,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
           child: ListView.separated(
             controller: _scroll,
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding, vertical: 16),
+                horizontal: AppSpacing.screenPadding, vertical: 16,),
             itemCount: browse.ads.length + (browse.isLoadingMore ? 1 : 0),
             separatorBuilder: (_, __) => const SizedBox(height: 14),
             itemBuilder: (_, i) {
@@ -832,7 +832,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(
                       child: CircularProgressIndicator(
-                          color: _mkGreen, strokeWidth: 2)),
+                          color: _mkGreen, strokeWidth: 2,),),
                 );
               }
               return _BrowseAdCard(ad: browse.ads[i]);
@@ -840,7 +840,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
           ),
         ),
       ),
-    ]);
+    ],);
   }
 }
 
@@ -856,7 +856,7 @@ class _BrowseAdCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _AdDetailScreen(ad: ad))),
+          builder: (_) => _AdDetailScreen(ad: ad),),),
       child: Container(
         decoration: BoxDecoration(
           color: _mkCard,
@@ -879,23 +879,23 @@ class _BrowseAdCard extends ConsumerWidget {
                       const Padding(
                         padding: EdgeInsets.only(right: 4),
                         child: Icon(Icons.verified_rounded,
-                            size: 12, color: _mkGreen),
+                            size: 12, color: _mkGreen,),
                       ),
                     Expanded(
                       child: Text(ad.nurseryName,
                           style: AppTypography.caption.copyWith(
                               color: _mkTextSecondary,
-                              fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w500,),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                          overflow: TextOverflow.ellipsis,),
                     ),
-                  ]),
+                  ],),
                   const SizedBox(height: 5),
                   Text(ad.title,
                       style: AppTypography.h4
                           .copyWith(color: _mkTextPrimary, height: 1.3),
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
+                      overflow: TextOverflow.ellipsis,),
                   const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -906,12 +906,12 @@ class _BrowseAdCard extends ConsumerWidget {
                           style: const TextStyle(
                               color: _mkGreen,
                               fontWeight: FontWeight.w800,
-                              fontSize: 18),
+                              fontSize: 18,),
                         ),
                         if (ad.priceUnit != null)
                           Text(' / ${ad.priceUnit}',
                               style: AppTypography.caption
-                                  .copyWith(color: _mkTextSecondary)),
+                                  .copyWith(color: _mkTextSecondary),),
                         const SizedBox(width: 10),
                       ],
                       if (ad.quantity != null)
@@ -955,7 +955,7 @@ class _CardPhoto extends ConsumerWidget {
         child: ad.photos.isNotEmpty
             ? Image.network(ad.photos.first,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _photoPlaceholder())
+                errorBuilder: (_, __, ___) => _photoPlaceholder(),)
             : _photoPlaceholder(),
       ),
       Positioned(
@@ -988,7 +988,7 @@ class _CardPhoto extends ConsumerWidget {
                 BoxShadow(
                     color: Colors.black.withValues(alpha: 0.18),
                     blurRadius: 6,
-                    offset: const Offset(0, 1)),
+                    offset: const Offset(0, 1),),
               ],
             ),
             child: const Text('NEW',
@@ -996,7 +996,7 @@ class _CardPhoto extends ConsumerWidget {
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0)),
+                    letterSpacing: 1.0,),),
           ),
         ),
       if (ad.photos.length > 1)
@@ -1013,7 +1013,7 @@ class _CardPhoto extends ConsumerWidget {
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
-                    fontWeight: FontWeight.w600)),
+                    fontWeight: FontWeight.w600,),),
           ),
         ),
       if (!effectiveIsOwn)
@@ -1031,7 +1031,7 @@ class _CardPhoto extends ConsumerWidget {
                 boxShadow: [
                   BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8)
+                      blurRadius: 8,),
                 ],
               ),
               child: Icon(
@@ -1044,7 +1044,7 @@ class _CardPhoto extends ConsumerWidget {
             ),
           ),
         ),
-    ]);
+    ],);
   }
 
   Widget _photoPlaceholder() => const Center(
@@ -1052,8 +1052,8 @@ class _CardPhoto extends ConsumerWidget {
           Icon(Icons.local_florist_outlined, size: 44, color: _mkGreen),
           SizedBox(height: 4),
           Text('No photo',
-              style: TextStyle(fontSize: 11, color: _mkTextSecondary)),
-        ]),
+              style: TextStyle(fontSize: 11, color: _mkTextSecondary),),
+        ],),
       );
 }
 
@@ -1070,7 +1070,7 @@ class _Chip extends StatelessWidget {
             BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
         child: Text(label,
             style: TextStyle(
-                fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
+                fontSize: 11, color: fg, fontWeight: FontWeight.w600,),),
       );
 }
 
@@ -1088,7 +1088,7 @@ class _TrustBar extends StatelessWidget {
     if (ad.expiresAt != null) {
       items.add(const SizedBox(width: 12));
       items.add(_ti(Icons.timer_outlined, _daysLeft(ad.expiresAt),
-          color: _daysLeft(ad.expiresAt) == 'Expired' ? _stExpired : null));
+          color: _daysLeft(ad.expiresAt) == 'Expired' ? _stExpired : null,),);
     }
     if (ad.enquiryCount > 0) {
       items.add(const SizedBox(width: 12));
@@ -1104,8 +1104,8 @@ class _TrustBar extends StatelessWidget {
       const SizedBox(width: 3),
       Text(label,
           style:
-              TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500)),
-    ]);
+              TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),),
+    ],);
   }
 }
 
@@ -1139,14 +1139,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder)),
+            child: Divider(height: 1, color: _mkBorder),),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           decoration: const BoxDecoration(
               color: _mkCard,
-              border: Border(top: BorderSide(color: _mkBorder))),
+              border: Border(top: BorderSide(color: _mkBorder)),),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -1157,14 +1157,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
                 shadowColor: _mkGreen.withValues(alpha: 0.32),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.x2l)),
+                    borderRadius: BorderRadius.circular(AppRadius.x2l),),
               ),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Post New Ad',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),),
               onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const _PostAdScreen(),
-                  fullscreenDialog: true)),
+                  fullscreenDialog: true,),),
             ),
           ),
         ),
@@ -1173,22 +1173,22 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(
             message: e.toString(),
-            onRetry: () => ref.invalidate(myAdsProvider)),
+            onRetry: () => ref.invalidate(myAdsProvider),),
         data: (all) {
-          List<MarketAd> _forTab(String tab) => switch (tab) {
+          List<MarketAd> forTab(String tab) => switch (tab) {
                 'Live' => all
                     .where(
-                        (a) => a.status == 'PUBLISHED' || a.status == 'PAUSED')
+                        (a) => a.status == 'PUBLISHED' || a.status == 'PAUSED',)
                     .toList(),
                 'Drafts' => all.where((a) => a.status == 'DRAFT').toList(),
                 'Closed' => all
                     .where(
-                        (a) => a.status == 'EXPIRED' || a.status == 'ARCHIVED')
+                        (a) => a.status == 'EXPIRED' || a.status == 'ARCHIVED',)
                     .toList(),
                 _ => all,
               };
-          final counts = {for (final f in _filters) f: _forTab(f).length};
-          final ads = _forTab(_filter);
+          final counts = {for (final f in _filters) f: forTab(f).length};
+          final ads = forTab(_filter);
 
           return Column(children: [
             Container(
@@ -1210,14 +1210,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
                           style: TextStyle(
                               color: sel ? Colors.white : _mkTextSecondary,
                               fontWeight: FontWeight.w600,
-                              fontSize: 12)),
+                              fontSize: 12,),),
                       selected: sel,
                       onSelected: (_) => setState(() => _filter = f),
                       selectedColor: _mkGreen,
                       backgroundColor: _mkBg,
                       side: BorderSide(color: sel ? _mkGreen : _mkBorder),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+                          borderRadius: BorderRadius.circular(20),),
                       showCheckmark: false,
                     );
                   },
@@ -1239,14 +1239,14 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
                       onRefresh: () async => ref.invalidate(myAdsProvider),
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                            horizontal: 16, vertical: 14,),
                         itemCount: ads.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (_, i) => _MyAdCard(ad: ads[i]),
                       ),
                     ),
             ),
-          ]);
+          ],);
         },
       ),
     );
@@ -1274,7 +1274,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
           content: Text(e.toString()),
           backgroundColor: _stExpired,
           behavior: SnackBarBehavior.floating,
-        ));
+        ),);
       }
     } finally {
       if (mounted) setState(() => _actioning = false);
@@ -1332,7 +1332,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
       child: Column(children: [
         InkWell(
           onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => _AdDetailScreen(ad: ad, isOwn: true))),
+              builder: (_) => _AdDetailScreen(ad: ad, isOwn: true),),),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1348,9 +1348,9 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                           errorBuilder: (_, __, ___) => const Icon(
                               Icons.local_florist_outlined,
                               color: _mkGreen,
-                              size: 30))
+                              size: 30,),)
                       : const Icon(Icons.local_florist_outlined,
-                          color: _mkGreen, size: 30),
+                          color: _mkGreen, size: 30,),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1364,19 +1364,19 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                         if (ad.expiresAt != null)
                           Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(Icons.timer_outlined,
-                                size: 11, color: _mkTextSecondary),
+                                size: 11, color: _mkTextSecondary,),
                             const SizedBox(width: 2),
                             Text(_daysLeft(ad.expiresAt),
                                 style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary)),
-                          ]),
-                      ]),
+                                    .copyWith(color: _mkTextSecondary),),
+                          ],),
+                      ],),
                       const SizedBox(height: 6),
                       Text(ad.title,
                           style:
                               AppTypography.h4.copyWith(color: _mkTextPrimary),
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
+                          overflow: TextOverflow.ellipsis,),
                       const SizedBox(height: 5),
                       if (ad.pricePerUnit != null)
                         Text(
@@ -1384,23 +1384,23 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                           style: const TextStyle(
                               color: _mkGreen,
                               fontWeight: FontWeight.w700,
-                              fontSize: 13),
+                              fontSize: 13,),
                         ),
                       const SizedBox(height: 6),
                       Row(children: [
                         _miniStat(Icons.visibility_outlined, '${ad.viewCount}'),
                         const SizedBox(width: 10),
                         _miniStat(
-                            Icons.bookmark_outline_rounded, '${ad.saveCount}'),
+                            Icons.bookmark_outline_rounded, '${ad.saveCount}',),
                         if (ad.enquiryCount > 0) ...[
                           const SizedBox(width: 10),
                           _miniStat(
-                              Icons.mail_outline_rounded, '${ad.enquiryCount}'),
+                              Icons.mail_outline_rounded, '${ad.enquiryCount}',),
                         ],
-                      ]),
-                    ]),
+                      ],),
+                    ],),
               ),
-            ]),
+            ],),
           ),
         ),
         if (_actions.isNotEmpty) ...[
@@ -1422,11 +1422,11 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                             width: 13,
                             height: 13,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: _mkGreen))
+                                strokeWidth: 2, color: _mkGreen,),)
                         : Icon(a.$3, size: 14),
                     label: Text(a.$2,
                         style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
+                            fontSize: 12, fontWeight: FontWeight.w600,),),
                     onPressed: _actioning
                         ? null
                         : () {
@@ -1434,10 +1434,10 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                               Navigator.of(context).push(MaterialPageRoute(
                                   builder: (_) =>
                                       _PostAdScreen(editingAd: widget.ad),
-                                  fullscreenDialog: true));
+                                  fullscreenDialog: true,),);
                             } else if (a.$1 == 'enquiries') {
                               Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => const _EnquiriesScreen()));
+                                  builder: (_) => const _EnquiriesScreen(),),);
                             } else {
                               _doAdAction(a.$1);
                             }
@@ -1448,7 +1448,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
             ),
           ),
         ],
-      ]),
+      ],),
     );
   }
 
@@ -1531,7 +1531,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => _PostAdScreen(editingAd: ad),
-                      fullscreenDialog: true)),
+                      fullscreenDialog: true,),),
                 ),
               const SizedBox(width: 4),
             ],
@@ -1541,7 +1541,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       color: _mkLight,
                       child: const Center(
                         child: Icon(Icons.local_florist_outlined,
-                            size: 72, color: _mkGreen),
+                            size: 72, color: _mkGreen,),
                       ),
                     )
                   : Stack(children: [
@@ -1555,7 +1555,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           errorBuilder: (_, __, ___) => Container(
                             color: _mkLight,
                             child: const Icon(Icons.broken_image_outlined,
-                                size: 48, color: _mkTextSecondary),
+                                size: 48, color: _mkTextSecondary,),
                           ),
                         ),
                       ),
@@ -1584,7 +1584,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                             ),
                           ),
                         ),
-                    ]),
+                    ],),
             ),
           ),
           SliverToBoxAdapter(
@@ -1600,19 +1600,19 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     if (ad.expiresAt != null)
                       Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Icons.timer_outlined,
-                            size: 12, color: _mkTextSecondary),
+                            size: 12, color: _mkTextSecondary,),
                         const SizedBox(width: 3),
                         Text(_daysLeft(ad.expiresAt),
                             style: AppTypography.caption
-                                .copyWith(color: _mkTextSecondary)),
-                      ]),
-                  ]),
+                                .copyWith(color: _mkTextSecondary),),
+                      ],),
+                  ],),
                   const SizedBox(height: 10),
                   Text(ad.title,
                       style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: _mkTextPrimary)),
+                          color: _mkTextPrimary,),),
                   const SizedBox(height: 10),
                   if (ad.pricePerUnit != null)
                     Row(
@@ -1623,12 +1623,12 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                               style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w900,
-                                  color: _mkGreen)),
+                                  color: _mkGreen,),),
                           if (ad.priceUnit != null)
                             Text(' / ${ad.priceUnit}',
                                 style: AppTypography.body
-                                    .copyWith(color: _mkTextSecondary)),
-                        ]),
+                                    .copyWith(color: _mkTextSecondary),),
+                        ],),
                   const SizedBox(height: 12),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     if (ad.quantity != null)
@@ -1638,8 +1638,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     if (ad.categoryName != null)
                       _Chip(ad.categoryName!, _stPublishedBg, _stPublished),
                     _Chip(ad.plantName, const Color(0xFFEFF6FF),
-                        const Color(0xFF2563EB)),
-                  ]),
+                        const Color(0xFF2563EB),),
+                  ],),
                   if (ad.description != null) ...[
                     const SizedBox(height: 16),
                     const Divider(color: _mkBorder),
@@ -1647,25 +1647,25 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     Text(ad.description!,
                         style: AppTypography.body.copyWith(
                             color: _mkTextPrimary.withValues(alpha: 0.85),
-                            height: 1.6)),
+                            height: 1.6,),),
                   ],
                   const SizedBox(height: 16),
                   Row(children: [
                     _ti(Icons.visibility_outlined, '${ad.viewCount} views'),
                     const SizedBox(width: 16),
                     _ti(Icons.bookmark_outline_rounded,
-                        '${ad.saveCount} saved'),
+                        '${ad.saveCount} saved',),
                     if (ad.enquiryCount > 0) ...[
                       const SizedBox(width: 16),
                       _ti(Icons.mail_outline_rounded,
-                          '${ad.enquiryCount} enquiries'),
+                          '${ad.enquiryCount} enquiries',),
                     ],
-                  ]),
+                  ],),
                 ],
               ),
             ),
           ),
-          SliverToBoxAdapter(child: const SizedBox(height: 12)),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1684,14 +1684,14 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       width: 48,
                       height: 48,
                       decoration: const BoxDecoration(
-                          color: _mkLight, shape: BoxShape.circle),
+                          color: _mkLight, shape: BoxShape.circle,),
                       child: Center(
                         child: Text(
                           ad.nurseryName.substring(0, 1).toUpperCase(),
                           style: const TextStyle(
                               color: _mkGreen,
                               fontWeight: FontWeight.w800,
-                              fontSize: 20),
+                              fontSize: 20,),
                         ),
                       ),
                     ),
@@ -1705,27 +1705,27 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                               const Padding(
                                 padding: EdgeInsets.only(right: 4),
                                 child: Icon(Icons.verified_rounded,
-                                    size: 13, color: _mkGreen),
+                                    size: 13, color: _mkGreen,),
                               ),
                             Expanded(
                               child: Text(ad.nurseryName,
                                   style: AppTypography.h4
                                       .copyWith(color: _mkTextPrimary),
-                                  overflow: TextOverflow.ellipsis),
+                                  overflow: TextOverflow.ellipsis,),
                             ),
-                          ]),
+                          ],),
                           if (ad.nurseryMobile != null)
                             Text(ad.nurseryMobile!,
                                 style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary))
+                                    .copyWith(color: _mkTextSecondary),)
                           else
                             Text('Nursery',
                                 style: AppTypography.caption
-                                    .copyWith(color: _mkTextSecondary)),
+                                    .copyWith(color: _mkTextSecondary),),
                         ],
                       ),
                     ),
-                  ]),
+                  ],),
                   if (ad.nurseryMobile != null) ...[
                     const SizedBox(height: 14),
                     const Divider(color: _mkBorder, height: 1),
@@ -1738,13 +1738,13 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                             side: const BorderSide(color: _mkGreen),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                                borderRadius: BorderRadius.circular(10),),
                           ),
                           icon: const Icon(Icons.phone_outlined, size: 16),
                           label: const Text('Call',
-                              style: TextStyle(fontWeight: FontWeight.w700)),
+                              style: TextStyle(fontWeight: FontWeight.w700),),
                           onPressed: () => launchUrl(
-                              Uri(scheme: 'tel', path: ad.nurseryMobile!)),
+                              Uri(scheme: 'tel', path: ad.nurseryMobile!),),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1756,22 +1756,22 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                                borderRadius: BorderRadius.circular(10),),
                           ),
                           icon: const Icon(Icons.chat_outlined, size: 16),
                           label: const Text('WhatsApp',
-                              style: TextStyle(fontWeight: FontWeight.w700)),
+                              style: TextStyle(fontWeight: FontWeight.w700),),
                           onPressed: () {
                             final digits =
                                 ad.nurseryMobile!.replaceAll(RegExp(r'\D'), '');
                             final number =
                                 digits.startsWith('91') ? digits : '91$digits';
                             launchUrl(Uri.parse('https://wa.me/$number'),
-                                mode: LaunchMode.externalApplication);
+                                mode: LaunchMode.externalApplication,);
                           },
                         ),
                       ),
-                    ]),
+                    ],),
                   ],
                 ],
               ),
@@ -1787,7 +1787,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                 decoration: const BoxDecoration(
                     color: _mkCard,
-                    border: Border(top: BorderSide(color: _mkBorder))),
+                    border: Border(top: BorderSide(color: _mkBorder)),),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -1797,12 +1797,12 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(14),),
                     ),
                     icon: const Icon(Icons.mail_outline_rounded, size: 18),
                     label: const Text('Send Enquiry',
                         style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
+                            fontWeight: FontWeight.w700, fontSize: 15,),),
                     onPressed: () => _showEnquirySheet(context, ad),
                   ),
                 ),
@@ -1817,7 +1817,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
           Icon(icon, size: 13, color: _mkTextSecondary),
           const SizedBox(width: 4),
           Text(label,
-              style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+              style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
         ],
       );
 
@@ -1826,7 +1826,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
       context: context,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -1838,13 +1838,13 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
               ),
               ListTile(
                 leading: const Icon(Icons.flag_outlined, color: _stExpired),
                 title: const Text('Report this ad',
                     style: TextStyle(
-                        color: _stExpired, fontWeight: FontWeight.w600)),
+                        color: _stExpired, fontWeight: FontWeight.w600,),),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showReportSheet(context, ad);
@@ -1875,11 +1875,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
       isScrollControlled: true,
       backgroundColor: _mkCard,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.fromLTRB(
-              16, 12, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+              16, 12, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom,),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1890,7 +1890,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                      color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                      color: _mkBorder, borderRadius: BorderRadius.circular(2),),
                 ),
               ),
               Row(children: [
@@ -1898,29 +1898,35 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                 const SizedBox(width: 8),
                 Text('Report Ad',
                     style: AppTypography.h4.copyWith(
-                        color: _mkTextPrimary, fontWeight: FontWeight.w700)),
-              ]),
+                        color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
+              ],),
               const SizedBox(height: 4),
               Text('Help us understand the issue',
                   style:
-                      AppTypography.caption.copyWith(color: _mkTextSecondary)),
+                      AppTypography.caption.copyWith(color: _mkTextSecondary),),
               const SizedBox(height: 12),
-              for (final entry in reasons.entries)
-                RadioListTile<String>(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(entry.value,
-                      style: TextStyle(
-                          color: _mkTextPrimary,
-                          fontWeight: selected == entry.key
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                          fontSize: 14)),
-                  value: entry.key,
-                  groupValue: selected,
-                  activeColor: _mkGreen,
-                  onChanged: (v) => setS(() => selected = v),
+              RadioGroup<String>(
+                groupValue: selected,
+                onChanged: (v) => setS(() => selected = v),
+                child: Column(
+                  children: [
+                    for (final entry in reasons.entries)
+                      RadioListTile<String>(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(entry.value,
+                            style: TextStyle(
+                                color: _mkTextPrimary,
+                                fontWeight: selected == entry.key
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                fontSize: 14,),),
+                        value: entry.key,
+                        activeColor: _mkGreen,
+                      ),
+                  ],
                 ),
+              ),
               if (selected == 'OTHER') ...[
                 const SizedBox(height: 8),
                 TextField(
@@ -1939,7 +1945,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),),
                   ),
                   onPressed: selected == null || submitting
                       ? null
@@ -1970,7 +1976,7 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                                 content: Text(e.toString()),
                                 backgroundColor: _stExpired,
                                 behavior: SnackBarBehavior.floating,
-                              ));
+                              ),);
                             }
                           }
                         },
@@ -1979,10 +1985,10 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
+                              color: Colors.white, strokeWidth: 2,),)
                       : const Text('Submit Report',
                           style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
+                              fontWeight: FontWeight.w700, fontSize: 15,),),
                 ),
               ),
             ],
@@ -2009,7 +2015,7 @@ class _EnquirySheet extends ConsumerStatefulWidget {
   final TextEditingController msgCtrl;
   final TextEditingController qtyCtrl;
   const _EnquirySheet(
-      {required this.ad, required this.msgCtrl, required this.qtyCtrl});
+      {required this.ad, required this.msgCtrl, required this.qtyCtrl,});
 
   @override
   ConsumerState<_EnquirySheet> createState() => _EnquirySheetState();
@@ -2038,16 +2044,16 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: _mkBorder, borderRadius: BorderRadius.circular(2)),
+                    color: _mkBorder, borderRadius: BorderRadius.circular(2),),
               ),
             ),
             const SizedBox(height: 16),
             Text('Send Enquiry',
                 style: AppTypography.h3.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w800)),
+                    color: _mkTextPrimary, fontWeight: FontWeight.w800,),),
             const SizedBox(height: 4),
             Text(widget.ad.title,
-                style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
             const SizedBox(height: 20),
             TextField(
               controller: widget.msgCtrl,
@@ -2071,7 +2077,7 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),),
                 ),
                 onPressed: _sending
                     ? null
@@ -2084,13 +2090,13 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                           await ref
                               .read(sendEnquiryProvider(widget.ad.id).notifier)
                               .send(msg, qty: qty);
-                          if (mounted) Navigator.of(context).pop();
+                          if (context.mounted) Navigator.of(context).pop();
                         } catch (e) {
-                          if (mounted) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(e.toString()),
                                 backgroundColor: _stExpired,
-                                behavior: SnackBarBehavior.floating));
+                                behavior: SnackBarBehavior.floating,),);
                           }
                         } finally {
                           if (mounted) setState(() => _sending = false);
@@ -2101,10 +2107,10 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Text('Send Enquiry',
                         style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
+                            fontWeight: FontWeight.w700, fontSize: 15,),),
               ),
             ),
           ],
@@ -2138,7 +2144,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   final _priceCtrl = TextEditingController();
   final _sizeCtrl = TextEditingController();
 
-  List<XFile> _pickedFiles = [];
+  final List<XFile> _pickedFiles = [];
   List<String> _existingPhotos = [];
   String? _selectedCategory;
   bool _saving = false;
@@ -2188,7 +2194,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   void _goTo(int step) {
     setState(() => _step = step);
     _pageCtrl.animateToPage(step,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,);
   }
 
   bool get _step1Valid => _titleCtrl.text.trim().isNotEmpty;
@@ -2234,11 +2240,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating));
+            behavior: SnackBarBehavior.floating,),);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -2290,11 +2297,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating));
+            behavior: SnackBarBehavior.floating,),);
+      }
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
@@ -2340,7 +2348,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                         ),
                       ),
                       if (i < 2) const SizedBox(width: 6),
-                    ]),
+                    ],),
                   );
                 }),
               ),
@@ -2356,7 +2364,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                 ],
               ),
             ),
-          ]),
+          ],),
         ),
       ),
       body: PageView(
@@ -2399,7 +2407,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           decoration: const BoxDecoration(
               color: _mkCard,
-              border: Border(top: BorderSide(color: _mkBorder))),
+              border: Border(top: BorderSide(color: _mkBorder)),),
           child: Row(children: [
             if (_step > 0)
               Expanded(
@@ -2410,12 +2418,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                     side: const BorderSide(color: _mkBorder),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),),
                   ),
                   onPressed:
                       _saving || _publishing ? null : () => _goTo(_step - 1),
                   child: const Text('Back',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontWeight: FontWeight.w700),),
                 ),
               ),
             if (_step > 0) const SizedBox(width: 12),
@@ -2428,7 +2436,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                     side: const BorderSide(color: _mkGreen),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),),
                   ),
                   onPressed: _saving || _publishing ? null : _saveDraft,
                   child: _saving
@@ -2436,9 +2444,9 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: _mkGreen))
+                              strokeWidth: 2, color: _mkGreen,),)
                       : const Text('Save Draft',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                          style: TextStyle(fontWeight: FontWeight.w700),),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2451,7 +2459,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),),
                   ),
                   onPressed: _saving || _publishing ? null : _publish,
                   child: _publishing
@@ -2459,14 +2467,14 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2, color: Colors.white,),)
                       : Text(
                           widget.editingAd?.status == 'PUBLISHED' ||
                                   widget.editingAd?.status == 'PAUSED'
                               ? 'Save Changes'
                               : 'Publish',
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
+                              fontWeight: FontWeight.w700, fontSize: 15,),),
                 ),
               ),
             ] else
@@ -2479,17 +2487,17 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),),
                   ),
                   onPressed: (_step == 0 && !_step1Valid)
                       ? null
                       : () => _goTo(_step + 1),
                   child: const Text('Next',
                       style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),),
                 ),
               ),
-          ]),
+          ],),
         ),
       ),
     );
@@ -2501,7 +2509,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
         style: TextStyle(
             fontSize: 11,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? _mkGreen : _mkTextSecondary));
+            color: active ? _mkGreen : _mkTextSecondary,),);
   }
 }
 
@@ -2537,12 +2545,12 @@ class _DetailsStep extends StatelessWidget {
         TextField(
             controller: titleCtrl,
             maxLength: 120,
-            decoration: _inputDec('What are you selling?')),
+            decoration: _inputDec('What are you selling?'),),
         const SizedBox(height: 14),
         _label('Plant Name'),
         TextField(
             controller: plantCtrl,
-            decoration: _inputDec('e.g. Mango, Rose, Gulmohar...')),
+            decoration: _inputDec('e.g. Mango, Rose, Gulmohar...'),),
         const SizedBox(height: 14),
         _label('Category'),
         Wrap(
@@ -2556,14 +2564,14 @@ class _DetailsStep extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: sel ? Colors.white : _mkTextSecondary)),
+                        color: sel ? Colors.white : _mkTextSecondary,),),
                 selected: sel,
                 onSelected: (_) => onCategoryChanged(sel ? null : c),
                 selectedColor: _mkGreen,
                 backgroundColor: _mkCard,
                 side: BorderSide(color: sel ? _mkGreen : _mkBorder),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),),
                 showCheckmark: false,
               );
             }),
@@ -2576,7 +2584,7 @@ class _DetailsStep extends StatelessWidget {
             maxLines: 4,
             maxLength: 500,
             decoration: _inputDec(
-                'Describe the plants, condition, and any details...')),
+                'Describe the plants, condition, and any details...',),),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(
@@ -2586,8 +2594,8 @@ class _DetailsStep extends StatelessWidget {
               TextField(
                   controller: qtyCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: _inputDec('e.g. 50')),
-            ]),
+                  decoration: _inputDec('e.g. 50'),),
+            ],),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -2598,15 +2606,15 @@ class _DetailsStep extends StatelessWidget {
                   controller: priceCtrl,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDec('e.g. 120')),
-            ]),
+                  decoration: _inputDec('e.g. 120'),),
+            ],),
           ),
-        ]),
+        ],),
         const SizedBox(height: 14),
         _label('Size / Height'),
         TextField(
             controller: sizeCtrl,
-            decoration: _inputDec('e.g. 3-4 ft, 2 years old...')),
+            decoration: _inputDec('e.g. 3-4 ft, 2 years old...'),),
         const SizedBox(height: 24),
       ],
     );
@@ -2618,7 +2626,7 @@ class _DetailsStep extends StatelessWidget {
           style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: _mkTextPrimary)));
+              color: _mkTextPrimary,),),);
 }
 
 class _PhotosStep extends StatelessWidget {
@@ -2643,10 +2651,10 @@ class _PhotosStep extends StatelessWidget {
       children: [
         Text('Photos',
             style: AppTypography.h3
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800)),
+                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
         const SizedBox(height: 4),
         Text('Add up to 6 photos. First photo is the cover.',
-            style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+            style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -2660,17 +2668,17 @@ class _PhotosStep extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Icon(
                           Icons.broken_image_outlined,
-                          color: _mkTextSecondary)),
+                          color: _mkTextSecondary,),),
                   onRemove: () => onExistingRemoved(url),
-                )),
+                ),),
             ...pickedFiles.map((f) => _PhotoTile(
                   child: Image.network(f.path,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Icon(
                           Icons.photo_outlined,
-                          color: _mkTextSecondary)),
+                          color: _mkTextSecondary,),),
                   onRemove: () => onNewRemoved(f),
-                )),
+                ),),
             if (existingPhotos.length + pickedFiles.length < 6)
               GestureDetector(
                 onTap: () async {
@@ -2689,13 +2697,13 @@ class _PhotosStep extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add_photo_alternate_outlined,
-                          color: _mkGreen, size: 28),
+                          color: _mkGreen, size: 28,),
                       SizedBox(height: 4),
                       Text('Add Photo',
                           style: TextStyle(
                               fontSize: 10,
                               color: _mkGreen,
-                              fontWeight: FontWeight.w600)),
+                              fontWeight: FontWeight.w600,),),
                     ],
                   ),
                 ),
@@ -2728,13 +2736,13 @@ class _PhotoTile extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: const BoxDecoration(
-                color: Color(0xDD000000), shape: BoxShape.circle),
+                color: Color(0xDD000000), shape: BoxShape.circle,),
             child:
                 const Icon(Icons.close_rounded, color: Colors.white, size: 13),
           ),
         ),
       ),
-    ]);
+    ],);
   }
 }
 
@@ -2767,10 +2775,10 @@ class _PreviewStep extends StatelessWidget {
       children: [
         Text('Preview',
             style: AppTypography.h3
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800)),
+                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
         const SizedBox(height: 4),
         Text('This is how your ad will look.',
-            style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+            style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
@@ -2792,14 +2800,14 @@ class _PreviewStep extends StatelessWidget {
                         errorBuilder: (_, __, ___) => Container(
                             color: _mkLight,
                             child: const Icon(Icons.local_florist_outlined,
-                                size: 56, color: _mkGreen))))
+                                size: 56, color: _mkGreen,),),),)
               else
                 Container(
                   height: 160,
                   color: _mkLight,
                   child: const Center(
                     child: Icon(Icons.local_florist_outlined,
-                        size: 56, color: _mkGreen),
+                        size: 56, color: _mkGreen,),
                   ),
                 ),
               Padding(
@@ -2812,18 +2820,18 @@ class _PreviewStep extends StatelessWidget {
                             ? 'Ad Title'
                             : titleCtrl.text.trim(),
                         style:
-                            AppTypography.h4.copyWith(color: _mkTextPrimary)),
+                            AppTypography.h4.copyWith(color: _mkTextPrimary),),
                     const SizedBox(height: 6),
                     if (priceCtrl.text.trim().isNotEmpty)
                       Text('₹${priceCtrl.text.trim()} / unit',
                           style: const TextStyle(
                               color: _mkGreen,
                               fontWeight: FontWeight.w800,
-                              fontSize: 18)),
+                              fontSize: 18,),),
                     if (qtyCtrl.text.trim().isNotEmpty) ...[
                       const SizedBox(height: 8),
                       _Chip('${qtyCtrl.text.trim()} available', _mkLight,
-                          _mkDark),
+                          _mkDark,),
                     ],
                     if (descCtrl.text.trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
@@ -2831,7 +2839,7 @@ class _PreviewStep extends StatelessWidget {
                           style: AppTypography.body
                               .copyWith(color: _mkTextPrimary, height: 1.5),
                           maxLines: 3,
-                          overflow: TextOverflow.ellipsis),
+                          overflow: TextOverflow.ellipsis,),
                     ],
                   ],
                 ),
@@ -2866,13 +2874,13 @@ class _SavedAdsScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder)),
+            child: Divider(height: 1, color: _mkBorder),),
       ),
       body: adsAsync.when(
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(
             message: e.toString(),
-            onRetry: () => ref.invalidate(savedAdsProvider)),
+            onRetry: () => ref.invalidate(savedAdsProvider),),
         data: (ads) {
           if (ads.isEmpty) {
             return const _EmptyState(
@@ -2949,7 +2957,7 @@ class _EnquiryList extends ConsumerWidget {
     return async.when(
       loading: () => const _SkeletonList(),
       error: (e, _) => _ErrorState(
-          message: e.toString(), onRetry: () => ref.invalidate(provider)),
+          message: e.toString(), onRetry: () => ref.invalidate(provider),),
       data: (enquiries) {
         if (enquiries.isEmpty) {
           return _EmptyState(
@@ -2988,7 +2996,7 @@ class _EnquiryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (_) =>
-              _EnquiryDetailScreen(enquiry: enquiry, isAdOwner: isReceived))),
+              _EnquiryDetailScreen(enquiry: enquiry, isAdOwner: isReceived),),),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -3009,7 +3017,7 @@ class _EnquiryCard extends StatelessWidget {
                     ? enquiry.enquiryNurseryName.substring(0, 1).toUpperCase()
                     : enquiry.adNurseryName.substring(0, 1).toUpperCase(),
                 style: const TextStyle(
-                    color: _mkGreen, fontWeight: FontWeight.w800, fontSize: 18),
+                    color: _mkGreen, fontWeight: FontWeight.w800, fontSize: 18,),
               ),
             ),
           ),
@@ -3025,27 +3033,27 @@ class _EnquiryCard extends StatelessWidget {
                           ? enquiry.enquiryNurseryName
                           : enquiry.adNurseryName,
                       style: AppTypography.label.copyWith(
-                          color: _mkTextPrimary, fontWeight: FontWeight.w700),
+                          color: _mkTextPrimary, fontWeight: FontWeight.w700,),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(_timeAgo(enquiry.createdAt),
                       style: AppTypography.caption
-                          .copyWith(color: _mkTextSecondary)),
-                ]),
+                          .copyWith(color: _mkTextSecondary),),
+                ],),
                 const SizedBox(height: 2),
                 Text(enquiry.adTitle,
                     style:
                         AppTypography.caption.copyWith(color: _mkTextSecondary),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                    overflow: TextOverflow.ellipsis,),
                 const SizedBox(height: 6),
                 Text(enquiry.message,
                     style: AppTypography.body
                         .copyWith(color: _mkTextPrimary, fontSize: 13),
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                    overflow: TextOverflow.ellipsis,),
                 const SizedBox(height: 8),
                 Row(children: [
                   _EnquiryStatusChip(status: enquiry.status),
@@ -3053,11 +3061,11 @@ class _EnquiryCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     _Chip('Qty: ${enquiry.quantityNeeded}', _mkLight, _mkDark),
                   ],
-                ]),
+                ],),
               ],
             ),
           ),
-        ]),
+        ],),
       ),
     );
   }
@@ -3108,11 +3116,12 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         }
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(e.toString()),
             backgroundColor: _stExpired,
-            behavior: SnackBarBehavior.floating));
+            behavior: SnackBarBehavior.floating,),);
+      }
     } finally {
       if (mounted) setState(() => _replying = false);
     }
@@ -3132,7 +3141,7 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder)),
+            child: Divider(height: 1, color: _mkBorder),),
       ),
       body: detailAsync.when(
         loading: () =>
@@ -3140,7 +3149,7 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         error: (e, _) => _ErrorState(
             message: e.toString(),
             onRetry: () =>
-                ref.invalidate(enquiryDetailProvider(widget.enquiry.id))),
+                ref.invalidate(enquiryDetailProvider(widget.enquiry.id)),),
         data: (enquiry) {
           final myNurseryName = widget.isAdOwner
               ? enquiry.adNurseryName
@@ -3186,12 +3195,12 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: const BoxDecoration(
                     color: _mkCard,
-                    border: Border(top: BorderSide(color: _mkBorder))),
+                    border: Border(top: BorderSide(color: _mkBorder)),),
                 child: SafeArea(
                   top: false,
                   child: Row(children: [
                     const Icon(Icons.lock_outline_rounded,
-                        size: 16, color: _mkTextSecondary),
+                        size: 16, color: _mkTextSecondary,),
                     const SizedBox(width: 8),
                     Text(
                       enquiry.status == 'CANCELLED'
@@ -3200,10 +3209,10 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                       style: AppTypography.caption
                           .copyWith(color: _mkTextSecondary),
                     ),
-                  ]),
+                  ],),
                 ),
               ),
-          ]);
+          ],);
         },
       ),
     );
@@ -3226,21 +3235,21 @@ class _EnquiryDetailHeader extends StatelessWidget {
             children: [
               Text(enquiry.adTitle,
                   style: AppTypography.label.copyWith(
-                      color: _mkTextPrimary, fontWeight: FontWeight.w700),
+                      color: _mkTextPrimary, fontWeight: FontWeight.w700,),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+                  overflow: TextOverflow.ellipsis,),
               const SizedBox(height: 2),
               Row(children: [
                 Text('${enquiry.enquiryNurseryName} → ${enquiry.adNurseryName}',
                     style: AppTypography.caption
-                        .copyWith(color: _mkTextSecondary)),
-              ]),
+                        .copyWith(color: _mkTextSecondary),),
+              ],),
             ],
           ),
         ),
         const SizedBox(width: 12),
         _EnquiryStatusChip(status: enquiry.status),
-      ]),
+      ],),
     );
   }
 }
@@ -3278,7 +3287,7 @@ class _MessageBubble extends StatelessWidget {
                   style: const TextStyle(
                       color: _mkGreen,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13),
+                      fontSize: 13,),
                 ),
               ),
             ),
@@ -3295,7 +3304,7 @@ class _MessageBubble extends StatelessWidget {
                     child: Text(senderName,
                         style: AppTypography.caption.copyWith(
                             color: _mkTextSecondary,
-                            fontWeight: FontWeight.w600)),
+                            fontWeight: FontWeight.w600,),),
                   ),
                 Container(
                   padding:
@@ -3315,12 +3324,12 @@ class _MessageBubble extends StatelessWidget {
                       style: TextStyle(
                           color: isMe ? Colors.white : _mkTextPrimary,
                           fontSize: 14,
-                          height: 1.45)),
+                          height: 1.45,),),
                 ),
                 const SizedBox(height: 3),
                 Text(_timeAgo(time),
                     style: AppTypography.caption.copyWith(
-                        color: _mkTextSecondary.withValues(alpha: 0.7))),
+                        color: _mkTextSecondary.withValues(alpha: 0.7),),),
               ],
             ),
           ),
@@ -3336,15 +3345,15 @@ class _ReplyInput extends StatelessWidget {
   final bool replying;
   final VoidCallback onSend;
   const _ReplyInput(
-      {required this.controller, required this.replying, required this.onSend});
+      {required this.controller, required this.replying, required this.onSend,});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom),
+          12, 8, 12, 8 + MediaQuery.of(context).viewInsets.bottom,),
       decoration: const BoxDecoration(
-          color: _mkCard, border: Border(top: BorderSide(color: _mkBorder))),
+          color: _mkCard, border: Border(top: BorderSide(color: _mkBorder)),),
       child: SafeArea(
         top: false,
         child: Row(children: [
@@ -3375,20 +3384,20 @@ class _ReplyInput extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    ))
+                          strokeWidth: 2, color: Colors.white,),
+                    ),)
                   : Semantics(
                       button: true,
                       label: 'Send reply',
                       child: IconButton(
                         icon: const Icon(Icons.send_rounded,
-                            color: Colors.white, size: 18),
+                            color: Colors.white, size: 18,),
                         onPressed: onSend,
                       ),
                     ),
             ),
           ),
-        ]),
+        ],),
       ),
     );
   }
@@ -3424,7 +3433,7 @@ class _MarketSettingsState extends State<_MarketSettingsScreen> {
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: _mkBorder)),
+            child: Divider(height: 1, color: _mkBorder),),
       ),
       body: ListView(
         children: [
@@ -3487,7 +3496,7 @@ class _MarketSettingsState extends State<_MarketSettingsScreen> {
               style: AppTypography.caption.copyWith(
                   color: _mkTextSecondary,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5)),
+                  letterSpacing: 0.5,),),
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -3524,12 +3533,12 @@ class _SwitchTile extends StatelessWidget {
       secondary: Icon(icon, color: _mkGreen, size: 22),
       title: Text(title,
           style: AppTypography.label
-              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w600)),
+              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w600),),
       subtitle: Text(subtitle,
-          style: AppTypography.caption.copyWith(color: _mkTextSecondary)),
+          style: AppTypography.caption.copyWith(color: _mkTextSecondary),),
       value: value,
       onChanged: onChanged,
-      activeColor: _mkGreen,
+      activeThumbColor: _mkGreen,
     );
   }
 }
@@ -3558,7 +3567,7 @@ class _StatusChip extends StatelessWidget {
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
       child: Text(label,
           style:
-              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700)),
+              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),),
     );
   }
 }
@@ -3587,7 +3596,7 @@ class _EnquiryStatusChip extends StatelessWidget {
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
       child: Text(label,
           style:
-              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700)),
+              TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),),
     );
   }
 }
@@ -3604,19 +3613,19 @@ class _SectionHeader extends StatelessWidget {
       Expanded(
         child: Text(title,
             style: AppTypography.h4
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800)),
+                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),),
       ),
       if (actionLabel != null && onAction != null)
         TextButton(
           style: TextButton.styleFrom(
               foregroundColor: _mkGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 4)),
+              padding: const EdgeInsets.symmetric(horizontal: 4),),
           onPressed: onAction,
           child: Text(actionLabel!,
               style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _mkGreen)),
+                  fontSize: 13, fontWeight: FontWeight.w600, color: _mkGreen,),),
         ),
-    ]);
+    ],);
   }
 }
 
@@ -3625,7 +3634,7 @@ class _EmptyState extends StatelessWidget {
   final String title;
   final String subtitle;
   const _EmptyState(
-      {required this.icon, required this.title, required this.subtitle});
+      {required this.icon, required this.title, required this.subtitle,});
 
   @override
   Widget build(BuildContext context) {
@@ -3645,13 +3654,13 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 20),
             Text(title,
                 style: AppTypography.h3.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w800),
-                textAlign: TextAlign.center),
+                    color: _mkTextPrimary, fontWeight: FontWeight.w800,),
+                textAlign: TextAlign.center,),
             const SizedBox(height: 8),
             Text(subtitle,
                 style: AppTypography.body
                     .copyWith(color: _mkTextSecondary, height: 1.5),
-                textAlign: TextAlign.center),
+                textAlign: TextAlign.center,),
           ],
         ),
       ),
@@ -3673,28 +3682,28 @@ class _ErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.cloud_off_rounded,
-                size: 48, color: _mkTextSecondary),
+                size: 48, color: _mkTextSecondary,),
             const SizedBox(height: 16),
             Text('Something went wrong',
                 style: AppTypography.h4.copyWith(
-                    color: _mkTextPrimary, fontWeight: FontWeight.w700)),
+                    color: _mkTextPrimary, fontWeight: FontWeight.w700,),),
             const SizedBox(height: 8),
             Text(message,
                 style: AppTypography.caption.copyWith(color: _mkTextSecondary),
                 textAlign: TextAlign.center,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+                overflow: TextOverflow.ellipsis,),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: _mkGreen,
                 side: const BorderSide(color: _mkGreen),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Try Again',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontWeight: FontWeight.w700),),
               onPressed: onRetry,
             ),
           ],
@@ -3739,18 +3748,18 @@ class _SkeletonCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(height: 196, color: _mkBorder.withValues(alpha: 0.5)),
-          Padding(
-            padding: const EdgeInsets.all(14),
+          const Padding(
+            padding: EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SkeletonBox(width: 80, height: 10),
-                const SizedBox(height: 8),
-                const _SkeletonBox(width: double.infinity, height: 14),
-                const SizedBox(height: 6),
-                const _SkeletonBox(width: 160, height: 14),
-                const SizedBox(height: 12),
-                const _SkeletonBox(width: 60, height: 20),
+                _SkeletonBox(width: 80, height: 10),
+                SizedBox(height: 8),
+                _SkeletonBox(width: double.infinity, height: 14),
+                SizedBox(height: 6),
+                _SkeletonBox(width: 160, height: 14),
+                SizedBox(height: 12),
+                _SkeletonBox(width: 60, height: 20),
               ],
             ),
           ),

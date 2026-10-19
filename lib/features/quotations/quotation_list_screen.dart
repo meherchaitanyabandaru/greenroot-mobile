@@ -84,7 +84,9 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
     final items = <_ListItem>[];
     if (pinned.isNotEmpty) {
       items.add(_PinnedHeader());
-      for (final q in pinned) items.add(_QuotationEntry(q));
+      for (final q in pinned) {
+        items.add(_QuotationEntry(q));
+      }
     }
     items.addAll(_buildGrouped(rest));
     return items;
@@ -103,7 +105,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
               const Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
               const SizedBox(width: 8),
               Text('${q.quotationCode} deleted'),
-            ]),
+            ],),
             backgroundColor: AppColors.primaryMain,
           ),
         );
@@ -155,10 +157,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -420,7 +422,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
           onRefresh: () => ref.read(quotationListProvider.notifier).load(),
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 100),
+                AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 100,),
             itemCount: totalCount,
             itemBuilder: (context, i) {
               // Load more sentinel
@@ -434,7 +436,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: AppColors.primaryMain))
+                                strokeWidth: 2, color: AppColors.primaryMain,),)
                         : const SizedBox.shrink(),
                   ),
                 );
@@ -450,10 +452,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                     const SizedBox(width: 6),
                     Text('Pinned',
                         style: AppTypography.label.copyWith(
-                            color: AppColors.amber600, fontWeight: FontWeight.w700)),
+                            color: AppColors.amber600, fontWeight: FontWeight.w700,),),
                     const SizedBox(width: 8),
                     const Expanded(child: Divider(color: AppColors.border)),
-                  ]),
+                  ],),
                 );
               }
 
@@ -463,10 +465,10 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                   child: Row(children: [
                     Text(item.label,
                         style: AppTypography.label.copyWith(
-                            color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
+                            color: AppColors.textSecondary, fontWeight: FontWeight.w700,),),
                     const SizedBox(width: 8),
                     const Expanded(child: Divider(color: AppColors.border)),
-                  ]),
+                  ],),
                 );
               }
 
@@ -515,11 +517,11 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
                       actions: [
                         TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel')),
+                            child: const Text('Cancel'),),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: Text('Delete',
-                              style: TextStyle(color: AppColors.red600)),
+                          child: const Text('Delete',
+                              style: TextStyle(color: AppColors.red600),),
                         ),
                       ],
                     ),
@@ -532,7 +534,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
             },
           ),
         );
-      }),
+      },),
     );
   }
 }
@@ -599,7 +601,7 @@ class _QuotationCard extends ConsumerWidget {
                       color: AppColors.amber600,
                     ),
                     title: Text(isPinned ? 'Unpin' : 'Pin quotation',
-                        style: AppTypography.body),
+                        style: AppTypography.body,),
                     onTap: () {
                       Navigator.pop(context);
                       onPin();
@@ -609,7 +611,7 @@ class _QuotationCard extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.delete_outline, color: AppColors.red600),
                       title: Text('Delete',
-                          style: AppTypography.body.copyWith(color: AppColors.red600)),
+                          style: AppTypography.body.copyWith(color: AppColors.red600),),
                       onTap: () {
                         Navigator.pop(context);
                         onDelete();
@@ -637,7 +639,7 @@ class _QuotationCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.description_outlined,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                   ),
                   if (isPinned)
                     Positioned(
@@ -649,7 +651,7 @@ class _QuotationCard extends ConsumerWidget {
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.push_pin_rounded,
-                            size: 9, color: Colors.white),
+                            size: 9, color: Colors.white,),
                       ),
                     ),
                 ],
@@ -663,7 +665,7 @@ class _QuotationCard extends ConsumerWidget {
                       Expanded(
                         child: Text(quotation.quotationCode,
                             style: AppTypography.bodySmall
-                                .copyWith(fontWeight: FontWeight.w700)),
+                                .copyWith(fontWeight: FontWeight.w700),),
                       ),
                       if (quotation.isInternal)
                         Padding(
@@ -676,7 +678,7 @@ class _QuotationCard extends ConsumerWidget {
                             ),
                             child: Text('INT',
                                 style: AppTypography.caption
-                                    .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700, fontSize: 9)),
+                                    .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700, fontSize: 9),),
                           ),
                         ),
                       _StatusChip(status: quotation.status, quotationType: quotation.quotationType),
@@ -692,15 +694,15 @@ class _QuotationCard extends ConsumerWidget {
                               style: AppTypography.caption.copyWith(
                                   color: AppColors.red600,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 9)),
+                                  fontSize: 9,),),
                         ),
                       ],
-                    ]),
+                    ],),
                     const SizedBox(height: 2),
                     if (quotation.recipientName != null)
                       Text('To: ${quotation.recipientName}',
                           style: AppTypography.caption
-                              .copyWith(color: AppColors.textSecondary)),
+                              .copyWith(color: AppColors.textSecondary),),
                     // Assignment label — owner sees assigned manager or unassigned warning
                     if (isOwner) ...[
                       const SizedBox(height: 2),
@@ -710,30 +712,30 @@ class _QuotationCard extends ConsumerWidget {
                           const SizedBox(width: 3),
                           Text('Unassigned',
                               style: AppTypography.caption.copyWith(
-                                  color: AppColors.amber600, fontWeight: FontWeight.w600)),
+                                  color: AppColors.amber600, fontWeight: FontWeight.w600,),),
                         ] else ...[
                           const Icon(Icons.person_outline_rounded, size: 12, color: AppColors.teal700),
                           const SizedBox(width: 3),
                           Text('→ ${quotation.assignedManagerName ?? 'Manager'}',
-                              style: AppTypography.caption.copyWith(color: AppColors.teal700)),
+                              style: AppTypography.caption.copyWith(color: AppColors.teal700),),
                         ],
-                      ]),
+                      ],),
                     ],
                     Row(children: [
                       Text('₹${quotation.totalAmount.toStringAsFixed(2)}',
                           style: AppTypography.bodySmall.copyWith(
                               color: AppColors.primaryMain,
-                              fontWeight: FontWeight.w700)),
+                              fontWeight: FontWeight.w700,),),
                       const SizedBox(width: 6),
                       Text(
                           '· ${quotation.items.length} item${quotation.items.length == 1 ? '' : 's'}',
                           style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted)),
+                              .copyWith(color: AppColors.textMuted),),
                       const Spacer(),
                       Text(dateStr,
                           style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted)),
-                    ]),
+                              .copyWith(color: AppColors.textMuted),),
+                    ],),
                   ],
                 ),
               ),
@@ -754,8 +756,8 @@ class _QuotationCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(isPinned ? 'Unpin' : 'Pin',
-                          style: AppTypography.body),
-                    ]),
+                          style: AppTypography.body,),
+                    ],),
                   ),
                   if (canDelete)
                     PopupMenuItem(
@@ -764,8 +766,8 @@ class _QuotationCard extends ConsumerWidget {
                         const Icon(Icons.delete_outline, color: AppColors.red600, size: 18),
                         const SizedBox(width: 10),
                         Text('Delete',
-                            style: AppTypography.body.copyWith(color: AppColors.red600)),
-                      ]),
+                            style: AppTypography.body.copyWith(color: AppColors.red600),),
+                      ],),
                     ),
                 ],
               ),
@@ -851,7 +853,7 @@ class _StatusChip extends StatelessWidget {
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
       child: Text(label,
           style: AppTypography.caption
-              .copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10)),
+              .copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 10),),
     );
   }
 }
@@ -921,7 +923,7 @@ class _QuotationSkeletonListState extends State<_QuotationSkeletonList>
                   _box(w: 140, h: 12),
                   const Spacer(),
                   _box(w: 52, h: 18, radius: 4),
-                ]),
+                ],),
                 const SizedBox(height: 7),
                 _box(w: 100, h: 10),
                 const SizedBox(height: 7),
@@ -929,7 +931,7 @@ class _QuotationSkeletonListState extends State<_QuotationSkeletonList>
                   _box(w: 72, h: 10),
                   const Spacer(),
                   _box(w: 60, h: 10),
-                ]),
+                ],),
               ],
             ),
           ),
@@ -942,7 +944,7 @@ class _QuotationSkeletonListState extends State<_QuotationSkeletonList>
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 100),
+          AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, 100,),
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(6, (_) => _card()),
     );
@@ -1019,7 +1021,7 @@ class _FilterSheetState extends State<_FilterSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Filters', style: AppTypography.h3),
+              const Text('Filters', style: AppTypography.h3),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -1054,7 +1056,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 fmtDate: _fmtDate,
               ),
             ),
-          ]),
+          ],),
           const SizedBox(height: 16),
 
           // Amount range
@@ -1096,7 +1098,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 ),
               ),
             ),
-          ]),
+          ],),
           const SizedBox(height: 24),
 
           SizedBox(
@@ -1165,7 +1167,7 @@ class _DateTile extends StatelessWidget {
               onTap: onClear,
               child: const Icon(Icons.close, size: 14, color: AppColors.textMuted),
             ),
-        ]),
+        ],),
       ),
     );
   }

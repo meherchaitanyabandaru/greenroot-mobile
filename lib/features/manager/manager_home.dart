@@ -174,12 +174,12 @@ class _ManagerHomeData {
   // Work queue: orders that need the manager to move them forward.
   List<Order> get workQueue => orders
       .where((o) => {'PENDING', 'CONFIRMED', 'LOADING'}
-          .contains(o.status.toUpperCase()))
+          .contains(o.status.toUpperCase()),)
       .toList();
 
   int get ordersAwaitingLoadingCount => orders
       .where((o) =>
-          {'CONFIRMED', 'LOADING'}.contains(o.status.toUpperCase()))
+          {'CONFIRMED', 'LOADING'}.contains(o.status.toUpperCase()),)
       .length;
 
   int get driversWaitingToDispatchCount =>
@@ -289,7 +289,7 @@ class ManagerHome extends ConsumerWidget {
                         const SizedBox(height: 10),
                       ],
                     ],
-                  )),
+                  ),),
                   const SizedBox(height: AppSpacing.md),
                 ],
                 if (data.workQueue.isNotEmpty) ...[
@@ -312,7 +312,7 @@ class ManagerHome extends ConsumerWidget {
                         const SizedBox(height: 10),
                       ],
                     ],
-                  )),
+                  ),),
                 ],
               ],
             );
@@ -734,7 +734,7 @@ class _ManagerOrderCard extends StatelessWidget {
                   child: Container(
                     key: ValueKey(display.label),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                        horizontal: 10, vertical: 4,),
                     decoration: BoxDecoration(
                       color: display.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -859,7 +859,7 @@ class _EmptyManagerState extends StatelessWidget {
       child: Column(
         children: [
           const Icon(Icons.work_outline_rounded,
-              size: 54, color: AppColors.primaryMain),
+              size: 54, color: AppColors.primaryMain,),
           const SizedBox(height: 16),
           Text(
             'Nothing needs your attention',

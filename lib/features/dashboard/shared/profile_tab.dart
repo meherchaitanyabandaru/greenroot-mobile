@@ -135,7 +135,7 @@ class ProfileTabContent extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: () => _confirmLeaveNursery(context, ref),
             icon: const Icon(Icons.exit_to_app_rounded,
-                color: AppColors.amber600),
+                color: AppColors.amber600,),
             label: const Text(
               'Leave Nursery',
               style: TextStyle(color: AppColors.amber600),
@@ -152,7 +152,7 @@ class ProfileTabContent extends ConsumerWidget {
         if (role == AppRole.driver && caps.driverNurseryId != null) ...[
           OutlinedButton.icon(
             onPressed: () => _confirmDisconnectFromNursery(
-                context, ref, caps.driverNurseryId!),
+                context, ref, caps.driverNurseryId!,),
             icon: const Icon(Icons.link_off_rounded, color: AppColors.amber600),
             label: const Text(
               'Disconnect from Nursery',
@@ -233,14 +233,14 @@ class ProfileTabContent extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to leave nursery. Please try again.')),
+              content: Text('Failed to leave nursery. Please try again.'),),
         );
       }
     }
   }
 
   Future<void> _confirmDisconnectFromNursery(
-      BuildContext context, WidgetRef ref, int nurseryId) async {
+      BuildContext context, WidgetRef ref, int nurseryId,) async {
     final session = ref.read(sessionProvider);
     final userId = session.user?.id;
     if (userId == null) return;
@@ -276,14 +276,14 @@ class ProfileTabContent extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to disconnect. Please try again.')),
+              content: Text('Failed to disconnect. Please try again.'),),
         );
       }
     }
   }
 
   Future<void> _confirmDeleteAccount(
-      BuildContext context, WidgetRef ref) async {
+      BuildContext context, WidgetRef ref,) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -331,7 +331,7 @@ class ProfileTabContent extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to delete account. Please try again.')),
+              content: Text('Failed to delete account. Please try again.'),),
         );
       }
     }
@@ -397,7 +397,7 @@ class EmptyActivity extends StatelessWidget {
       child: Column(
         children: [
           const Icon(Icons.inbox_outlined,
-              size: 36, color: AppColors.textMuted),
+              size: 36, color: AppColors.textMuted,),
           const SizedBox(height: AppSpacing.sm),
           Text(
             message,

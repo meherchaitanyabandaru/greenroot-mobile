@@ -35,7 +35,7 @@ class BuyerDeliveryTrackingScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => _ErrorView(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
@@ -56,7 +56,7 @@ class _BuyerDeliveryBody extends ConsumerStatefulWidget {
   final Dispatch dispatch;
   final int dispatchId;
   const _BuyerDeliveryBody(
-      {super.key, required this.dispatch, required this.dispatchId});
+      {super.key, required this.dispatch, required this.dispatchId,});
 
   @override
   ConsumerState<_BuyerDeliveryBody> createState() => _BuyerDeliveryBodyState();
@@ -430,7 +430,7 @@ class _FullMapSection extends StatelessWidget {
               color: AppColors.primaryMain.withValues(alpha: 0.50),
               pattern: const StrokePattern.dotted(spacingFactor: 2.5),
             ),
-          ]),
+          ],),
         // GPS breadcrumb trail
         if (gpsPts.length >= 2)
           PolylineLayer(polylines: [
@@ -439,7 +439,7 @@ class _FullMapSection extends StatelessWidget {
               strokeWidth: 3.5,
               color: AppColors.primaryMain.withValues(alpha: 0.75),
             ),
-          ]),
+          ],),
         MarkerLayer(markers: [
           // Loading / origin point — only shown for owner/manager
           if (loadingPointLatLng != null)
@@ -479,7 +479,7 @@ class _FullMapSection extends StatelessWidget {
               height: 62,
               child: MapTruckMarker(active: isInTransit),
             ),
-        ]),
+        ],),
       ],
     );
   }
@@ -562,11 +562,11 @@ class _StatusChipRow extends StatelessWidget {
     }
     if (s == 'IN_TRANSIT') {
       return const MapTextChip(
-          label: 'Awaiting Location', color: AppColors.amber700);
+          label: 'Awaiting Location', color: AppColors.amber700,);
     }
     if (s == 'DISPATCHED') {
       return const MapTextChip(
-          label: 'Out for Delivery', color: AppColors.blue600);
+          label: 'Out for Delivery', color: AppColors.blue600,);
     }
     return const SizedBox.shrink();
   }
@@ -679,7 +679,7 @@ class _FloatingCard extends StatelessWidget {
                     foregroundColor: AppColors.blue600,
                     side: const BorderSide(color: AppColors.blue600),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),),
                   ),
                 ),
               ),
@@ -695,7 +695,7 @@ class _FloatingCard extends StatelessWidget {
                     width: 6,
                     height: 6,
                     decoration: const BoxDecoration(
-                        color: AppColors.primaryMain, shape: BoxShape.circle),
+                        color: AppColors.primaryMain, shape: BoxShape.circle,),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -763,7 +763,7 @@ class _DriverInfoCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.local_shipping_rounded,
-                color: AppColors.primaryMain, size: 24),
+                color: AppColors.primaryMain, size: 24,),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -779,7 +779,7 @@ class _DriverInfoCard extends StatelessWidget {
                   Row(
                     children: [
                       const Icon(Icons.directions_car_outlined,
-                          size: 13, color: AppColors.textSecondary),
+                          size: 13, color: AppColors.textSecondary,),
                       const SizedBox(width: 4),
                       Text(
                         d.vehicleNumber!,
@@ -814,7 +814,7 @@ class _DriverInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Icon(Icons.straighten_rounded,
-                    size: 16, color: AppColors.blue600),
+                    size: 16, color: AppColors.blue600,),
                 const SizedBox(height: 2),
                 Text(
                   _formatDistance(approxDistanceKm!),
@@ -889,7 +889,7 @@ class _BuyerJourneyCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.route_rounded,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -919,7 +919,7 @@ class _BuyerJourneyCard extends StatelessWidget {
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
               child: _BuyerTimeline(status: dispatch.status),
             ),
             InkWell(
@@ -935,11 +935,11 @@ class _BuyerJourneyCard extends StatelessWidget {
                       'Hide Status',
                       style: AppTypography.caption.copyWith(
                           color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600),
+                          fontWeight: FontWeight.w600,),
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.keyboard_arrow_up_rounded,
-                        color: AppColors.primaryMain, size: 16),
+                        color: AppColors.primaryMain, size: 16,),
                   ],
                 ),
               ),
@@ -964,7 +964,7 @@ class _BuyerStep {
       {required this.number,
       required this.title,
       required this.subtitle,
-      required this.state});
+      required this.state,});
 }
 
 class _BuyerTimeline extends StatelessWidget {
@@ -1005,7 +1005,7 @@ class _BuyerTimeline extends StatelessWidget {
               ? _StepState.active
               : _StepState.pending;
       return _BuyerStep(
-          number: num, title: title, subtitle: sub, state: stepState);
+          number: num, title: title, subtitle: sub, state: stepState,);
     }).toList();
   }
 
@@ -1057,7 +1057,7 @@ class _BuyerStepRow extends StatelessWidget {
                   child: Center(
                     child: step.state == _StepState.completed
                         ? const Icon(Icons.check_rounded,
-                            color: Colors.white, size: 14)
+                            color: Colors.white, size: 14,)
                         : Text(
                             '${step.number}',
                             style: TextStyle(
@@ -1122,7 +1122,7 @@ class _PlantsCard extends StatelessWidget {
   final VoidCallback onToggle;
 
   const _PlantsCard(
-      {required this.items, required this.expanded, required this.onToggle});
+      {required this.items, required this.expanded, required this.onToggle,});
 
   int get _totalQty => items.fold(0, (sum, i) => sum + i.quantity.toInt());
 
@@ -1153,7 +1153,7 @@ class _PlantsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.eco_rounded,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -1204,7 +1204,7 @@ class _PlantsCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(Icons.spa_rounded,
-                              color: AppColors.primaryMain, size: 16),
+                              color: AppColors.primaryMain, size: 16,),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
@@ -1215,7 +1215,7 @@ class _PlantsCard extends StatelessWidget {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 10, vertical: 4,),
                           decoration: BoxDecoration(
                             color: AppColors.forest100,
                             borderRadius: BorderRadius.circular(99),
@@ -1258,9 +1258,9 @@ class _ErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline,
-                size: 48, color: AppColors.textMuted),
+                size: 48, color: AppColors.textMuted,),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Could not load delivery',
               style: AppTypography.h4,
               textAlign: TextAlign.center,

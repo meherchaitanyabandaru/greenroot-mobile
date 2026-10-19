@@ -12,7 +12,7 @@ class TrialExpiryBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOwner = ref.watch(
-        sessionProvider.select((s) => s.capabilities.isNurseryOwner));
+        sessionProvider.select((s) => s.capabilities.isNurseryOwner),);
     if (!isOwner) return const SizedBox.shrink();
 
     final subAsync = ref.watch(subscriptionProvider);
@@ -59,7 +59,7 @@ class TrialExpiryBanner extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => context.push(
-                    '/subscription/payment?subId=${sub.id}'),
+                    '/subscription/payment?subId=${sub.id}',),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

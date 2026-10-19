@@ -52,15 +52,15 @@ class ProfileCompletionCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.cardPadding, AppSpacing.cardPadding,
-                AppSpacing.cardPadding, AppSpacing.sm),
+                AppSpacing.cardPadding, AppSpacing.sm,),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Complete your profile',
-                          style: AppTypography.label),
+                      const Text('Complete your profile',
+                          style: AppTypography.label,),
                       const SizedBox(height: 2),
                       Text(
                         '$done of ${items.length} steps done',
@@ -72,7 +72,7 @@ class ProfileCompletionCard extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 4),
+                      horizontal: AppSpacing.md, vertical: 4,),
                   decoration: BoxDecoration(
                     color: _progressColor(pct).withAlpha(26),
                     borderRadius: BorderRadius.circular(100),
@@ -128,7 +128,7 @@ class _CheckRow extends StatelessWidget {
       onTap: item.done ? null : item.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
+            horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm,),
         child: Row(
           children: [
             Icon(
@@ -154,7 +154,7 @@ class _CheckRow extends StatelessWidget {
             ),
             if (!item.done && item.onTap != null)
               const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: AppColors.textMuted),
+                  size: 18, color: AppColors.textMuted,),
           ],
         ),
       ),

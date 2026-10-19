@@ -30,7 +30,7 @@ class ManagerDashboard extends ConsumerWidget {
           label: 'Home',
           screen: _ManagerHomeTab(),
         ),
-        RoleNavItem(
+        const RoleNavItem(
           icon: Icons.inventory_2_outlined,
           activeIcon: Icons.inventory_2_rounded,
           label: 'Loading',
@@ -56,7 +56,7 @@ class ManagerDashboard extends ConsumerWidget {
           screen: QuotationListScreen(),
           inBottomNav: false,
         ),
-        RoleNavItem(
+        const RoleNavItem(
           icon: Icons.shopping_bag_outlined,
           activeIcon: Icons.shopping_bag_rounded,
           label: 'My Orders',
@@ -96,11 +96,11 @@ class _ManagerLoadingTabState extends ConsumerState<_ManagerLoadingTab> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            padding: EdgeInsets.only(right: AppSpacing.sm),
             child: Chip(
-              label: const Text(
+              label: Text(
                 'LOADING',
                 style: TextStyle(
                   fontSize: 10,
@@ -163,7 +163,7 @@ class _ManagerHomeTab extends ConsumerWidget {
         children: [
           const SizedBox(height: AppSpacing.sm),
           Text('Hello, ${user?.firstName ?? 'Manager'}',
-              style: AppTypography.h2),
+              style: AppTypography.h2,),
           const SizedBox(height: AppSpacing.xs),
           Text(
             "Today's operations at a glance.",
@@ -187,7 +187,7 @@ class _ManagerHomeTab extends ConsumerWidget {
               child: Row(
                 children: [
                   const Icon(Icons.inventory_2_rounded,
-                      color: Colors.white, size: 38),
+                      color: Colors.white, size: 38,),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
@@ -213,7 +213,7 @@ class _ManagerHomeTab extends ConsumerWidget {
                     ),
                   ),
                   const Icon(Icons.chevron_right_rounded,
-                      color: Colors.white, size: 22),
+                      color: Colors.white, size: 22,),
                 ],
               ),
             ),

@@ -53,7 +53,7 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
       state = state.copyWith(isLoading: false, error: e.message);
     } catch (_) {
       state = state.copyWith(
-          isLoading: false, error: 'Failed to submit. Please try again.');
+          isLoading: false, error: 'Failed to submit. Please try again.',);
     }
   }
 }
@@ -132,7 +132,7 @@ class _DriverRegistrationScreenState
                 ),
                 const SizedBox(height: AppSpacing.x2l),
                 const Text('Application Submitted!',
-                    style: AppTypography.h2, textAlign: TextAlign.center),
+                    style: AppTypography.h2, textAlign: TextAlign.center,),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Your driver application is under review. You will be notified once approved.',
@@ -181,7 +181,7 @@ class _DriverRegistrationScreenState
           ),
           const SizedBox(height: AppSpacing.x2l),
           const Text('Driver Registration',
-              style: AppTypography.h3, textAlign: TextAlign.center),
+              style: AppTypography.h3, textAlign: TextAlign.center,),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Submit your details to join as a delivery driver. '
@@ -235,7 +235,7 @@ class _DriverRegistrationScreenState
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(state.error!,
-                  style: AppTypography.body.copyWith(color: AppColors.red600)),
+                  style: AppTypography.body.copyWith(color: AppColors.red600),),
             ),
             const SizedBox(height: AppSpacing.md),
           ],

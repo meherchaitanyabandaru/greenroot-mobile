@@ -20,7 +20,7 @@ class PlantDetailScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: asyncPlant.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -112,7 +112,7 @@ class _PlantDetailViewState extends State<_PlantDetailView> {
                     color: AppColors.forest800,
                     child: const Center(
                       child: Icon(Icons.local_florist_outlined,
-                          color: Colors.white54, size: 64),
+                          color: Colors.white54, size: 64,),
                     ),
                   ),
           ),
@@ -132,12 +132,12 @@ class _PlantDetailViewState extends State<_PlantDetailView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(plant.scientificName,
-                              style: AppTypography.h2),
+                              style: AppTypography.h2,),
                           if (plant.commonName != null) ...[
                             const SizedBox(height: 4),
                             Text(plant.commonName!,
                                 style: AppTypography.body.copyWith(
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors.textSecondary,),),
                           ],
                         ],
                       ),
@@ -177,7 +177,7 @@ class _PlantDetailViewState extends State<_PlantDetailView> {
                   Text(
                     plant.englishDescription!,
                     style: AppTypography.body.copyWith(
-                        color: AppColors.textSecondary, height: 1.6),
+                        color: AppColors.textSecondary, height: 1.6,),
                   ),
                 ],
 
@@ -202,12 +202,12 @@ class _PlantDetailViewState extends State<_PlantDetailView> {
                   child: Row(
                     children: [
                       const Icon(Icons.qr_code_rounded,
-                          size: 18, color: AppColors.primaryMain),
+                          size: 18, color: AppColors.primaryMain,),
                       const SizedBox(width: AppSpacing.sm),
-                      Text('Code: ', style: AppTypography.bodySmall),
+                      const Text('Code: ', style: AppTypography.bodySmall),
                       Text(plant.plantCode,
                           style: AppTypography.label
-                              .copyWith(color: AppColors.primaryMain)),
+                              .copyWith(color: AppColors.primaryMain),),
                     ],
                   ),
                 ),
@@ -231,10 +231,12 @@ class _CareGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String, String)>[];
-    if (plant.lightRequirement != null)
+    if (plant.lightRequirement != null) {
       items.add((Icons.wb_sunny_outlined, 'Light', plant.lightRequirement!));
-    if (plant.waterRequirement != null)
+    }
+    if (plant.waterRequirement != null) {
       items.add((Icons.water_drop_outlined, 'Water', plant.waterRequirement!));
+    }
 
     return GridView.count(
       crossAxisCount: 2,

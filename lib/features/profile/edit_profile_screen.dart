@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -666,8 +665,12 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
   void dispose() {
     _timer?.cancel();
     _inputCtrl.dispose();
-    for (final c in _otpCtrls) c.dispose();
-    for (final f in _otpNodes) f.dispose();
+    for (final c in _otpCtrls) {
+      c.dispose();
+    }
+    for (final f in _otpNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -687,7 +690,9 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
   String get _otp => _otpCtrls.map((c) => c.text).join();
 
   void _clearOtp() {
-    for (final c in _otpCtrls) c.clear();
+    for (final c in _otpCtrls) {
+      c.clear();
+    }
     if (_otpNodes.isNotEmpty) _otpNodes.first.requestFocus();
   }
 
@@ -867,7 +872,7 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
       children: [
         _SheetHandle(),
         const SizedBox(height: AppSpacing.lg),
-        Text('Enter verification code', style: AppTypography.h3),
+        const Text('Enter verification code', style: AppTypography.h3),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'We sent a 6-digit code to $destination',
@@ -888,7 +893,7 @@ class _ChangeIdentitySheetState extends State<_ChangeIdentitySheet> {
             onBackspace: () {
               if (i > 0) _otpNodes[i - 1].requestFocus();
             },
-          )),
+          ),),
         ),
         if (_error != null) ...[
           const SizedBox(height: AppSpacing.sm),

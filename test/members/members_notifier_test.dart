@@ -52,14 +52,14 @@ void main() {
         'managers': [
           {'id': 1, 'user_id': 20, 'name': 'Gumastha', 'mobile': '9200000000', 'role': 'MANAGER'},
         ],
-      });
+      },);
       fake.enqueue(response: {'invites': [], 'pagination': {}});
       fake.enqueue(response: {'customers': []});
       fake.enqueue(response: {
         'drivers': [
           {'id': 1, 'driver_user_id': 40, 'name': 'Raju Driver', 'connection_status': 'CONNECTED'},
         ],
-      });
+      },);
 
       final notifier = _notifier(fake);
       await notifier.load();

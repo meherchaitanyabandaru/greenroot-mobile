@@ -142,7 +142,7 @@ final _buyerNurseriesProvider =
     } catch (_) {
       return e;
     }
-  }));
+  }),);
 
   return enriched..sort((a, b) => a.name.compareTo(b.name));
 });
@@ -187,7 +187,7 @@ class BuyerNurseryConnectionsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.x2l),
 
             // ── Connected nurseries ──────────────────────────────────────────
-            Text('Connected Nurseries', style: AppTypography.h3),
+            const Text('Connected Nurseries', style: AppTypography.h3),
             const SizedBox(height: AppSpacing.md),
 
             nurseriesAsync.when(
@@ -210,9 +210,9 @@ class BuyerNurseryConnectionsScreen extends ConsumerWidget {
                       children: nurseries
                           .map((n) => Padding(
                                 padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.md),
+                                    bottom: AppSpacing.md,),
                                 child: _NurseryCard(entry: n),
-                              ))
+                              ),)
                           .toList(),
                     ),
             ),
@@ -235,8 +235,8 @@ class _ScanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
           colors: [AppColors.primaryMain, Color(0xFF2E7D32)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -256,7 +256,7 @@ class _ScanCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.qr_code_scanner_rounded,
-                    color: Colors.white, size: 24),
+                    color: Colors.white, size: 24,),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -298,7 +298,7 @@ class _ScanCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 textStyle: AppTypography.button,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),),
               ),
             ),
           ),
@@ -347,7 +347,7 @@ class _NurseryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.storefront_rounded,
-                  color: AppColors.primaryMain, size: 24),
+                  color: AppColors.primaryMain, size: 24,),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -368,7 +368,7 @@ class _NurseryCard extends StatelessWidget {
               ),
             ),
             const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textMuted, size: 20),
+                color: AppColors.textMuted, size: 20,),
           ],
         ),
       ),
@@ -445,7 +445,7 @@ class _NurseryDetailSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(Icons.storefront_rounded,
-                    color: AppColors.primaryMain, size: 28),
+                    color: AppColors.primaryMain, size: 28,),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -456,12 +456,12 @@ class _NurseryDetailSheet extends StatelessWidget {
                     if (entry.city != null)
                       Text(entry.city!,
                           style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textSecondary)),
+                              .copyWith(color: AppColors.textSecondary),),
                   ],
                 ),
               ),
               const Icon(Icons.verified_rounded,
-                  color: AppColors.primaryMain, size: 22),
+                  color: AppColors.primaryMain, size: 22,),
             ],
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -471,7 +471,7 @@ class _NurseryDetailSheet extends StatelessWidget {
                 icon: Icons.location_on_outlined,
                 text: [entry.address, entry.city]
                     .where((v) => v != null)
-                    .join(', ')),
+                    .join(', '),),
           if (hasCall)
             _InfoRow(icon: Icons.phone_outlined, text: entry.mobile!),
           if (hasEmail)
@@ -497,7 +497,7 @@ class _NurseryDetailSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         textStyle: AppTypography.button,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),),
                       ),
                     ),
                   ),
@@ -511,7 +511,7 @@ class _NurseryDetailSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         side: const BorderSide(color: Color(0xFF25D366)),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -548,7 +548,7 @@ class _NurseryDetailSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         textStyle: AppTypography.button,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),),
                       ),
                     ),
                   ),
@@ -578,7 +578,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(text,
                 style: AppTypography.body
-                    .copyWith(color: AppColors.textPrimary)),
+                    .copyWith(color: AppColors.textPrimary),),
           ),
         ],
       ),
@@ -605,15 +605,15 @@ class _EmptyNurseries extends StatelessWidget {
       child: Column(
         children: [
           const Icon(Icons.storefront_outlined,
-              size: 48, color: AppColors.textMuted),
+              size: 48, color: AppColors.textMuted,),
           const SizedBox(height: AppSpacing.md),
           const Text('No nurseries yet', style: AppTypography.h4,
-              textAlign: TextAlign.center),
+              textAlign: TextAlign.center,),
           const SizedBox(height: 6),
           Text(
             "Scan a nursery's invite QR to connect, or browse public nurseries.",
             style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary),
+                color: AppColors.textSecondary,),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -637,7 +637,7 @@ class _EmptyNurseries extends StatelessWidget {
                   icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
                   label: const Text('Scan QR'),
                   style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryMain),
+                      backgroundColor: AppColors.primaryMain,),
                 ),
               ),
             ],

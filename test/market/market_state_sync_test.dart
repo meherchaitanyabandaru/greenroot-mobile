@@ -159,7 +159,7 @@ void main() {
       } catch (_) {}
 
       expect(container.read(adSavedProvider(kTestAdId)), isTrue,
-          reason: 'Failed save toggle must not update saved state');
+          reason: 'Failed save toggle must not update saved state',);
     });
   });
 

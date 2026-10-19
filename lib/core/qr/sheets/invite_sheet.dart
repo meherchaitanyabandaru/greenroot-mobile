@@ -133,7 +133,7 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
         ),
         if (!invite.isPending) ...[
           const SizedBox(height: 12),
-          QrWarningBanner('This invite has already been used or has expired.'),
+          const QrWarningBanner('This invite has already been used or has expired.'),
         ],
         if (_acceptError != null) ...[
           const SizedBox(height: 12),

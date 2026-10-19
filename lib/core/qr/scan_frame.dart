@@ -47,7 +47,7 @@ class QrScanFrame extends StatelessWidget {
           ),
         ],
       );
-    });
+    },);
   }
 }
 
@@ -108,28 +108,28 @@ class _CornerPainter extends CustomPainter {
             ..lineTo(0, arm)
             ..moveTo(0, r)
             ..arcToPoint(const Offset(r, 0), radius: const Radius.circular(r), clockwise: false),
-          paint)
+          paint,)
       ..drawPath(
           Path()
             ..moveTo(w - arm, 0)
             ..lineTo(w - r, 0)
             ..arcToPoint(Offset(w, r), radius: const Radius.circular(r), clockwise: true)
             ..lineTo(w, arm),
-          paint)
+          paint,)
       ..drawPath(
           Path()
             ..moveTo(0, h - arm)
             ..lineTo(0, h - r)
             ..arcToPoint(Offset(r, h), radius: const Radius.circular(r), clockwise: true)
             ..lineTo(arm, h),
-          paint)
+          paint,)
       ..drawPath(
           Path()
             ..moveTo(w - arm, h)
             ..lineTo(w - r, h)
             ..arcToPoint(Offset(w, h - r), radius: const Radius.circular(r), clockwise: false)
             ..lineTo(w, h - arm),
-          paint);
+          paint,);
   }
 
   @override

@@ -376,12 +376,12 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                         style: AppTypography.caption.copyWith(
                             color: AppColors.red600,
                             fontWeight: FontWeight.w700,
-                            fontSize: 10)),
+                            fontSize: 10,),),
                   ),
                   const SizedBox(width: 6),
                 ],
                 TradeStatusChip(
-                    status: q.status, kind: TradeChipKind.quotation),
+                    status: q.status, kind: TradeChipKind.quotation,),
               ],
             ),
             if (q.nurseryName?.isNotEmpty == true) ...[
@@ -976,7 +976,7 @@ class _DispatchCard extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.receipt_long_outlined,
-                      size: 14, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     'Order ${d.orderNumber}',
@@ -991,7 +991,7 @@ class _DispatchCard extends StatelessWidget {
               children: [
                 if (d.vehicleNumber?.isNotEmpty == true) ...[
                   const Icon(Icons.local_shipping_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     d.vehicleNumber!,
@@ -1002,7 +1002,7 @@ class _DispatchCard extends StatelessWidget {
                 ],
                 if (date != null) ...[
                   const Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     dateFmt.format(date),
@@ -1023,7 +1023,7 @@ class _DispatchCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 2),
                       const Icon(Icons.chevron_right,
-                          size: 16, color: AppColors.primaryMain),
+                          size: 16, color: AppColors.primaryMain,),
                     ],
                   ),
               ],
@@ -1033,7 +1033,7 @@ class _DispatchCard extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.person_outline,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     d.driverName!,

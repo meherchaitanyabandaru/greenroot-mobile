@@ -201,7 +201,7 @@ class InventoryListNotifier extends StateNotifier<InventoryListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 

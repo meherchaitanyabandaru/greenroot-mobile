@@ -27,7 +27,7 @@ class RequestDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -83,7 +83,7 @@ class _RequestDetailView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(Icons.assignment_rounded,
-                        color: AppColors.primaryMain, size: 24),
+                        color: AppColors.primaryMain, size: 24,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -93,7 +93,7 @@ class _RequestDetailView extends StatelessWidget {
                         Text(request.displayName, style: AppTypography.h3),
                         Text(request.requestCode,
                             style: AppTypography.caption
-                                .copyWith(color: AppColors.textMuted)),
+                                .copyWith(color: AppColors.textMuted),),
                       ],
                     ),
                   ),
@@ -179,7 +179,7 @@ class _RequestDetailView extends StatelessWidget {
         if (request.responses.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.x2l),
           Text('Responses (${request.responses.length})',
-              style: AppTypography.h4),
+              style: AppTypography.h4,),
           const SizedBox(height: AppSpacing.md),
           for (final resp in request.responses)
             Padding(
@@ -200,7 +200,7 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
 
   const _StatCard(
-      {required this.label, required this.value, required this.icon});
+      {required this.label, required this.value, required this.icon,});
 
   @override
   Widget build(BuildContext context) {
@@ -217,10 +217,10 @@ class _StatCard extends StatelessWidget {
           Icon(icon, size: 20, color: AppColors.primaryMain),
           const SizedBox(height: AppSpacing.sm),
           Text(value,
-              style: AppTypography.h3.copyWith(color: AppColors.textPrimary)),
+              style: AppTypography.h3.copyWith(color: AppColors.textPrimary),),
           Text(label,
               style:
-                  AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                  AppTypography.caption.copyWith(color: AppColors.textSecondary),),
         ],
       ),
     );
@@ -237,18 +237,18 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md),
+          horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md,),
       child: Row(
         children: [
           Text(label,
               style: AppTypography.body
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.textSecondary),),
           const Spacer(),
           Flexible(
             child: Text(value,
                 style: AppTypography.label,
                 textAlign: TextAlign.right,
-                maxLines: 2),
+                maxLines: 2,),
           ),
         ],
       ),
@@ -286,16 +286,16 @@ class _ResponseCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text('Available: ${response.availableQuantity}',
               style:
-                  AppTypography.body.copyWith(color: AppColors.textSecondary)),
+                  AppTypography.body.copyWith(color: AppColors.textSecondary),),
           if (response.remarks != null) ...[
             const SizedBox(height: 4),
             Text(response.remarks!,
                 style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.textSecondary),),
           ],
           const SizedBox(height: 4),
           Text('By: ${response.respondedByName}',
-              style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+              style: AppTypography.caption.copyWith(color: AppColors.textMuted),),
         ],
       ),
     );

@@ -37,13 +37,13 @@ class DispatchDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.textMuted),
+                  size: 48, color: AppColors.textMuted,),
               const SizedBox(height: AppSpacing.md),
               Text(err.toString(), style: AppTypography.body),
               TextButton(
@@ -64,7 +64,7 @@ class DispatchDetailScreen extends ConsumerWidget {
                       ? 'Order ${dispatch.orderNumber}'
                       : '',
                   viewedAt: DateTime.now(),
-                ));
+                ),);
           });
           return _DetailView(
             dispatch: dispatch,
@@ -131,7 +131,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
+              content: Text(e.toString()), backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -164,7 +164,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
+              content: Text(e.toString()), backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -239,7 +239,7 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(Icons.local_shipping_rounded,
-                        color: AppColors.amber600, size: 28),
+                        color: AppColors.amber600, size: 28,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -250,7 +250,7 @@ class _DetailContent extends StatelessWidget {
                         if (dispatch.orderNumber != null)
                           Text('Order: ${dispatch.orderNumber}',
                               style: AppTypography.caption
-                                  .copyWith(color: AppColors.textMuted)),
+                                  .copyWith(color: AppColors.textMuted),),
                       ],
                     ),
                   ),
@@ -288,14 +288,14 @@ class _DetailContent extends StatelessWidget {
                 _Row(
                     icon: Icons.directions_car_outlined,
                     label: 'Vehicle',
-                    value: dispatch.vehicleNumber!),
+                    value: dispatch.vehicleNumber!,),
               ],
               if (dispatch.destinationAddress != null) ...[
                 const Divider(height: 1, indent: 56),
                 _Row(
                     icon: Icons.location_on_outlined,
                     label: 'Destination',
-                    value: dispatch.destinationAddress!),
+                    value: dispatch.destinationAddress!,),
               ],
               if (dispDate != null) ...[
                 const Divider(height: 1, indent: 56),
@@ -303,14 +303,14 @@ class _DetailContent extends StatelessWidget {
                     icon: Icons.calendar_today_outlined,
                     label: 'Dispatch Date',
                     value:
-                        DateFormat('dd MMM yyyy').format(dispDate.toLocal())),
+                        DateFormat('dd MMM yyyy').format(dispDate.toLocal()),),
               ],
               if (delDate != null) ...[
                 const Divider(height: 1, indent: 56),
                 _Row(
                     icon: Icons.check_circle_outline_rounded,
                     label: 'Delivery Date',
-                    value: DateFormat('dd MMM yyyy').format(delDate.toLocal())),
+                    value: DateFormat('dd MMM yyyy').format(delDate.toLocal()),),
               ],
             ],
           ),
@@ -352,7 +352,7 @@ class _DetailContent extends StatelessWidget {
                             ),
                           ),
                         ],
-                      ))
+                      ),)
                   .toList(),
             ),
           ),
@@ -372,7 +372,7 @@ class _DetailContent extends StatelessWidget {
             ),
             child: Text(dispatch.notes!,
                 style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary, height: 1.5)),
+                    .copyWith(color: AppColors.textSecondary, height: 1.5),),
           ),
         ],
 
@@ -392,12 +392,12 @@ class _DetailContent extends StatelessWidget {
                 Row(
                   children: [
                     const Icon(Icons.warning_amber_rounded,
-                        color: AppColors.amber700),
+                        color: AppColors.amber700,),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text('Delivery Address Updated',
                           style: AppTypography.h4
-                              .copyWith(color: AppColors.amber700)),
+                              .copyWith(color: AppColors.amber700),),
                     ),
                   ],
                 ),
@@ -418,15 +418,15 @@ class _DetailContent extends StatelessWidget {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2, color: Colors.white,),
                           )
                         : const Icon(Icons.check_circle_outline_rounded),
                     label: const Text('Acknowledge Update'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryMain,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: AppRadius.buttonRadius),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.buttonRadius,),
                       elevation: 0,
                     ),
                   ),
@@ -473,14 +473,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.play_arrow_rounded),
                 label: const Text('Start Trip'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -496,14 +496,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.check_circle_rounded),
                 label: const Text('Mark Delivered'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -512,7 +512,7 @@ class _DetailContent extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primaryLight,
                 borderRadius: AppRadius.buttonRadius,
               ),
@@ -520,12 +520,12 @@ class _DetailContent extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle_rounded,
-                      color: AppColors.primaryMain),
+                      color: AppColors.primaryMain,),
                   SizedBox(width: AppSpacing.sm),
                   Text('Trip Completed',
                       style: TextStyle(
                           color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600)),
+                          fontWeight: FontWeight.w600,),),
                 ],
               ),
             ),
@@ -545,14 +545,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.local_shipping_rounded),
                 label: const Text('Mark Dispatched'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.blue600,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -568,14 +568,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.check_circle_rounded),
                 label: const Text('Confirm Delivery'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -598,14 +598,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.local_shipping_rounded),
                 label: const Text('Mark Dispatched'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.blue600,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -625,14 +625,14 @@ class _DetailContent extends StatelessWidget {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : const Icon(Icons.check_circle_rounded),
                 label: const Text('Confirm Delivery'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
               ),
@@ -655,11 +655,11 @@ class _DetailContent extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primaryMain),
                   foregroundColor: AppColors.primaryMain,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 icon: const Icon(Icons.qr_code_rounded, size: 20),
-                label: Text('Share Dispatch QR', style: AppTypography.label),
+                label: const Text('Share Dispatch QR', style: AppTypography.label),
               ),
             ),
           const SizedBox(height: AppSpacing.md),
@@ -674,11 +674,11 @@ class _DetailContent extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.blue600,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 icon: const Icon(Icons.location_on_rounded, size: 20),
-                label: Text('Track Shipment', style: AppTypography.label),
+                label: const Text('Track Shipment', style: AppTypography.label),
               ),
             ),
           if (!isManager && dispatch.status == 'DELIVERED') ...[
@@ -693,11 +693,11 @@ class _DetailContent extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primaryMain),
                   foregroundColor: AppColors.primaryMain,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 icon: const Icon(Icons.star_outline_rounded, size: 20),
-                label: Text('Rate This Delivery', style: AppTypography.label),
+                label: const Text('Rate This Delivery', style: AppTypography.label),
               ),
             ),
           ],
@@ -865,7 +865,7 @@ class _PersonRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: const BoxDecoration(
-                color: AppColors.forest100, shape: BoxShape.circle),
+                color: AppColors.forest100, shape: BoxShape.circle,),
             child: Icon(icon, size: 18, color: AppColors.primaryMain),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -875,12 +875,12 @@ class _PersonRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(name, style: AppTypography.body),
                 if (phone != null)
                   Text(phone!,
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textMuted)),
+                          .copyWith(color: AppColors.textMuted),),
               ],
             ),
           ),
@@ -895,7 +895,7 @@ class _PersonRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.phone_rounded,
-                    size: 20, color: AppColors.primaryMain),
+                    size: 20, color: AppColors.primaryMain,),
               ),
             ),
         ],
@@ -922,7 +922,7 @@ class _Row extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: const BoxDecoration(
-                color: AppColors.forest100, shape: BoxShape.circle),
+                color: AppColors.forest100, shape: BoxShape.circle,),
             child: Icon(icon, size: 18, color: AppColors.primaryMain),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -932,7 +932,7 @@ class _Row extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(value, style: AppTypography.body),
               ],
             ),

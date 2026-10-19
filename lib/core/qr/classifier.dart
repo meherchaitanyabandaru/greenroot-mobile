@@ -60,7 +60,7 @@ QrDetection classifyQr(String raw) {
   if (orderMatch != null) {
     return QrDetection(
         type: QrType.orderVerify,
-        verifyToken: orderMatch.group(1)!.toLowerCase());
+        verifyToken: orderMatch.group(1)!.toLowerCase(),);
   }
 
   // 3. 64-char hex raw token → quotationVerify

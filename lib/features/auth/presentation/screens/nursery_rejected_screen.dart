@@ -130,7 +130,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                   child: Row(
                     children: [
                       const Icon(Icons.storefront_outlined,
-                          color: AppColors.textMuted, size: 20),
+                          color: AppColors.textMuted, size: 20,),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -138,7 +138,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                           children: [
                             Text('Nursery',
                                 style: AppTypography.caption
-                                    .copyWith(color: AppColors.textSecondary)),
+                                    .copyWith(color: AppColors.textSecondary),),
                             Text(
                               session.capabilities.ownedNurseryName!,
                               style: AppTypography.body
@@ -155,7 +155,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                            horizontal: 10, vertical: 4,),
                         decoration: BoxDecoration(
                           color: AppColors.red100,
                           borderRadius: BorderRadius.circular(20),
@@ -164,7 +164,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                           'Rejected',
                           style: AppTypography.caption.copyWith(
                               color: AppColors.red600,
-                              fontWeight: FontWeight.w600),
+                              fontWeight: FontWeight.w600,),
                         ),
                       ),
                     ],
@@ -182,7 +182,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                     color: AppColors.red50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: AppColors.red600.withValues(alpha: 0.25)),
+                        color: AppColors.red600.withValues(alpha: 0.25),),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,12 +190,12 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                       Row(
                         children: [
                           const Icon(Icons.info_outline_rounded,
-                              color: AppColors.red600, size: 16),
+                              color: AppColors.red600, size: 16,),
                           const SizedBox(width: 6),
                           Text('Reason for rejection',
                               style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.red700,
-                                  fontWeight: FontWeight.w600)),
+                                  fontWeight: FontWeight.w600,),),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
@@ -218,7 +218,7 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                   color: AppColors.amber50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.amber600.withValues(alpha: 0.3)),
+                      color: AppColors.amber600.withValues(alpha: 0.3),),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,19 +226,19 @@ class _NurseryRejectedScreenState extends ConsumerState<NurseryRejectedScreen> {
                     Row(
                       children: [
                         const Icon(Icons.lightbulb_outline_rounded,
-                            color: AppColors.amber700, size: 18),
+                            color: AppColors.amber700, size: 18,),
                         const SizedBox(width: AppSpacing.sm),
                         Text('What you can do',
                             style: AppTypography.body.copyWith(
                                 color: AppColors.amber700,
-                                fontWeight: FontWeight.w600)),
+                                fontWeight: FontWeight.w600,),),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    _Tip('Address the reason mentioned above and resubmit.'),
-                    _Tip('Contact GreenRoot support for more details.'),
-                    _Tip(
-                        'Ensure your contact details and documents are accurate.'),
+                    const _Tip('Address the reason mentioned above and resubmit.'),
+                    const _Tip('Contact GreenRoot support for more details.'),
+                    const _Tip(
+                        'Ensure your contact details and documents are accurate.',),
                   ],
                 ),
               ),
@@ -281,11 +281,11 @@ class _Tip extends StatelessWidget {
         children: [
           Text('• ',
               style:
-                  AppTypography.bodySmall.copyWith(color: AppColors.amber700)),
+                  AppTypography.bodySmall.copyWith(color: AppColors.amber700),),
           Expanded(
             child: Text(text,
                 style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.amber700)),
+                    .copyWith(color: AppColors.amber700),),
           ),
         ],
       ),

@@ -243,7 +243,7 @@ class MarketEnquiry {
         createdAt: DateTime.parse(j['created_at'] as String),
         messages: (j['messages'] as List?)
                 ?.map((e) =>
-                    MarketEnquiryMessage.fromJson(e as Map<String, dynamic>))
+                    MarketEnquiryMessage.fromJson(e as Map<String, dynamic>),)
                 .toList() ??
             [],
         lifecycle: j['lifecycle'] is Map<String, dynamic>
@@ -256,7 +256,7 @@ class MarketEnquiry {
             : null,
         summary: j['summary'] is Map<String, dynamic>
             ? MarketEnquirySummary.fromJson(
-                j['summary'] as Map<String, dynamic>)
+                j['summary'] as Map<String, dynamic>,)
             : null,
       );
 }
@@ -374,7 +374,7 @@ class MarketRepository {
         if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
         if (sizeDescription != null) 'size_description': sizeDescription,
         'photos': photos,
-      });
+      },);
 
   Future<void> updateAd(
     int adId, {
@@ -442,9 +442,9 @@ Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
   final src = (decoded.width > maxDim || decoded.height > maxDim)
       ? (decoded.width >= decoded.height
           ? img.copyResize(decoded,
-              width: maxDim, interpolation: img.Interpolation.linear)
+              width: maxDim, interpolation: img.Interpolation.linear,)
           : img.copyResize(decoded,
-              height: maxDim, interpolation: img.Interpolation.linear))
+              height: maxDim, interpolation: img.Interpolation.linear,))
       : decoded;
 
   // Watermark: "GreenRoot" at bottom-right with drop-shadow
@@ -456,10 +456,10 @@ Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
 
   // Shadow (dark, offset 1px)
   img.drawString(src, watermark,
-      font: font, x: x + 1, y: y + 1, color: img.ColorRgba8(0, 0, 0, 110));
+      font: font, x: x + 1, y: y + 1, color: img.ColorRgba8(0, 0, 0, 110),);
   // Main text (white, semi-transparent)
   img.drawString(src, watermark,
-      font: font, x: x, y: y, color: img.ColorRgba8(255, 255, 255, 200));
+      font: font, x: x, y: y, color: img.ColorRgba8(255, 255, 255, 200),);
 
   return Uint8List.fromList(img.encodeJpg(src, quality: 80));
 }

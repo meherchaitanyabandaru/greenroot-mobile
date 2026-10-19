@@ -65,9 +65,10 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
-            () => _error = 'Trip not found. Check the code and try again.');
+            () => _error = 'Trip not found. Check the code and try again.',);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -86,7 +87,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'You already have an active trip (${activeTrip.dispatchCode}). Complete or cancel it first.'),
+                  'You already have an active trip (${activeTrip.dispatchCode}). Complete or cancel it first.',),
               backgroundColor: AppColors.red600,
             ),
           );
@@ -124,7 +125,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()), backgroundColor: AppColors.red600),
+              content: Text(e.toString()), backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -144,7 +145,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain))
+              child: CircularProgressIndicator(color: AppColors.primaryMain),)
           : _error != null
               ? _ErrorView(message: _error!, onRetry: _load)
               : _dispatch != null
@@ -181,7 +182,7 @@ class _ErrorView extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.search_off_rounded,
-                  color: AppColors.red600, size: 36),
+                  color: AppColors.red600, size: 36,),
             ),
             const SizedBox(height: AppSpacing.x2l),
             const Text('Trip Not Found', style: AppTypography.h3),
@@ -243,8 +244,8 @@ class _TripDetails extends StatelessWidget {
         // Trip ID card
         Container(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
               colors: [AppColors.primaryMain, AppColors.primaryHover],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -257,7 +258,7 @@ class _TripDetails extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.local_shipping_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20,),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     'Trip ID',
@@ -302,7 +303,7 @@ class _TripDetails extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _InfoRow(
+              const _InfoRow(
                 icon: Icons.store_outlined,
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primaryMain,
@@ -370,14 +371,14 @@ class _TripDetails extends StatelessWidget {
         // Security notice
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primaryLight,
             borderRadius: AppRadius.cardRadius,
           ),
           child: Row(
             children: [
               const Icon(Icons.verified_user_outlined,
-                  color: AppColors.primaryMain, size: 18),
+                  color: AppColors.primaryMain, size: 18,),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -404,7 +405,7 @@ class _TripDetails extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                          strokeWidth: 2, color: Colors.white,),)
                   : const Icon(Icons.check_circle_outline_rounded),
               label: Text(
                 accepting ? 'Accepting...' : 'Accept Trip',
@@ -413,8 +414,8 @@ class _TripDetails extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius,),
                 elevation: 0,
               ),
             ),
@@ -432,8 +433,8 @@ class _TripDetails extends StatelessWidget {
                 foregroundColor: AppColors.red600,
                 side:
                     BorderSide(color: AppColors.red600.withValues(alpha: 0.6)),
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius,),
               ),
             ),
           ),
@@ -444,7 +445,7 @@ class _TripDetails extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancel',
                   style:
-                      AppTypography.label.copyWith(color: AppColors.textMuted)),
+                      AppTypography.label.copyWith(color: AppColors.textMuted),),
             ),
           ),
         ] else if (myTrip) ...[
@@ -452,7 +453,7 @@ class _TripDetails extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primaryLight,
               borderRadius: AppRadius.buttonRadius,
             ),
@@ -460,11 +461,11 @@ class _TripDetails extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.check_circle_rounded,
-                    color: AppColors.primaryMain),
+                    color: AppColors.primaryMain,),
                 const SizedBox(width: AppSpacing.sm),
                 Text('You\'ve accepted this trip',
                     style: AppTypography.label
-                        .copyWith(color: AppColors.primaryMain)),
+                        .copyWith(color: AppColors.primaryMain),),
               ],
             ),
           ),
@@ -479,8 +480,8 @@ class _TripDetails extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryMain,
                 side: const BorderSide(color: AppColors.primaryMain),
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius,),
               ),
             ),
           ),
@@ -498,7 +499,7 @@ class _TripDetails extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.cancel_outlined, color: AppColors.red600),
+                const Icon(Icons.cancel_outlined, color: AppColors.red600),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -520,7 +521,7 @@ class _TripDetails extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Go Back',
                   style:
-                      AppTypography.label.copyWith(color: AppColors.textMuted)),
+                      AppTypography.label.copyWith(color: AppColors.textMuted),),
             ),
           ),
         ],
@@ -550,7 +551,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          horizontal: AppSpacing.md, vertical: AppSpacing.md,),
       child: Row(
         children: [
           Container(
@@ -566,7 +567,7 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(value, style: AppTypography.body),
               ],
             ),

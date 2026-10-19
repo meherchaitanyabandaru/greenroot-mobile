@@ -12,7 +12,7 @@ class PlantCategory {
   final bool isActive;
 
   const PlantCategory(
-      {required this.id, required this.name, required this.isActive});
+      {required this.id, required this.name, required this.isActive,});
 
   factory PlantCategory.fromJson(Map<String, dynamic> j) => PlantCategory(
         id: (j['id'] as num).toInt(),

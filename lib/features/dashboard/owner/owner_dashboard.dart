@@ -31,7 +31,7 @@ class OwnerDashboard extends ConsumerWidget {
           label: 'Home',
           screen: _OwnerHomeTab(),
         ),
-        RoleNavItem(
+        const RoleNavItem(
           icon: Icons.shopping_bag_outlined,
           activeIcon: Icons.shopping_bag_rounded,
           label: 'Orders',
@@ -87,11 +87,11 @@ class OwnerDashboard extends ConsumerWidget {
           ),
           inBottomNav: false,
         ),
-        RoleNavItem(
+        const RoleNavItem(
           icon: Icons.inventory_2_outlined,
           activeIcon: Icons.inventory_2_rounded,
           label: 'Inventory',
-          screen: const InventoryListScreen(canEdit: true),
+          screen: InventoryListScreen(canEdit: true),
           inBottomNav: false,
         ),
         const RoleNavItem(
@@ -156,7 +156,7 @@ class _OwnerHomeTab extends ConsumerWidget {
         children: [
           const SizedBox(height: AppSpacing.sm),
           Text('Hello, ${user?.firstName ?? 'Owner'}',
-              style: AppTypography.h2),
+              style: AppTypography.h2,),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Manage your nursery operations.',

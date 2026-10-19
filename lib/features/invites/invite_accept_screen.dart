@@ -107,7 +107,7 @@ class InviteNotifier extends StateNotifier<InviteState> {
       state = state.copyWith(isLoading: false, error: e.message);
     } catch (_) {
       state = state.copyWith(
-          isLoading: false, error: 'Could not load invite. Check your code.');
+          isLoading: false, error: 'Could not load invite. Check your code.',);
     }
   }
 
@@ -120,7 +120,7 @@ class InviteNotifier extends StateNotifier<InviteState> {
       state = state.copyWith(isAccepting: false, error: e.message);
     } catch (_) {
       state = state.copyWith(
-          isAccepting: false, error: 'Failed to accept invite. Try again.');
+          isAccepting: false, error: 'Failed to accept invite. Try again.',);
     }
   }
 
@@ -232,11 +232,11 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.mail_outline_rounded,
-                    size: 40, color: AppColors.primaryMain),
+                    size: 40, color: AppColors.primaryMain,),
               ),
               const SizedBox(height: AppSpacing.x2l),
               const Text('You\'ve Been Invited!',
-                  style: AppTypography.h3, textAlign: TextAlign.center),
+                  style: AppTypography.h3, textAlign: TextAlign.center,),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Login or create an account to accept this invite and get started.',
@@ -253,11 +253,11 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                     backgroundColor: AppColors.primaryMain,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),),
                   ),
                   child: Text('Login to Accept',
                       style:
-                          AppTypography.button.copyWith(color: Colors.white)),
+                          AppTypography.button.copyWith(color: Colors.white),),
                 ),
               ),
             ],
@@ -297,7 +297,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           ),
           const SizedBox(height: AppSpacing.x2l),
           const Text('Enter Your Invite Code',
-              style: AppTypography.h3, textAlign: TextAlign.center),
+              style: AppTypography.h3, textAlign: TextAlign.center,),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Ask your nursery owner or manager for the invite link/UUID.',
@@ -334,7 +334,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Text('or enter code manually',
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: AppColors.textMuted),),
               ),
               const Expanded(child: Divider()),
             ],
@@ -385,7 +385,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline_rounded,
-                        color: AppColors.amber600, size: 20),
+                        color: AppColors.amber600, size: 20,),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
@@ -445,7 +445,7 @@ class _InviteCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(invite.typeIcon,
-                    color: AppColors.primaryMain, size: 22),
+                    color: AppColors.primaryMain, size: 22,),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -490,7 +490,7 @@ class _InviteCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.person_outline_rounded,
-                    size: 16, color: AppColors.textMuted),
+                    size: 16, color: AppColors.textMuted,),
                 const SizedBox(width: 6),
                 Text(
                   'Invited by ${invite.inviterName}',
@@ -522,11 +522,11 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.error_outline_rounded,
-              color: AppColors.red600, size: 20),
+              color: AppColors.red600, size: 20,),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(message,
-                style: AppTypography.body.copyWith(color: AppColors.red600)),
+                style: AppTypography.body.copyWith(color: AppColors.red600),),
           ),
         ],
       ),

@@ -31,7 +31,7 @@ class LifecyclePresenter {
   ) {
     final candidates = dispatches
         .where((dispatch) =>
-            dispatch.orderId == orderId && dispatch.status != 'CANCELLED')
+            dispatch.orderId == orderId && dispatch.status != 'CANCELLED',)
         .toList();
     if (candidates.isEmpty) return null;
     candidates.sort(_compareDispatches);

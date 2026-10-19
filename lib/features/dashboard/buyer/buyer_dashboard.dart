@@ -74,7 +74,7 @@ class _CustomerHomeTab extends ConsumerWidget {
           const SizedBox(height: AppSpacing.x2l),
 
           // Quick-access cards
-          _SectionTitle('My Activity'),
+          const _SectionTitle('My Activity'),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -106,7 +106,7 @@ class _CustomerHomeTab extends ConsumerWidget {
           const SizedBox(height: AppSpacing.x2l),
 
           // Join as section
-          _SectionTitle('Join GreenRoot'),
+          const _SectionTitle('Join GreenRoot'),
           const SizedBox(height: AppSpacing.md),
           _JoinCard(
             icon: Icons.local_florist_rounded,
@@ -128,7 +128,7 @@ class _CustomerHomeTab extends ConsumerWidget {
           const SizedBox(height: AppSpacing.x2l),
 
           // Invite acceptance
-          _SectionTitle('Got an Invite?'),
+          const _SectionTitle('Got an Invite?'),
           const SizedBox(height: AppSpacing.md),
           _JoinCard(
             icon: Icons.mail_outline_rounded,
@@ -259,7 +259,7 @@ class _JoinCard extends StatelessWidget {
               ),
             ),
             const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textMuted, size: 20),
+                color: AppColors.textMuted, size: 20,),
           ],
         ),
       ),

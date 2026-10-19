@@ -82,22 +82,22 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+                  AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8,),
               child: Row(children: [
-                Expanded(
-                    child: Text('Select Customer', style: AppTypography.h3)),
+                const Expanded(
+                    child: Text('Select Customer', style: AppTypography.h3),),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
-              ]),
+              ],),
             ),
             const Divider(height: 1, color: AppColors.border),
             Expanded(
               child: _loading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primaryMain))
+                          color: AppColors.primaryMain,),)
                   : _error != null
                       ? Center(
                           child: Column(
@@ -105,12 +105,12 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                               children: [
                             Text('Failed to load customers',
                                 style: AppTypography.body
-                                    .copyWith(color: AppColors.red600)),
+                                    .copyWith(color: AppColors.red600),),
                             TextButton(
                               onPressed: _load,
                               child: const Text('Retry'),
                             ),
-                          ]))
+                          ],),)
                       : _customers == null || _customers!.isEmpty
                           ? Center(
                               child: Text(
@@ -123,10 +123,10 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                               controller: ctrl,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.screenPadding,
-                                  vertical: AppSpacing.md),
+                                  vertical: AppSpacing.md,),
                               itemCount: _customers!.length,
                               separatorBuilder: (_, __) => const Divider(
-                                  height: 1, color: AppColors.border),
+                                  height: 1, color: AppColors.border,),
                               itemBuilder: (_, i) {
                                 final c = _customers![i];
                                 return ListTile(
@@ -145,7 +145,7 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                                   title: Text(
                                     c.displayName,
                                     style: AppTypography.body.copyWith(
-                                        fontWeight: FontWeight.w600),
+                                        fontWeight: FontWeight.w600,),
                                   ),
                                   subtitle: Text(
                                     c.identityLabel,
@@ -154,7 +154,7 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                                     ),
                                   ),
                                   trailing: const Icon(Icons.chevron_right,
-                                      size: 18, color: AppColors.textMuted),
+                                      size: 18, color: AppColors.textMuted,),
                                   onTap: () => Navigator.pop(context, c),
                                 );
                               },

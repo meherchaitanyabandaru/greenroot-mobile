@@ -66,7 +66,7 @@ class _DispatchTrackingScreenState
         if (points.isNotEmpty) {
           final last = points.last;
           _mapController.move(
-              LatLng(last.latitude, last.longitude), 14);
+              LatLng(last.latitude, last.longitude), 14,);
         }
       }
     } catch (e) {
@@ -91,7 +91,7 @@ class _DispatchTrackingScreenState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Location permission required to share location')),
+                content: Text('Location permission required to share location'),),
           );
         }
         return;
@@ -155,7 +155,7 @@ class _DispatchTrackingScreenState
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.lg),
                   child: CircularProgressIndicator(
-                      color: AppColors.primaryMain),
+                      color: AppColors.primaryMain,),
                 ),
               ),
             ),
@@ -169,10 +169,10 @@ class _DispatchTrackingScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          color: AppColors.textMuted, size: 40),
+                          color: AppColors.textMuted, size: 40,),
                       const SizedBox(height: AppSpacing.sm),
-                      Text('Could not load tracking data',
-                          style: AppTypography.label),
+                      const Text('Could not load tracking data',
+                          style: AppTypography.label,),
                       const SizedBox(height: AppSpacing.xs),
                       TextButton(
                         onPressed: _loadTracking,
@@ -193,10 +193,10 @@ class _DispatchTrackingScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.location_off_outlined,
-                          color: AppColors.textMuted, size: 48),
+                          color: AppColors.textMuted, size: 48,),
                       const SizedBox(height: AppSpacing.sm),
-                      Text('No tracking data yet',
-                          style: AppTypography.label),
+                      const Text('No tracking data yet',
+                          style: AppTypography.label,),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         'Waiting for the driver to share location.',
@@ -290,7 +290,7 @@ class _DispatchTrackingScreenState
           Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
@@ -337,7 +337,7 @@ class _DispatchTrackingScreenState
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),),
                 elevation: 4,
               ),
               icon: _postingLocation
@@ -345,7 +345,7 @@ class _DispatchTrackingScreenState
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
+                          color: Colors.white, strokeWidth: 2,),
                     )
                   : const Icon(Icons.my_location_rounded),
               label: Text(

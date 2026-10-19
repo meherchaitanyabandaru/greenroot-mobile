@@ -112,7 +112,7 @@ class _BuyerHomeData {
 
   List<Order> get activeOrders => orders
       .where(
-          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
+          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()),)
       .toList();
 
   int get completedCount =>
@@ -578,9 +578,9 @@ class _EmptyBuyerState extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.qr_code_scanner_rounded,
-                size: 18, color: AppColors.primaryMain),
+                size: 18, color: AppColors.primaryMain,),
             label: const Text('Have an invite? Scan QR',
-                style: TextStyle(color: AppColors.primaryMain)),
+                style: TextStyle(color: AppColors.primaryMain),),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.primaryMain),
               minimumSize: const Size(double.infinity, 48),

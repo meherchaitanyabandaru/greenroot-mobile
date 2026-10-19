@@ -126,7 +126,7 @@ void main() {
             mobileVerified: true,
           ),
           fakeWorkspaces: [
-            Workspace.fromJson({'type': 'PERSONAL'})
+            Workspace.fromJson({'type': 'PERSONAL'}),
           ],
           fakeRoles: [AppRole.buyer],
         ),
@@ -183,7 +183,7 @@ void main() {
           sessionValid: true,
           fakeUser: const UserProfile(id: kTestUserId, firstName: 'Ravi'),
           fakeWorkspaces: [
-            Workspace.fromJson({'type': 'PERSONAL'})
+            Workspace.fromJson({'type': 'PERSONAL'}),
           ],
           fakeRoles: [AppRole.buyer],
         ),
@@ -215,7 +215,7 @@ void main() {
       notifier.setActiveRole(null);
       expect(notifier.state.activeRole, isNull);
       expect(notifier.state.user, isNotNull,
-          reason: 'setActiveRole must NOT clear the user profile');
+          reason: 'setActiveRole must NOT clear the user profile',);
     });
 
     test('updateUser replaces user in state while preserving roles', () async {

@@ -80,7 +80,7 @@ class AccountSuspendedScreen extends ConsumerWidget {
                         Row(
                           children: [
                             const Icon(Icons.info_outline_rounded,
-                                color: AppColors.amber700, size: 16),
+                                color: AppColors.amber700, size: 16,),
                             const SizedBox(width: 6),
                             Text(
                               'Suspension details',
@@ -123,7 +123,7 @@ class AccountSuspendedScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       const Icon(Icons.email_outlined,
-                          color: AppColors.primaryMain, size: 20),
+                          color: AppColors.primaryMain, size: 20,),
                       const SizedBox(width: AppSpacing.md),
                       Text(
                         'support@greenroot.in',

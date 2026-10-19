@@ -105,13 +105,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation accepted'),
           backgroundColor: AppColors.primaryMain,
-        ));
+        ),);
         context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _buyerActing = false);
@@ -134,10 +134,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+                child: const Text('Cancel'),),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Reject', style: TextStyle(color: AppColors.red600)),
+              child: const Text('Reject', style: TextStyle(color: AppColors.red600)),
             ),
           ],
         );
@@ -153,13 +153,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation rejected'),
           backgroundColor: AppColors.red600,
-        ));
+        ),);
         context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _buyerActing = false);
@@ -175,12 +175,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
-                foregroundColor: Colors.white),
+                foregroundColor: Colors.white,),
             child: const Text('Send'),
           ),
         ],
@@ -195,13 +195,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation sent to customer'),
           backgroundColor: AppColors.primaryMain,
-        ));
+        ),);
         context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _approving = false);
@@ -217,12 +217,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.amber600,
-                foregroundColor: Colors.white),
+                foregroundColor: Colors.white,),
             child: const Text('Recall'),
           ),
         ],
@@ -237,13 +237,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation recalled to draft'),
           backgroundColor: AppColors.amber600,
-        ));
+        ),);
         context.pop(true);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _recalling = false);
@@ -273,12 +273,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Manager assigned'),
           backgroundColor: AppColors.primaryMain,
-        ));
+        ),);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _assigning = false);
@@ -291,14 +291,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Assignment'),
         content: Text(
-            'Remove ${q.assignedManagerName ?? "this manager"} from ${q.quotationCode}? They will no longer see this quotation.'),
+            'Remove ${q.assignedManagerName ?? "this manager"} from ${q.quotationCode}? They will no longer see this quotation.',),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Remove', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Remove', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -313,12 +313,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Manager removed'),
           backgroundColor: AppColors.primaryMain,
-        ));
+        ),);
       }
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _assigning = false);
@@ -340,7 +340,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancel',
                 style: AppTypography.body
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.textSecondary),),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -348,7 +348,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),),
             ),
             child: const Text('Convert'),
           ),
@@ -367,7 +367,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Order created successfully'),
           backgroundColor: AppColors.primaryMain,
-        ));
+        ),);
         if (updated.convertedOrderId != null) {
           context.push('/orders/${updated.convertedOrderId}');
         }
@@ -375,7 +375,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _converting = false);
@@ -388,14 +388,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Quotation'),
         content: Text(
-            'Permanently delete ${q.quotationCode}?\nThis action cannot be undone.'),
+            'Permanently delete ${q.quotationCode}?\nThis action cannot be undone.',),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -408,7 +408,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.red600));
+            content: Text(e.message), backgroundColor: AppColors.red600,),);
       }
     } finally {
       if (mounted) setState(() => _deleting = false);
@@ -452,7 +452,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Download failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -491,7 +491,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('WhatsApp share failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -519,7 +519,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Share failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -547,26 +547,26 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
             title: const Text('Quotation'),
             backgroundColor: AppColors.surface,
             foregroundColor: AppColors.textPrimary,
-            elevation: 0),
+            elevation: 0,),
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(
             title: const Text('Quotation'),
             backgroundColor: AppColors.surface,
             foregroundColor: AppColors.textPrimary,
-            elevation: 0),
+            elevation: 0,),
         body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text('Failed to load quotation',
-                style: AppTypography.body.copyWith(color: AppColors.red600)),
+                style: AppTypography.body.copyWith(color: AppColors.red600),),
             const SizedBox(height: 8),
             TextButton(
                 onPressed: () =>
                     ref.invalidate(quotationDetailProvider(widget.quotationId)),
-                child: const Text('Retry')),
-          ]),
+                child: const Text('Retry'),),
+          ],),
         ),
       ),
       data: (q) => _buildScaffold(q),
@@ -589,7 +589,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               title: q.quotationCode,
               subtitle: q.recipientName ?? q.nurseryName ?? '',
               viewedAt: DateTime.now(),
-            ));
+            ),);
       });
     }
     final caps = ref.watch(sessionProvider).capabilities;
@@ -625,7 +625,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(q.quotationCode,
-            style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -637,7 +637,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.primaryMain)),
+                      strokeWidth: 2, color: AppColors.primaryMain,),),
             )
           else if (!isBuyerView) ...[
             // Edit — only available in DRAFT statuses and when actor is the exclusive editor
@@ -657,7 +657,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             .push<bool>('/quotations/${q.id}/edit', extra: q);
                         if (edited == true && mounted) {
                           ref.invalidate(
-                              quotationDetailProvider(widget.quotationId));
+                              quotationDetailProvider(widget.quotationId),);
                         }
                       }
                     : null,
@@ -673,15 +673,15 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 const PopupMenuItem(
                     value: 'pdf',
                     child: _MenuOption(
-                        icon: Icons.download_rounded, label: 'Download PDF')),
+                        icon: Icons.download_rounded, label: 'Download PDF',),),
                 if (canDelete) ...[
                   const PopupMenuDivider(),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'delete',
                     child: _MenuOption(
                         icon: Icons.delete_outline,
                         label: 'Delete',
-                        color: AppColors.red600),
+                        color: AppColors.red600,),
                   ),
                 ],
               ],
@@ -700,26 +700,26 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 Expanded(
                     child: Text(q.quotationCode,
                         style: AppTypography.h3
-                            .copyWith(color: AppColors.primaryMain))),
+                            .copyWith(color: AppColors.primaryMain),),),
                 _StatusBadge(status: q.status),
-              ]),
+              ],),
               const SizedBox(height: 4),
               Text(_fmt(q.createdAt),
                   style: AppTypography.caption
-                      .copyWith(color: AppColors.textMuted)),
+                      .copyWith(color: AppColors.textMuted),),
               if (q.sentAt != null) ...[
                 const SizedBox(height: 3),
                 Text('Sent ${_fmtDate(q.sentAt!)}',
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: AppColors.textMuted),),
               ],
               if (q.customerRespondedAt != null) ...[
                 const SizedBox(height: 3),
                 Text('Customer responded ${_fmtDate(q.customerRespondedAt!)}',
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: AppColors.textMuted),),
               ],
-            ]),
+            ],),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -749,11 +749,11 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                           if (q.nurseryName != null)
                             Text(q.nurseryName!,
                                 style: AppTypography.body
-                                    .copyWith(fontWeight: FontWeight.w600)),
+                                    .copyWith(fontWeight: FontWeight.w600),),
                           if (q.createdByName != null)
                             Text(q.createdByName!,
                                 style: AppTypography.caption
-                                    .copyWith(color: AppColors.textSecondary)),
+                                    .copyWith(color: AppColors.textSecondary),),
                         ],
                       ),
                     ),
@@ -764,12 +764,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Row(children: [
                   const Icon(Icons.phone_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: 4),
                   Text(q.nurseryPhone!,
                       style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textMuted)),
-                ]),
+                          .copyWith(color: AppColors.textMuted),),
+                ],),
               ],
               // Assignment display is shown as its own card below (owners) or origin label (managers)
 
@@ -791,9 +791,9 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                           q.isExpired ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
-                ]),
+                ],),
               ],
-            ]),
+            ],),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -805,13 +805,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   children: [
                     Row(children: [
                       const Icon(Icons.lock_rounded,
-                          size: 15, color: AppColors.primaryMain),
+                          size: 15, color: AppColors.primaryMain,),
                       const SizedBox(width: 6),
                       Text('Converted to Order',
                           style: AppTypography.bodySmall.copyWith(
                               color: AppColors.primaryMain,
-                              fontWeight: FontWeight.w700)),
-                    ]),
+                              fontWeight: FontWeight.w700,),),
+                    ],),
                     const SizedBox(height: 8),
                     if (q.convertedOrderCode != null)
                       GestureDetector(
@@ -819,35 +819,35 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             context.push('/orders/${q.convertedOrderId}'),
                         child: Row(children: [
                           const Icon(Icons.receipt_long_rounded,
-                              size: 14, color: AppColors.textSecondary),
+                              size: 14, color: AppColors.textSecondary,),
                           const SizedBox(width: 6),
                           Text('Order: ',
                               style: AppTypography.caption
-                                  .copyWith(color: AppColors.textSecondary)),
+                                  .copyWith(color: AppColors.textSecondary),),
                           Text(q.convertedOrderCode!,
                               style: AppTypography.caption.copyWith(
                                   color: AppColors.primaryMain,
                                   fontWeight: FontWeight.w700,
-                                  decoration: TextDecoration.underline)),
+                                  decoration: TextDecoration.underline,),),
                           const SizedBox(width: 4),
                           const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 10, color: AppColors.primaryMain),
-                        ]),
+                              size: 10, color: AppColors.primaryMain,),
+                        ],),
                       ),
                     if (q.convertedAt != null) ...[
                       const SizedBox(height: 4),
                       Row(children: [
                         const Icon(Icons.schedule_rounded,
-                            size: 14, color: AppColors.textMuted),
+                            size: 14, color: AppColors.textMuted,),
                         const SizedBox(width: 6),
                         Text(
                           'Converted on ${_fmtDate(q.convertedAt!)}',
                           style: AppTypography.caption
                               .copyWith(color: AppColors.textMuted),
                         ),
-                      ]),
+                      ],),
                     ],
-                  ]),
+                  ],),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -859,12 +859,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Label('Assignment'),
+                    const _Label('Assignment'),
                     const SizedBox(height: 8),
                     if (q.assignedManagerUserId == null) ...[
                       Row(children: [
                         const Icon(Icons.warning_amber_rounded,
-                            size: 16, color: AppColors.amber600),
+                            size: 16, color: AppColors.amber600,),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Column(
@@ -873,14 +873,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                               Text('Unassigned',
                                   style: AppTypography.bodySmall.copyWith(
                                       color: AppColors.amber600,
-                                      fontWeight: FontWeight.w700)),
+                                      fontWeight: FontWeight.w700,),),
                               Text('No manager is handling this quotation',
                                   style: AppTypography.caption
-                                      .copyWith(color: AppColors.textMuted)),
+                                      .copyWith(color: AppColors.textMuted),),
                             ],
                           ),
                         ),
-                      ]),
+                      ],),
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
@@ -895,7 +895,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                                 const BorderSide(color: AppColors.primaryMain),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
+                                borderRadius: BorderRadius.circular(8),),
                           ),
                         ),
                       ),
@@ -909,7 +909,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(Icons.person_rounded,
-                              size: 16, color: AppColors.teal700),
+                              size: 16, color: AppColors.teal700,),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -918,14 +918,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             children: [
                               Text(q.assignedManagerName ?? 'Manager',
                                   style: AppTypography.bodySmall
-                                      .copyWith(fontWeight: FontWeight.w600)),
+                                      .copyWith(fontWeight: FontWeight.w600),),
                               Text('Assigned manager',
                                   style: AppTypography.caption
-                                      .copyWith(color: AppColors.textMuted)),
+                                      .copyWith(color: AppColors.textMuted),),
                             ],
                           ),
                         ),
-                      ]),
+                      ],),
                       const SizedBox(height: 10),
                       Row(children: [
                         Expanded(
@@ -938,10 +938,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primaryMain,
                               side: const BorderSide(
-                                  color: AppColors.primaryMain),
+                                  color: AppColors.primaryMain,),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                  borderRadius: BorderRadius.circular(8),),
                             ),
                           ),
                         ),
@@ -951,18 +951,18 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                             onPressed:
                                 _assigning ? null : () => _unassignManager(q),
                             icon: const Icon(Icons.person_remove_outlined,
-                                size: 16),
+                                size: 16,),
                             label: const Text('Unassign'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.red600,
                               side: const BorderSide(color: AppColors.red600),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                  borderRadius: BorderRadius.circular(8),),
                             ),
                           ),
                         ),
-                      ]),
+                      ],),
                     ],
                   ],
                 ),
@@ -1007,10 +1007,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     IconButton(
                       tooltip: 'Call owner',
                       icon: const Icon(Icons.call_outlined,
-                          size: 18, color: AppColors.primaryMain),
+                          size: 18, color: AppColors.primaryMain,),
                       onPressed: () => _callPhone(q.nurseryPhone!),
                     ),
-                ]),
+                ],),
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -1024,18 +1024,18 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Label('Bill To / Recipient'),
+                    const _Label('Bill To / Recipient'),
                     if (q.recipientName != null) ...[
                       const SizedBox(height: 4),
                       Text(q.recipientName!,
                           style: AppTypography.body
-                              .copyWith(fontWeight: FontWeight.w600)),
+                              .copyWith(fontWeight: FontWeight.w600),),
                     ],
                     if (q.recipientMobile != null) ...[
                       const SizedBox(height: 2),
                       Text(q.recipientMobile!,
                           style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textMuted)),
+                              .copyWith(color: AppColors.textMuted),),
                     ],
                     if (isManagerOnly &&
                         q.recipientName == null &&
@@ -1044,14 +1044,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                       const SizedBox(height: 6),
                       Row(children: [
                         const Icon(Icons.lock_outline,
-                            size: 14, color: AppColors.textMuted),
+                            size: 14, color: AppColors.textMuted,),
                         const SizedBox(width: 6),
                         Text('Customer details are not visible to managers',
                             style: AppTypography.caption
-                                .copyWith(color: AppColors.textMuted)),
-                      ]),
+                                .copyWith(color: AppColors.textMuted),),
+                      ],),
                     ],
-                  ]),
+                  ],),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -1072,29 +1072,29 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                       child: Text('Plant / Item',
                           style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryMain))),
+                              color: AppColors.primaryMain,),),),
                   SizedBox(
                       width: 40,
                       child: Text('Qty',
                           style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryMain),
-                          textAlign: TextAlign.right)),
+                              color: AppColors.primaryMain,),
+                          textAlign: TextAlign.right,),),
                   SizedBox(
                       width: 68,
                       child: Text('Unit ₹',
                           style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryMain),
-                          textAlign: TextAlign.right)),
+                              color: AppColors.primaryMain,),
+                          textAlign: TextAlign.right,),),
                   SizedBox(
                       width: 70,
                       child: Text('Total ₹',
                           style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryMain),
-                          textAlign: TextAlign.right)),
-                ]),
+                              color: AppColors.primaryMain,),
+                          textAlign: TextAlign.right,),),
+                ],),
               ),
               // Item rows
               ...q.items.asMap().entries.map((e) {
@@ -1114,37 +1114,37 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                               children: [
                                 Text(item.scientificName,
                                     style: AppTypography.bodySmall
-                                        .copyWith(fontWeight: FontWeight.w600)),
+                                        .copyWith(fontWeight: FontWeight.w600),),
                                 if (item.commonName != null)
                                   Text(item.commonName!,
                                       style: AppTypography.caption.copyWith(
-                                          color: AppColors.textMuted)),
+                                          color: AppColors.textMuted,),),
                                 if (item.description != null)
                                   Text(item.description!,
                                       style: AppTypography.caption.copyWith(
                                           color: AppColors.textMuted,
-                                          fontStyle: FontStyle.italic)),
-                              ]),
+                                          fontStyle: FontStyle.italic,),),
+                              ],),
                         ),
                         SizedBox(
                             width: 40,
                             child: Text(_qty(item.quantity),
                                 style: AppTypography.bodySmall,
-                                textAlign: TextAlign.right)),
+                                textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 68,
                             child: Text('₹${item.unitPrice.toStringAsFixed(2)}',
                                 style: AppTypography.bodySmall,
-                                textAlign: TextAlign.right)),
+                                textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 70,
                             child: Text(
                                 '₹${item.totalPrice.toStringAsFixed(2)}',
                                 style: AppTypography.bodySmall.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryMain),
-                                textAlign: TextAlign.right)),
-                      ]),
+                                    color: AppColors.primaryMain,),
+                                textAlign: TextAlign.right,),),
+                      ],),
                 );
               }),
               // Grand total
@@ -1153,7 +1153,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   color: AppColors.forest100,
                   borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(10),
-                      bottomRight: Radius.circular(10)),
+                      bottomRight: Radius.circular(10),),
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1163,21 +1163,21 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                       child: Text('Grand Total',
                           style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: AppColors.primaryMain))),
-                  SizedBox(width: 40 + 68),
+                              color: AppColors.primaryMain,),),),
+                  const SizedBox(width: 40 + 68),
                   SizedBox(
                     width: 70,
                     child: Text(
                       '₹${q.totalAmount.toStringAsFixed(2)}',
                       style: AppTypography.body.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primaryMain),
+                          color: AppColors.primaryMain,),
                       textAlign: TextAlign.right,
                     ),
                   ),
-                ]),
+                ],),
               ),
-            ]),
+            ],),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -1187,10 +1187,10 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Label('Notes'),
+                    const _Label('Notes'),
                     const SizedBox(height: 6),
                     Text(q.notes!, style: AppTypography.body),
-                  ]),
+                  ],),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -1201,16 +1201,16 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    const Icon(Icons.cancel_outlined,
-                        size: 15, color: AppColors.red600),
-                    const SizedBox(width: 6),
+                  const Row(children: [
+                    Icon(Icons.cancel_outlined,
+                        size: 15, color: AppColors.red600,),
+                    SizedBox(width: 6),
                     _Label('Rejection Reason'),
-                  ]),
+                  ],),
                   const SizedBox(height: 6),
                   Text(q.rejectionReason!,
                       style:
-                          AppTypography.body.copyWith(color: AppColors.red600)),
+                          AppTypography.body.copyWith(color: AppColors.red600),),
                 ],
               ),
             ),
@@ -1223,13 +1223,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               margin: const EdgeInsets.only(bottom: AppSpacing.sm),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.amber600.withOpacity(0.08),
+                color: AppColors.amber600.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.amber600.withOpacity(0.3)),
+                border: Border.all(color: AppColors.amber600.withValues(alpha: 0.3)),
               ),
               child: Row(children: [
                 const Icon(Icons.lock_outline,
-                    size: 16, color: AppColors.amber600),
+                    size: 16, color: AppColors.amber600,),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1239,7 +1239,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                         .copyWith(color: AppColors.amber600),
                   ),
                 ),
-              ]),
+              ],),
             ),
           ],
 
@@ -1256,7 +1256,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     side: const BorderSide(color: AppColors.red600),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
+                        borderRadius: BorderRadius.circular(9),),
                   ),
                 ),
               ),
@@ -1271,12 +1271,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
+                        borderRadius: BorderRadius.circular(9),),
                     elevation: 0,
                   ),
                 ),
               ),
-            ]),
+            ],),
             const SizedBox(height: 8),
           ]
 
@@ -1295,7 +1295,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
+                        borderRadius: BorderRadius.circular(9),),
                   ),
                 ),
               ),
@@ -1313,7 +1313,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     side: const BorderSide(color: AppColors.amber600),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
+                        borderRadius: BorderRadius.circular(9),),
                   ),
                 ),
               ),
@@ -1332,7 +1332,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
+                        borderRadius: BorderRadius.circular(9),),
                   ),
                 ),
               ),
@@ -1353,7 +1353,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   elevation: 0,
                   fixedSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+                      borderRadius: BorderRadius.circular(9),),
                 ),
               ),
             ),
@@ -1370,7 +1370,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+                      borderRadius: BorderRadius.circular(9),),
                 ),
                 child: SvgPicture.asset(
                   'assets/icons/whatsapp.svg',
@@ -1391,12 +1391,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+                      borderRadius: BorderRadius.circular(9),),
                 ),
                 child: const Icon(Icons.ios_share_rounded, size: 22),
               ),
             ),
-          ]),
+          ],),
           const SizedBox(height: AppSpacing.x3l),
         ],
       ),
@@ -1440,17 +1440,19 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
               .toList();
         },
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _managers = managers;
           _loading = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -1469,31 +1471,31 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
             height: 4,
             decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2)),
+                borderRadius: BorderRadius.circular(2),),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8),
+                AppSpacing.screenPadding, 16, AppSpacing.screenPadding, 8,),
             child: Row(children: [
-              Expanded(child: Text('Assign Manager', style: AppTypography.h3)),
+              const Expanded(child: Text('Assign Manager', style: AppTypography.h3)),
               IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context)),
-            ]),
+                  onPressed: () => Navigator.pop(context),),
+            ],),
           ),
           const Divider(height: 1, color: AppColors.border),
           Expanded(
             child: _loading
                 ? const Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain))
+                        CircularProgressIndicator(color: AppColors.primaryMain),)
                 : _error != null
                     ? Center(
                         child:
                             Column(mainAxisSize: MainAxisSize.min, children: [
                         Text('Failed to load managers',
                             style: AppTypography.body
-                                .copyWith(color: AppColors.red600)),
+                                .copyWith(color: AppColors.red600),),
                         TextButton(
                             onPressed: () {
                               setState(() {
@@ -1502,21 +1504,21 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
                               });
                               _load();
                             },
-                            child: const Text('Retry')),
-                      ]))
+                            child: const Text('Retry'),),
+                      ],),)
                     : _managers == null || _managers!.isEmpty
                         ? Center(
                             child: Text('No managers in this nursery',
                                 style: AppTypography.body
-                                    .copyWith(color: AppColors.textMuted)))
+                                    .copyWith(color: AppColors.textMuted),),)
                         : ListView.separated(
                             controller: ctrl,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.screenPadding,
-                                vertical: AppSpacing.md),
+                                vertical: AppSpacing.md,),
                             itemCount: _managers!.length,
                             separatorBuilder: (_, __) => const Divider(
-                                height: 1, color: AppColors.border),
+                                height: 1, color: AppColors.border,),
                             itemBuilder: (_, i) {
                               final m = _managers![i];
                               return ListTile(
@@ -1530,16 +1532,16 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
                                           : '?',
                                       style: AppTypography.body.copyWith(
                                           color: AppColors.primaryMain,
-                                          fontWeight: FontWeight.w700)),
+                                          fontWeight: FontWeight.w700,),),
                                 ),
                                 title: Text(m.name,
                                     style: AppTypography.body
-                                        .copyWith(fontWeight: FontWeight.w600)),
+                                        .copyWith(fontWeight: FontWeight.w600),),
                                 subtitle: Text(m.identityLabel,
                                     style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary)),
+                                        color: AppColors.textSecondary,),),
                                 trailing: const Icon(Icons.chevron_right,
-                                    size: 18, color: AppColors.textMuted),
+                                    size: 18, color: AppColors.textMuted,),
                                 onTap: () => Navigator.pop(context, m.userId),
                               );
                             },
@@ -1583,7 +1585,7 @@ class _Label extends StatelessWidget {
         style: AppTypography.caption.copyWith(
             color: AppColors.textMuted,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.5),
+            letterSpacing: 0.5,),
       );
 }
 
@@ -1669,7 +1671,7 @@ class _StatusBadge extends StatelessWidget {
             BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
         child: Text(label,
             style: AppTypography.caption
-                .copyWith(color: fg, fontWeight: FontWeight.w700)),
+                .copyWith(color: fg, fontWeight: FontWeight.w700),),
       ),
     );
   }
@@ -1688,7 +1690,7 @@ class _MenuOption extends StatelessWidget {
       Icon(icon, size: 18, color: c),
       const SizedBox(width: 10),
       Text(label, style: AppTypography.body.copyWith(color: c)),
-    ]);
+    ],);
   }
 }
 
@@ -1699,7 +1701,7 @@ String _fmt(String iso) {
   try {
     final ist =
         DateTime.parse(iso).toUtc().add(const Duration(hours: 5, minutes: 30));
-    return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
+    return '${DateFormat("d MMM yyyy, h:mm a").format(ist)} IST';
   } catch (_) {
     return iso;
   }
@@ -1725,5 +1727,5 @@ String _monthAbbr(int month) => const [
 
 String _fmtDate(DateTime dt) {
   final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
-  return DateFormat("d MMM yyyy, h:mm a").format(ist) + ' IST';
+  return '${DateFormat("d MMM yyyy, h:mm a").format(ist)} IST';
 }

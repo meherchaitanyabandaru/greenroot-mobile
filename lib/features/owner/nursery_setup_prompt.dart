@@ -104,15 +104,15 @@ class _SetupPromptCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Icon(Icons.rocket_launch_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20,),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Set up your nursery',
-                          style: AppTypography.label),
+                      const Text('Set up your nursery',
+                          style: AppTypography.label,),
                       Text(
                         'A few quick steps to get started',
                         style: AppTypography.caption
@@ -126,7 +126,7 @@ class _SetupPromptCard extends StatelessWidget {
                   child: const Padding(
                     padding: EdgeInsets.all(4),
                     child: Icon(Icons.close_rounded,
-                        size: 20, color: AppColors.textMuted),
+                        size: 20, color: AppColors.textMuted,),
                   ),
                 ),
               ],
@@ -171,7 +171,7 @@ class _PromptItem extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.cardPadding,
-            vertical: AppSpacing.md),
+            vertical: AppSpacing.md,),
         child: Row(
           children: [
             Container(
@@ -191,12 +191,12 @@ class _PromptItem extends StatelessWidget {
                   Text(title, style: AppTypography.body),
                   Text(subtitle,
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
               ),
             ),
             const Icon(Icons.chevron_right_rounded,
-                size: 18, color: AppColors.textMuted),
+                size: 18, color: AppColors.textMuted,),
           ],
         ),
       ),

@@ -39,9 +39,9 @@ class SubscriptionRemoteDataSource {
       if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
     };
     final res = await _client.post(
-        '/api/v1/subscriptions/$subscriptionId/renew', data: body);
+        '/api/v1/subscriptions/$subscriptionId/renew', data: body,);
     final sub = res['subscription'] as Map<String, dynamic>?;
-    if (sub == null) throw ServerError(500, 'Invalid response from server');
+    if (sub == null) throw const ServerError(500, 'Invalid response from server');
     return SubscriptionModel.fromJson(sub);
   }
 
@@ -54,20 +54,20 @@ class SubscriptionRemoteDataSource {
       'promo_code': promoCode,
       'plan_code': planCode,
       'billing_cycle': billingCycle,
-    });
+    },);
     return (res['validation'] as Map<String, dynamic>?) ?? {};
   }
 
   Future<SubscriptionModel> cancelSubscription(
-      int subscriptionId, String? reason) async {
+      int subscriptionId, String? reason,) async {
     final body = <String, dynamic>{
       'cancel_immediately': true,
       if (reason != null && reason.isNotEmpty) 'reason': reason,
     };
     final res = await _client.post(
-        '/api/v1/subscriptions/$subscriptionId/cancel', data: body);
+        '/api/v1/subscriptions/$subscriptionId/cancel', data: body,);
     final sub = res['subscription'] as Map<String, dynamic>?;
-    if (sub == null) throw ServerError(500, 'Invalid response from server');
+    if (sub == null) throw const ServerError(500, 'Invalid response from server');
     return SubscriptionModel.fromJson(sub);
   }
 

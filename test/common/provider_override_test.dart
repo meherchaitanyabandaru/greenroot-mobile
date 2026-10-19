@@ -32,7 +32,7 @@ void main() {
     // Reading the provider must return our fake instance.
     final resolved = container.read(apiClientProvider);
     expect(resolved, same(fake.apiClient),
-        reason: 'Container must return the overridden FakeApiClient instance');
+        reason: 'Container must return the overridden FakeApiClient instance',);
   });
 
   test('authRepositoryProvider uses overridden apiClient', () async {

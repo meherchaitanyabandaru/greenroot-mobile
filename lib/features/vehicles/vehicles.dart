@@ -163,7 +163,7 @@ class VehicleListNotifier extends StateNotifier<VehicleListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 
@@ -172,7 +172,7 @@ class VehicleListNotifier extends StateNotifier<VehicleListState> {
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
       final (items, pagination) = await _repo.listVehicles(
-          page: _page + 1, status: state.statusFilter);
+          page: _page + 1, status: state.statusFilter,);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(

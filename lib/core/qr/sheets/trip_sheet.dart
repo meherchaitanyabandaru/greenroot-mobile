@@ -69,7 +69,7 @@ class TripSheet extends StatelessWidget {
           subtitle: 'Only drivers can join trips',
         ),
         const SizedBox(height: 16),
-        QrWarningBanner(
+        const QrWarningBanner(
           'This QR code assigns a driver to a trip. '
           'Your account does not have a driver profile, so you cannot join this trip.',
         ),

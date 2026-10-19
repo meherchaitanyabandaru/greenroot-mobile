@@ -131,12 +131,12 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primaryMain),
+                        strokeWidth: 2, color: AppColors.primaryMain,),
                   )
                 : const Text('Save',
                     style: TextStyle(
                         color: AppColors.primaryMain,
-                        fontWeight: FontWeight.w600)),
+                        fontWeight: FontWeight.w600,),),
           ),
         ],
       ),
@@ -155,7 +155,7 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                 ),
                 child: Text(_error!,
                     style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.red600)),
+                        .copyWith(color: AppColors.red600),),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -175,13 +175,13 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
             sizes.when(
               loading: () => const Center(
                   child:
-                      CircularProgressIndicator(color: AppColors.primaryMain)),
+                      CircularProgressIndicator(color: AppColors.primaryMain),),
               error: (err, _) => Text('Failed to load sizes: $err',
-                  style: AppTypography.bodySmall),
+                  style: AppTypography.bodySmall,),
               data: (sizeList) => sizeList.isEmpty
                   ? Text('No sizes available',
                       style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textMuted))
+                          .copyWith(color: AppColors.textMuted),)
                   : Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
@@ -193,7 +193,7 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.sm),
+                                vertical: AppSpacing.sm,),
                             decoration: BoxDecoration(
                               color: selected
                                   ? AppColors.primaryMain
@@ -201,7 +201,7 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                               border: Border.all(
                                   color: selected
                                       ? AppColors.primaryMain
-                                      : AppColors.border),
+                                      : AppColors.border,),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -252,14 +252,14 @@ class _InventoryAddScreenState extends ConsumerState<InventoryAddScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                        horizontal: AppSpacing.lg, vertical: AppSpacing.sm,),
                     decoration: BoxDecoration(
                       color:
                           selected ? AppColors.primaryMain : AppColors.surface,
                       border: Border.all(
                           color: selected
                               ? AppColors.primaryMain
-                              : AppColors.border),
+                              : AppColors.border,),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -303,7 +303,7 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
       filled: true,
       fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md,),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.border),
@@ -367,11 +367,12 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
       final repo = ref.read(plantRepositoryProvider);
       final (results, _) =
           await repo.listPlants(search: query, page: 1, perPage: 10);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _results = results;
           _showDropdown = results.isNotEmpty;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -381,7 +382,7 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Plant search error: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -404,12 +405,12 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.primaryMain)),
+                            strokeWidth: 2, color: AppColors.primaryMain,),),
                   )
                 : widget.selected != null
                     ? IconButton(
                         icon: const Icon(Icons.clear,
-                            size: 18, color: AppColors.textMuted),
+                            size: 18, color: AppColors.textMuted,),
                         onPressed: () {
                           _ctrl.clear();
                           setState(() {
@@ -436,7 +437,7 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
               border: Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)
+                    color: Colors.black.withValues(alpha: 0.08), blurRadius: 8,),
               ],
             ),
             child: ListView.separated(

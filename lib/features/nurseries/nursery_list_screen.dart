@@ -72,11 +72,11 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.error_outline,
-                            size: 48, color: AppColors.textMuted),
+                            size: 48, color: AppColors.textMuted,),
                         const SizedBox(height: AppSpacing.md),
                         Text(paged.error!.message,
                             style: AppTypography.body,
-                            textAlign: TextAlign.center),
+                            textAlign: TextAlign.center,),
                         const SizedBox(height: AppSpacing.lg),
                         TextButton(
                           onPressed: () =>
@@ -95,12 +95,12 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.store_outlined,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       SizedBox(height: AppSpacing.md),
                       Text('No nursery connections yet', style: AppTypography.h4),
                       SizedBox(height: AppSpacing.sm),
                       Text('Nurseries you interact with will appear here.',
-                          style: AppTypography.bodySmall),
+                          style: AppTypography.bodySmall,),
                     ],
                   ),
                 ),
@@ -109,7 +109,7 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => Padding(
@@ -130,7 +130,7 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primaryMain),
+                          color: AppColors.primaryMain,),
                     ),
                   ),
                 ),
@@ -173,7 +173,7 @@ class _NurseryCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: const Icon(Icons.store_rounded,
-                    color: AppColors.primaryMain, size: 24),
+                    color: AppColors.primaryMain, size: 24,),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -191,13 +191,13 @@ class _NurseryCard extends StatelessWidget {
                       Row(
                         children: [
                           const Icon(Icons.location_on_outlined,
-                              size: 13, color: AppColors.textMuted),
+                              size: 13, color: AppColors.textMuted,),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
                               nursery.cityState,
                               style: AppTypography.caption.copyWith(
-                                  color: AppColors.textSecondary),
+                                  color: AppColors.textSecondary,),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

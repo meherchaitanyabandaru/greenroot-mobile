@@ -100,7 +100,7 @@ class _WorkspaceSelectScreenState extends ConsumerState<WorkspaceSelectScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.work_off_outlined,
-                                size: 52, color: AppColors.textMuted),
+                                size: 52, color: AppColors.textMuted,),
                             const SizedBox(height: AppSpacing.md),
                             Text(
                               'No workspaces found.',

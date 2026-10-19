@@ -211,15 +211,18 @@ class SubscriptionPlan {
   int get sixMonthDiscountPct {
     if (sixMonthPrice == null ||
         mrpSixMonthPrice == null ||
-        mrpSixMonthPrice! <= 0) return 0;
+        mrpSixMonthPrice! <= 0) {
+      return 0;
+    }
     if (sixMonthPrice! >= mrpSixMonthPrice!) return 0;
     return ((mrpSixMonthPrice! - sixMonthPrice!) / mrpSixMonthPrice! * 100)
         .round();
   }
 
   int get yearlyDiscountPct {
-    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0)
+    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0) {
       return 0;
+    }
     if (yearlyPrice! >= mrpYearlyPrice!) return 0;
     return ((mrpYearlyPrice! - yearlyPrice!) / mrpYearlyPrice! * 100).round();
   }

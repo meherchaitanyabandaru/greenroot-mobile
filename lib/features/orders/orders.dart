@@ -292,7 +292,7 @@ class Order {
         activeDispatchStatus: j['active_dispatch_status'] as String?,
         deliverySnapshot: j['delivery_snapshot'] is Map<String, dynamic>
             ? DeliverySnapshot.fromJson(
-                j['delivery_snapshot'] as Map<String, dynamic>)
+                j['delivery_snapshot'] as Map<String, dynamic>,)
             : null,
         lifecycle: j['lifecycle'] is Map<String, dynamic>
             ? BackendLifecycle.fromJson(j['lifecycle'] as Map<String, dynamic>)
@@ -416,7 +416,7 @@ class OrderRepository {
   }
 
   Future<OrderItem> setLoadedQuantity(
-      int orderId, int itemId, double qty) async {
+      int orderId, int itemId, double qty,) async {
     return _client.put(
       ApiConstants.orderItemLoadedQuantity(orderId, itemId),
       data: {'loaded_quantity': qty},
@@ -439,7 +439,7 @@ class OrderRepository {
   }
 
   Future<OrderItem> updateOrderItem(
-      int orderId, int itemId, OrderItemRequest req) async {
+      int orderId, int itemId, OrderItemRequest req,) async {
     return _client.put(
       ApiConstants.orderItemById(orderId, itemId),
       data: req.toJson(),
@@ -477,7 +477,7 @@ class OrderRepository {
   }
 
   Future<Order> updateDeliverySnapshot(
-      int orderId, DeliverySnapshotRequest request) async {
+      int orderId, DeliverySnapshotRequest request,) async {
     return _client.put(
       ApiConstants.orderDelivery(orderId),
       data: request.toJson(),
@@ -584,7 +584,7 @@ class OrderListState {
   final int? nurseryId;
 
   const OrderListState(
-      {required this.paged, this.statusFilter, this.nurseryId});
+      {required this.paged, this.statusFilter, this.nurseryId,});
 
   OrderListState copyWith({
     PagedState<Order>? paged,
@@ -628,7 +628,7 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 
@@ -639,7 +639,7 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
       final (items, pagination) = await _repo.listOrders(
           page: _page + 1,
           status: state.statusFilter,
-          nurseryId: state.nurseryId);
+          nurseryId: state.nurseryId,);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(
@@ -689,7 +689,7 @@ class BuyingOrderListNotifier extends StateNotifier<OrderListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 

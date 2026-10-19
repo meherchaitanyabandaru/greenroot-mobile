@@ -337,7 +337,7 @@ class RequestListNotifier extends StateNotifier<RequestListState> {
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 
@@ -346,7 +346,7 @@ class RequestListNotifier extends StateNotifier<RequestListState> {
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
       final (items, pagination) = await _repo.listRequests(
-          page: _page + 1, search: state.search, status: state.statusFilter);
+          page: _page + 1, search: state.search, status: state.statusFilter,);
       _page++;
       state = state.copyWith(
         paged: state.paged.copyWith(

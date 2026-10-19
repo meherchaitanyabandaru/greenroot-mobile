@@ -102,7 +102,7 @@ class _TopItemsNotifier extends StateNotifier<AsyncValue<List<FeaturedPlant>>> {
         },
       );
       final added = FeaturedPlant.fromJson(
-          data['featured_plant'] as Map<String, dynamic>);
+          data['featured_plant'] as Map<String, dynamic>,);
       state = AsyncValue.data([...current, added]);
       return true;
     } on AppError {
@@ -120,7 +120,7 @@ class _TopItemsNotifier extends StateNotifier<AsyncValue<List<FeaturedPlant>>> {
           .delete(ApiConstants.featuredPlantById(nid, featuredId));
       final current = state.valueOrNull ?? [];
       state = AsyncValue.data(
-          current.where((p) => p.id != featuredId).toList());
+          current.where((p) => p.id != featuredId).toList(),);
       return true;
     } on AppError {
       return false;
@@ -220,16 +220,16 @@ class TopItemsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline_rounded,
-                  size: 48, color: AppColors.textMuted),
+                  size: 48, color: AppColors.textMuted,),
               const SizedBox(height: 12),
               Text(e.toString(),
                   style: AppTypography.body
                       .copyWith(color: AppColors.textSecondary),
-                  textAlign: TextAlign.center),
+                  textAlign: TextAlign.center,),
               const SizedBox(height: 16),
               TextButton(
                   onPressed: notifier.refresh,
-                  child: const Text('Retry')),
+                  child: const Text('Retry'),),
             ],
           ),
         ),
@@ -247,15 +247,15 @@ class TopItemsScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm),
-                      decoration: BoxDecoration(
+                          vertical: AppSpacing.sm,),
+                      decoration: const BoxDecoration(
                         color: AppColors.forest100,
                         borderRadius: AppRadius.cardRadius,
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.info_outline_rounded,
-                              size: 18, color: AppColors.primaryMain),
+                              size: 18, color: AppColors.primaryMain,),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
@@ -272,7 +272,7 @@ class TopItemsScreen extends ConsumerWidget {
                     ...items.asMap().entries.map(
                           (entry) => Padding(
                             padding: const EdgeInsets.only(
-                                bottom: AppSpacing.sm),
+                                bottom: AppSpacing.sm,),
                             child: _PlantCard(
                               plant: entry.value,
                               rank: entry.key + 1,
@@ -283,9 +283,9 @@ class TopItemsScreen extends ConsumerWidget {
                                   ScaffoldMessenger.of(context)
                                       .showSnackBar(const SnackBar(
                                     content: Text(
-                                        'Could not remove item. Try again.'),
+                                        'Could not remove item. Try again.',),
                                     backgroundColor: AppColors.red600,
-                                  ));
+                                  ),);
                                 }
                               },
                             ),
@@ -298,15 +298,15 @@ class TopItemsScreen extends ConsumerWidget {
                             _showPlantPicker(context, ref, items),
                         icon: const Icon(Icons.add_rounded, size: 18),
                         label: Text(
-                            'Add Plant (${_maxItems - items.length} slots left)'),
+                            'Add Plant (${_maxItems - items.length} slots left)',),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primaryMain,
                           side: const BorderSide(
-                              color: AppColors.primaryMain),
+                              color: AppColors.primaryMain,),
                           padding: const EdgeInsets.symmetric(
-                              vertical: 14),
+                              vertical: 14,),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),),
                         ),
                       ),
                     ],
@@ -319,7 +319,7 @@ class TopItemsScreen extends ConsumerWidget {
   }
 
   void _showPlantPicker(
-      BuildContext context, WidgetRef ref, List<FeaturedPlant> existing) {
+      BuildContext context, WidgetRef ref, List<FeaturedPlant> existing,) {
     final existingIds = existing.map((p) => p.plantId).toSet();
     showModalBottomSheet(
       context: context,
@@ -335,7 +335,7 @@ class TopItemsScreen extends ConsumerWidget {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Could not add plant. Try again.'),
               backgroundColor: AppColors.red600,
-            ));
+            ),);
           }
         },
       ),
@@ -387,7 +387,7 @@ class _PlantCard extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: 14),
+                  horizontal: AppSpacing.md, vertical: 14,),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -426,14 +426,14 @@ class _PlantCard extends StatelessWidget {
           // Delete
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
-                color: AppColors.textMuted, size: 20),
+                color: AppColors.textMuted, size: 20,),
             tooltip: 'Remove',
             onPressed: () => showDialog(
               context: context,
               builder: (_) => AlertDialog(
                 title: const Text('Remove plant?'),
                 content: Text(
-                    '${plant.plantName} will be removed from your top items.'),
+                    '${plant.plantName} will be removed from your top items.',),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -445,7 +445,7 @@ class _PlantCard extends StatelessWidget {
                       onDelete();
                     },
                     child: const Text('Remove',
-                        style: TextStyle(color: AppColors.red600)),
+                        style: TextStyle(color: AppColors.red600),),
                   ),
                 ],
               ),
@@ -557,12 +557,12 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPadding),
+                  horizontal: AppSpacing.screenPadding,),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Add Plant to Top Items',
-                      style: AppTypography.h3),
+                      style: AppTypography.h3,),
                   const SizedBox(height: 4),
                   Text(
                     'Search from 20,000+ plants in the catalog',
@@ -583,13 +583,13 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2)),
+                                      strokeWidth: 2,),),
                             )
                           : null,
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                          horizontal: 14, vertical: 12,),
                     ),
                     onChanged: (v) {
                       if (v.trim().length >= 2) _search(v);
@@ -621,7 +621,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                       : ListView.separated(
                           controller: controller,
                           padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.sm),
+                              vertical: AppSpacing.sm,),
                           itemCount: _results.length,
                           separatorBuilder: (_, __) =>
                               const Divider(height: 1, indent: 16),
@@ -638,7 +638,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(Icons.eco_outlined,
-                                    color: AppColors.primaryMain, size: 20),
+                                    color: AppColors.primaryMain, size: 20,),
                               ),
                               title: Text(
                                 plant.displayName,
@@ -654,15 +654,15 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                           plant.displayName
                                   ? Text(plant.scientificName,
                                       style: AppTypography.bodySmall.copyWith(
-                                          color: AppColors.textMuted))
+                                          color: AppColors.textMuted,),)
                                   : null,
                               trailing: alreadyAdded
                                   ? const Icon(Icons.check_circle_rounded,
-                                      color: AppColors.primaryMain, size: 20)
+                                      color: AppColors.primaryMain, size: 20,)
                                   : const Icon(
                                       Icons.add_circle_outline_rounded,
                                       color: AppColors.primaryMain,
-                                      size: 20),
+                                      size: 20,),
                               enabled: !alreadyAdded,
                               onTap: alreadyAdded
                                   ? null
@@ -700,11 +700,11 @@ class _EmptyState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(Icons.eco_outlined,
-                  color: AppColors.primaryMain, size: 40),
+                  color: AppColors.primaryMain, size: 40,),
             ),
             const SizedBox(height: 20),
             const Text('No Top Items Yet', style: AppTypography.h3,
-                textAlign: TextAlign.center),
+                textAlign: TextAlign.center,),
             const SizedBox(height: 8),
             Text(
               'Select up to 20 plants your nursery is known for.\n'
@@ -721,9 +721,9 @@ class _EmptyState extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
+                    horizontal: 24, vertical: 14,),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),),
               ),
             ),
           ],

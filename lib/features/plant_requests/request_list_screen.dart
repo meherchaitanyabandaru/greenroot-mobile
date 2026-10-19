@@ -123,7 +123,7 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
               const SliverFillRemaining(
                 child: Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain)),
+                        CircularProgressIndicator(color: AppColors.primaryMain),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -132,7 +132,7 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(paged.error!.message, style: AppTypography.body),
                       TextButton(
@@ -151,7 +151,7 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.assignment_outlined,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       const Text('No requests found', style: AppTypography.h4),
                       if (widget.canCreate) ...[
@@ -176,7 +176,7 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => Padding(
@@ -197,7 +197,7 @@ class _RequestListScreenState extends ConsumerState<RequestListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.primaryMain)),
+                            color: AppColors.primaryMain,),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x5l)),
@@ -215,7 +215,7 @@ class _StatusChip extends StatelessWidget {
   final VoidCallback onTap;
 
   const _StatusChip(
-      {required this.label, required this.selected, required this.onTap});
+      {required this.label, required this.selected, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -224,11 +224,11 @@ class _StatusChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryMain : AppColors.surface,
           border: Border.all(
-              color: selected ? AppColors.primaryMain : AppColors.border),
+              color: selected ? AppColors.primaryMain : AppColors.border,),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
@@ -299,7 +299,7 @@ class _RequestCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.format_list_numbered_rounded,
-                    size: 14, color: AppColors.textMuted),
+                    size: 14, color: AppColors.textMuted,),
                 const SizedBox(width: 4),
                 Text(
                   'Qty: ${request.quantityRequired}',
@@ -308,7 +308,7 @@ class _RequestCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 const Icon(Icons.radar_rounded,
-                    size: 14, color: AppColors.textMuted),
+                    size: 14, color: AppColors.textMuted,),
                 const SizedBox(width: 4),
                 Text(
                   '${request.radiusKm} km',

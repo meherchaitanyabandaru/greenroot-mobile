@@ -56,7 +56,7 @@ class _QuotationByTokenScreenState extends State<QuotationByTokenScreen> {
             Icon(Icons.lock_rounded, color: _red, size: 22),
             SizedBox(width: 8),
             Text('Access Denied',
-                style: TextStyle(fontSize: 18, color: _red)),
+                style: TextStyle(fontSize: 18, color: _red),),
           ],
         ),
         content: const Text(
@@ -108,7 +108,7 @@ class _QuotationByTokenScreenState extends State<QuotationByTokenScreen> {
             CircularProgressIndicator(color: _green),
             SizedBox(height: 16),
             Text('Loading quotation…',
-                style: TextStyle(fontSize: 14, color: _grayMuted)),
+                style: TextStyle(fontSize: 14, color: _grayMuted),),
           ],
         ),
       ),

@@ -360,14 +360,14 @@ class _OwnerRejectedCard extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.support_agent_rounded,
-                color: AppColors.red500, size: 18),
+                color: AppColors.red500, size: 18,),
             label: const Text('Contact Support',
-                style: TextStyle(color: AppColors.red500)),
+                style: TextStyle(color: AppColors.red500),),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.red500),
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),),
             ),
           ),
         ],
@@ -576,7 +576,7 @@ class _CurrentTripCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Current Trip', style: AppTypography.h3),
+              const Text('Current Trip', style: AppTypography.h3),
               const SizedBox(width: 10),
               StatusBadge(
                 label: _prettyStatus(d.status),
@@ -604,7 +604,7 @@ class _CurrentTripCard extends StatelessWidget {
                       title: 'Loading Point',
                       subtitle: d.orderNumber ?? 'Order assigned',
                     ),
-                    _TripPoint(
+                    const _TripPoint(
                       icon: Icons.local_shipping_rounded,
                       color: AppColors.primaryMain,
                       title: 'En Route',
@@ -669,7 +669,7 @@ class _TripPoint extends StatelessWidget {
               children: [
                 Text(title,
                     style: AppTypography.bodySmall
-                        .copyWith(fontWeight: FontWeight.w800)),
+                        .copyWith(fontWeight: FontWeight.w800),),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
@@ -801,7 +801,7 @@ class _TripPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (trips.isEmpty) {
       return const _EmptyPanel(
-          icon: Icons.route_outlined, title: 'No trips yet');
+          icon: Icons.route_outlined, title: 'No trips yet',);
     }
     return Container(
       decoration: _cardDecoration(),
@@ -857,7 +857,7 @@ class _TripRow extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(dispatch.dispatchCode,
-                            style: AppTypography.h4),
+                            style: AppTypography.h4,),
                       ),
                       const SizedBox(width: 8),
                       StatusBadge(
@@ -902,13 +902,13 @@ class _SafetyBanner extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.health_and_safety_outlined,
-              color: AppColors.amber600),
+              color: AppColors.amber600,),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Drive Safe!', style: AppTypography.h4),
+                const Text('Drive Safe!', style: AppTypography.h4),
                 const SizedBox(height: 4),
                 Text(
                   'Your safety is important. Follow traffic rules.',
@@ -920,7 +920,7 @@ class _SafetyBanner extends StatelessWidget {
             ),
           ),
           const Icon(Icons.local_shipping_rounded,
-              color: AppColors.primaryMain),
+              color: AppColors.primaryMain,),
         ],
       ),
     );
@@ -1059,7 +1059,7 @@ class _DriverHomeData {
   // Active trip = ACCEPTED (accepted not yet dispatched) or DISPATCHED or IN_TRANSIT
   Dispatch? get activeTrip => dispatches
       .where(
-          (d) => {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status))
+          (d) => {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'}.contains(d.status),)
       .firstOrNull;
 }
 
@@ -1079,10 +1079,12 @@ BoxDecoration _cardDecoration({Color bg = AppColors.surface}) => BoxDecoration(
 
 String _roleSubtitle(caps) {
   if (caps.isDriverOnly) return 'Stay safe on the road. Check your trips below.';
-  if (caps.isNurseryOwner)
+  if (caps.isNurseryOwner) {
     return 'Manage orders, team & deliveries for ${caps.ownedNurseryName ?? 'your nursery'}.';
-  if (caps.isManager)
+  }
+  if (caps.isManager) {
     return 'Here\'s what\'s happening at ${caps.primaryNurseryName ?? 'your nursery'} today.';
+  }
   return 'Here\'s what\'s happening with your orders today.';
 }
 

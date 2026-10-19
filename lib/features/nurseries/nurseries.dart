@@ -129,7 +129,7 @@ class Nursery {
             [],
         users: (j['users'] as List<dynamic>?)
                 ?.map(
-                    (e) => NurseryUserLink.fromJson(e as Map<String, dynamic>))
+                    (e) => NurseryUserLink.fromJson(e as Map<String, dynamic>),)
                 .toList() ??
             [],
         logoUrl: j['logo_url'] as String?,

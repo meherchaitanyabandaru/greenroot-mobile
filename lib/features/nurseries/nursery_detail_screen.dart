@@ -76,7 +76,7 @@ class _NurseryDetailView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(Icons.store_rounded,
-                        color: AppColors.primaryMain, size: 28),
+                        color: AppColors.primaryMain, size: 28,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -88,7 +88,7 @@ class _NurseryDetailView extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(nursery.nurseryCode!,
                               style: AppTypography.caption
-                                  .copyWith(color: AppColors.textMuted)),
+                                  .copyWith(color: AppColors.textMuted),),
                         ],
                       ],
                     ),
@@ -104,7 +104,7 @@ class _NurseryDetailView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(nursery.description!,
                     style: AppTypography.body
-                        .copyWith(color: AppColors.textSecondary, height: 1.5)),
+                        .copyWith(color: AppColors.textSecondary, height: 1.5),),
               ],
             ],
           ),
@@ -184,7 +184,7 @@ class _NurseryDetailView extends StatelessWidget {
                             const Divider(height: 1, indent: 56),
                           _StaffRow(user: entry.value),
                         ],
-                      ))
+                      ),)
                   .toList(),
             ),
           ),
@@ -227,7 +227,7 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(value, style: AppTypography.body),
               ],
             ),
@@ -251,7 +251,7 @@ class _AddressCard extends StatelessWidget {
         borderRadius: AppRadius.cardRadius,
         border: Border.all(
             color: address.isPrimary ? AppColors.primaryMain : AppColors.border,
-            width: address.isPrimary ? 1.5 : 1),
+            width: address.isPrimary ? 1.5 : 1,),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +264,7 @@ class _AddressCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.location_on_rounded,
-                size: 18, color: AppColors.primaryMain),
+                size: 18, color: AppColors.primaryMain,),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -275,18 +275,18 @@ class _AddressCard extends StatelessWidget {
                   children: [
                     if (address.addressType != null)
                       Text(_capitalize(address.addressType!),
-                          style: AppTypography.label),
+                          style: AppTypography.label,),
                     if (address.isPrimary) ...[
                       const SizedBox(width: AppSpacing.sm),
                       const StatusBadge(
-                          label: 'Primary', variant: BadgeVariant.success),
+                          label: 'Primary', variant: BadgeVariant.success,),
                     ],
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(address.fullAddress,
                     style: AppTypography.body
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
               ],
             ),
           ),
@@ -331,7 +331,7 @@ class _StaffRow extends StatelessWidget {
                 Text(user.firstName, style: AppTypography.body),
                 Text(user.mobile,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
               ],
             ),
           ),

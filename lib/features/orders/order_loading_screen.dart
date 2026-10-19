@@ -63,7 +63,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               perPage: 50,
               status: s,
               nurseryId: widget.nurseryId,
-            )),
+            ),),
       );
       if (!mounted) return;
       final merged = results.expand((r) => r.$1).toList()
@@ -417,7 +417,7 @@ class _LoadingOrderCard extends ConsumerWidget {
                       Row(
                         children: [
                           const Icon(Icons.inventory_2_outlined,
-                              size: 14, color: AppColors.textMuted),
+                              size: 14, color: AppColors.textMuted,),
                           const SizedBox(width: 4),
                           Text(
                             'Adjust Loaded Quantities',
@@ -631,7 +631,7 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 6),
+                          horizontal: 6, vertical: 6,),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                         borderSide: BorderSide(
@@ -650,8 +650,8 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
-                        borderSide: BorderSide(
-                            color: AppColors.primaryMain, width: 1.5),
+                        borderSide: const BorderSide(
+                            color: AppColors.primaryMain, width: 1.5,),
                       ),
                     ),
                     onSubmitted: (_) => _save(),

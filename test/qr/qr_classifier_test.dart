@@ -41,7 +41,7 @@ void main() {
     });
 
     test('URL containing /verify/<64hex> → quotationVerify + token extracted', () {
-      final url = 'https://app.greenroot.in/verify/$validToken';
+      const url = 'https://app.greenroot.in/verify/$validToken';
       final r = classifyQr(url);
       expect(r.type, QrType.quotationVerify);
       expect(r.verifyToken, validToken);
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('URL without /verify/ path → tripCode', () {
-      final url = 'https://app.greenroot.in/quotation/$validToken';
+      const url = 'https://app.greenroot.in/quotation/$validToken';
       final r = classifyQr(url);
       expect(r.type, QrType.tripCode);
     });
@@ -72,7 +72,7 @@ void main() {
         'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
 
     test('URL containing /verify-order/<64hex> → orderVerify + token extracted', () {
-      final url = 'https://app.greenroot.in/verify-order/$validToken';
+      const url = 'https://app.greenroot.in/verify-order/$validToken';
       final r = classifyQr(url);
       expect(r.type, QrType.orderVerify);
       expect(r.verifyToken, validToken);
@@ -86,7 +86,7 @@ void main() {
     });
 
     test('/verify-order/ never misclassified as quotationVerify', () {
-      final url = 'https://app.greenroot.in/verify-order/$validToken';
+      const url = 'https://app.greenroot.in/verify-order/$validToken';
       final r = classifyQr(url);
       expect(r.type, isNot(QrType.quotationVerify));
     });

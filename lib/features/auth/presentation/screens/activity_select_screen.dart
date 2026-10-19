@@ -26,7 +26,7 @@ class ActivitySelectScreen extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Could not save your selection. Try again.')),
+            content: Text('Could not save your selection. Try again.'),),
       );
     }
   }
@@ -49,7 +49,7 @@ class ActivitySelectScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: AppSpacing.lg),
               const Text('How would you like to use GreenRoot?',
-                  style: AppTypography.h1),
+                  style: AppTypography.h1,),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Choose your primary role. You can add more roles later from your profile.',

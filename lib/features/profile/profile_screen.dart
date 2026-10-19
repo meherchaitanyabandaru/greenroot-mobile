@@ -197,7 +197,7 @@ class ProfileScreen extends ConsumerWidget {
                   iconColor: AppColors.amber600,
                   label: 'Disconnect from Nursery',
                   onTap: () => _confirmDisconnectFromNursery(
-                      context, ref, caps.driverNurseryId!),
+                      context, ref, caps.driverNurseryId!,),
                 ),
               _SettingsTile(
                 icon: Icons.logout_rounded,
@@ -281,14 +281,14 @@ class ProfileScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to leave nursery. Please try again.')),
+              content: Text('Failed to leave nursery. Please try again.'),),
         );
       }
     }
   }
 
   Future<void> _confirmDisconnectFromNursery(
-      BuildContext context, WidgetRef ref, int nurseryId) async {
+      BuildContext context, WidgetRef ref, int nurseryId,) async {
     final userId = ref.read(sessionProvider).user?.id;
     if (userId == null) return;
     final confirmed = await showDialog<bool>(
@@ -321,14 +321,14 @@ class ProfileScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to disconnect. Please try again.')),
+              content: Text('Failed to disconnect. Please try again.'),),
         );
       }
     }
   }
 
   Future<void> _confirmDeleteAccount(
-      BuildContext context, WidgetRef ref) async {
+      BuildContext context, WidgetRef ref,) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -375,7 +375,7 @@ class ProfileScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Failed to delete account. Please try again.')),
+              content: Text('Failed to delete account. Please try again.'),),
         );
       }
     }
@@ -454,7 +454,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                       border: Border.all(color: AppColors.surface, width: 2),
                     ),
                     child: const Icon(Icons.edit_rounded,
-                        color: Colors.white, size: 13),
+                        color: Colors.white, size: 13,),
                   ),
                 ),
               ),
@@ -505,7 +505,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.copy_rounded,
-                      size: 12, color: AppColors.primaryMain),
+                      size: 12, color: AppColors.primaryMain,),
                 ],
               ),
             ),
@@ -577,10 +577,10 @@ class _ProfileCompletionCard extends StatelessWidget {
                 backgroundColor: AppColors.primaryMain,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),),
               ),
               child: Text('Complete Profile',
-                  style: AppTypography.button.copyWith(color: Colors.white)),
+                  style: AppTypography.button.copyWith(color: Colors.white),),
             ),
           ),
         ],

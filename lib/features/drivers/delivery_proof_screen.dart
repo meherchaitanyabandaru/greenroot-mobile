@@ -85,7 +85,7 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                '${_photos.length} proof photo${_photos.length > 1 ? 's' : ''} uploaded successfully'),
+                '${_photos.length} proof photo${_photos.length > 1 ? 's' : ''} uploaded successfully',),
             backgroundColor: AppColors.primaryMain,
           ),
         );
@@ -127,14 +127,14 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
                 // Instructions
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: AppRadius.cardRadius,
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.info_outline_rounded,
-                          color: AppColors.primaryMain, size: 20),
+                          color: AppColors.primaryMain, size: 20,),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -202,11 +202,11 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
                       color: AppColors.red600.withValues(alpha: 0.08),
                       borderRadius: AppRadius.cardRadius,
                       border: Border.all(
-                          color: AppColors.red600.withValues(alpha: 0.3)),
+                          color: AppColors.red600.withValues(alpha: 0.3),),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.red600),
+                        const Icon(Icons.error_outline, color: AppColors.red600),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
@@ -265,13 +265,13 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
               child: FilledButton.icon(
                 onPressed: (_photos.isEmpty || _uploading) ? null : _upload,
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primaryMain),
+                    backgroundColor: AppColors.primaryMain,),
                 icon: _uploading
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2, color: Colors.white,),
                       )
                     : const Icon(Icons.cloud_upload_outlined),
                 label: Text(
@@ -309,7 +309,7 @@ class _PhotoThumbnail extends StatelessWidget {
                 return Image.memory(
                   snapshot.data!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _BrokenPhoto(),
+                  errorBuilder: (_, __, ___) => const _BrokenPhoto(),
                 );
               }
               if (snapshot.hasError) return const _BrokenPhoto();
@@ -336,7 +336,7 @@ class _PhotoThumbnail extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close_rounded,
-                    color: Colors.white, size: 16),
+                    color: Colors.white, size: 16,),
               ),
             ),
           ),
@@ -389,7 +389,7 @@ class _PickButton extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(label,
                 style: AppTypography.caption
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.textSecondary),),
           ],
         ),
       ),

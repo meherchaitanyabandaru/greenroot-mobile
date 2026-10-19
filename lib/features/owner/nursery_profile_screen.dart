@@ -125,7 +125,7 @@ class _NurseryProfileFormState extends ConsumerState<_NurseryProfileForm> {
               children: [
                 _NurserySummaryCard(nursery: widget.nursery),
                 const SizedBox(height: AppSpacing.x2l),
-                Text('Public Details', style: AppTypography.h4),
+                const Text('Public Details', style: AppTypography.h4),
                 const SizedBox(height: AppSpacing.sm),
                 _FormPanel(
                   children: [
@@ -157,7 +157,7 @@ class _NurseryProfileFormState extends ConsumerState<_NurseryProfileForm> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.x2l),
-                Text('Contact', style: AppTypography.h4),
+                const Text('Contact', style: AppTypography.h4),
                 const SizedBox(height: AppSpacing.sm),
                 _FormPanel(
                   children: [
@@ -256,7 +256,7 @@ class _NurserySummaryCard extends StatelessWidget {
                       border: Border.all(color: AppColors.surface, width: 1.5),
                     ),
                     child: const Icon(Icons.edit_rounded,
-                        size: 10, color: Colors.white),
+                        size: 10, color: Colors.white,),
                   ),
                 ),
               ],
@@ -342,7 +342,7 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Could not close nursery. Please try again.')),
+              content: Text('Could not close nursery. Please try again.'),),
         );
       }
     } finally {
@@ -356,7 +356,7 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Danger Zone',
-            style: AppTypography.h4.copyWith(color: AppColors.red600)),
+            style: AppTypography.h4.copyWith(color: AppColors.red600),),
         const SizedBox(height: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
@@ -385,7 +385,7 @@ class _CloseNurserySectionState extends ConsumerState<_CloseNurserySection> {
                       ),
                     )
                   : const Icon(Icons.delete_forever_rounded,
-                      color: AppColors.red600, size: 20),
+                      color: AppColors.red600, size: 20,),
             ),
             title: Text(
               'Close Nursery',

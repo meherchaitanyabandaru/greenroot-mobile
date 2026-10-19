@@ -453,7 +453,7 @@ class MapCompletedMarker extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w600,
               color: AppColors.textMuted,

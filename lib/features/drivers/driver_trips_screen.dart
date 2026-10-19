@@ -64,7 +64,7 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen>
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
+                          horizontal: 6, vertical: 1,),
                       decoration: BoxDecoration(
                         color: AppColors.textMuted,
                         borderRadius: BorderRadius.circular(10),
@@ -110,7 +110,7 @@ final _historyProvider =
       .where((d) => d.status == 'DELIVERED' || d.status == 'CANCELLED')
       .toList()
     ..sort((a, b) =>
-        (b.updatedAt ?? b.createdAt).compareTo(a.updatedAt ?? a.createdAt));
+        (b.updatedAt ?? b.createdAt).compareTo(a.updatedAt ?? a.createdAt),);
 });
 
 // ── Active tab ─────────────────────────────────────────────────────────────────
@@ -227,10 +227,10 @@ class _HistoryTab extends ConsumerWidget {
             children: [
               const SizedBox(height: 120),
               const Icon(Icons.history_rounded,
-                  size: 52, color: AppColors.textMuted),
+                  size: 52, color: AppColors.textMuted,),
               const SizedBox(height: AppSpacing.md),
               const Text('No trip history',
-                  style: AppTypography.h4, textAlign: TextAlign.center),
+                  style: AppTypography.h4, textAlign: TextAlign.center,),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Completed and cancelled trips will appear here.',
@@ -351,13 +351,13 @@ class _HistoryTripCard extends StatelessWidget {
                   Text(trip.dispatchCode,
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
-                      )),
+                      ),),
                   if (trip.destinationAddress?.isNotEmpty == true) ...[
                     const SizedBox(height: 2),
                     Row(
                       children: [
                         const Icon(Icons.location_on_outlined,
-                            size: 12, color: AppColors.textMuted),
+                            size: 12, color: AppColors.textMuted,),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
@@ -391,7 +391,7 @@ class _HistoryTripCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 const Icon(Icons.chevron_right_rounded,
-                    size: 16, color: AppColors.textMuted),
+                    size: 16, color: AppColors.textMuted,),
               ],
             ),
           ],
@@ -426,17 +426,17 @@ class _RetryView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline_rounded,
-                size: 48, color: AppColors.textMuted),
+                size: 48, color: AppColors.textMuted,),
             const SizedBox(height: AppSpacing.md),
             Text(message,
-                style: AppTypography.body, textAlign: TextAlign.center),
+                style: AppTypography.body, textAlign: TextAlign.center,),
             const SizedBox(height: AppSpacing.md),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryMain),
+                  backgroundColor: AppColors.primaryMain,),
             ),
           ],
         ),

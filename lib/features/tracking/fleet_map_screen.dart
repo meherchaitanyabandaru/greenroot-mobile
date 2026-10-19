@@ -106,7 +106,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                 child: Card(
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                        horizontal: 16, vertical: 8,),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -115,7 +115,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.primaryMain),
+                              color: AppColors.primaryMain,),
                         ),
                         SizedBox(width: 8),
                         Text('Fetching locations…'),
@@ -134,7 +134,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                 child: Card(
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                        horizontal: 16, vertical: 8,),
                     child: Text('No active dispatches with tracking data'),
                   ),
                 ),
@@ -181,7 +181,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                          horizontal: 6, vertical: 2,),
                       decoration: BoxDecoration(
                         color: AppColors.primaryMain,
                         borderRadius: BorderRadius.circular(6),
@@ -238,7 +238,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
             child: Text(
               '${_pins.length} vehicle${_pins.length == 1 ? '' : 's'} on map',
               style: AppTypography.label,
@@ -273,14 +273,14 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                         Row(
                           children: [
                             const Icon(Icons.local_shipping_outlined,
-                                size: 14, color: AppColors.primaryMain),
+                                size: 14, color: AppColors.primaryMain,),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 pin.dispatch.vehicleNumber ??
                                     pin.dispatch.dispatchCode,
                                 style: AppTypography.caption.copyWith(
-                                    fontWeight: FontWeight.w700),
+                                    fontWeight: FontWeight.w700,),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -303,7 +303,7 @@ class _FleetMapScreenState extends ConsumerState<FleetMapScreen> {
                             'View Route →',
                             style: AppTypography.caption.copyWith(
                                 color: AppColors.primaryMid,
-                                fontWeight: FontWeight.w600),
+                                fontWeight: FontWeight.w600,),
                           ),
                         ),
                       ],

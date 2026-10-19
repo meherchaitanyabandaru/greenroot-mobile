@@ -98,7 +98,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
         quantity: double.parse(r.qtyCtrl.text.trim()),
         unitPrice: double.parse(r.priceCtrl.text.trim()),
         totalPrice: r.lineTotal,
-      )).toList();
+      ),).toList();
 
       await ref.read(orderRepositoryProvider).createOrder(
         buyerMobile: _mobileCtrl.text.trim(),
@@ -165,7 +165,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
             ],
 
             // Buyer details
-            Text('Buyer', style: AppTypography.h4),
+            const Text('Buyer', style: AppTypography.h4),
             const SizedBox(height: AppSpacing.sm),
             GestureDetector(
               onTap: _pickCustomer,
@@ -217,7 +217,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                       ),
                     ),
                     const Icon(Icons.chevron_right_rounded,
-                        size: 18, color: AppColors.textMuted),
+                        size: 18, color: AppColors.textMuted,),
                   ],
                 ),
               ),
@@ -247,7 +247,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Items', style: AppTypography.h4),
+                const Text('Items', style: AppTypography.h4),
                 TextButton.icon(
                   onPressed: _addItem,
                   icon: const Icon(Icons.add, size: 18, color: AppColors.primaryMain),
@@ -270,12 +270,12 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                 index: i,
                 onRemove: () => _removeItem(i),
                 onChanged: () => setState(() {}),
-              )),
+              ),),
 
             const SizedBox(height: AppSpacing.x2l),
 
             // Notes
-            Text('Notes', style: AppTypography.h4),
+            const Text('Notes', style: AppTypography.h4),
             const SizedBox(height: AppSpacing.sm),
             TextFormField(
               controller: _notesCtrl,
@@ -293,7 +293,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
   Widget _buildStickyFooter() {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-          AppSpacing.md, AppSpacing.screenPadding, AppSpacing.lg),
+          AppSpacing.md, AppSpacing.screenPadding, AppSpacing.lg,),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
@@ -308,7 +308,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                 children: [
                   Text('Total',
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                   Text(
                     '₹${_grandTotal.toStringAsFixed(2)}',
                     style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
@@ -325,18 +325,18 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 child: _saving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2, color: Colors.white,),
                       )
                     : const Text('Place Order',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontWeight: FontWeight.w700),),
               ),
             ),
           ],
@@ -448,7 +448,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
               Text('Item ${widget.index + 1}',
                   style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600)),
+                      fontWeight: FontWeight.w600,),),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.remove_circle_outline, color: AppColors.red600, size: 20),
@@ -465,7 +465,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
             decoration: _inputDecoration('Search plant...').copyWith(
               suffixIcon: _searching
                   ? const Padding(padding: EdgeInsets.all(10),
-                      child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain)))
+                      child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain)),)
                   : const Icon(Icons.search, color: AppColors.textMuted, size: 18),
             ),
             onChanged: (val) {
@@ -540,7 +540,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                   child: Text(
                     '₹${row.lineTotal.toStringAsFixed(0)}',
                     style: AppTypography.body.copyWith(
-                        color: AppColors.primaryMain, fontWeight: FontWeight.w600),
+                        color: AppColors.primaryMain, fontWeight: FontWeight.w600,),
                     textAlign: TextAlign.center,
                   ),
                 ),

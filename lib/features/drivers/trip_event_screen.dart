@@ -59,7 +59,7 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.message), backgroundColor: AppColors.red600),
+              content: Text(e.message), backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -82,7 +82,7 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
         children: [
           const SizedBox(height: AppSpacing.md),
 
-          Text('Event Type', style: AppTypography.h4),
+          const Text('Event Type', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
 
           // Event type selector
@@ -144,14 +144,14 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
                             Text(
                               desc,
                               style: AppTypography.caption.copyWith(
-                                  color: AppColors.textSecondary),
+                                  color: AppColors.textSecondary,),
                             ),
                           ],
                         ),
                       ),
                       if (selected)
                         const Icon(Icons.check_circle_rounded,
-                            color: AppColors.primaryMain),
+                            color: AppColors.primaryMain,),
                     ],
                   ),
                 ),
@@ -161,7 +161,7 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
 
           const SizedBox(height: AppSpacing.x2l),
 
-          Text('Note (Optional)', style: AppTypography.h4),
+          const Text('Note (Optional)', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
 
           TextField(
@@ -175,18 +175,18 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
                   AppTypography.body.copyWith(color: AppColors.textMuted),
               filled: true,
               fillColor: AppColors.surface,
-              border: OutlineInputBorder(
+              border: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              enabledBorder: OutlineInputBorder(
+              enabledBorder: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              focusedBorder: OutlineInputBorder(
+              focusedBorder: const OutlineInputBorder(
                 borderRadius: AppRadius.inputRadius,
-                borderSide: const BorderSide(
-                    color: AppColors.primaryMain, width: 2),
+                borderSide: BorderSide(
+                    color: AppColors.primaryMain, width: 2,),
               ),
             ),
           ),
@@ -205,7 +205,7 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2, color: Colors.white,),
                     )
                   : const Icon(Icons.add_circle_outline_rounded),
               label: Text(

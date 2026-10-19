@@ -38,7 +38,7 @@ class DriverTripDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => _ErrorState(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
@@ -76,7 +76,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Cannot start journey. Nursery loading is not yet complete.'),
+              'Cannot start journey. Nursery loading is not yet complete.',),
           backgroundColor: AppColors.amber600,
         ),
       );
@@ -115,11 +115,11 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
       builder: (_) => AlertDialog(
         title: const Text('Complete Delivery'),
         content: const Text(
-            'Are you sure you want to mark this delivery as completed? Make sure you have uploaded the delivery proof.'),
+            'Are you sure you want to mark this delivery as completed? Make sure you have uploaded the delivery proof.',),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style:
@@ -221,8 +221,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
         // ── Status header ──────────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
               colors: [AppColors.primaryMain, AppColors.primaryHover],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -235,11 +235,11 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
               Row(
                 children: [
                   const Icon(Icons.local_shipping_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20,),
                   const SizedBox(width: 6),
                   Text('Trip',
                       style: AppTypography.caption.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8))),
+                          color: Colors.white.withValues(alpha: 0.8),),),
                   const Spacer(),
                   StatusBadge(
                     label: display.label,
@@ -279,7 +279,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
           ),
           child: Column(
             children: [
-              _InfoRow(
+              const _InfoRow(
                 icon: Icons.store_outlined,
                 iconBg: AppColors.forest100,
                 iconColor: AppColors.primaryMain,
@@ -394,7 +394,7 @@ class _StatusTimeline extends StatelessWidget {
     'ACCEPTED',
     'DISPATCHED',
     'IN_TRANSIT',
-    'DELIVERED'
+    'DELIVERED',
   ];
 
   @override
@@ -503,7 +503,7 @@ class _ContextualActions extends StatelessWidget {
     if (status == 'DELIVERED' || status == 'CANCELLED') {
       return Container(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.forest100,
           borderRadius: AppRadius.cardRadius,
         ),
@@ -549,15 +549,15 @@ class _ContextualActions extends StatelessWidget {
                 color: AppColors.amber600.withValues(alpha: 0.30),
               ),
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.schedule_rounded,
-                        color: AppColors.amber600, size: 18),
-                    const SizedBox(width: AppSpacing.sm),
-                    const Text(
+                    Icon(Icons.schedule_rounded,
+                        color: AppColors.amber600, size: 18,),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
                       'Waiting for Nursery Loading',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
@@ -568,8 +568,8 @@ class _ContextualActions extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                const Text(
+                SizedBox(height: AppSpacing.sm),
+                Text(
                   'The nursery is preparing your plants. You cannot start the journey until loading is completed and the trip is dispatched.',
                   style: TextStyle(
                     fontSize: 13,
@@ -590,7 +590,7 @@ class _ContextualActions extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 side: const BorderSide(color: AppColors.border),
-                shape: RoundedRectangleBorder(
+                shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.buttonRadius,
                 ),
               ),
@@ -616,16 +616,16 @@ class _ContextualActions extends StatelessWidget {
               horizontal: AppSpacing.md,
               vertical: AppSpacing.sm,
             ),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.forest100,
               borderRadius: AppRadius.cardRadius,
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.primaryMain, size: 16),
-                const SizedBox(width: AppSpacing.sm),
-                const Expanded(
+                Icon(Icons.check_circle_rounded,
+                    color: AppColors.primaryMain, size: 16,),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
                   child: Text(
                     'Loading complete! Plants are loaded. Start your journey.',
                     style: TextStyle(
@@ -697,7 +697,7 @@ class _ActionButton extends StatelessWidget {
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2, color: Colors.white,),
               )
             : Icon(icon),
         label: Text(label, style: AppTypography.label),
@@ -722,17 +722,17 @@ class _CompleteButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryHover,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
         ),
         icon: busy
             ? const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2, color: Colors.white,),
               )
             : const Icon(Icons.where_to_vote_outlined),
-        label: Text('Complete Delivery', style: AppTypography.label),
+        label: const Text('Complete Delivery', style: AppTypography.label),
       ),
     );
   }
@@ -759,7 +759,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          horizontal: AppSpacing.md, vertical: AppSpacing.md,),
       child: Row(
         children: [
           Container(
@@ -775,7 +775,7 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(value, style: AppTypography.body),
               ],
             ),
@@ -801,17 +801,17 @@ class _ErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline,
-                size: 48, color: AppColors.textMuted),
+                size: 48, color: AppColors.textMuted,),
             const SizedBox(height: AppSpacing.md),
             Text(message,
-                style: AppTypography.body, textAlign: TextAlign.center),
+                style: AppTypography.body, textAlign: TextAlign.center,),
             const SizedBox(height: AppSpacing.md),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryMain),
+                  backgroundColor: AppColors.primaryMain,),
             ),
           ],
         ),

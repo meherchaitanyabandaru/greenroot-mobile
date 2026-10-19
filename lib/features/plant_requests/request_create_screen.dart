@@ -92,7 +92,7 @@ class _RequestCreateScreenState extends ConsumerState<RequestCreateScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain),
                   )
                 : const Text('Submit',
-                    style: TextStyle(color: AppColors.primaryMain, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: AppColors.primaryMain, fontWeight: FontWeight.w600),),
           ),
         ],
       ),
@@ -174,18 +174,18 @@ class _RequestCreateScreenState extends ConsumerState<RequestCreateScreen> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                                horizontal: AppSpacing.lg, vertical: AppSpacing.sm,),
                             decoration: BoxDecoration(
                               color: _selectedSize == null ? AppColors.primaryMain : AppColors.surface,
                               border: Border.all(
-                                  color: _selectedSize == null ? AppColors.primaryMain : AppColors.border),
+                                  color: _selectedSize == null ? AppColors.primaryMain : AppColors.border,),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('Any',
                                 style: AppTypography.body.copyWith(
                                   color: _selectedSize == null ? Colors.white : AppColors.textPrimary,
                                   fontWeight: _selectedSize == null ? FontWeight.w600 : FontWeight.normal,
-                                )),
+                                ),),
                           ),
                         ),
                         ...sizeList.map((size) {
@@ -195,18 +195,18 @@ class _RequestCreateScreenState extends ConsumerState<RequestCreateScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                                  horizontal: AppSpacing.lg, vertical: AppSpacing.sm,),
                               decoration: BoxDecoration(
                                 color: selected ? AppColors.primaryMain : AppColors.surface,
                                 border: Border.all(
-                                    color: selected ? AppColors.primaryMain : AppColors.border),
+                                    color: selected ? AppColors.primaryMain : AppColors.border,),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(size.displayName,
                                   style: AppTypography.body.copyWith(
                                     color: selected ? Colors.white : AppColors.textPrimary,
                                     fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                                  )),
+                                  ),),
                             ),
                           );
                         }),
@@ -239,7 +239,7 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
       filled: true,
       fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md,),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.border),
@@ -321,7 +321,7 @@ class _PlantSearchFieldState extends ConsumerState<_PlantSearchField> {
                     child: SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain)),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryMain),),
                   )
                 : widget.selected != null
                     ? IconButton(

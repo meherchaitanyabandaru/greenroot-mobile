@@ -56,7 +56,7 @@ class DriverTripMapScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => _ErrorView(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),
@@ -102,7 +102,7 @@ class _AppBarTitle extends StatelessWidget {
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(
-                          ClipboardData(text: dispatch.dispatchCode));
+                          ClipboardData(text: dispatch.dispatchCode),);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Trip code copied'),
@@ -111,7 +111,7 @@ class _AppBarTitle extends StatelessWidget {
                       );
                     },
                     child: const Icon(Icons.copy_rounded,
-                        size: 13, color: AppColors.textMuted),
+                        size: 13, color: AppColors.textMuted,),
                   ),
                 ],
               ),
@@ -135,7 +135,7 @@ class DriverTripMapBody extends ConsumerStatefulWidget {
   final Dispatch dispatch;
   final int dispatchId;
   const DriverTripMapBody(
-      {super.key, required this.dispatch, required this.dispatchId});
+      {super.key, required this.dispatch, required this.dispatchId,});
 
   @override
   ConsumerState<DriverTripMapBody> createState() => DriverTripMapBodyState();
@@ -367,7 +367,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       if (results != null && results.isNotEmpty) {
         final r = results.first as Map<String, dynamic>;
         return LatLng(
-            double.parse(r['lat'] as String), double.parse(r['lon'] as String));
+            double.parse(r['lat'] as String), double.parse(r['lon'] as String),);
       }
     } catch (_) {}
     return null;
@@ -422,7 +422,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Complete Delivery?'),
         content: const Text(
-            'Make sure you have uploaded at least one delivery proof photo.'),
+            'Make sure you have uploaded at least one delivery proof photo.',),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -479,7 +479,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
       backgroundColor: isError ? AppColors.red600 : AppColors.primaryMain,
-    ));
+    ),);
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────────
@@ -497,7 +497,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
         _deliveryPointLatLng != null) {
       const calc = Distance();
       distKm = calc.as(
-          LengthUnit.Kilometer, _loadingPointLatLng!, _deliveryPointLatLng!);
+          LengthUnit.Kilometer, _loadingPointLatLng!, _deliveryPointLatLng!,);
     }
 
     return Column(
@@ -1085,7 +1085,7 @@ class _OrderJourneyCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.route_rounded,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -1117,7 +1117,7 @@ class _OrderJourneyCard extends StatelessWidget {
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
               child: _JourneyTimeline(
                 status: status,
                 orderStatus: orderStatus,
@@ -1141,11 +1141,11 @@ class _OrderJourneyCard extends StatelessWidget {
                       'Hide Journey',
                       style: AppTypography.caption.copyWith(
                           color: AppColors.primaryMain,
-                          fontWeight: FontWeight.w600),
+                          fontWeight: FontWeight.w600,),
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.keyboard_arrow_up_rounded,
-                        color: AppColors.primaryMain, size: 16),
+                        color: AppColors.primaryMain, size: 16,),
                   ],
                 ),
               ),
@@ -1335,7 +1335,7 @@ class _StepRow extends StatelessWidget {
                   child: Center(
                     child: step.state == _StepState.completed
                         ? const Icon(Icons.check_rounded,
-                            color: Colors.white, size: 14)
+                            color: Colors.white, size: 14,)
                         : Text(
                             '${step.number}',
                             style: TextStyle(
@@ -1405,8 +1405,8 @@ class _StepRow extends StatelessWidget {
                     ),
                   ),
                   // Expand chevron (decorative, for future use)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 16,
@@ -1465,7 +1465,7 @@ class _PlantsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.eco_rounded,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -1516,7 +1516,7 @@ class _PlantsCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(Icons.spa_rounded,
-                              color: AppColors.primaryMain, size: 16),
+                              color: AppColors.primaryMain, size: 16,),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
@@ -1527,7 +1527,7 @@ class _PlantsCard extends StatelessWidget {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 10, vertical: 4,),
                           decoration: BoxDecoration(
                             color: AppColors.forest100,
                             borderRadius: BorderRadius.circular(99),
@@ -1599,7 +1599,7 @@ class _BottomActionBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPadding, 12, AppSpacing.screenPadding, 12),
+              AppSpacing.screenPadding, 12, AppSpacing.screenPadding, 12,),
           child: _buildButtons(context),
         ),
       ),
@@ -1626,7 +1626,7 @@ class _BottomActionBar extends StatelessWidget {
               foregroundColor: AppColors.textSecondary,
               side: const BorderSide(color: AppColors.border),
               shape:
-                  RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+                  const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
             ),
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Refresh Status'),
@@ -1702,10 +1702,10 @@ class _BottomActionBar extends StatelessWidget {
               disabledBackgroundColor: AppColors.forest100,
               disabledForegroundColor: AppColors.primaryMain,
               shape:
-                  RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+                  const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
             ),
             icon: const Icon(Icons.check_circle_rounded),
-            label: Text('Trip Completed', style: AppTypography.label),
+            label: const Text('Trip Completed', style: AppTypography.label),
           ),
         );
 
@@ -1739,14 +1739,14 @@ class _PrimaryBtn extends StatelessWidget {
         onPressed: busy ? null : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primaryMain,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
         ),
         icon: busy
             ? const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2, color: Colors.white,),
               )
             : Icon(icon),
         label: Text(label, style: AppTypography.label),
@@ -1778,7 +1778,7 @@ class _OutlineIconBtn extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: color,
             side: BorderSide(color: color.withValues(alpha: 0.4)),
-            shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
             padding: EdgeInsets.zero,
           ),
           child: Column(
@@ -1787,7 +1787,7 @@ class _OutlineIconBtn extends StatelessWidget {
               Icon(icon, size: 18),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Inter',
@@ -1819,17 +1819,17 @@ class _ErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline_rounded,
-                size: 48, color: AppColors.textMuted),
+                size: 48, color: AppColors.textMuted,),
             const SizedBox(height: AppSpacing.md),
             Text(message,
-                style: AppTypography.body, textAlign: TextAlign.center),
+                style: AppTypography.body, textAlign: TextAlign.center,),
             const SizedBox(height: AppSpacing.md),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryMain),
+                  backgroundColor: AppColors.primaryMain,),
             ),
           ],
         ),

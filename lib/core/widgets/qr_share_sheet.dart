@@ -301,7 +301,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                       padding: const EdgeInsets.only(top: 20),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                            horizontal: 14, vertical: 6,),
                         decoration: BoxDecoration(
                           color: accent,
                           borderRadius: BorderRadius.circular(99),
@@ -325,7 +325,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                          color: light, shape: BoxShape.circle),
+                          color: light, shape: BoxShape.circle,),
                       child:
                           Icon(widget.qrType.icon, color: accent, size: 28),
                     ),
@@ -402,7 +402,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                               ],
                             ),
                             child: Icon(Icons.eco_rounded,
-                                color: accent, size: 26),
+                                color: accent, size: 26,),
                           ),
                         ],
                       ),
@@ -455,7 +455,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.access_time_rounded,
-                              size: 13, color: Color(0xFF94A3B8)),
+                              size: 13, color: Color(0xFF94A3B8),),
                           const SizedBox(width: 5),
                           Text(
                             'Expires: $expiry',
@@ -483,7 +483,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.lock_outline_rounded,
-                              size: 14, color: accent),
+                              size: 14, color: accent,),
                           const SizedBox(width: 6),
                           Text(
                             'One-time use only',
@@ -552,7 +552,7 @@ class _QrShareSheetState extends State<QrShareSheet> {
                   Row(
                     children: [
                       Icon(Icons.info_outline_rounded,
-                          size: 16, color: accent),
+                          size: 16, color: accent,),
                       const SizedBox(width: 6),
                       Text(
                         'How to use',

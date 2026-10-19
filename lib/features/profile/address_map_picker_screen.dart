@@ -260,7 +260,7 @@ class _AddressMapPickerScreenState
     });
     if (s.latitude != null && s.longitude != null) {
       _mapController.move(
-          LatLng(s.latitude!, s.longitude!), _pickZoom);
+          LatLng(s.latitude!, s.longitude!), _pickZoom,);
       _scheduleReverseGeocode();
     }
   }
@@ -388,7 +388,7 @@ class _AddressMapPickerScreenState
                             _searching = false;
                           });
                         },
-                      )),
+                      ),),
                     ],
                   ),
 
@@ -491,10 +491,10 @@ class _CenterPin extends StatelessWidget {
                 ? const Padding(
                     padding: EdgeInsets.all(10),
                     child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
+                        color: Colors.white, strokeWidth: 2,),
                   )
                 : const Icon(Icons.location_on_rounded,
-                    color: Colors.white, size: 22),
+                    color: Colors.white, size: 22,),
           ),
         ),
         // Pin tail
@@ -562,7 +562,7 @@ class _SearchBar extends StatelessWidget {
           hintStyle:
               AppTypography.body.copyWith(color: AppColors.textMuted),
           prefixIcon: const Icon(Icons.search_rounded,
-              color: AppColors.primaryMain, size: 20),
+              color: AppColors.primaryMain, size: 20,),
           suffixIcon: searching
               ? const Padding(
                   padding: EdgeInsets.all(12),
@@ -570,13 +570,13 @@ class _SearchBar extends StatelessWidget {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primaryMain),
+                        strokeWidth: 2, color: AppColors.primaryMain,),
                   ),
                 )
               : controller.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.close_rounded,
-                          size: 18, color: AppColors.textMuted),
+                          size: 18, color: AppColors.textMuted,),
                       onPressed: onClear,
                     )
                   : null,
@@ -597,7 +597,7 @@ class _SearchDropdown extends StatelessWidget {
   final ValueChanged<AddressSuggestion> onTap;
 
   const _SearchDropdown(
-      {required this.results, required this.loading, required this.onTap});
+      {required this.results, required this.loading, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -628,12 +628,12 @@ class _SearchDropdown extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                    horizontal: 14, vertical: 12,),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.location_on_rounded,
-                        color: AppColors.primaryMain, size: 18),
+                        color: AppColors.primaryMain, size: 18,),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -771,7 +771,7 @@ class _BottomPanel extends StatelessWidget {
                 disabledBackgroundColor: AppColors.border,
                 disabledForegroundColor: AppColors.textMuted,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),),
                 elevation: 0,
               ),
             ),
@@ -799,12 +799,12 @@ class _LocationDetectingRow extends StatelessWidget {
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: AppColors.primaryMain),
+                strokeWidth: 2, color: AppColors.primaryMain,),
           ),
           const SizedBox(width: 12),
           Text('Detecting your location…',
               style: AppTypography.body
-                  .copyWith(color: AppColors.primaryMain)),
+                  .copyWith(color: AppColors.primaryMain),),
         ],
       ),
     );
@@ -828,12 +828,12 @@ class _LocationLoadingRow extends StatelessWidget {
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: AppColors.primaryMain),
+                strokeWidth: 2, color: AppColors.primaryMain,),
           ),
           const SizedBox(width: 12),
           Text('Identifying location...',
               style: AppTypography.body
-                  .copyWith(color: AppColors.primaryMain)),
+                  .copyWith(color: AppColors.primaryMain),),
         ],
       ),
     );
@@ -856,13 +856,13 @@ class _LocationResultRow extends StatelessWidget {
         color: AppColors.forest100,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: AppColors.primaryMain.withValues(alpha: 0.25)),
+            color: AppColors.primaryMain.withValues(alpha: 0.25),),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.location_on_rounded,
-              color: AppColors.primaryMain, size: 22),
+              color: AppColors.primaryMain, size: 22,),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -881,19 +881,19 @@ class _LocationResultRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text('PIN: $pin',
                       style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ] else ...[
                   const SizedBox(height: 2),
                   Text('Pincode not available — you\'ll enter it next',
                       style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.amber700)),
+                          color: AppColors.amber700,),),
                 ],
               ],
             ),
           ),
           // Lock icon: these fields will be locked in the form
           const Icon(Icons.lock_outline_rounded,
-              size: 16, color: AppColors.primaryMain),
+              size: 16, color: AppColors.primaryMain,),
         ],
       ),
     );
@@ -916,23 +916,23 @@ class _LocationErrorRow extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.warning_amber_rounded,
-              color: AppColors.amber700, size: 20),
+              color: AppColors.amber700, size: 20,),
           const SizedBox(width: 10),
           Expanded(
             child: Text(error,
                 style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.amber700)),
+                    .copyWith(color: AppColors.amber700),),
           ),
           TextButton(
             onPressed: onRetry,
             style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,),
             child: Text('Retry',
                 style: AppTypography.bodySmall.copyWith(
                     color: AppColors.primaryMain,
-                    fontWeight: FontWeight.w700)),
+                    fontWeight: FontWeight.w700,),),
           ),
         ],
       ),
@@ -955,11 +955,11 @@ class _LocationEmptyRow extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.touch_app_rounded,
-              color: AppColors.textMuted, size: 20),
+              color: AppColors.textMuted, size: 20,),
           const SizedBox(width: 10),
           Text('Drag the map to pin your location',
               style: AppTypography.body
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.textSecondary),),
         ],
       ),
     );
@@ -974,7 +974,7 @@ class _MapIconButton extends StatelessWidget {
   final String? tooltip;
 
   const _MapIconButton(
-      {required this.icon, required this.onTap, this.tooltip});
+      {required this.icon, required this.onTap, this.tooltip,});
 
   @override
   Widget build(BuildContext context) {

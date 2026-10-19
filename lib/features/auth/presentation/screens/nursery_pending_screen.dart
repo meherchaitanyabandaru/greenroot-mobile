@@ -139,7 +139,7 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -149,7 +149,7 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.calendar_today_outlined,
-                          size: 14, color: AppColors.textMuted),
+                          size: 14, color: AppColors.textMuted,),
                       const SizedBox(width: 6),
                       Text(
                         'Submitted on ${_formatDate(_submittedAt!)}',
@@ -173,7 +173,7 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
                     : 'Your nursery details have been received.',
               ),
               const SizedBox(height: AppSpacing.md),
-              _StatusStep(
+              const _StatusStep(
                 icon: Icons.pending_rounded,
                 iconColor: AppColors.amber600,
                 title: 'Under Review',
@@ -181,7 +181,7 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
                 isActive: true,
               ),
               const SizedBox(height: AppSpacing.md),
-              _StatusStep(
+              const _StatusStep(
                 icon: Icons.circle_outlined,
                 iconColor: AppColors.textMuted,
                 title: 'Approval Decision',

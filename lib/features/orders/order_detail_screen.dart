@@ -21,7 +21,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/testing/test_keys.dart';
-import '../../core/domain/workflow.dart';
 import '../../core/widgets/qr_share_sheet.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -66,13 +65,13 @@ class OrderDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.textMuted),
+                  size: 48, color: AppColors.textMuted,),
               const SizedBox(height: AppSpacing.md),
               Text(err.toString(), style: AppTypography.body),
               TextButton(
@@ -93,7 +92,7 @@ class OrderDetailScreen extends ConsumerWidget {
                   title: order.orderNumber,
                   subtitle: order.buyerName ?? order.sellerNursery ?? '',
                   viewedAt: DateTime.now(),
-                ));
+                ),);
           });
           return _OrderDetailBody(
             order: order,
@@ -305,11 +304,11 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   Future<void> _confirm() async {
     if (!_hasDeliveryAddress) {
       _snack('Add a delivery address before confirming this order.',
-          AppColors.amber700);
+          AppColors.amber700,);
       return;
     }
     await _doAction(
-        () => ref.read(orderRepositoryProvider).confirmOrder(widget.orderId));
+        () => ref.read(orderRepositoryProvider).confirmOrder(widget.orderId),);
     if (mounted) _snack('Order confirmed', AppColors.primaryMain);
   }
 
@@ -325,20 +324,20 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
 
   Future<void> _startLoading() async {
     await _doAction(
-        () => ref.read(orderRepositoryProvider).startLoading(widget.orderId));
+        () => ref.read(orderRepositoryProvider).startLoading(widget.orderId),);
     if (mounted) _snack('Loading started', AppColors.blue600);
   }
 
   Future<void> _completeLoading() async {
     await _doAction(() =>
-        ref.read(orderRepositoryProvider).completeLoading(widget.orderId));
+        ref.read(orderRepositoryProvider).completeLoading(widget.orderId),);
     if (mounted) _snack('Loading completed', AppColors.primaryMain);
   }
 
   Future<void> _markCompleted() async {
     await _doAction(() => ref
         .read(orderRepositoryProvider)
-        .updateStatus(widget.orderId, 'COMPLETED'));
+        .updateStatus(widget.orderId, 'COMPLETED'),);
     if (mounted) _snack('Order marked as completed', AppColors.primaryMain);
   }
 
@@ -414,7 +413,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     if (selected == null || !mounted) return;
     await _doAction(() => ref
         .read(orderRepositoryProvider)
-        .assignManager(widget.orderId, selected.userId));
+        .assignManager(widget.orderId, selected.userId),);
     if (mounted) _snack('${selected.name} assigned', AppColors.primaryMain);
   }
 
@@ -434,11 +433,11 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Back')),
+                child: const Text('Back'),),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Cancel Order',
-                  style: TextStyle(color: AppColors.red600)),
+                  style: TextStyle(color: AppColors.red600),),
             ),
           ],
         );
@@ -447,7 +446,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     if (confirmed != true) return;
     await _doAction(() => ref
         .read(orderRepositoryProvider)
-        .cancelOrder(widget.orderId, reason: reason));
+        .cancelOrder(widget.orderId, reason: reason),);
     if (mounted) _snack('Order cancelled', AppColors.red600);
   }
 
@@ -525,7 +524,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
               onTap: _busy ? null : () => _viewDispatch(existingDispatch),
             );
           } else if (isCheckingDispatches) {
-            primaryBtn = _BigButton(
+            primaryBtn = const _BigButton(
               label: 'Checking Dispatch',
               icon: Icons.sync_rounded,
               color: AppColors.textSecondary,
@@ -565,7 +564,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           style: TextButton.styleFrom(
             foregroundColor: AppColors.textSecondary,
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                horizontal: AppSpacing.sm, vertical: AppSpacing.xs,),
           ),
         );
       }
@@ -624,7 +623,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
                     // Status badge pill
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                          horizontal: 12, vertical: 6,),
                       decoration: BoxDecoration(
                         color: cfg.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
@@ -701,7 +700,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
                         height: 28,
                         width: 28,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: AppColors.primaryMain),
+                            strokeWidth: 2.5, color: AppColors.primaryMain,),
                       ),
                     )
                   else
@@ -795,7 +794,7 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Download failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -831,7 +830,7 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('WhatsApp share failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -859,7 +858,7 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Share failed: $e'),
-              backgroundColor: AppColors.red600),
+              backgroundColor: AppColors.red600,),
         );
       }
     } finally {
@@ -923,7 +922,7 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
           child: const Icon(Icons.ios_share_rounded, size: 22),
         ),
       ),
-    ]);
+    ],);
   }
 }
 
@@ -955,7 +954,7 @@ class _BigButton extends StatelessWidget {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.sm)),
+              borderRadius: BorderRadius.circular(AppSpacing.sm),),
           elevation: 0,
           textStyle: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
         ),
@@ -982,7 +981,7 @@ class _OutlineButton extends StatelessWidget {
           side: BorderSide(color: color),
           minimumSize: const Size(double.infinity, AppSpacing.buttonHeightSm),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.sm)),
+              borderRadius: BorderRadius.circular(AppSpacing.sm),),
           textStyle: AppTypography.label,
         ),
         child: Text(label),
@@ -1036,12 +1035,12 @@ class _BuyerDeliverySection extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Your Delivery', style: AppTypography.h4),
+                const Text('Your Delivery', style: AppTypography.h4),
                 const SizedBox(height: AppSpacing.md),
                 ...dispatches.map((d) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: _BuyerDeliveryCard(dispatch: d),
-                    )),
+                    ),),
               ],
             );
           },
@@ -1110,7 +1109,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(display.label,
-                          style: AppTypography.h4.copyWith(color: statusColor)),
+                          style: AppTypography.h4.copyWith(color: statusColor),),
                       if (isOnWay)
                         Text(
                           'Your order is on its way to you',
@@ -1141,11 +1140,11 @@ class _BuyerDeliveryCard extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md),
+                  horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md,),
               child: Row(
                 children: [
                   const Icon(Icons.person_outline_rounded,
-                      size: 18, color: AppColors.textMuted),
+                      size: 18, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
@@ -1156,7 +1155,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
                         if (d.vehicleNumber?.isNotEmpty == true)
                           Text(d.vehicleNumber!,
                               style: AppTypography.caption
-                                  .copyWith(color: AppColors.textSecondary)),
+                                  .copyWith(color: AppColors.textSecondary),),
                       ],
                     ),
                   ),
@@ -1166,7 +1165,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
                       onTap: () => _call(d.driverMobile!),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                            horizontal: 14, vertical: 8,),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight,
                           borderRadius: BorderRadius.circular(20),
@@ -1174,12 +1173,12 @@ class _BuyerDeliveryCard extends StatelessWidget {
                         child: Row(
                           children: [
                             const Icon(Icons.phone_rounded,
-                                size: 15, color: AppColors.primaryMain),
+                                size: 15, color: AppColors.primaryMain,),
                             const SizedBox(width: 5),
                             Text('Call Driver',
                                 style: AppTypography.caption.copyWith(
                                     color: AppColors.primaryMain,
-                                    fontWeight: FontWeight.w700)),
+                                    fontWeight: FontWeight.w700,),),
                           ],
                         ),
                       ),
@@ -1198,7 +1197,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: AppColors.forest100,
                 borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(AppRadius.xl)),
+                    bottom: Radius.circular(AppRadius.xl),),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1210,7 +1209,7 @@ class _BuyerDeliveryCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_forward_rounded,
-                      size: 16, color: AppColors.primaryMain),
+                      size: 16, color: AppColors.primaryMain,),
                 ],
               ),
             ),
@@ -1236,12 +1235,12 @@ class _SellerDispatchSection extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Dispatches', style: AppTypography.h4),
+                const Text('Dispatches', style: AppTypography.h4),
                 const SizedBox(height: AppSpacing.md),
                 ...dispatches.map((d) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: _SellerDispatchRow(dispatch: d),
-                    )),
+                    ),),
                 const SizedBox(height: AppSpacing.md),
               ],
             );
@@ -1300,9 +1299,9 @@ class _SellerDispatchRow extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                  color: chipBg, borderRadius: BorderRadius.circular(10)),
+                  color: chipBg, borderRadius: BorderRadius.circular(10),),
               child: Icon(Icons.local_shipping_rounded,
-                  color: chipColor, size: 20),
+                  color: chipColor, size: 20,),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -1313,11 +1312,11 @@ class _SellerDispatchRow extends StatelessWidget {
                   if (d.driverName?.isNotEmpty == true)
                     Text(d.driverName!,
                         style: AppTypography.caption
-                            .copyWith(color: AppColors.textSecondary)),
+                            .copyWith(color: AppColors.textSecondary),),
                   if (d.vehicleNumber?.isNotEmpty == true)
                     Text(d.vehicleNumber!,
                         style: AppTypography.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: AppColors.textMuted),),
                 ],
               ),
             ),
@@ -1333,7 +1332,7 @@ class _SellerDispatchRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.phone_rounded,
-                      size: 16, color: AppColors.primaryMain),
+                      size: 16, color: AppColors.primaryMain,),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -1341,7 +1340,7 @@ class _SellerDispatchRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                  color: chipBg, borderRadius: BorderRadius.circular(20)),
+                  color: chipBg, borderRadius: BorderRadius.circular(20),),
               child: Text(
                 display.label,
                 style: AppTypography.caption
@@ -1376,7 +1375,7 @@ class _CollapsibleInfoCardState extends State<_CollapsibleInfoCard>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
+        vsync: this, duration: const Duration(milliseconds: 200),);
     _turn = Tween(begin: 0.0, end: 0.5)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
@@ -1418,25 +1417,25 @@ class _CollapsibleInfoCardState extends State<_CollapsibleInfoCard>
             borderRadius: AppRadius.cardRadius,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md),
+                  horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md,),
               child: Row(
                 children: [
                   Container(
                     width: 36,
                     height: 36,
                     decoration: const BoxDecoration(
-                        color: AppColors.forest100, shape: BoxShape.circle),
+                        color: AppColors.forest100, shape: BoxShape.circle,),
                     child: const Icon(Icons.info_outline_rounded,
-                        size: 17, color: AppColors.primaryMain),
+                        size: 17, color: AppColors.primaryMain,),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Expanded(
+                  const Expanded(
                     child: Text('Order Details', style: AppTypography.label),
                   ),
                   RotationTransition(
                     turns: _turn,
                     child: const Icon(Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.textMuted, size: 20),
+                        color: AppColors.textMuted, size: 20,),
                   ),
                 ],
               ),
@@ -1449,30 +1448,30 @@ class _CollapsibleInfoCardState extends State<_CollapsibleInfoCard>
             _InfoRow(
                 icon: Icons.person_outline_rounded,
                 label: 'Buyer',
-                value: buyerLabel),
+                value: buyerLabel,),
             if (o.sellerNursery != null) ...[
               const Divider(height: 1, indent: 56),
               _InfoRow(
                   icon: Icons.store_outlined,
                   label: 'Seller',
-                  value: o.sellerNursery!),
+                  value: o.sellerNursery!,),
             ],
             const Divider(height: 1, indent: 56),
             _InfoRow(
                 icon: Icons.manage_accounts_outlined,
                 label: 'Responsible',
-                value: responsibleLabel),
+                value: responsibleLabel,),
             if (dateStr.isNotEmpty) ...[
               const Divider(height: 1, indent: 56),
               _InfoRow(
                   icon: Icons.calendar_today_outlined,
                   label: 'Order Date',
-                  value: dateStr),
+                  value: dateStr,),
             ],
             if (o.notes?.isNotEmpty == true) ...[
               const Divider(height: 1, indent: 56),
               _InfoRow(
-                  icon: Icons.notes_outlined, label: 'Notes', value: o.notes!),
+                  icon: Icons.notes_outlined, label: 'Notes', value: o.notes!,),
             ],
             if (o.cancelReason?.isNotEmpty == true) ...[
               const Divider(height: 1, indent: 56),
@@ -1480,7 +1479,7 @@ class _CollapsibleInfoCardState extends State<_CollapsibleInfoCard>
                   icon: Icons.cancel_outlined,
                   label: 'Cancel Reason',
                   value: o.cancelReason!,
-                  valueColor: AppColors.red600),
+                  valueColor: AppColors.red600,),
             ],
           ],
         ],
@@ -1506,7 +1505,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          horizontal: AppSpacing.md, vertical: AppSpacing.md,),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1514,7 +1513,7 @@ class _InfoRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: const BoxDecoration(
-                color: AppColors.forest100, shape: BoxShape.circle),
+                color: AppColors.forest100, shape: BoxShape.circle,),
             child: Icon(icon, size: 17, color: AppColors.primaryMain),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -1524,10 +1523,10 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary)),
+                        .copyWith(color: AppColors.textSecondary),),
                 Text(value,
                     style: AppTypography.body
-                        .copyWith(color: valueColor ?? AppColors.textPrimary)),
+                        .copyWith(color: valueColor ?? AppColors.textPrimary),),
               ],
             ),
           ),
@@ -1542,7 +1541,7 @@ class _InfoRow extends StatelessWidget {
 // action, so both actually open the form instead of one of them silently
 // re-running an action that's guaranteed to fail without an address.
 Future<void> _openAndSaveDeliverySheet(
-    BuildContext context, WidgetRef ref, Order order) async {
+    BuildContext context, WidgetRef ref, Order order,) async {
   final profile = ref.read(sessionProvider).user;
   final profileName = profile?.name?.trim();
   final profileMobile = profile?.mobile?.trim();
@@ -1568,7 +1567,7 @@ Future<void> _openAndSaveDeliverySheet(
         SnackBar(
           content: Text(result.emergencyUpdate
               ? 'Emergency delivery update sent to driver.'
-              : 'Delivery address updated.'),
+              : 'Delivery address updated.',),
           backgroundColor: AppColors.primaryMain,
         ),
       );
@@ -1583,7 +1582,7 @@ Future<void> _openAndSaveDeliverySheet(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(e.toString()), backgroundColor: AppColors.red600),
+            content: Text(e.toString()), backgroundColor: AppColors.red600,),
       );
     }
   }
@@ -1642,13 +1641,13 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
                 width: 36,
                 height: 36,
                 decoration: const BoxDecoration(
-                    color: AppColors.forest100, shape: BoxShape.circle),
+                    color: AppColors.forest100, shape: BoxShape.circle,),
                 child: const Icon(Icons.location_on_outlined,
-                    size: 18, color: AppColors.primaryMain),
+                    size: 18, color: AppColors.primaryMain,),
               ),
               const SizedBox(width: AppSpacing.md),
-              Expanded(
-                  child: Text('Delivery Snapshot', style: AppTypography.h4)),
+              const Expanded(
+                  child: Text('Delivery Snapshot', style: AppTypography.h4),),
               if (widget.canManage)
                 TextButton.icon(
                   onPressed: _busy ? null : _edit,
@@ -1865,7 +1864,7 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit Delivery Address', style: AppTypography.h3),
+            const Text('Edit Delivery Address', style: AppTypography.h3),
             const SizedBox(height: AppSpacing.md),
             _DeliveryContactToggle(
               value: _useProfileContact,
@@ -1894,11 +1893,11 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
               ),
               label: Text(_mapResult != null
                   ? 'Location pinned - City, state & PIN filled'
-                  : 'Pick on map'),
+                  : 'Pick on map',),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius,),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1909,16 +1908,16 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
                 Expanded(child: _SheetField(controller: _city, label: 'City')),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                    child: _SheetField(controller: _state, label: 'State')),
+                    child: _SheetField(controller: _state, label: 'State'),),
               ],
             ),
             Row(
               children: [
                 Expanded(
-                    child: _SheetField(controller: _postal, label: 'PIN code')),
+                    child: _SheetField(controller: _postal, label: 'PIN code'),),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                    child: _SheetField(controller: _country, label: 'Country')),
+                    child: _SheetField(controller: _country, label: 'Country'),),
               ],
             ),
             _SheetField(controller: _landmark, label: 'Landmark'),
@@ -1945,8 +1944,8 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.buttonRadius),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.buttonRadius,),
                 ),
                 child: const Text('Save Delivery Address'),
               ),
@@ -2050,7 +2049,7 @@ class _SheetField extends StatelessWidget {
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: AppRadius.inputRadius),
+          border: const OutlineInputBorder(borderRadius: AppRadius.inputRadius),
         ),
       ),
     );
@@ -2070,7 +2069,7 @@ class _RateOrderCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.primaryMid.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primaryMid.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2078,11 +2077,11 @@ class _RateOrderCard extends ConsumerWidget {
           Row(
             children: [
               const Icon(Icons.star_rounded,
-                  color: AppColors.amber500, size: 20),
+                  color: AppColors.amber500, size: 20,),
               const SizedBox(width: AppSpacing.xs),
               Text('Rate your experience',
                   style:
-                      AppTypography.label.copyWith(color: AppColors.forest800)),
+                      AppTypography.label.copyWith(color: AppColors.forest800),),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -2097,7 +2096,7 @@ class _RateOrderCard extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => context.push(
-                      '/ratings/order/${order.id}?code=${order.orderNumber}'),
+                      '/ratings/order/${order.id}?code=${order.orderNumber}',),
                   icon: const Icon(Icons.inventory_2_outlined, size: 16),
                   label: const Text('Rate Order'),
                 ),
@@ -2117,7 +2116,7 @@ class _ItemsCard extends ConsumerStatefulWidget {
   final NumberFormat fmt;
   final bool canManage;
   const _ItemsCard(
-      {required this.order, required this.fmt, required this.canManage});
+      {required this.order, required this.fmt, required this.canManage,});
 
   @override
   ConsumerState<_ItemsCard> createState() => _ItemsCardState();
@@ -2139,11 +2138,11 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               child:
-                  Text('Remove', style: TextStyle(color: AppColors.errorText))),
+                  const Text('Remove', style: TextStyle(color: AppColors.errorText)),),
         ],
       ),
     );
@@ -2157,7 +2156,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.errorText),
+            content: Text(e.message), backgroundColor: AppColors.errorText,),
       );
     }
   }
@@ -2167,7 +2166,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),),
       builder: (_) => _ItemEditSheet(
         orderId: widget.order.id,
         existing: existing,
@@ -2199,7 +2198,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                   ),
                   child: Text('Editable',
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.amber700)),
+                          .copyWith(color: AppColors.amber700),),
                 ),
               ),
           ],
@@ -2252,11 +2251,11 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(item.displayName,
-                                      style: AppTypography.body),
+                                      style: AppTypography.body,),
                                   if (item.sizeName != null)
                                     Text(item.sizeName!,
                                         style: AppTypography.caption.copyWith(
-                                            color: AppColors.textSecondary)),
+                                            color: AppColors.textSecondary,),),
                                 ],
                               ),
                             ),
@@ -2264,10 +2263,10 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(widget.fmt.format(item.totalPrice),
-                                    style: AppTypography.label),
+                                    style: AppTypography.label,),
                                 Text('Qty: ${item.quantity.toInt()}',
                                     style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary)),
+                                        color: AppColors.textSecondary,),),
                               ],
                             ),
                             if (_editable) ...[
@@ -2313,7 +2312,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                             : 'Show ${items.length - 3} more items',
                         style: AppTypography.caption.copyWith(
                             color: AppColors.primaryMain,
-                            fontWeight: FontWeight.w600),
+                            fontWeight: FontWeight.w600,),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -2345,7 +2344,7 @@ class _ItemEditSheet extends ConsumerStatefulWidget {
   final VoidCallback onSaved;
 
   const _ItemEditSheet(
-      {required this.orderId, this.existing, required this.onSaved});
+      {required this.orderId, this.existing, required this.onSaved,});
 
   @override
   ConsumerState<_ItemEditSheet> createState() => _ItemEditSheetState();
@@ -2383,7 +2382,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),),
       builder: (_) => const _PlantSearchSheet(),
     );
     if (result != null) setState(() => _plant = result);
@@ -2428,7 +2427,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(e.message), backgroundColor: AppColors.errorText),
+            content: Text(e.message), backgroundColor: AppColors.errorText,),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -2451,7 +2450,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding, 12, AppSpacing.screenPadding, 24),
+            AppSpacing.screenPadding, 12, AppSpacing.screenPadding, 24,),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2462,7 +2461,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2)),
+                    borderRadius: BorderRadius.circular(2),),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -2536,7 +2535,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white,),)
                     : Text(isEdit ? 'Save Changes' : 'Add Item'),
               ),
             ),
@@ -2602,7 +2601,7 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
               height: 4,
               decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2))),
+                  borderRadius: BorderRadius.circular(2),),),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2623,12 +2622,12 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
             child: _loading
                 ? const Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain))
+                        CircularProgressIndicator(color: AppColors.primaryMain),)
                 : _results.isEmpty
                     ? Center(
                         child: Text('No plants found',
                             style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary)))
+                                .copyWith(color: AppColors.textSecondary),),)
                     : ListView.separated(
                         controller: controller,
                         itemCount: _results.length,
@@ -2640,7 +2639,7 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
                             subtitle: p.commonName != null &&
                                     p.commonName != p.scientificName
                                 ? Text(p.scientificName,
-                                    style: AppTypography.caption)
+                                    style: AppTypography.caption,)
                                 : null,
                             onTap: () => Navigator.pop(context, p),
                           );
@@ -2667,7 +2666,7 @@ class _AssignManagerSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-          AppSpacing.lg, AppSpacing.screenPadding, AppSpacing.x3l),
+          AppSpacing.lg, AppSpacing.screenPadding, AppSpacing.x3l,),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2678,7 +2677,7 @@ class _AssignManagerSheet extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2)),
+                  borderRadius: BorderRadius.circular(2),),
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -2693,14 +2692,14 @@ class _AssignManagerSheet extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.forest100,
                 borderRadius: AppRadius.cardRadius,
               ),
               child: Column(
                 children: [
                   const Icon(Icons.person_search_rounded,
-                      size: 40, color: AppColors.primaryMain),
+                      size: 40, color: AppColors.primaryMain,),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'No managers found for this nursery.\nInvite a manager from Connections.',
@@ -2749,12 +2748,12 @@ class _AssignManagerSheet extends StatelessWidget {
                               Text(m.name, style: AppTypography.label),
                               Text(m.identityLabel,
                                   style: AppTypography.caption.copyWith(
-                                      color: AppColors.textSecondary)),
+                                      color: AppColors.textSecondary,),),
                             ],
                           ),
                         ),
                         const Icon(Icons.chevron_right_rounded,
-                            color: AppColors.textMuted),
+                            color: AppColors.textMuted,),
                       ],
                     ),
                   ),
@@ -2820,7 +2819,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
               height: 4,
               decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2)),
+                  borderRadius: BorderRadius.circular(2),),
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -2865,8 +2864,8 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonRadius,),
                 elevation: 0,
               ),
             ),

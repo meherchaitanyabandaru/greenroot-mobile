@@ -262,18 +262,18 @@ class _BuyerPaymentsScreenState extends ConsumerState<BuyerPaymentsScreen> {
       body: _loading
           ? const Center(
               child:
-                  CircularProgressIndicator(color: AppColors.primaryMain))
+                  CircularProgressIndicator(color: AppColors.primaryMain),)
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(_error!, style: AppTypography.body),
                       TextButton(
-                          onPressed: _load, child: const Text('Retry')),
+                          onPressed: _load, child: const Text('Retry'),),
                     ],
                   ),
                 )
@@ -290,16 +290,16 @@ class _BuyerPaymentsScreenState extends ConsumerState<BuyerPaymentsScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Icon(Icons.payments_outlined,
-                                size: 36, color: AppColors.primaryMain),
+                                size: 36, color: AppColors.primaryMain,),
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           const Text('No Payments Yet',
-                              style: AppTypography.h3),
+                              style: AppTypography.h3,),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
                             'Your payment history will appear here\nonce orders are paid.',
                             style: AppTypography.body.copyWith(
-                                color: AppColors.textSecondary),
+                                color: AppColors.textSecondary,),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -314,7 +314,7 @@ class _BuyerPaymentsScreenState extends ConsumerState<BuyerPaymentsScreen> {
                             AppSpacing.screenPadding,
                             AppSpacing.md,
                             AppSpacing.screenPadding,
-                            AppSpacing.x3l),
+                            AppSpacing.x3l,),
                         itemCount:
                             _payments.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, i) {
@@ -328,7 +328,7 @@ class _BuyerPaymentsScreenState extends ConsumerState<BuyerPaymentsScreen> {
                                   height: 24,
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: AppColors.primaryMain),
+                                      color: AppColors.primaryMain,),
                                 ),
                               ),
                             );
@@ -407,7 +407,7 @@ class _PaymentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.payments_outlined,
-                  color: _statusColor, size: 20),
+                  color: _statusColor, size: 20,),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -418,11 +418,11 @@ class _PaymentCard extends StatelessWidget {
                     Expanded(
                       child: Text(payment.paymentCode,
                           style: AppTypography.bodySmall
-                              .copyWith(fontWeight: FontWeight.w700)),
+                              .copyWith(fontWeight: FontWeight.w700),),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
+                          horizontal: 7, vertical: 3,),
                       decoration: BoxDecoration(
                         color: _statusBg,
                         borderRadius: BorderRadius.circular(5),
@@ -432,23 +432,23 @@ class _PaymentCard extends StatelessWidget {
                         style: AppTypography.caption.copyWith(
                             color: _statusColor,
                             fontWeight: FontWeight.w700,
-                            fontSize: 10),
+                            fontSize: 10,),
                       ),
                     ),
-                  ]),
+                  ],),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text(fmt.format(payment.amount),
                         style: AppTypography.body.copyWith(
                             color: AppColors.primaryMain,
-                            fontWeight: FontWeight.w700)),
+                            fontWeight: FontWeight.w700,),),
                     if (payment.orderNumber != null) ...[
                       const SizedBox(width: 8),
                       Text('· ${payment.orderNumber}',
                           style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted)),
+                              .copyWith(color: AppColors.textMuted),),
                     ],
-                  ]),
+                  ],),
                   if (payment.paymentMethod?.isNotEmpty == true) ...[
                     const SizedBox(height: 2),
                     Text(
@@ -458,7 +458,7 @@ class _PaymentCard extends StatelessWidget {
                           .split(' ')
                           .map((w) => w.isEmpty
                               ? w
-                              : '${w[0].toUpperCase()}${w.substring(1)}')
+                              : '${w[0].toUpperCase()}${w.substring(1)}',)
                           .join(' '),
                       style: AppTypography.caption
                           .copyWith(color: AppColors.textSecondary),
@@ -468,7 +468,7 @@ class _PaymentCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(dateStr,
                         style: AppTypography.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: AppColors.textMuted),),
                   ],
                 ],
               ),

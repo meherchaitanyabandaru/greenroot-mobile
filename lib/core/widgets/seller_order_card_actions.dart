@@ -159,7 +159,7 @@ class _SellerOrderCardActionsState
                           minimumSize:
                               const Size.fromHeight(AppSpacing.buttonHeightSm),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8),),
                         ),
                         child: const Text('Cancel'),
                       ),
@@ -177,7 +177,7 @@ class _SellerOrderCardActionsState
                               const Size.fromHeight(AppSpacing.buttonHeightSm),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8),),
                         ),
                         child: const Text('Confirm'),
                       ),
@@ -195,7 +195,7 @@ class _SellerOrderCardActionsState
                               const Size.fromHeight(AppSpacing.buttonHeightSm),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8),),
                         ),
                       ),
                     ),

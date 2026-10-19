@@ -30,7 +30,7 @@ class NominatimGeocodingService implements GeocodingService {
         'Accept-Language': 'en',
         'Accept': 'application/json',
       },
-    ));
+    ),);
   }
 
   // ── Forward geocode ─────────────────────────────────────────────────────────

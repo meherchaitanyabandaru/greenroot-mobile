@@ -67,7 +67,7 @@ class NotificationRepository {
         final d = data as Map<String, dynamic>;
         final items = (d['notifications'] as List<dynamic>)
             .map((e) =>
-                AppNotification.fromJson(e as Map<String, dynamic>))
+                AppNotification.fromJson(e as Map<String, dynamic>),)
             .toList();
         final pagination =
             ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
@@ -150,7 +150,7 @@ class NotificationListNotifier
       );
     } on AppError catch (e) {
       state = state.copyWith(
-          paged: state.paged.copyWith(isLoading: false, error: e));
+          paged: state.paged.copyWith(isLoading: false, error: e),);
     }
   }
 
@@ -192,7 +192,7 @@ class NotificationListNotifier
                   readAt: DateTime.now().toIso8601String(),
                   createdAt: n.createdAt,
                 )
-              : n)
+              : n,)
           .toList();
       final unreadCount = updatedItems.where((n) => n.isUnread).length;
       state = state.copyWith(
@@ -216,7 +216,7 @@ class NotificationListNotifier
                 status: 'read',
                 readAt: DateTime.now().toIso8601String(),
                 createdAt: n.createdAt,
-              ))
+              ),)
           .toList();
       state = state.copyWith(
         unreadCount: 0,

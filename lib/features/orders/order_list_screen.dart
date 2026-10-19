@@ -31,7 +31,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => ref
         .read(orderListProvider.notifier)
-        .load(nurseryId: widget.nurseryId, statusFilter: widget.statusFilter));
+        .load(nurseryId: widget.nurseryId, statusFilter: widget.statusFilter),);
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >=
           _scrollCtrl.position.maxScrollExtent - 200) {
@@ -73,17 +73,17 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                 if (created == true && mounted) {
                   ref.read(orderListProvider.notifier).load(
                       nurseryId: widget.nurseryId,
-                      statusFilter: widget.statusFilter);
+                      statusFilter: widget.statusFilter,);
                 }
               },
               backgroundColor: AppColors.primaryMain,
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
                 createLabel,
-                style: TextStyle(
+                style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter'),
+                    fontFamily: 'Inter',),
               ),
             )
           : null,
@@ -132,7 +132,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
               const SliverFillRemaining(
                 child: Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.primaryMain)),
+                        color: AppColors.primaryMain,),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -141,7 +141,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(paged.error!.message, style: AppTypography.body),
                       TextButton(
@@ -169,7 +169,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                           if (created == true && mounted) {
                             ref.read(orderListProvider.notifier).load(
                                 nurseryId: widget.nurseryId,
-                                statusFilter: widget.statusFilter);
+                                statusFilter: widget.statusFilter,);
                           }
                         }
                       : null,
@@ -178,7 +178,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
@@ -201,10 +201,11 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                           child: InkWell(
                             onTap: () async {
                               await context.push('/orders/${order.id}');
-                              if (mounted)
+                              if (mounted) {
                                 ref.read(orderListProvider.notifier).load(
                                     nurseryId: widget.nurseryId,
-                                    statusFilter: widget.statusFilter);
+                                    statusFilter: widget.statusFilter,);
+                              }
                             },
                             borderRadius: AppRadius.cardRadius,
                             child: Container(
@@ -221,7 +222,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                                     children: [
                                       Expanded(
                                         child: Text(order.orderNumber,
-                                            style: AppTypography.h4),
+                                            style: AppTypography.h4,),
                                       ),
                                       StatusBadge(
                                         label: display.label,
@@ -234,14 +235,14 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                                   if (order.sellerNursery != null)
                                     Text(order.sellerNursery!,
                                         style: AppTypography.bodySmall.copyWith(
-                                            color: AppColors.textSecondary)),
+                                            color: AppColors.textSecondary,),),
                                   const SizedBox(height: AppSpacing.sm),
                                   Row(
                                     children: [
                                       Text(
                                         fmt.format(order.totalAmount),
                                         style: AppTypography.h4.copyWith(
-                                            color: AppColors.primaryMain),
+                                            color: AppColors.primaryMain,),
                                       ),
                                       const Spacer(),
                                       if (dateStr.isNotEmpty)
@@ -249,7 +250,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                                             style: AppTypography.caption
                                                 .copyWith(
                                                     color:
-                                                        AppColors.textMuted)),
+                                                        AppColors.textMuted,),),
                                     ],
                                   ),
                                 ],
@@ -269,7 +270,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.primaryMain)),
+                            color: AppColors.primaryMain,),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x3l)),
@@ -287,7 +288,7 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   const _FilterChip(
-      {required this.label, required this.selected, required this.onTap});
+      {required this.label, required this.selected, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -296,11 +297,11 @@ class _FilterChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryMain : AppColors.surface,
           border: Border.all(
-              color: selected ? AppColors.primaryMain : AppColors.border),
+              color: selected ? AppColors.primaryMain : AppColors.border,),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(

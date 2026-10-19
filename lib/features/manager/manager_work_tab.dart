@@ -219,7 +219,7 @@ class _MgrOrdersTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain));
+          child: CircularProgressIndicator(color: AppColors.primaryMain),);
     }
     if (paged.error != null && paged.items.isEmpty) {
       return ErrorState(
@@ -239,7 +239,7 @@ class _MgrOrdersTab extends ConsumerWidget {
       onRefresh: () => ref.read(_mgrOrderProvider.notifier).load(),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg),
+            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.lg,),
         itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, i) {
@@ -281,7 +281,7 @@ class _MgrOrderCard extends ConsumerWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2))
+                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2),),
           ],
         ),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -293,7 +293,7 @@ class _MgrOrderCard extends ConsumerWidget {
                 Expanded(
                     child: Text(o.orderNumber,
                         style: AppTypography.h4,
-                        overflow: TextOverflow.ellipsis)),
+                        overflow: TextOverflow.ellipsis,),),
                 TradeStatusChip(status: o.status, kind: TradeChipKind.order),
               ],
             ),
@@ -302,13 +302,13 @@ class _MgrOrderCard extends ConsumerWidget {
               Row(
                 children: [
                   const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary,),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(o.buyerName!,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
-                        overflow: TextOverflow.ellipsis),
+                        overflow: TextOverflow.ellipsis,),
                   ),
                 ],
               ),
@@ -318,26 +318,26 @@ class _MgrOrderCard extends ConsumerWidget {
               children: [
                 if (o.items.isNotEmpty) ...[
                   const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                       '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                   const SizedBox(width: AppSpacing.lg),
                 ],
                 if (date != null) ...[
                   const Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(dateFmt.format(date),
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
                 const Spacer(),
                 Text(fmt.format(o.totalAmount),
                     style: AppTypography.h3
-                        .copyWith(color: AppColors.primaryMain)),
+                        .copyWith(color: AppColors.primaryMain),),
               ],
             ),
             SellerOrderCardActions(
@@ -396,7 +396,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.red600)),
           ),
         ],
       ),
@@ -428,7 +428,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
 
     if (paged.isLoading && paged.items.isEmpty) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain));
+          child: CircularProgressIndicator(color: AppColors.primaryMain),);
     }
     if (paged.error != null && paged.items.isEmpty) {
       return ErrorState(
@@ -464,7 +464,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                 hintStyle: AppTypography.bodySmall
                     .copyWith(color: AppColors.textMuted),
                 prefixIcon: const Icon(Icons.search,
-                    size: 18, color: AppColors.textMuted),
+                    size: 18, color: AppColors.textMuted,),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, size: 16),
@@ -560,7 +560,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                           AppSpacing.screenPadding,
                           AppSpacing.sm,
                           AppSpacing.screenPadding,
-                          100),
+                          100,),
                       itemCount: paged.items.length + (paged.hasMore ? 1 : 0),
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppSpacing.md),
@@ -589,11 +589,11 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.delete_outline,
-                                    color: Colors.white, size: 22),
+                                    color: Colors.white, size: 22,),
                                 SizedBox(height: 2),
                                 Text('Delete',
                                     style: TextStyle(
-                                        color: Colors.white, fontSize: 11)),
+                                        color: Colors.white, fontSize: 11,),),
                               ],
                             ),
                           ),
@@ -603,7 +603,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Delete Quotation'),
                                 content: Text(
-                                    'Delete ${q.quotationCode}? This cannot be undone.'),
+                                    'Delete ${q.quotationCode}? This cannot be undone.',),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
@@ -611,9 +611,9 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: Text('Delete',
+                                    child: const Text('Delete',
                                         style:
-                                            TextStyle(color: AppColors.red600)),
+                                            TextStyle(color: AppColors.red600),),
                                   ),
                                 ],
                               ),
@@ -654,8 +654,9 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
           .read(quotationRepositoryProvider)
           .approveQuotation(widget.quotation.id);
       ref.read(_mgrQuotationProvider.notifier).updateItem(updated);
-      if (mounted)
+      if (mounted) {
         _snack('Quotation approved & sent to buyer', AppColors.primaryMain);
+      }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
     } finally {
@@ -684,7 +685,7 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
               backgroundColor: AppColors.primaryMain,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),),
             ),
             child: const Text('Convert'),
           ),
@@ -700,8 +701,9 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
       ref.read(_mgrQuotationProvider.notifier).load();
       if (mounted) {
         _snack('Order created successfully', AppColors.primaryMain);
-        if (q.convertedOrderId != null)
+        if (q.convertedOrderId != null) {
           context.push('/orders/${q.convertedOrderId}');
+        }
       }
     } on AppError catch (e) {
       if (mounted) _snack(e.message, AppColors.red600);
@@ -726,8 +728,9 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
     return GestureDetector(
       onTap: () async {
         final changed = await context.push<bool>('/quotations/${q.id}');
-        if (changed == true && mounted)
+        if (changed == true && mounted) {
           ref.read(_mgrQuotationProvider.notifier).load();
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -736,7 +739,7 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2))
+                color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2),),
           ],
         ),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -748,9 +751,9 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                 Expanded(
                     child: Text(q.quotationCode,
                         style: AppTypography.h4,
-                        overflow: TextOverflow.ellipsis)),
+                        overflow: TextOverflow.ellipsis,),),
                 TradeStatusChip(
-                    status: q.status, kind: TradeChipKind.quotation),
+                    status: q.status, kind: TradeChipKind.quotation,),
               ],
             ),
             if (q.recipientName?.isNotEmpty == true) ...[
@@ -758,13 +761,13 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
               Row(
                 children: [
                   const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary,),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(q.recipientName!,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
-                        overflow: TextOverflow.ellipsis),
+                        overflow: TextOverflow.ellipsis,),
                   ),
                 ],
               ),
@@ -774,26 +777,26 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
               children: [
                 if (q.items.isNotEmpty) ...[
                   const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                       '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                   const SizedBox(width: AppSpacing.lg),
                 ],
                 if (date != null) ...[
                   const Icon(Icons.schedule_outlined,
-                      size: 14, color: AppColors.textMuted),
+                      size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(dateFmt.format(date),
                       style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
                 const Spacer(),
                 Text(fmt.format(q.totalAmount),
                     style: AppTypography.h3
-                        .copyWith(color: AppColors.primaryMain)),
+                        .copyWith(color: AppColors.primaryMain),),
               ],
             ),
             if (_canApprove || _canConvert) ...[
@@ -805,7 +808,7 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                       child: SizedBox(
                           height: 24,
                           width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2)))
+                          child: CircularProgressIndicator(strokeWidth: 2),),)
                   : Row(
                       children: [
                         if (_canApprove)
@@ -816,10 +819,10 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                                 backgroundColor: AppColors.primaryMain,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size.fromHeight(
-                                    AppSpacing.buttonHeightSm),
+                                    AppSpacing.buttonHeightSm,),
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                    borderRadius: BorderRadius.circular(8),),
                               ),
                               child: const Text('Approve & Send'),
                             ),
@@ -829,16 +832,16 @@ class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
                             child: ElevatedButton.icon(
                               onPressed: _convert,
                               icon: const Icon(Icons.swap_horiz_rounded,
-                                  size: 16),
+                                  size: 16,),
                               label: const Text('Convert to Order'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.blue600,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size.fromHeight(
-                                    AppSpacing.buttonHeightSm),
+                                    AppSpacing.buttonHeightSm,),
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                    borderRadius: BorderRadius.circular(8),),
                               ),
                             ),
                           ),

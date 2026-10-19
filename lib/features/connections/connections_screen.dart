@@ -72,7 +72,7 @@ class ConnectionsScreen extends ConsumerWidget {
           content: Text(e.message),
           backgroundColor: AppColors.red600,
           behavior: SnackBarBehavior.floating,
-        ));
+        ),);
       }
     } catch (_) {
       if (context.mounted) {
@@ -80,7 +80,7 @@ class ConnectionsScreen extends ConsumerWidget {
           content: Text('Could not create invite. Try again.'),
           backgroundColor: AppColors.red600,
           behavior: SnackBarBehavior.floating,
-        ));
+        ),);
       }
     }
   }
@@ -134,7 +134,7 @@ class ConnectionsScreen extends ConsumerWidget {
                           'name': nurseryName,
                           'tab': '1',
                         },
-                      ).toString())
+                      ).toString(),)
                   : null,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -165,7 +165,7 @@ class ConnectionsScreen extends ConsumerWidget {
                           'name': nurseryName,
                           'tab': '0',
                         },
-                      ).toString())
+                      ).toString(),)
                   : null,
             ),
 
@@ -245,13 +245,13 @@ class _ConnectionCard extends StatelessWidget {
                           Expanded(
                             child: Text(title,
                                 style: AppTypography.h4,
-                                overflow: TextOverflow.ellipsis),
+                                overflow: TextOverflow.ellipsis,),
                           ),
                           if (count != null && count! > 0)
                             Container(
                               margin: const EdgeInsets.only(left: AppSpacing.xs),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 9, vertical: 3),
+                                  horizontal: 9, vertical: 3,),
                               decoration: BoxDecoration(
                                 color: iconBg,
                                 borderRadius: BorderRadius.circular(100),
@@ -352,7 +352,7 @@ class _InviteSheetState extends State<_InviteSheet> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Enter a valid 10-digit mobile number'),
         behavior: SnackBarBehavior.floating,
-      ));
+      ),);
       return;
     }
     Navigator.of(context).pop({'mobile': mobile, 'name': _nameCtrl.text.trim()});
@@ -413,7 +413,7 @@ class _InviteSheetState extends State<_InviteSheet> {
                     Text(title, style: AppTypography.h4),
                     Text(subtitle,
                         style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textSecondary)),
+                            .copyWith(color: AppColors.textSecondary),),
                   ],
                 ),
               ),
@@ -453,7 +453,7 @@ class _InviteSheetState extends State<_InviteSheet> {
                 backgroundColor: iconColor,
                 textStyle: AppTypography.button,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),),
               ),
             ),
           ),

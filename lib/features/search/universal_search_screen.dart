@@ -118,7 +118,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
             .then((d) => (d['ads'] as List?)
                     ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
                     .toList() ??
-                <MarketAd>[])
+                <MarketAd>[],)
             .catchError((_) => <MarketAd>[])
         : Future.value(<MarketAd>[]);
 
@@ -226,7 +226,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
                         Navigator.of(context).pop();
                         context.push('/orders/${o.id}');
                       },
-                    ))
+                    ),)
                 .toList(),
           ),
         if (_quotations.isNotEmpty)
@@ -242,7 +242,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
                         Navigator.of(context).pop();
                         context.push('/quotations/${q.id}');
                       },
-                    ))
+                    ),)
                 .toList(),
           ),
         if (_plants.isNotEmpty)
@@ -258,7 +258,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
                         Navigator.of(context).pop();
                         context.push('/plants/${p.id}');
                       },
-                    ))
+                    ),)
                 .toList(),
           ),
         if (_ads.isNotEmpty)
@@ -271,7 +271,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
                       title: a.title,
                       subtitle: a.nurseryName,
                       onTap: _goToMarketTab,
-                    ))
+                    ),)
                 .toList(),
           ),
       ],
@@ -340,7 +340,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
               ),
             ),
             const Icon(Icons.chevron_right_rounded,
-                size: 18, color: AppColors.textMuted),
+                size: 18, color: AppColors.textMuted,),
           ],
         ),
       ),
@@ -361,7 +361,7 @@ class _UniversalSearchScreenState extends ConsumerState<UniversalSearchScreen> {
             Icon(icon, size: 48, color: AppColors.textMuted),
             const SizedBox(height: 16),
             Text(title,
-                style: AppTypography.h4, textAlign: TextAlign.center),
+                style: AppTypography.h4, textAlign: TextAlign.center,),
             const SizedBox(height: 6),
             Text(
               subtitle,

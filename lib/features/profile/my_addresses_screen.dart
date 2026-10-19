@@ -316,7 +316,7 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
               if (mounted) {
                 setState(() => _addresses = _addresses
                     .map((a) => a.id == existing.id ? addr : a)
-                    .toList());
+                    .toList(),);
               }
             }
           },
@@ -334,11 +334,11 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Delete',
-                  style: TextStyle(color: AppColors.red600))),
+                  style: TextStyle(color: AppColors.red600),),),
         ],
       ),
     );
@@ -377,7 +377,7 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain))
+              child: CircularProgressIndicator(color: AppColors.primaryMain),)
           : _error != null
               ? _ErrorView(error: _error!, onRetry: _load)
               : _addresses.isEmpty
@@ -419,13 +419,13 @@ class _EmptyState extends StatelessWidget {
             width: 104,
             height: 104,
             decoration: const BoxDecoration(
-                color: AppColors.forest100, shape: BoxShape.circle),
+                color: AppColors.forest100, shape: BoxShape.circle,),
             child: const Icon(Icons.location_on_outlined,
-                size: 52, color: AppColors.primaryMain),
+                size: 52, color: AppColors.primaryMain,),
           ),
           const SizedBox(height: AppSpacing.x2l),
           const Text('No personal delivery addresses yet.',
-              style: AppTypography.h3, textAlign: TextAlign.center),
+              style: AppTypography.h3, textAlign: TextAlign.center,),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'These are your personal delivery addresses\nfor receiving orders.',
@@ -434,7 +434,7 @@ class _EmptyState extends StatelessWidget {
           ),
           if (showOwnerHint) ...[
             const SizedBox(height: AppSpacing.x2l),
-            _OwnerAddressHint(),
+            const _OwnerAddressHint(),
           ],
           const Spacer(),
           _AddButton(onTap: onAdd),
@@ -466,7 +466,7 @@ class _OwnerAddressHint extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.store_outlined,
-              size: 18, color: AppColors.primaryMain),
+              size: 18, color: AppColors.primaryMain,),
           const SizedBox(width: 10),
           Expanded(
             child: RichText(
@@ -476,12 +476,12 @@ class _OwnerAddressHint extends StatelessWidget {
                 children: const [
                   TextSpan(
                       text:
-                          'Looking for your nursery address? Go to '),
+                          'Looking for your nursery address? Go to ',),
                   TextSpan(
                     text: 'Nursery Profile → Addresses',
                     style: TextStyle(
                         color: AppColors.primaryMain,
-                        fontWeight: FontWeight.w700),
+                        fontWeight: FontWeight.w700,),
                   ),
                   TextSpan(text: '.'),
                 ],
@@ -521,7 +521,7 @@ class _AddressListView extends StatelessWidget {
             color: AppColors.primaryMain,
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md,),
               itemCount: addresses.length,
               itemBuilder: (_, i) => _AddressCard(
                 address: addresses[i],
@@ -536,7 +536,7 @@ class _AddressListView extends StatelessWidget {
               AppSpacing.screenPadding,
               AppSpacing.sm,
               AppSpacing.screenPadding,
-              MediaQuery.of(context).padding.bottom + AppSpacing.md),
+              MediaQuery.of(context).padding.bottom + AppSpacing.md,),
           child: _AddButton(onTap: onAdd),
         ),
       ],
@@ -552,7 +552,7 @@ class _AddressCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _AddressCard(
-      {required this.address, required this.onEdit, required this.onDelete});
+      {required this.address, required this.onEdit, required this.onDelete,});
 
   IconData get _icon {
     switch (address.addressType?.toUpperCase()) {
@@ -578,7 +578,7 @@ class _AddressCard extends StatelessWidget {
         border: Border.all(
             color: address.isDefault
                 ? AppColors.primaryMain.withValues(alpha: 0.4)
-                : AppColors.border),
+                : AppColors.border,),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -590,7 +590,7 @@ class _AddressCard extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                   color: AppColors.forest100,
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),),
               child: Icon(_icon, color: AppColors.primaryMain, size: 20),
             ),
             const SizedBox(width: 12),
@@ -604,23 +604,23 @@ class _AddressCard extends StatelessWidget {
                     children: [
                       if (address.addressType?.isNotEmpty == true)
                         _Chip(address.addressType!.toUpperCase(),
-                            bg: AppColors.forest100, fg: AppColors.primaryMain),
+                            bg: AppColors.forest100, fg: AppColors.primaryMain,),
                       if (address.isDefault)
-                        _Chip('DEFAULT',
-                            bg: AppColors.primaryMain, fg: Colors.white),
+                        const _Chip('DEFAULT',
+                            bg: AppColors.primaryMain, fg: Colors.white,),
                     ],
                   ),
                   if (address.contactName?.isNotEmpty == true) ...[
                     const SizedBox(height: 5),
                     Text(address.contactName!,
                         style: AppTypography.body
-                            .copyWith(fontWeight: FontWeight.w600)),
+                            .copyWith(fontWeight: FontWeight.w600),),
                   ],
                   if (address.contactMobile?.isNotEmpty == true) ...[
                     const SizedBox(height: 2),
                     Text(address.contactMobile!,
                         style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textSecondary)),
+                            .copyWith(color: AppColors.textSecondary),),
                   ],
                   const SizedBox(height: 5),
                   Text(
@@ -648,19 +648,19 @@ class _AddressCard extends StatelessWidget {
                         Icon(Icons.edit_outlined, size: 18),
                         SizedBox(width: 8),
                         Text('Edit'),
-                      ])),
+                      ],),),
                   const PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
                         Icon(Icons.delete_outline,
-                            size: 18, color: AppColors.red600),
+                            size: 18, color: AppColors.red600,),
                         SizedBox(width: 8),
                         Text('Delete',
-                            style: TextStyle(color: AppColors.red600)),
-                      ])),
+                            style: TextStyle(color: AppColors.red600),),
+                      ],),),
                 ],
                 icon: const Icon(Icons.more_vert,
-                    size: 20, color: AppColors.textMuted),
+                    size: 20, color: AppColors.textMuted,),
               ),
             ),
           ],
@@ -804,7 +804,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         latitude: _latitude,
         longitude: _longitude,
         isDefault: _isDefault,
-      ));
+      ),);
       if (mounted) Navigator.pop(context);
     } on AppError catch (e) {
       setState(() => _saveError = e.message);
@@ -833,7 +833,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         elevation: 0,
         scrolledUnderElevation: 1,
         title: Text(isEdit ? 'Edit Address' : 'Add Address',
-            style: AppTypography.h3),
+            style: AppTypography.h3,),
         foregroundColor: AppColors.textPrimary,
       ),
       body: Form(
@@ -895,11 +895,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           ),
                         ),
                       ],
-                    ]),
+                    ],),
                     const SizedBox(height: AppSpacing.md),
 
                     // ── Address lines ─────────────────────────────────────
-                    _SectionLabel('Address'),
+                    const _SectionLabel('Address'),
                     _FieldGroup(children: [
                       _Field(
                         label: 'Address Line 1 *',
@@ -920,7 +920,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           decoration: _deco('Area, Locality, Landmark'),
                         ),
                       ),
-                    ]),
+                    ],),
                     const SizedBox(height: AppSpacing.sm),
 
                     // ── City / Pincode ────────────────────────────────────
@@ -965,8 +965,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                     validator: (v) {
                                       final s = v?.trim() ?? '';
                                       if (s.isEmpty) return 'Required';
-                                      if (s.length != 6)
+                                      if (s.length != 6) {
                                         return 'Must be 6 digits';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -986,7 +987,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                         : _Field(
                             label: 'State',
                             child: DropdownButtonFormField<String>(
-                              value: _selectedState,
+                              initialValue: _selectedState,
                               hint: const Text('Select state'),
                               isExpanded: true,
                               decoration: _deco(''),
@@ -994,8 +995,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                   .map((s) => DropdownMenuItem(
                                         value: s,
                                         child: Text(s,
-                                            overflow: TextOverflow.ellipsis),
-                                      ))
+                                            overflow: TextOverflow.ellipsis,),
+                                      ),)
                                   .toList(),
                               onChanged: (v) =>
                                   setState(() => _selectedState = v),
@@ -1006,7 +1007,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                     // ── Set as default ────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 4),
+                          horizontal: 14, vertical: 4,),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
@@ -1015,16 +1016,16 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       child: Row(
                         children: [
                           const Icon(Icons.star_outline_rounded,
-                              color: AppColors.primaryMain, size: 20),
+                              color: AppColors.primaryMain, size: 20,),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Text('Set as default address',
-                                style: AppTypography.body),
+                                style: AppTypography.body,),
                           ),
                           Switch(
                             value: _isDefault,
                             onChanged: (v) => setState(() => _isDefault = v),
-                            activeColor: AppColors.primaryMain,
+                            activeThumbColor: AppColors.primaryMain,
                           ),
                         ],
                       ),
@@ -1068,7 +1069,7 @@ class _MapLocationBanner extends StatelessWidget {
   final VoidCallback onChangeLocation;
 
   const _MapLocationBanner(
-      {required this.result, required this.onChangeLocation});
+      {required this.result, required this.onChangeLocation,});
 
   @override
   Widget build(BuildContext context) {
@@ -1085,14 +1086,14 @@ class _MapLocationBanner extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.location_on_rounded,
-                  color: AppColors.primaryMain, size: 18),
+                  color: AppColors.primaryMain, size: 18,),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Location Pinned on Map',
                   style: AppTypography.body.copyWith(
                       color: AppColors.primaryMain,
-                      fontWeight: FontWeight.w700),
+                      fontWeight: FontWeight.w700,),
                 ),
               ),
               TextButton(
@@ -1100,11 +1101,11 @@ class _MapLocationBanner extends StatelessWidget {
                 style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,),
                 child: Text('Change',
                     style: AppTypography.bodySmall.copyWith(
                         color: AppColors.primaryMain,
-                        fontWeight: FontWeight.w700)),
+                        fontWeight: FontWeight.w700,),),
               ),
             ],
           ),
@@ -1119,7 +1120,7 @@ class _MapLocationBanner extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.info_outline_rounded,
-                    size: 13, color: AppColors.amber700),
+                    size: 13, color: AppColors.amber700,),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -1135,7 +1136,7 @@ class _MapLocationBanner extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.lock_outline_rounded,
-                  size: 12, color: AppColors.textMuted),
+                  size: 12, color: AppColors.textMuted,),
               const SizedBox(width: 4),
               Text(
                 'City & State locked from map',
@@ -1182,17 +1183,17 @@ class _LockedField extends StatelessWidget {
               Text(
                 label,
                 style: AppTypography.caption.copyWith(
-                    color: AppColors.primaryMain, fontWeight: FontWeight.w500),
+                    color: AppColors.primaryMain, fontWeight: FontWeight.w500,),
               ),
               const Spacer(),
               const Icon(Icons.lock_rounded,
-                  size: 12, color: AppColors.primaryMain),
+                  size: 12, color: AppColors.primaryMain,),
             ],
           ),
           const SizedBox(height: 4),
           Text(value,
               style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis),
+              overflow: TextOverflow.ellipsis,),
         ],
       ),
     );
@@ -1223,7 +1224,7 @@ class _GeocodedBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.gps_fixed_rounded,
-              size: 14, color: AppColors.primaryMain),
+              size: 14, color: AppColors.primaryMain,),
           const SizedBox(width: 6),
           Text(
             'GPS: ${lat.toStringAsFixed(5)}, ${lon.toStringAsFixed(5)}',
@@ -1243,7 +1244,7 @@ class _SaveBar extends StatelessWidget {
   final VoidCallback onSave;
 
   const _SaveBar(
-      {required this.label, required this.saving, required this.onSave});
+      {required this.label, required this.saving, required this.onSave,});
 
   @override
   Widget build(BuildContext context) {
@@ -1252,7 +1253,7 @@ class _SaveBar extends StatelessWidget {
           AppSpacing.screenPadding,
           AppSpacing.md,
           AppSpacing.screenPadding,
-          MediaQuery.of(context).padding.bottom + AppSpacing.md),
+          MediaQuery.of(context).padding.bottom + AppSpacing.md,),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
@@ -1274,10 +1275,10 @@ class _SaveBar extends StatelessWidget {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2))
+                      color: Colors.white, strokeWidth: 2,),)
               : Text(label,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15)),
+                      fontWeight: FontWeight.w700, fontSize: 15,),),
         ),
       ),
     );
@@ -1364,7 +1365,7 @@ class _Field extends StatelessWidget {
       children: [
         Text(label,
             style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                color: AppColors.textSecondary, fontWeight: FontWeight.w500,),),
         const SizedBox(height: 6),
         child,
       ],
@@ -1466,7 +1467,7 @@ class _ErrorBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(message,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.red600)),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.red600),),
       );
 }
 
@@ -1483,7 +1484,7 @@ class _Chip extends StatelessWidget {
             BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
         child: Text(text,
             style: AppTypography.caption.copyWith(
-                color: fg, fontWeight: FontWeight.w700, fontSize: 10)),
+                color: fg, fontWeight: FontWeight.w700, fontSize: 10,),),
       );
 }
 

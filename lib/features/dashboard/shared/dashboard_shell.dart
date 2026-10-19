@@ -89,9 +89,9 @@ class DashboardShell extends ConsumerWidget {
                 ),
               ),
             ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: const UserAvatar(size: 34, borderWidth: 1.5),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: UserAvatar(size: 34, borderWidth: 1.5),
             ),
           ),
         ],

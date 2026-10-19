@@ -100,13 +100,13 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.search_rounded,
-                          size: 52, color: AppColors.textMuted),
+                          size: 52, color: AppColors.textMuted,),
                       SizedBox(height: AppSpacing.md),
                       Text('Search for plants',
-                          style: AppTypography.h4),
+                          style: AppTypography.h4,),
                       SizedBox(height: AppSpacing.xs),
                       Text('Type a name or plant code above.',
-                          style: AppTypography.bodySmall),
+                          style: AppTypography.bodySmall,),
                     ],
                   ),
                 ),
@@ -129,11 +129,11 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.error_outline,
-                            size: 48, color: AppColors.textMuted),
+                            size: 48, color: AppColors.textMuted,),
                         const SizedBox(height: AppSpacing.md),
                         Text(paged.error!.message,
                             style: AppTypography.body,
-                            textAlign: TextAlign.center),
+                            textAlign: TextAlign.center,),
                         const SizedBox(height: AppSpacing.lg),
                         TextButton(
                           onPressed: () =>
@@ -152,12 +152,12 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.local_florist_outlined,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       SizedBox(height: AppSpacing.md),
                       Text('No plants found', style: AppTypography.h4),
                       SizedBox(height: AppSpacing.sm),
                       Text('Try a different search term.',
-                          style: AppTypography.bodySmall),
+                          style: AppTypography.bodySmall,),
                     ],
                   ),
                 ),
@@ -165,7 +165,7 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
@@ -188,7 +188,7 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primaryMain),
+                          color: AppColors.primaryMain,),
                     ),
                   ),
                 ),
@@ -227,7 +227,7 @@ class _PlantRow extends StatelessWidget {
               // Thumbnail
               ClipRRect(
                 borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(AppRadius.xl)),
+                    left: Radius.circular(AppRadius.xl),),
                 child: SizedBox(
                   width: 72,
                   height: 72,
@@ -283,7 +283,7 @@ class _PlantRow extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.only(right: AppSpacing.md),
                 child: Icon(Icons.chevron_right_rounded,
-                    color: AppColors.textMuted, size: 20),
+                    color: AppColors.textMuted, size: 20,),
               ),
             ],
           ),
@@ -300,7 +300,7 @@ class _Placeholder extends StatelessWidget {
       color: AppColors.forest100,
       child: const Center(
         child: Icon(Icons.local_florist_outlined,
-            color: AppColors.primaryMain, size: 28),
+            color: AppColors.primaryMain, size: 28,),
       ),
     );
   }

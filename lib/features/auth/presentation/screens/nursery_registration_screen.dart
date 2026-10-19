@@ -334,7 +334,7 @@ class _NurseryRegistrationScreenState
               const SizedBox(height: AppSpacing.x3l),
 
               // ── Section: Nursery Info ──────────────────────────────────────
-              _SectionLabel(label: 'Nursery Info'),
+              const _SectionLabel(label: 'Nursery Info'),
               const SizedBox(height: AppSpacing.md),
 
               // Nursery Name (required)
@@ -404,7 +404,7 @@ class _NurseryRegistrationScreenState
               const SizedBox(height: AppSpacing.x2l),
 
               // ── Section: Nursery Address ───────────────────────────────────
-              _SectionLabel(label: 'Nursery Address'),
+              const _SectionLabel(label: 'Nursery Address'),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Where is your nursery located? This helps customers find you.',
@@ -486,12 +486,12 @@ class _NurseryRegistrationScreenState
                     color: AppColors.red100,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: AppColors.red600.withValues(alpha: 0.3)),
+                        color: AppColors.red600.withValues(alpha: 0.3),),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.error_outline_rounded,
-                          color: AppColors.red600, size: 20),
+                          color: AppColors.red600, size: 20,),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -518,7 +518,7 @@ class _NurseryRegistrationScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.info_outline_rounded,
-                        color: AppColors.primaryMain, size: 20),
+                        color: AppColors.primaryMain, size: 20,),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
@@ -567,7 +567,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(label,
         style: AppTypography.label
-            .copyWith(color: AppColors.textPrimary, letterSpacing: 0.4));
+            .copyWith(color: AppColors.textPrimary, letterSpacing: 0.4),);
   }
 }
 
@@ -588,11 +588,11 @@ class _LocationPickerTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.lg),
+              horizontal: AppSpacing.md, vertical: AppSpacing.lg,),
           decoration: BoxDecoration(
             border: Border.all(
                 color: AppColors.primaryMain.withValues(alpha: 0.5),
-                style: BorderStyle.solid),
+                style: BorderStyle.solid,),
             borderRadius: BorderRadius.circular(12),
             color: AppColors.forest100,
           ),
@@ -606,7 +606,7 @@ class _LocationPickerTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.location_on_rounded,
-                    color: Colors.white, size: 22),
+                    color: Colors.white, size: 22,),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -615,7 +615,7 @@ class _LocationPickerTile extends StatelessWidget {
                   children: [
                     Text('Pick Location on Map',
                         style: AppTypography.body
-                            .copyWith(fontWeight: FontWeight.w600)),
+                            .copyWith(fontWeight: FontWeight.w600),),
                     const SizedBox(height: 2),
                     Text(
                       'Auto-detects your current location. Drag to adjust.',
@@ -626,7 +626,7 @@ class _LocationPickerTile extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.primaryMain),
+                  color: AppColors.primaryMain,),
             ],
           ),
         ),
@@ -645,7 +645,7 @@ class _LocationPickerTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.check_circle_rounded,
-              color: AppColors.primaryMain, size: 22),
+              color: AppColors.primaryMain, size: 22,),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -660,7 +660,7 @@ class _LocationPickerTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text('PIN: ${picked!.postalCode}',
                       style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textSecondary)),
+                          .copyWith(color: AppColors.textSecondary),),
                 ],
                 const SizedBox(height: 2),
                 Text(
@@ -681,7 +681,7 @@ class _LocationPickerTile extends StatelessWidget {
             child: Text('Change',
                 style: AppTypography.bodySmall.copyWith(
                     color: AppColors.primaryMain,
-                    fontWeight: FontWeight.w600)),
+                    fontWeight: FontWeight.w600,),),
           ),
         ],
       ),

@@ -182,8 +182,9 @@ String? _sellerReadGuard(BuildContext context, GoRouterState state) {
 String? _buyerGuard(BuildContext context, GoRouterState state) {
   final caps = _capabilities(context);
   if (caps.isDriverOnly) return '/home';
-  if (caps.canSell)
+  if (caps.canSell) {
     return '/home'; // owner or manager → blocked from buyer-only screens
+  }
   return null;
 }
 
@@ -229,7 +230,7 @@ final appRouter = GoRouter(
     // ── Suspension ──────────────────────────────────────────────────────────
     GoRoute(
         path: '/account-suspended',
-        builder: (_, __) => const AccountSuspendedScreen()),
+        builder: (_, __) => const AccountSuspendedScreen(),),
 
     // ── Auth ────────────────────────────────────────────────────────────────
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
@@ -295,37 +296,37 @@ final appRouter = GoRouter(
     // Workspace selector — still reachable from profile or direct nav
     GoRoute(
         path: '/workspace-select',
-        builder: (_, __) => const WorkspaceSelectScreen()),
+        builder: (_, __) => const WorkspaceSelectScreen(),),
     GoRoute(path: '/role-select', redirect: (_, __) => '/workspace-select'),
 
     // ── Registration / Onboarding ────────────────────────────────────────────
     GoRoute(
         path: '/select-activity',
-        builder: (_, __) => const ActivitySelectScreen()),
+        builder: (_, __) => const ActivitySelectScreen(),),
     GoRoute(
         path: '/register/driver',
-        builder: (_, __) => const DriverRegistrationScreen()),
+        builder: (_, __) => const DriverRegistrationScreen(),),
     GoRoute(
         path: '/driver/application-status',
-        builder: (_, __) => const DriverApplicationStatusScreen()),
+        builder: (_, __) => const DriverApplicationStatusScreen(),),
     GoRoute(
         path: '/register/nursery',
-        builder: (_, __) => const NurseryRegistrationScreen()),
+        builder: (_, __) => const NurseryRegistrationScreen(),),
     GoRoute(
         path: '/nursery/resubmit',
-        builder: (_, __) => const NurseryRegistrationScreen(isResubmit: true)),
+        builder: (_, __) => const NurseryRegistrationScreen(isResubmit: true),),
 
     // ── Nursery application status ───────────────────────────────────────────
     GoRoute(
         path: '/nursery/pending',
-        builder: (_, __) => const NurseryPendingScreen()),
+        builder: (_, __) => const NurseryPendingScreen(),),
     GoRoute(
         path: '/nursery/rejected',
-        builder: (_, __) => const NurseryRejectedScreen()),
+        builder: (_, __) => const NurseryRejectedScreen(),),
 
     // ── Invite accept ────────────────────────────────────────────────────────
     GoRoute(
-        path: '/invite/accept', builder: (_, __) => const InviteAcceptScreen()),
+        path: '/invite/accept', builder: (_, __) => const InviteAcceptScreen(),),
     GoRoute(
       path: '/invite/:uuid',
       builder: (_, state) =>
@@ -352,17 +353,17 @@ final appRouter = GoRouter(
     // Admin dashboard stays separate
     GoRoute(
         path: '/home/admin',
-        builder: (_, __) => const AdminDashboard(role: AppRole.admin)),
+        builder: (_, __) => const AdminDashboard(role: AppRole.admin),),
 
     // ── Notifications ────────────────────────────────────────────────────────
     GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationListScreen()),
+        builder: (_, __) => const NotificationListScreen(),),
 
     // ── Universal search ─────────────────────────────────────────────────────
     GoRoute(
         path: '/search',
-        builder: (_, __) => const UniversalSearchScreen()),
+        builder: (_, __) => const UniversalSearchScreen(),),
 
     // ── Driver-only routes ────────────────────────────────────────────────────
     GoRoute(
@@ -381,7 +382,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/driver/trip/:id',
       builder: (_, state) => DriverTripMapScreen(
-          dispatchId: int.parse(state.pathParameters['id']!)),
+          dispatchId: int.parse(state.pathParameters['id']!),),
     ),
     GoRoute(
       path: '/driver/trips/:id/event',
@@ -391,7 +392,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/driver/trips/:id/proof',
       builder: (_, state) => DeliveryProofScreen(
-          dispatchId: int.parse(state.pathParameters['id']!)),
+          dispatchId: int.parse(state.pathParameters['id']!),),
     ),
 
     // ── Plants ───────────────────────────────────────────────────────────────
@@ -416,7 +417,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/nurseries/:id',
       builder: (_, state) => NurseryDetailScreen(
-          nurseryId: int.parse(state.pathParameters['id']!)),
+          nurseryId: int.parse(state.pathParameters['id']!),),
     ),
 
     // ── My Profile sub-screens ────────────────────────────────────────────────
@@ -480,7 +481,7 @@ final appRouter = GoRouter(
       path: '/requests/:id',
       redirect: _canSellGuard,
       builder: (_, state) => RequestDetailScreen(
-          requestId: int.parse(state.pathParameters['id']!)),
+          requestId: int.parse(state.pathParameters['id']!),),
     ),
 
     // ── Orders ────────────────────────────────────────────────────────────────
@@ -543,7 +544,7 @@ final appRouter = GoRouter(
       path: '/quotations/:id',
       redirect: _driverGuard,
       builder: (_, state) => QuotationDetailScreen(
-          quotationId: int.parse(state.pathParameters['id']!)),
+          quotationId: int.parse(state.pathParameters['id']!),),
     ),
     GoRoute(
       path: '/quotations/:id/edit',
@@ -610,7 +611,7 @@ final appRouter = GoRouter(
       path: '/dispatches/:id',
       redirect: _sellerReadGuard,
       builder: (_, state) => DispatchDetailScreen(
-          dispatchId: int.parse(state.pathParameters['id']!)),
+          dispatchId: int.parse(state.pathParameters['id']!),),
     ),
     GoRoute(
       path: '/dispatches/:id/track',

@@ -24,7 +24,7 @@ import 'package:greenroot_mobile/features/auth/presentation/providers/session_pr
 
 class _FakeAuthRepo extends AuthRepository {
   bool _valid;
-  UserProfile? _user;
+  final UserProfile? _user;
   List<Workspace> _workspaces;
   final AppError? _error;
 
@@ -105,7 +105,7 @@ void main() {
           Workspace.fromJson({
             'type': 'MANAGER_NURSERY',
             'nursery_id': 5,
-            'nursery_name': 'Test'
+            'nursery_name': 'Test',
           }),
         ],
       );
@@ -126,7 +126,7 @@ void main() {
           Workspace.fromJson({
             'type': 'MANAGER_NURSERY',
             'nursery_id': 5,
-            'nursery_name': 'Test'
+            'nursery_name': 'Test',
           }),
         ],
       );
@@ -136,14 +136,14 @@ void main() {
 
       // Simulate leave nursery: server removes the MANAGER_NURSERY workspace
       repo.updateWorkspaces([
-        Workspace.fromJson({'type': 'PERSONAL'})
+        Workspace.fromJson({'type': 'PERSONAL'}),
       ]);
       await notifier.bootstrap();
 
       expect(notifier.state.capabilities.isManager, isFalse,
-          reason: 'after leaving nursery, isManager must be false');
+          reason: 'after leaving nursery, isManager must be false',);
       expect(notifier.state.capabilities.primaryNurseryId, isNull,
-          reason: 'no nursery should be associated after leaving');
+          reason: 'no nursery should be associated after leaving',);
     });
 
     test(
@@ -154,7 +154,7 @@ void main() {
         valid: true,
         user: const UserProfile(id: 20, firstName: 'Gumastha'),
         workspaces: [
-          Workspace.fromJson({'type': 'PERSONAL'})
+          Workspace.fromJson({'type': 'PERSONAL'}),
         ],
       );
       final notifier = SessionNotifier(repo);
@@ -162,7 +162,7 @@ void main() {
 
       expect(notifier.state.hasMultipleWorkspaces, isFalse);
       expect(notifier.state.mobileWorkspaces, isEmpty,
-          reason: 'PERSONAL workspace is excluded from mobileWorkspaces');
+          reason: 'PERSONAL workspace is excluded from mobileWorkspaces',);
     });
   });
 
@@ -174,7 +174,7 @@ void main() {
         valid: true,
         user: const UserProfile(id: 30, firstName: 'Ravi'),
         workspaces: [
-          Workspace.fromJson({'type': 'PERSONAL'})
+          Workspace.fromJson({'type': 'PERSONAL'}),
         ],
       );
       final notifier = SessionNotifier(repo);
@@ -202,7 +202,7 @@ void main() {
 
       expect(notifier.state.status, SessionStatus.unauthenticated,
           reason:
-              'a deleted account with revoked sessions must not be re-authenticated');
+              'a deleted account with revoked sessions must not be re-authenticated',);
     });
   });
 
@@ -225,7 +225,7 @@ void main() {
         valid: true,
         user: const UserProfile(id: 200, firstName: 'GreenRoot'), // new user ID
         workspaces: [
-          Workspace.fromJson({'type': 'PERSONAL'})
+          Workspace.fromJson({'type': 'PERSONAL'}),
         ],
       );
       final notifier = SessionNotifier(repo);
@@ -233,7 +233,7 @@ void main() {
 
       expect(notifier.state.status, SessionStatus.authenticated);
       expect(notifier.state.user?.id, 200,
-          reason: 're-registered user must have a different user ID');
+          reason: 're-registered user must have a different user ID',);
       expect(notifier.state.capabilities.isManager, isFalse);
       expect(notifier.state.capabilities.isNurseryOwner, isFalse);
     });
@@ -244,14 +244,14 @@ void main() {
         valid: true,
         user: const UserProfile(id: 201, firstName: 'GreenRoot'),
         workspaces: [
-          Workspace.fromJson({'type': 'PERSONAL'})
+          Workspace.fromJson({'type': 'PERSONAL'}),
         ],
       );
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
 
       expect(notifier.state.capabilities.primaryNurseryId, isNull,
-          reason: 'fresh account must have no nursery');
+          reason: 'fresh account must have no nursery',);
       expect(notifier.state.capabilities.canSell, isFalse);
     });
   });
@@ -269,7 +269,7 @@ void main() {
           Workspace.fromJson({
             'type': 'OWNED_NURSERY',
             'nursery_id': 1,
-            'nursery_name': 'Priya Nursery'
+            'nursery_name': 'Priya Nursery',
           }),
         ],
       );

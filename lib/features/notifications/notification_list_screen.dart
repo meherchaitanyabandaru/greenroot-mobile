@@ -23,7 +23,7 @@ class _NotificationListScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(notificationListProvider.notifier).load());
+        (_) => ref.read(notificationListProvider.notifier).load(),);
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >=
           _scrollCtrl.position.maxScrollExtent - 200) {
@@ -92,7 +92,7 @@ class _NotificationListScreenState
               const SliverFillRemaining(
                 child: Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain)),
+                        CircularProgressIndicator(color: AppColors.primaryMain),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -101,7 +101,7 @@ class _NotificationListScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(paged.error!.message, style: AppTypography.body),
                       TextButton(
@@ -120,12 +120,12 @@ class _NotificationListScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.notifications_none_rounded,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       SizedBox(height: AppSpacing.md),
                       Text('No notifications', style: AppTypography.h4),
                       SizedBox(height: AppSpacing.sm),
                       Text("You're all caught up!",
-                          style: AppTypography.bodySmall),
+                          style: AppTypography.bodySmall,),
                     ],
                   ),
                 ),
@@ -148,7 +148,7 @@ class _NotificationListScreenState
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.primaryMain)),
+                            color: AppColors.primaryMain,),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x3l)),
@@ -165,7 +165,7 @@ class _NotificationTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NotificationTile(
-      {required this.notification, required this.onTap});
+      {required this.notification, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +180,7 @@ class _NotificationTile extends StatelessWidget {
             ? AppColors.primaryLight.withValues(alpha: 0.4)
             : AppColors.background,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+            horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md,),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -221,7 +221,7 @@ class _NotificationTile extends StatelessWidget {
                     Text(
                       notification.message!,
                       style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary, height: 1.4),
+                          color: AppColors.textSecondary, height: 1.4,),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -231,7 +231,7 @@ class _NotificationTile extends StatelessWidget {
                     children: [
                       Text(timeStr,
                           style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted)),
+                              .copyWith(color: AppColors.textMuted),),
                       const SizedBox(width: AppSpacing.sm),
                       StatusBadge(
                         label: notification.type

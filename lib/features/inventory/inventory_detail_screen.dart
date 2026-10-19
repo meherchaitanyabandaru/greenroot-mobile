@@ -12,7 +12,7 @@ class InventoryDetailScreen extends ConsumerWidget {
   final bool canEdit;
 
   const InventoryDetailScreen(
-      {super.key, required this.itemId, this.canEdit = false});
+      {super.key, required this.itemId, this.canEdit = false,});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +36,7 @@ class InventoryDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            child: CircularProgressIndicator(color: AppColors.primaryMain),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -89,7 +89,7 @@ class _InventoryDetailView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(Icons.local_florist_rounded,
-                        color: AppColors.primaryMain, size: 28),
+                        color: AppColors.primaryMain, size: 28,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -101,7 +101,7 @@ class _InventoryDetailView extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(item.commonName!,
                               style: AppTypography.body
-                                  .copyWith(color: AppColors.textSecondary)),
+                                  .copyWith(color: AppColors.textSecondary),),
                         ],
                       ],
                     ),
@@ -216,10 +216,10 @@ class _StatCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(value,
-              style: AppTypography.h3.copyWith(color: AppColors.textPrimary)),
+              style: AppTypography.h3.copyWith(color: AppColors.textPrimary),),
           Text(label,
               style: AppTypography.caption
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.textSecondary),),
         ],
       ),
     );
@@ -236,13 +236,13 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md),
+          horizontal: AppSpacing.cardPadding, vertical: AppSpacing.md,),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
               style: AppTypography.body
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.textSecondary),),
           Text(value, style: AppTypography.label),
         ],
       ),

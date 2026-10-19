@@ -80,7 +80,7 @@ class _OwnerHomeData {
 
   List<Order> get activeOrders => orders
       .where(
-          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()))
+          (o) => !{'COMPLETED', 'CANCELLED'}.contains(o.status.toUpperCase()),)
       .toList();
 
   int get completedCount =>
@@ -93,7 +93,7 @@ class _OwnerHomeData {
   // next, not just a status snapshot (see _NeedsAttentionCard).
   int get ordersAwaitingLoadingCount => orders
       .where((o) =>
-          {'CONFIRMED', 'LOADING'}.contains(o.status.toUpperCase()))
+          {'CONFIRMED', 'LOADING'}.contains(o.status.toUpperCase()),)
       .length;
 
   int get driversWaitingToDispatchCount =>
@@ -212,7 +212,7 @@ class OwnerHome extends ConsumerWidget {
                   activeCount: data.activeOrders.length,
                   pendingCount: data.pendingCount,
                   onTap: () => ref.read(mainTabIndexProvider.notifier).state = 2,
-                )),
+                ),),
                 if (data.pendingQuotations.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.x2l),
                   section(Column(
@@ -232,7 +232,7 @@ class OwnerHome extends ConsumerWidget {
                         const SizedBox(height: 10),
                       ],
                     ],
-                  )),
+                  ),),
                 ],
                 if (data.activeOrders.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.md),
@@ -255,7 +255,7 @@ class OwnerHome extends ConsumerWidget {
                         const SizedBox(height: 10),
                       ],
                     ],
-                  )),
+                  ),),
                 ],
               ],
             );
@@ -776,7 +776,7 @@ class _OwnerOrderCard extends StatelessWidget {
                   child: Container(
                     key: ValueKey(display.label),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                        horizontal: 10, vertical: 4,),
                     decoration: BoxDecoration(
                       color: display.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -944,7 +944,7 @@ class _EmptyOwnerState extends StatelessWidget {
       child: Column(
         children: [
           const Icon(Icons.storefront_rounded,
-              size: 54, color: AppColors.primaryMain),
+              size: 54, color: AppColors.primaryMain,),
           const SizedBox(height: 16),
           Text(
             'Ready to take orders',

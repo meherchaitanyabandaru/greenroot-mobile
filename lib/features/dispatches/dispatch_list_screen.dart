@@ -28,7 +28,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => ref
         .read(dispatchListProvider.notifier)
-        .load(nurseryId: widget.nurseryId));
+        .load(nurseryId: widget.nurseryId),);
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >=
           _scrollCtrl.position.maxScrollExtent - 200) {
@@ -77,7 +77,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
                           padding: const EdgeInsets.only(right: AppSpacing.sm),
                           child: _Chip(
                             key: Key(
-                                'dispatch_filter_${value?.toLowerCase() ?? "all"}'),
+                                'dispatch_filter_${value?.toLowerCase() ?? "all"}',),
                             label: label,
                             selected: listState.statusFilter == value,
                             onTap: () => ref
@@ -94,7 +94,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
               const SliverFillRemaining(
                 child: Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.primaryMain)),
+                        color: AppColors.primaryMain,),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -103,7 +103,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.textMuted),
+                          size: 48, color: AppColors.textMuted,),
                       const SizedBox(height: AppSpacing.md),
                       Text(paged.error!.message, style: AppTypography.body),
                       TextButton(
@@ -127,7 +127,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
+                    horizontal: AppSpacing.screenPadding,),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => Padding(
@@ -148,7 +148,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.primaryMain)),
+                            color: AppColors.primaryMain,),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x3l)),
@@ -169,7 +169,7 @@ class _Chip extends StatelessWidget {
       {super.key,
       required this.label,
       required this.selected,
-      required this.onTap});
+      required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -179,11 +179,11 @@ class _Chip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryMain : AppColors.surface,
           border: Border.all(
-              color: selected ? AppColors.primaryMain : AppColors.border),
+              color: selected ? AppColors.primaryMain : AppColors.border,),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
@@ -241,7 +241,7 @@ class _DispatchCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.local_shipping_rounded,
-                        color: AppColors.amber600, size: 20),
+                        color: AppColors.amber600, size: 20,),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -273,7 +273,7 @@ class _DispatchCard extends StatelessWidget {
                 children: [
                   if (dispatch.driverName != null) ...[
                     const Icon(Icons.person_outline_rounded,
-                        size: 14, color: AppColors.textMuted),
+                        size: 14, color: AppColors.textMuted,),
                     const SizedBox(width: 4),
                     Text(
                       dispatch.driverName!,
@@ -284,7 +284,7 @@ class _DispatchCard extends StatelessWidget {
                   ],
                   if (dispatch.vehicleNumber != null) ...[
                     const Icon(Icons.directions_car_outlined,
-                        size: 14, color: AppColors.textMuted),
+                        size: 14, color: AppColors.textMuted,),
                     const SizedBox(width: 4),
                     Text(
                       dispatch.vehicleNumber!,
@@ -296,7 +296,7 @@ class _DispatchCard extends StatelessWidget {
                   if (dateStr.isNotEmpty)
                     Text(dateStr,
                         style: AppTypography.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: AppColors.textMuted),),
                 ],
               ),
             ],
