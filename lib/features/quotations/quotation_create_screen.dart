@@ -11,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plants.dart';
+import '../plants/plant_picker.dart';
 import '../owner/owner_members_screen.dart'
     show NurseryCustomer, NurseryManager;
 import '../owner/customer_picker_sheet.dart';
@@ -938,7 +939,7 @@ class _ItemCard extends ConsumerStatefulWidget {
 
 class _ItemCardState extends ConsumerState<_ItemCard> {
   final _searchCtrl = TextEditingController();
-  List<Plant> _results = [];
+  List<PlantMatch> _results = [];
   bool _searching = false;
   bool _showDropdown = false;
 
@@ -966,9 +967,8 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
     }
     setState(() => _searching = true);
     try {
-      final (results, _) = await ref
-          .read(plantRepositoryProvider)
-          .listPlants(search: q, page: 1, perPage: 10);
+      final results =
+          await ref.read(plantRepositoryProvider).lookupPlants(q);
       if (mounted) {
         setState(() {
           _results = results;
@@ -1127,18 +1127,21 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
                   separatorBuilder: (_, __) =>
                       const Divider(height: 1, color: AppColors.border),
                   itemBuilder: (_, i) {
-                    final plant = _results[i];
+                    final match = _results[i];
                     return ListTile(
                       dense: true,
                       visualDensity: VisualDensity.compact,
-                      title: Text(plant.scientificName,
+                      title: Text(match.title,
                           style: AppTypography.bodySmall,),
-                      subtitle: plant.commonName != null
-                          ? Text(plant.commonName!,
+                      subtitle: match.subtitle != null
+                          ? Text(match.subtitle!,
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.textMuted),)
                           : null,
-                      onTap: () {
+                      onTap: () async {
+                        final plant =
+                            await resolvePickedPlant(context, ref, match);
+                        if (plant == null || !mounted) return;
                         final name = plant.commonName?.isNotEmpty == true
                             ? plant.commonName!
                             : plant.scientificName;

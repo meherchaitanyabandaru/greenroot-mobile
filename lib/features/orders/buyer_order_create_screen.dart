@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart';
 import '../plants/plants.dart';
+import '../plants/plant_picker.dart';
 import '../profile/my_addresses_screen.dart';
 import 'orders.dart';
 
@@ -985,7 +986,7 @@ class _PlantPickerSheet extends ConsumerStatefulWidget {
 
 class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
   final _searchCtrl = TextEditingController();
-  List<Plant> _results = [];
+  List<PlantMatch> _results = [];
   bool _loading = false;
 
   @override
@@ -1004,9 +1005,8 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
   Future<void> _fetch(String q) async {
     setState(() => _loading = true);
     try {
-      final (plants, _) = await ref
-          .read(plantRepositoryProvider)
-          .listPlants(search: q.isEmpty ? null : q);
+      final plants =
+          await ref.read(plantRepositoryProvider).lookupPlants(q, limit: 20);
       if (mounted) setState(() => _results = plants);
     } catch (_) {
       // leave results as-is on error
@@ -1054,7 +1054,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                         itemCount: _results.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
-                          final p = _results[i];
+                          final m = _results[i];
                           return ListTile(
                             leading: const CircleAvatar(
                               backgroundColor: AppColors.primaryLight,
@@ -1062,14 +1062,18 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                   color: AppColors.primaryMain, size: 20,),
                             ),
                             title:
-                                Text(p.displayName, style: AppTypography.label),
-                            subtitle: p.commonName != null &&
-                                    p.scientificName != p.displayName
-                                ? Text(p.scientificName,
+                                Text(m.title, style: AppTypography.label),
+                            subtitle: m.subtitle != null
+                                ? Text(m.subtitle!,
                                     style: AppTypography.bodySmall
                                         .copyWith(fontStyle: FontStyle.italic),)
                                 : null,
-                            onTap: () => Navigator.of(context).pop(p),
+                            onTap: () async {
+                              final p = await resolvePickedPlant(context, ref, m);
+                              if (p != null && context.mounted) {
+                                Navigator.of(context).pop(p);
+                              }
+                            },
                           );
                         },
                       ),

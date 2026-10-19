@@ -120,6 +120,53 @@ class Plant {
       commonName?.isNotEmpty == true ? commonName! : scientificName;
 }
 
+/// One plant-picker row from `GET /plants/lookup`: a catalog [plant], or a
+/// botanical name not in the catalog yet. [PlantRepository.resolvePlant]
+/// turns either into a catalog [Plant] — the user never creates plants.
+class PlantMatch {
+  final Plant? plant;
+  final String? wfoId;
+  final String? scientificName;
+  final String? family;
+  final String? acceptedName;
+
+  const PlantMatch.catalog(Plant this.plant)
+      : wfoId = null,
+        scientificName = null,
+        family = null,
+        acceptedName = null;
+
+  const PlantMatch.name({
+    required String this.wfoId,
+    required String this.scientificName,
+    this.family,
+    this.acceptedName,
+  }) : plant = null;
+
+  factory PlantMatch.fromJson(Map<String, dynamic> j) {
+    final plant = j['plant'] as Map<String, dynamic>?;
+    if (plant != null) return PlantMatch.catalog(Plant.fromJson(plant));
+    final n = j['name'] as Map<String, dynamic>;
+    return PlantMatch.name(
+      wfoId: n['wfo_id'] as String,
+      scientificName: n['scientific_name'] as String,
+      family: n['family'] as String?,
+      acceptedName: n['accepted_name'] as String?,
+    );
+  }
+
+  String get title => plant?.displayName ?? scientificName!;
+
+  String? get subtitle {
+    final p = plant;
+    if (p != null) {
+      return p.commonName?.isNotEmpty == true ? p.scientificName : null;
+    }
+    if (acceptedName != null) return 'Now called $acceptedName';
+    return family;
+  }
+}
+
 // ── Repository ────────────────────────────────────────────────────────────────
 
 class PlantRepository {
@@ -173,6 +220,35 @@ class PlantRepository {
         return (d['categories'] as List<dynamic>)
             .map((e) => PlantCategory.fromJson(e as Map<String, dynamic>))
             .toList();
+      },
+    );
+  }
+
+  /// Catalog plants first, then botanical names (3+ characters) for pickers.
+  Future<List<PlantMatch>> lookupPlants(String query, {int limit = 10}) async {
+    return _client.get(
+      ApiConstants.plantLookup,
+      queryParameters: {'q': query, 'limit': limit},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return (d['results'] as List<dynamic>)
+            .map((e) => PlantMatch.fromJson(e as Map<String, dynamic>))
+            .toList();
+      },
+    );
+  }
+
+  /// The catalog plant for [match], adding a botanical name to the catalog
+  /// on first use. Synonyms come back as their accepted species.
+  Future<Plant> resolvePlant(PlantMatch match) async {
+    final plant = match.plant;
+    if (plant != null) return plant;
+    return _client.post(
+      ApiConstants.plantResolve,
+      data: {'wfo_id': match.wfoId},
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Plant.fromJson(d['plant'] as Map<String, dynamic>);
       },
     );
   }

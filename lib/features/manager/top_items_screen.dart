@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plants.dart';
+import '../plants/plant_picker.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -495,7 +496,7 @@ class _PlantPickerSheet extends ConsumerStatefulWidget {
 
 class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
   final _searchCtrl = TextEditingController();
-  List<Plant> _results = [];
+  List<PlantMatch> _results = [];
   bool _loading = false;
   bool _searched = false;
 
@@ -516,11 +517,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
     setState(() => _loading = true);
     try {
       final repo = ref.read(plantRepositoryProvider);
-      final (plants, _) = await repo.listPlants(
-        page: 1,
-        perPage: 30,
-        search: query.trim(),
-      );
+      final plants = await repo.lookupPlants(query.trim(), limit: 30);
       setState(() {
         _results = plants;
         _searched = true;
@@ -626,9 +623,10 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                           separatorBuilder: (_, __) =>
                               const Divider(height: 1, indent: 16),
                           itemBuilder: (_, i) {
-                            final plant = _results[i];
-                            final alreadyAdded = widget.existingPlantIds
-                                .contains(plant.id);
+                            final match = _results[i];
+                            final alreadyAdded = match.plant != null &&
+                                widget.existingPlantIds
+                                    .contains(match.plant!.id);
                             return ListTile(
                               leading: Container(
                                 width: 40,
@@ -641,7 +639,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                     color: AppColors.primaryMain, size: 20,),
                               ),
                               title: Text(
-                                plant.displayName,
+                                match.title,
                                 style: AppTypography.body.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: alreadyAdded
@@ -649,10 +647,8 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                                       : AppColors.textPrimary,
                                 ),
                               ),
-                              subtitle: plant.commonName != null &&
-                                      plant.scientificName !=
-                                          plant.displayName
-                                  ? Text(plant.scientificName,
+                              subtitle: match.subtitle != null
+                                  ? Text(match.subtitle!,
                                       style: AppTypography.bodySmall.copyWith(
                                           color: AppColors.textMuted,),)
                                   : null,
@@ -666,7 +662,13 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
                               enabled: !alreadyAdded,
                               onTap: alreadyAdded
                                   ? null
-                                  : () => widget.onSelected(plant),
+                                  : () async {
+                                      final plant = await resolvePickedPlant(
+                                          context, ref, match,);
+                                      if (plant != null) {
+                                        widget.onSelected(plant);
+                                      }
+                                    },
                             );
                           },
                         ),

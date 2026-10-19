@@ -172,6 +172,7 @@ lib/
 | OTP screen shows resend errors (cooldown / hourly limit / SMS down) and 5-minute validity; dev OTP hint only in debug builds | ✅ |
 | Owner home dashboard counts correct (API fix 2026-10-17: was showing 0 orders/inventory/drivers/customers) | ✅ |
 | CI (`flutter analyze`, `flutter test`), Dependabot (pub + Actions), PR template, `CODEOWNERS` | ✅ |
+| All 7 plant pickers search the catalog + 1.66 M WFO botanical names (`lookupPlants`); picking a name not in the catalog adds it (`resolvePickedPlant`), synonyms show "Now called …" (2026-10-19) | ✅ |
 
 ---
 

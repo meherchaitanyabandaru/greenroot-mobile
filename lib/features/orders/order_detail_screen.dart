@@ -28,6 +28,7 @@ import '../../core/services/geocoding/geocoding_service.dart'
     show MapPickResult;
 import '../dispatches/dispatches.dart';
 import '../plants/plants.dart';
+import '../plants/plant_picker.dart';
 import '../profile/address_map_picker_screen.dart';
 import 'orders.dart';
 
@@ -2557,7 +2558,7 @@ class _PlantSearchSheet extends ConsumerStatefulWidget {
 
 class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
   final _ctrl = TextEditingController();
-  List<Plant> _results = [];
+  List<PlantMatch> _results = [];
   bool _loading = false;
 
   @override
@@ -2576,9 +2577,8 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
   Future<void> _fetch(String q) async {
     setState(() => _loading = true);
     try {
-      final (plants, _) = await ref
-          .read(plantRepositoryProvider)
-          .listPlants(search: q.isEmpty ? null : q);
+      final plants =
+          await ref.read(plantRepositoryProvider).lookupPlants(q, limit: 20);
       if (mounted) setState(() => _results = plants);
     } catch (_) {
       // leave results as-is
@@ -2633,15 +2633,19 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
                         itemCount: _results.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
-                          final p = _results[i];
+                          final m = _results[i];
                           return ListTile(
-                            title: Text(p.displayName),
-                            subtitle: p.commonName != null &&
-                                    p.commonName != p.scientificName
-                                ? Text(p.scientificName,
+                            title: Text(m.title),
+                            subtitle: m.subtitle != null
+                                ? Text(m.subtitle!,
                                     style: AppTypography.caption,)
                                 : null,
-                            onTap: () => Navigator.pop(context, p),
+                            onTap: () async {
+                              final p = await resolvePickedPlant(context, ref, m);
+                              if (p != null && context.mounted) {
+                                Navigator.pop(context, p);
+                              }
+                            },
                           );
                         },
                       ),

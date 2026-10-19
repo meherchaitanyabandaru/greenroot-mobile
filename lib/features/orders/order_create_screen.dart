@@ -9,6 +9,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../owner/customer_picker_sheet.dart';
 import '../owner/owner_members_screen.dart' show NurseryCustomer;
 import '../plants/plants.dart';
+import '../plants/plant_picker.dart';
 import 'orders.dart';
 
 class OrderCreateScreen extends ConsumerStatefulWidget {
@@ -387,7 +388,7 @@ class _ItemRowWidget extends ConsumerStatefulWidget {
 
 class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
   final _searchCtrl = TextEditingController();
-  List<Plant> _results = [];
+  List<PlantMatch> _results = [];
   bool _searching = false;
   bool _showDropdown = false;
 
@@ -414,8 +415,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
     }
     setState(() => _searching = true);
     try {
-      final (results, _) = await ref.read(plantRepositoryProvider)
-          .listPlants(search: query, page: 1, perPage: 10);
+      final results = await ref.read(plantRepositoryProvider).lookupPlants(query);
       if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; });
     } catch (e) {
       if (mounted) {
@@ -489,14 +489,16 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                 itemCount: _results.length,
                 separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
                 itemBuilder: (_, i) {
-                  final plant = _results[i];
+                  final match = _results[i];
                   return ListTile(
                     dense: true,
-                    title: Text(plant.scientificName, style: AppTypography.bodySmall),
-                    subtitle: plant.commonName != null
-                        ? Text(plant.commonName!, style: AppTypography.caption)
+                    title: Text(match.title, style: AppTypography.bodySmall),
+                    subtitle: match.subtitle != null
+                        ? Text(match.subtitle!, style: AppTypography.caption)
                         : null,
-                    onTap: () {
+                    onTap: () async {
+                      final plant = await resolvePickedPlant(context, ref, match);
+                      if (plant == null || !mounted) return;
                       _searchCtrl.text = plant.displayName;
                       setState(() { row.plant = plant; _showDropdown = false; _results = []; });
                       widget.onChanged();

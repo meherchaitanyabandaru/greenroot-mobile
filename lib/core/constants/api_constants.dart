@@ -23,6 +23,8 @@ abstract class ApiConstants {
   static const String plants = '$v1/plants';
   static const String plantCategories = '$v1/plants/categories';
   static const String plantSizes = '$v1/plants/sizes';
+  static const String plantLookup = '$v1/plants/lookup';
+  static const String plantResolve = '$v1/plants/resolve';
   static String plantById(int id) => '$v1/plants/$id';
   static String plantCareGuide(int id) => '$v1/plants/$id/care-guide';
 
