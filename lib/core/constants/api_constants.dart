@@ -44,11 +44,6 @@ abstract class ApiConstants {
   static String topItemById(int id) => '$v1/top-items/$id';
   static String nurseryTopItems(int nurseryId) => '$v1/nurseries/$nurseryId/top-items?per_page=20';
 
-  // Plant Requests
-  static const String plantRequests = '$v1/plant-requests';
-  static String plantRequestById(int id) => '$v1/plant-requests/$id';
-  static String plantRequestRespond(int id) =>
-      '$v1/plant-requests/$id/responses';
 
   // Orders
   static const String orders = '$v1/orders';

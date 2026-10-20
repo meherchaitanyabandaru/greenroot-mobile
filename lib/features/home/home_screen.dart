@@ -19,7 +19,6 @@ import '../owner/owner_home.dart';
 import '../drivers/trip_preview_screen.dart';
 import '../notifications/notifications.dart';
 import '../orders/orders.dart';
-import '../plant_requests/requests.dart';
 import '../subscriptions/trial_banner_widget.dart';
 
 final _operationsHomeProvider =
@@ -29,13 +28,11 @@ final _operationsHomeProvider =
   final nurseryId = session.nurseryId ?? caps.primaryNurseryId;
   final orderRepo = ref.watch(orderRepositoryProvider);
   final dispatchRepo = ref.watch(dispatchRepositoryProvider);
-  final requestRepo = ref.watch(requestRepositoryProvider);
   final dashboardRepo = ref.watch(ownerDashboardRepositoryProvider);
 
   var dashboard = OwnerDashboardData.empty;
   var orders = <Order>[];
   var dispatches = <Dispatch>[];
-  var requests = <PlantRequest>[];
 
   if (caps.isNurseryOwner) {
     try {
@@ -58,17 +55,12 @@ final _operationsHomeProvider =
     );
     dispatches = items;
   } catch (_) {}
-  try {
-    final (items, _) = await requestRepo.listRequests(page: 1, perPage: 30);
-    requests = items;
-  } catch (_) {}
 
   return _OperationsHomeData(
     nurseryId: nurseryId,
     dashboard: dashboard,
     orders: orders,
     dispatches: dispatches,
-    requests: requests,
   );
 });
 
@@ -1032,14 +1024,12 @@ class _OperationsHomeData {
   final OwnerDashboardData dashboard;
   final List<Order> orders;
   final List<Dispatch> dispatches;
-  final List<PlantRequest> requests;
 
   const _OperationsHomeData({
     required this.nurseryId,
     required this.dashboard,
     required this.orders,
     required this.dispatches,
-    required this.requests,
   });
 }
 

@@ -43,7 +43,7 @@
 // ├─────────────────────────────────────────────────────────────────────────────┤
 // │  ❌  Create quotations POST /api/v1/quotations                              │
 // │  ❌  Approve / convert quotations                                           │
-// │  ❌  Edit top items, plant requests, sourcing network                       │
+// │  ❌  Edit top items, sourcing network                                       │
 // │  ❌  Create dispatches / assign drivers                                     │
 // │  ❌  Cancel non-PENDING orders                                              │
 // └─────────────────────────────────────────────────────────────────────────────┘

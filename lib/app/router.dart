@@ -35,7 +35,6 @@ import '../features/drivers/driver_trip_map_screen.dart';
 import '../features/drivers/trip_event_screen.dart';
 import '../features/drivers/trip_preview_screen.dart';
 import '../features/top_items/top_items_screen.dart';
-import '../features/plant_requests/request_list_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
 import '../features/nurseries/nursery_detail_screen.dart';
@@ -56,12 +55,10 @@ import '../features/quotations/quotation_detail_screen.dart';
 import '../features/quotations/quotation_list_screen.dart';
 import '../features/quotations/quotation_verification_screen.dart';
 import '../features/quotations/quotations.dart';
-import '../features/plant_requests/request_create_screen.dart';
 import '../features/owner/owner_members_screen.dart';
 import '../features/owner/nursery_branding_screen.dart';
 import '../features/owner/nursery_profile_screen.dart';
 import '../features/auth/presentation/screens/account_suspended_screen.dart';
-import '../features/plant_requests/request_detail_screen.dart';
 import '../features/connections/connections_screen.dart';
 import '../features/sourcing/sourcing_screen.dart';
 import '../features/tracking/dispatch_tracking_screen.dart';
@@ -442,24 +439,6 @@ final appRouter = GoRouter(
       path: '/nursery/top-items',
       redirect: _canSellGuard,
       builder: (_, __) => const TopItemsScreen(),
-    ),
-
-    // ── Requests ──────────────────────────────────────────────────────────────
-    GoRoute(
-      path: '/requests',
-      redirect: _canSellGuard,
-      builder: (_, __) => const RequestListScreen(),
-    ),
-    GoRoute(
-      path: '/requests/create',
-      redirect: _canSellGuard,
-      builder: (_, __) => const RequestCreateScreen(),
-    ),
-    GoRoute(
-      path: '/requests/:id',
-      redirect: _canSellGuard,
-      builder: (_, state) => RequestDetailScreen(
-          requestId: int.parse(state.pathParameters['id']!),),
     ),
 
     // ── Orders ────────────────────────────────────────────────────────────────
