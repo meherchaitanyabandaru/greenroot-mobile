@@ -172,7 +172,7 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _homeSearchBar(context)),
-            SliverToBoxAdapter(child: _postCtas(context)),
+            SliverToBoxAdapter(child: _createAdButton(context)),
             SliverToBoxAdapter(child: _homeQuickActions(context, ref)),
             SliverToBoxAdapter(child: _typeSwitch()),
             listAsync.when(
@@ -190,8 +190,8 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
                       icon: want ? Icons.campaign_outlined : Icons.storefront_outlined,
                       title: want ? 'No one is asking for plants' : 'No plants for sale yet',
                       subtitle: want
-                          ? 'Need something? Tap "Post a need" above'
-                          : 'Have surplus? Tap "Sell plants" above',
+                          ? 'Looking for a plant? Tap "Create a Plant Ad", then "Plants I Want"'
+                          : 'Have surplus? Tap "Create a Plant Ad", then "Plants I Have"',
                     ),
                   );
                 }
@@ -271,62 +271,11 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
         ),
       );
 
-  /// The two things a nursery comes here to do, side by side in their colours.
-  Widget _postCtas(BuildContext context) {
-    Widget cta(String title, String sub, IconData icon, Color fg, Color bg, Widget screen) =>
-        Expanded(
-          child: Material(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => screen, fullscreenDialog: true),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(icon, color: fg),
-                    const SizedBox(height: 8),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 15),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      sub,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: fg, fontSize: 12, height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-    return Container(
-      color: _mkCard,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      // Both cards take the taller one's height, even when text wraps.
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            cta('Sell plants', 'Post what you have', Icons.add_business_outlined,
-                _saleColor, _saleBg, const _PostAdScreen(),),
-            const SizedBox(width: 10),
-            cta('Post a need', 'Ask for plants you want', Icons.campaign_outlined,
-                _wantColor, _wantBg, const _PostWantScreen(),),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _createAdButton(BuildContext context) => Container(
+        color: _mkCard,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+        child: _CreatePlantAdButton(),
+      );
 
   Widget _homeSearchBar(BuildContext context) {
     return Semantics(
@@ -396,6 +345,139 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
       ),
     );
   }
+}
+
+/// "Create a Plant Ad": choose Plants I Have (an ad for sale) or Plants I Want
+/// (a wanted post), then open that form. Every post button opens this.
+Future<void> showCreatePlantAdSheet(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _mkCard,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheet) {
+        Widget option(String key, String title, String sub, IconData icon,
+                Color fg, Color bg, Widget screen,) =>
+            Material(
+              key: ValueKey(key),
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.pop(sheet);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => screen, fullscreenDialog: true),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: _mkCard,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: fg),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                color: fg,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              sub,
+                              style: TextStyle(color: fg, fontSize: 13, height: 1.3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: fg),
+                    ],
+                  ),
+                ),
+              ),
+            );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create a Plant Ad 🌱',
+                  style: AppTypography.h3.copyWith(color: _mkTextPrimary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose the type of ad you want to publish.',
+                  style: AppTypography.body.copyWith(color: _mkTextSecondary),
+                ),
+                const SizedBox(height: 16),
+                option(
+                  'create_ad_have',
+                  'Plants I Have',
+                  'Offer plants you have to other nurseries',
+                  Icons.arrow_upward_rounded,
+                  _saleColor,
+                  _saleBg,
+                  const _PostAdScreen(),
+                ),
+                const SizedBox(height: 10),
+                option(
+                  'create_ad_want',
+                  'Plants I Want',
+                  'Ask nurseries for a plant you need',
+                  Icons.arrow_downward_rounded,
+                  _wantColor,
+                  _wantBg,
+                  const _PostWantScreen(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+class _CreatePlantAdButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          key: const ValueKey('local_market_create_ad'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _mkGreen,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.x2l),
+            ),
+          ),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text(
+            'Create a Plant Ad',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
+          onPressed: () => showCreatePlantAdSheet(context),
+        ),
+      );
 }
 
 class _QuickActionTile extends StatelessWidget {
@@ -1471,37 +1553,7 @@ class _MyAdsScreenState extends ConsumerState<_MyAdsScreen> {
             color: _mkCard,
             border: Border(top: BorderSide(color: _mkBorder)),
           ),
-          child: Row(
-            children: [
-              for (final (label, icon, fg, screen) in [
-                ('Sell plants', Icons.add_business_outlined, _saleColor, const _PostAdScreen() as Widget),
-                ('Post a need', Icons.campaign_outlined, _wantColor, const _PostWantScreen() as Widget),
-              ]) ...[
-                if (label == 'Post a need') const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: fg,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.x2l),
-                      ),
-                    ),
-                    icon: Icon(icon),
-                    label: Text(
-                      label,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                    ),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => screen, fullscreenDialog: true),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+          child: _CreatePlantAdButton(),
         ),
       ),
       body: adsAsync.when(
@@ -2968,7 +3020,7 @@ class _PostWantScreenState extends ConsumerState<_PostWantScreen> {
     return Scaffold(
       backgroundColor: _mkBg,
       appBar: AppBar(
-        title: Text(editing ? 'Edit wanted post' : 'Post what you need'),
+        title: Text(editing ? 'Edit wanted post' : 'Plants I Want'),
         backgroundColor: _mkCard,
         foregroundColor: _mkTextPrimary,
         elevation: 0,
@@ -3327,7 +3379,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
     return Scaffold(
       backgroundColor: _mkBg,
       appBar: AppBar(
-        title: Text(widget.editingAd != null ? 'Edit Ad' : 'Post Ad'),
+        title: Text(widget.editingAd != null ? 'Edit Ad' : 'Plants I Have'),
         backgroundColor: _mkCard,
         foregroundColor: _mkTextPrimary,
         elevation: 0,

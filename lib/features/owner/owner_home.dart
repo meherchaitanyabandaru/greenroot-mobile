@@ -14,6 +14,7 @@ import '../../core/services/recent_items.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../market/local_market_screen.dart' show showCreatePlantAdSheet;
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../../core/widgets/shimmer.dart';
@@ -127,8 +128,7 @@ class OwnerHome extends ConsumerWidget {
         _OwnerQuickActions(
           onNewOrder: () => context.push('/orders/create'),
           onNewQuotation: () => context.push('/quotations/create'),
-          onNewMarketAd: () =>
-              ref.read(mainTabIndexProvider.notifier).state = 3,
+          onNewMarketAd: () => showCreatePlantAdSheet(context),
           // Without id/name query params this defaults to nurseryId 0 (see
           // MembersScreen's route builder) -- connections_screen.dart's
           // "View All" links are the existing precedent for this exact
@@ -528,7 +528,7 @@ class _OwnerQuickActions extends StatelessWidget {
         ),
         _ActionCell(
           icon: Icons.storefront_outlined,
-          label: 'New Market Ad',
+          label: 'Create Plant Ad',
           color: AppColors.teal700,
           onTap: onNewMarketAd,
         ),
