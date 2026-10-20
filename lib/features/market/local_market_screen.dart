@@ -3867,27 +3867,67 @@ class _SizeChips extends ConsumerWidget {
 
 const _maxAdPhotos = 3;
 
-// Shrink at pick time: less memory and a faster preview; uploads are
-// resized again to 1200px.
-Future<List<XFile>> _pickAdPhotos(int count) async {
-  final picker = ImagePicker();
+/// Asks camera or gallery, then picks up to [count] photos (the camera takes
+/// one). Shrinks at pick time: less memory and a faster preview; uploads are
+/// resized again to 1200px.
+Future<List<XFile>> _pickAdPhotos(BuildContext context, int count) async {
   if (count <= 0) return const [];
-  if (count == 1) {
-    final f = await picker.pickImage(
-      source: ImageSource.gallery,
+  final source = await showModalBottomSheet<ImageSource>(
+    context: context,
+    backgroundColor: _mkCard,
+    showDragHandle: true,
+    builder: (sheet) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined, color: _mkGreen),
+            title: const Text('Take photo'),
+            onTap: () => Navigator.pop(sheet, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: _mkGreen),
+            title: Text(count == 1 ? 'Choose from gallery' : 'Choose from gallery (up to $count)'),
+            onTap: () => Navigator.pop(sheet, ImageSource.gallery),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+  if (source == null) return const [];
+  final picker = ImagePicker();
+  try {
+    if (source == ImageSource.camera || count == 1) {
+      final f = await picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      return f == null ? const [] : [f];
+    }
+    final files = await picker.pickMultiImage(
+      limit: count,
       maxWidth: 1600,
       maxHeight: 1600,
       imageQuality: 85,
     );
-    return f == null ? const [] : [f];
+    return files.take(count).toList();
+  } catch (_) {
+    // Camera or gallery permission refused, or no camera.
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(source == ImageSource.camera
+              ? 'Could not open the camera. Allow camera access in Settings.'
+              : 'Could not open the gallery.',),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return const [];
   }
-  final files = await picker.pickMultiImage(
-    limit: count,
-    maxWidth: 1600,
-    maxHeight: 1600,
-    imageQuality: 85,
-  );
-  return files.take(count).toList();
 }
 
 class _PhotosStep extends StatelessWidget {
@@ -3911,8 +3951,8 @@ class _PhotosStep extends StatelessWidget {
     required this.pickup,
   });
 
-  Future<void> _replace(Object old) async {
-    final files = await _pickAdPhotos(1);
+  Future<void> _replace(BuildContext context, Object old) async {
+    final files = await _pickAdPhotos(context, 1);
     if (files.isNotEmpty) onReplace(old, files.first);
   }
 
@@ -3928,7 +3968,7 @@ class _PhotosStep extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Up to $_maxAdPhotos photos. The first is the cover. Tap a photo to replace it.',
+          'Take photos or pick from your gallery, up to $_maxAdPhotos. The first is the cover. Tap a photo to replace it.',
           style: AppTypography.caption.copyWith(color: _mkTextSecondary),
         ),
         const SizedBox(height: 16),
@@ -3941,7 +3981,7 @@ class _PhotosStep extends StatelessWidget {
           children: [
             ...existingPhotos.map(
               (url) => _PhotoTile(
-                onTap: () => _replace(url),
+                onTap: () => _replace(context, url),
                 child: Image.network(
                   url,
                   fit: BoxFit.cover,
@@ -3956,7 +3996,7 @@ class _PhotosStep extends StatelessWidget {
             ),
             ...pickedFiles.map(
               (f) => _PhotoTile(
-                onTap: () => _replace(f),
+                onTap: () => _replace(context, f),
                 child: Image.file(
                   File(f.path),
                   fit: BoxFit.cover,
@@ -3973,6 +4013,7 @@ class _PhotosStep extends StatelessWidget {
               GestureDetector(
                 onTap: () async {
                   final files = await _pickAdPhotos(
+                    context,
                     _maxAdPhotos - existingPhotos.length - pickedFiles.length,
                   );
                   if (files.isNotEmpty) onNewPicked(files);
