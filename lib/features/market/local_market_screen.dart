@@ -4656,6 +4656,83 @@ class _ReplyInput extends StatelessWidget {
   }
 }
 
+class _SellerTopItemTile extends StatelessWidget {
+  final SellerTopItem item;
+  const _SellerTopItemTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    const placeholder = ColoredBox(
+      color: _mkLight,
+      child: Icon(Icons.local_florist_outlined, color: _mkGreen),
+    );
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: _mkCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _mkBorder),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: item.photo == null
+                  ? placeholder
+                  : Image.network(
+                      item.photo!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => placeholder,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.commonName ?? item.plantName,
+                  style: AppTypography.label.copyWith(
+                    color: _mkTextPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  [
+                    if (item.commonName != null) item.plantName,
+                    item.sizeName,
+                  ].join(' · '),
+                  style:
+                      AppTypography.caption.copyWith(color: _mkTextSecondary),
+                ),
+                if (item.qualityNotes != null && item.qualityNotes!.isNotEmpty)
+                  Text(
+                    item.qualityNotes!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        AppTypography.caption.copyWith(color: _mkTextSecondary),
+                  ),
+              ],
+            ),
+          ),
+          if (item.unitPrice != null)
+            Text(
+              _rupees(item.unitPrice!),
+              style:
+                  const TextStyle(color: _mkGreen, fontWeight: FontWeight.w800),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The poster's camera selfie in a circle; their initial when there is none.
 class _SellerAvatar extends StatelessWidget {
   final String? photo;
@@ -4772,6 +4849,20 @@ class _SellerProfileScreen extends ConsumerWidget {
                 _sellerStat('${p.dealsAgreed}', 'Deals agreed'),
               ],
             ),
+            if (p.topItems.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Top items',
+                style: AppTypography.h4.copyWith(color: _mkTextPrimary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Plants this nursery is known for',
+                style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+              ),
+              const SizedBox(height: 10),
+              for (final t in p.topItems) _SellerTopItemTile(item: t),
+            ],
             const SizedBox(height: 20),
             Text(
               'Live ads',

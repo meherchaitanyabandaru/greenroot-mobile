@@ -205,6 +205,7 @@ class SellerProfile {
   final int liveAds;
   final int dealsAgreed;
   final List<MarketAd> ads;
+  final List<SellerTopItem> topItems;
 
   const SellerProfile({
     required this.nurseryId,
@@ -219,6 +220,7 @@ class SellerProfile {
     required this.liveAds,
     required this.dealsAgreed,
     required this.ads,
+    this.topItems = const [],
   });
 
   factory SellerProfile.fromJson(Map<String, dynamic> j) => SellerProfile(
@@ -237,6 +239,38 @@ class SellerProfile {
                 ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             const [],
+        topItems: (j['top_items'] as List?)
+                ?.map((e) => SellerTopItem.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
+      );
+}
+
+/// One plant a nursery showcases as a top item (up to 20 per nursery).
+class SellerTopItem {
+  final String plantName;
+  final String? commonName;
+  final String sizeName;
+  final double? unitPrice;
+  final String? qualityNotes;
+  final String? photo;
+
+  const SellerTopItem({
+    required this.plantName,
+    this.commonName,
+    required this.sizeName,
+    this.unitPrice,
+    this.qualityNotes,
+    this.photo,
+  });
+
+  factory SellerTopItem.fromJson(Map<String, dynamic> j) => SellerTopItem(
+        plantName: j['plant_name'] as String,
+        commonName: j['common_name'] as String?,
+        sizeName: j['size_name'] as String? ?? '',
+        unitPrice: (j['unit_price'] as num?)?.toDouble(),
+        qualityNotes: j['quality_notes'] as String?,
+        photo: j['photo'] as String?,
       );
 }
 
