@@ -284,17 +284,25 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
                 MaterialPageRoute(builder: (_) => screen, fullscreenDialog: true),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(icon, color: fg),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 15),
                     ),
-                    Text(sub, style: TextStyle(color: fg, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                      sub,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: fg, fontSize: 12, height: 1.3),
+                    ),
                   ],
                 ),
               ),
@@ -304,14 +312,18 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
     return Container(
       color: _mkCard,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Row(
-        children: [
-          cta('Sell plants', 'Post what you have', Icons.add_business_outlined,
-              _saleColor, _saleBg, const _PostAdScreen(),),
-          const SizedBox(width: 10),
-          cta('Post a need', 'Ask for plants you want', Icons.campaign_outlined,
-              _wantColor, _wantBg, const _PostWantScreen(),),
-        ],
+      // Both cards take the taller one's height, even when text wraps.
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            cta('Sell plants', 'Post what you have', Icons.add_business_outlined,
+                _saleColor, _saleBg, const _PostAdScreen(),),
+            const SizedBox(width: 10),
+            cta('Post a need', 'Ask for plants you want', Icons.campaign_outlined,
+                _wantColor, _wantBg, const _PostWantScreen(),),
+          ],
+        ),
       ),
     );
   }
@@ -365,7 +377,7 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
     return Container(
       color: _mkCard,
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 14),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
       child: Row(
         children: [
           Expanded(
@@ -411,17 +423,19 @@ class _QuickActionTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: _mkLight,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _mkGreen.withValues(alpha: 0.18)),
-              ),
-              child: Badge(
-                isLabelVisible: badge > 0,
-                label: Text(badge > 99 ? '99+' : '$badge'),
+            Badge(
+              isLabelVisible: badge > 0,
+              label: Text(badge > 99 ? '99+' : '$badge'),
+              offset: const Offset(4, -4),
+              child: Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _mkLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _mkGreen.withValues(alpha: 0.18)),
+                ),
                 child: Icon(icon, color: color, size: 26),
               ),
             ),
@@ -1152,9 +1166,8 @@ class _BrowseAdCard extends ConsumerWidget {
             border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _AdThumb(ad: ad, size: 92),
+              _AdThumb(ad: ad, size: 100),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1171,7 +1184,7 @@ class _BrowseAdCard extends ConsumerWidget {
                                 .read(toggleSaveProvider(ad.id).notifier)
                                 .toggle(),
                             child: Padding(
-                              padding: const EdgeInsets.all(2),
+                              padding: const EdgeInsets.all(6),
                               child: Icon(
                                 isSaved
                                     ? Icons.favorite_rounded
@@ -1184,7 +1197,7 @@ class _BrowseAdCard extends ConsumerWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 2),
                     Text(
                       ad.isWant ? ad.plantName : ad.title,
                       maxLines: 2,
