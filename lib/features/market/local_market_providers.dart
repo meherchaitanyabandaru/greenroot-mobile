@@ -361,6 +361,11 @@ class MarketEnquiry {
   final double? agreedPricePerUnit;
   final int? agreedQuantity;
   final DateTime createdAt;
+
+  /// For chat lists: the newest message and the viewer's unread count.
+  final String? lastMessage;
+  final DateTime? lastMessageAt;
+  final int unreadCount;
   final List<MarketEnquiryMessage> messages;
   final BackendLifecycle? lifecycle;
   final MarketEnquiryCapabilities? capabilities;
@@ -384,6 +389,9 @@ class MarketEnquiry {
     this.agreedPricePerUnit,
     this.agreedQuantity,
     required this.createdAt,
+    this.lastMessage,
+    this.lastMessageAt,
+    this.unreadCount = 0,
     this.messages = const [],
     this.lifecycle,
     this.capabilities,
@@ -412,6 +420,9 @@ class MarketEnquiry {
         agreedPricePerUnit: (j['agreed_price_per_unit'] as num?)?.toDouble(),
         agreedQuantity: (j['agreed_quantity'] as num?)?.toInt(),
         createdAt: DateTime.parse(j['created_at'] as String),
+        lastMessage: j['last_message'] as String?,
+        lastMessageAt: DateTime.tryParse(j['last_message_at'] as String? ?? ''),
+        unreadCount: (j['unread_count'] as num?)?.toInt() ?? 0,
         messages: (j['messages'] as List?)
                 ?.map((e) =>
                     MarketEnquiryMessage.fromJson(e as Map<String, dynamic>),)
@@ -586,6 +597,8 @@ class MarketRepository {
         if (description != null) 'description': description,
         if (quantity != null) 'quantity': quantity,
         if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
+        // The app prices per plant.
+        if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
         if (sizeDescription != null) 'size_description': sizeDescription,
         'photos': photos,
       },);
@@ -614,6 +627,7 @@ class MarketRepository {
           if (description != null) 'description': description,
           if (quantity != null) 'quantity': quantity,
           if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
+          if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
           if (sizeDescription != null) 'size_description': sizeDescription,
           if (photos != null) 'photos': photos,
         },
@@ -1077,6 +1091,14 @@ final adDetailProvider = FutureProvider.autoDispose.family<MarketAd, int>(
   (ref, id) => ref.watch(marketRepositoryProvider).getAd(id),
 );
 
+/// Unread chat messages across all my open chats, for the Chats badge.
+final marketUnreadProvider = FutureProvider.autoDispose<int>((ref) async {
+  final data = await ref.watch(marketRepositoryProvider).getEnquiries(
+    {'per_page': '1'},
+  );
+  return (data['unread_total'] as num?)?.toInt() ?? 0;
+});
+
 /// The chats other nurseries started about one of my ads.
 final adEnquiriesProvider =
     FutureProvider.autoDispose.family<List<MarketEnquiry>, int>((ref, adId) async {
@@ -1126,6 +1148,7 @@ class EnquiryChatNotifier extends StateNotifier<AsyncValue<void>> {
       _ref.invalidate(enquiryDetailProvider(enquiryId));
       _ref.invalidate(receivedEnquiriesProvider);
       _ref.invalidate(sentEnquiriesProvider);
+      _ref.invalidate(marketUnreadProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
