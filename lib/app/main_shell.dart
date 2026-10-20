@@ -30,6 +30,8 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
+  final _opened = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -102,10 +104,16 @@ class _MainShellState extends ConsumerState<MainShell> {
     final rawIndex = ref.watch(mainTabIndexProvider);
     final index = rawIndex.clamp(0, tabs.length - 1);
 
+    // Build a tab the first time it is opened, then keep it: nothing runs
+    // (or asks for permissions, like the market's location) behind the scenes.
+    _opened.add(tabs[index].label);
     return Scaffold(
       body: IndexedStack(
         index: index,
-        children: tabs.map((t) => t.screen).toList(),
+        children: [
+          for (final t in tabs)
+            _opened.contains(t.label) ? t.screen : const SizedBox.shrink(),
+        ],
       ),
       bottomNavigationBar: caps.isDriverOnly
           ? _DriverBottomNav(

@@ -64,7 +64,7 @@ class _NoOpMarketRepo extends MarketRepository {
     double? pricePerUnit,
     String? sizeDescription,
     List<String> photos = const [],
-    Map<String, dynamic> access = const {},
+    Map<String, dynamic> extra = const {},
   }) async =>
       createAdResponse();
 

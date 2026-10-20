@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/domain/lifecycle_models.dart';
 import '../../core/network/api_client.dart';
 import '../../core/constants/api_constants.dart';
+import 'market_area.dart';
 
 // ── Models ────────────────────────────────────────────────────
 
@@ -39,6 +40,9 @@ class MarketAd {
   /// stated), where buyers collect, and any directions.
   final bool? roadAccessible;
   final bool? truckAccessible;
+
+  /// How far the ad is from the viewer, when browsing nearby.
+  final double? distanceKm;
   final String? pickupPoint;
   final String? accessInstructions;
   final String status;
@@ -84,6 +88,7 @@ class MarketAd {
     required this.photos,
     this.roadAccessible,
     this.truckAccessible,
+    this.distanceKm,
     this.pickupPoint,
     this.accessInstructions,
     required this.status,
@@ -127,6 +132,7 @@ class MarketAd {
         priceUnit: j['price_unit'] as String?,
         photos: (j['photos'] as List?)?.map((e) => e as String).toList() ?? [],
         roadAccessible: j['road_accessible'] as bool?,
+        distanceKm: (j['distance_km'] as num?)?.toDouble(),
         truckAccessible: j['truck_accessible'] as bool?,
         pickupPoint: j['pickup_landmark'] as String?,
         accessInstructions: j['access_instructions'] as String?,
@@ -614,7 +620,7 @@ class MarketRepository {
     double? pricePerUnit,
     String? sizeDescription,
     List<String> photos = const [],
-    Map<String, dynamic> access = const {},
+    Map<String, dynamic> extra = const {},
   }) =>
       _client.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
         'ad_type': adType,
@@ -630,7 +636,7 @@ class MarketRepository {
         if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
         if (sizeDescription != null) 'size_description': sizeDescription,
         'photos': photos,
-        ...access,
+        ...extra,
       },);
 
   Future<void> updateAd(
@@ -645,7 +651,7 @@ class MarketRepository {
     String? sizeDescription,
     List<String>? photos,
     String? neededBy,
-    Map<String, dynamic> access = const {},
+    Map<String, dynamic> extra = const {},
   }) =>
       _client.patch<Map<String, dynamic>>(
         ApiConstants.marketAdById(adId),
@@ -661,7 +667,7 @@ class MarketRepository {
           if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
           if (sizeDescription != null) 'size_description': sizeDescription,
           if (photos != null) 'photos': photos,
-          ...access,
+          ...extra,
         },
       );
 
@@ -763,9 +769,16 @@ Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
 // ── Latest Ads (home screen) ──────────────────────────────────
 
 final latestAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
-  final data = await ref.watch(marketRepositoryProvider).getAds(
-    {'per_page': '6', 'page': '1', 'type': 'SELL'},
-  );
+  // Don't wait for GPS: until it arrives the server uses the nursery's
+  // address, then this reloads with the phone's position.
+  final pos = ref.watch(marketPositionProvider).valueOrNull;
+  final radius = ref.watch(marketRadiusProvider);
+  final data = await ref.watch(marketRepositoryProvider).getAds({
+    'per_page': '6',
+    'page': '1',
+    'type': 'SELL',
+    ...marketAreaParams(pos?.latitude, pos?.longitude, radius),
+  });
   return (data['ads'] as List?)
           ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
           .toList() ??
@@ -775,9 +788,16 @@ final latestAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async
 /// The newest wanted posts, for the market home.
 final latestWantsProvider =
     FutureProvider.autoDispose<List<MarketAd>>((ref) async {
-  final data = await ref.watch(marketRepositoryProvider).getAds(
-    {'per_page': '6', 'page': '1', 'type': 'WANT'},
-  );
+  // Don't wait for GPS: until it arrives the server uses the nursery's
+  // address, then this reloads with the phone's position.
+  final pos = ref.watch(marketPositionProvider).valueOrNull;
+  final radius = ref.watch(marketRadiusProvider);
+  final data = await ref.watch(marketRepositoryProvider).getAds({
+    'per_page': '6',
+    'page': '1',
+    'type': 'WANT',
+    ...marketAreaParams(pos?.latitude, pos?.longitude, radius),
+  });
   return (data['ads'] as List?)
           ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
           .toList() ??
@@ -841,8 +861,7 @@ class BrowseAdsState {
   int get activeFilterCount =>
       (category != null ? 1 : 0) +
       (minPrice != null ? 1 : 0) +
-      (maxPrice != null ? 1 : 0) +
-      (nearLat != null ? 1 : 0);
+      (maxPrice != null ? 1 : 0);
 
   BrowseAdsState copyWith({
     List<MarketAd>? ads,
@@ -891,8 +910,16 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
   final MarketRepository _repo;
   Timer? _debounce;
   static const _perPage = 20;
+  // Only the newest request may write the list: a slow, older one must not
+  // overwrite results for the filters the user just picked.
+  int _seq = 0;
 
-  BrowseAdsNotifier(this._repo) : super(const BrowseAdsState()) {
+  BrowseAdsNotifier(
+    this._repo, {
+    double? lat,
+    double? lon,
+    double radiusKm = kDefaultRadiusKm,
+  }) : super(BrowseAdsState(nearLat: lat, nearLon: lon, radiusKm: radiusKm)) {
     _load();
   }
 
@@ -961,7 +988,8 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
     _load();
   }
 
-  void setNearby({double? lat, double? lon, double radiusKm = 50}) {
+  /// Where to look: the phone's position (kept when not given) and radius.
+  void setArea({double? lat, double? lon, double? radiusKm}) {
     state = BrowseAdsState(
       query: state.query,
       type: state.type,
@@ -969,9 +997,9 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       category: state.category,
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
-      nearLat: lat,
-      nearLon: lon,
-      radiusKm: lat != null ? radiusKm : null,
+      nearLat: lat ?? state.nearLat,
+      nearLon: lon ?? state.nearLon,
+      radiusKm: radiusKm ?? state.radiusKm,
     );
     _load();
   }
@@ -1000,6 +1028,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
   }
 
   Future<void> _load() async {
+    final seq = ++_seq;
     final q = state.query;
     final type = state.type;
     final sort = state.sort;
@@ -1021,12 +1050,11 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         if (category != null) 'category': category,
         if (minPrice != null) 'min_price': minPrice.toStringAsFixed(0),
         if (maxPrice != null) 'max_price': maxPrice.toStringAsFixed(0),
-        if (nearLat != null) 'near_lat': nearLat.toStringAsFixed(6),
-        if (nearLon != null) 'near_lon': nearLon.toStringAsFixed(6),
-        if (radiusKm != null) 'radius_km': radiusKm.toStringAsFixed(1),
+        ...marketAreaParams(nearLat, nearLon, radiusKm ?? kDefaultRadiusKm),
       };
 
       final data = await _repo.getAds(params);
+      if (seq != _seq || !mounted) return;
 
       final fetched = (data['ads'] as List?)
               ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
@@ -1053,6 +1081,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         radiusKm: radiusKm,
       );
     } catch (e) {
+      if (seq != _seq || !mounted) return;
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,
@@ -1069,9 +1098,22 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
 }
 
 final browseAdsProvider =
-    StateNotifierProvider<BrowseAdsNotifier, BrowseAdsState>(
-  (ref) => BrowseAdsNotifier(ref.watch(marketRepositoryProvider)),
-);
+    StateNotifierProvider<BrowseAdsNotifier, BrowseAdsState>((ref) {
+  final pos = ref.read(marketPositionProvider).valueOrNull;
+  final notifier = BrowseAdsNotifier(
+    ref.watch(marketRepositoryProvider),
+    lat: pos?.latitude,
+    lon: pos?.longitude,
+    radiusKm: ref.read(marketRadiusProvider),
+  );
+  // Follow the saved radius and the phone's position as they arrive.
+  ref.listen(marketRadiusProvider, (_, km) => notifier.setArea(radiusKm: km));
+  ref.listen(marketPositionProvider, (_, next) {
+    final p = next.valueOrNull;
+    if (p != null) notifier.setArea(lat: p.latitude, lon: p.longitude);
+  });
+  return notifier;
+});
 
 // ── My Ads ────────────────────────────────────────────────────
 
@@ -1327,7 +1369,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     double? pricePerUnit,
     String? sizeDescription,
     List<String> photos = const [],
-    Map<String, dynamic> access = const {},
+    Map<String, dynamic> extra = const {},
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -1343,7 +1385,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
             pricePerUnit: pricePerUnit,
             sizeDescription: sizeDescription,
             photos: photos,
-            access: access,
+            extra: extra,
           );
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
@@ -1370,7 +1412,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     String? sizeDescription,
     List<String>? photos,
     String? neededBy,
-    Map<String, dynamic> access = const {},
+    Map<String, dynamic> extra = const {},
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -1386,7 +1428,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
             sizeDescription: sizeDescription,
             photos: photos,
             neededBy: neededBy,
-            access: access,
+            extra: extra,
           );
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(browseAdsProvider);

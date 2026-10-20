@@ -3,7 +3,6 @@ import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_radius.dart';
@@ -14,6 +13,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plant_picker.dart';
 import '../plants/plants.dart';
 import 'local_market_providers.dart';
+import 'market_area.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _mkGreen = Color(0xFF00A86B);
@@ -166,6 +166,7 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
       body: RefreshIndicator(
         color: _mkGreen,
         onRefresh: () async {
+          ref.invalidate(marketPositionProvider);
           ref.invalidate(latestAdsProvider);
           ref.invalidate(latestWantsProvider);
           ref.invalidate(marketUnreadProvider);
@@ -176,12 +177,16 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
             SliverToBoxAdapter(child: _createAdButton(context)),
             SliverToBoxAdapter(child: _homeQuickActions(context, ref)),
             SliverToBoxAdapter(child: _typeSwitch()),
+            SliverToBoxAdapter(child: _areaCaption()),
             listAsync.when(
               loading: () => const SliverToBoxAdapter(child: _SkeletonList()),
               error: (e, _) => SliverToBoxAdapter(
                 child: _ErrorState(
                   message: e.toString(),
-                  onRetry: () => ref.invalidate(provider),
+                  onRetry: () {
+                    ref.invalidate(marketPositionProvider);
+                    ref.invalidate(provider);
+                  },
                 ),
               ),
               data: (ads) {
@@ -189,7 +194,9 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
                   return SliverToBoxAdapter(
                     child: _EmptyState(
                       icon: want ? Icons.campaign_outlined : Icons.storefront_outlined,
-                      title: want ? 'No one is asking for plants' : 'No plants for sale yet',
+                      title: want
+                          ? 'No one nearby is asking for plants'
+                          : 'No plants for sale within ${ref.watch(marketRadiusProvider).round()} km',
                       subtitle: want
                           ? 'Looking for a plant? Tap "Create a Plant Ad", then "Plants I Want"'
                           : 'Have surplus? Tap "Create a Plant Ad", then "Plants I Have"',
@@ -225,6 +232,34 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
+      ),
+    );
+  }
+
+  /// The market is local: say how far, and let the user change it.
+  Widget _areaCaption() {
+    final km = ref.watch(marketRadiusProvider).round();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_rounded, size: 16, color: _mkGreen),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Showing ads within $km km of you',
+              style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => _BrowseScreen(type: _type, openFilters: true),
+              ),
+            ),
+            child: const Text('Change'),
+          ),
+        ],
       ),
     );
   }
@@ -547,7 +582,14 @@ class _BrowseScreen extends ConsumerStatefulWidget {
   /// SELL (for sale) or WANT (wanted posts) to open on.
   final String type;
 
-  const _BrowseScreen({this.autoFocus = false, this.type = 'SELL'});
+  /// Open with the Filters panel showing (from "Change" on the home).
+  final bool openFilters;
+
+  const _BrowseScreen({
+    this.autoFocus = false,
+    this.type = 'SELL',
+    this.openFilters = false,
+  });
 
   @override
   ConsumerState<_BrowseScreen> createState() => _BrowseScreenState();
@@ -557,7 +599,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
   final _searchCtrl = TextEditingController();
   late final FocusNode _focus;
   late final ScrollController _scroll;
-  bool _nearbyLoading = false;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -571,6 +613,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       if (_searchCtrl.text != q) _searchCtrl.text = q;
       ref.read(browseAdsProvider.notifier).setType(widget.type);
       if (widget.autoFocus) _focus.requestFocus();
+      if (widget.openFilters) _openFilters();
     });
   }
 
@@ -588,246 +631,10 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
     super.dispose();
   }
 
-  Future<void> _toggleNearby() async {
-    final browse = ref.read(browseAdsProvider);
-    if (browse.nearLat != null) {
-      ref.read(browseAdsProvider.notifier).setNearby();
-      return;
-    }
-    setState(() => _nearbyLoading = true);
-    try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permission required for nearby search'),
-            ),
-          );
-        }
-        return;
-      }
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.low),
-      );
-      if (mounted) {
-        ref.read(browseAdsProvider.notifier).setNearby(
-              lat: pos.latitude,
-              lon: pos.longitude,
-            );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not get your location')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _nearbyLoading = false);
-    }
-  }
-
-  void _showFilterSheet() {
+  void _openFilters() {
     FocusScope.of(context).unfocus();
-    final browse = ref.read(browseAdsProvider);
-    String? selCat = browse.category;
-    final minCtrl = TextEditingController(
-      text: browse.minPrice != null ? browse.minPrice!.toStringAsFixed(0) : '',
-    );
-    final maxCtrl = TextEditingController(
-      text: browse.maxPrice != null ? browse.maxPrice!.toStringAsFixed(0) : '',
-    );
-    const cats = [
-      'Fruit Plants',
-      'Flower Plants',
-      'Forest Plants',
-      'Ornamentals',
-    ];
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: _mkCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
-            24 + MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: _mkBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Text(
-                  'Filter Ads',
-                  style: AppTypography.h4.copyWith(
-                    color: _mkTextPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Category',
-                  style: TextStyle(
-                    color: _mkTextSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _catChip(
-                      'All',
-                      selCat == null,
-                      () => setS(() => selCat = null),
-                    ),
-                    for (final c in cats)
-                      _catChip(c, selCat == c, () => setS(() => selCat = c)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Price Range (₹ per unit)',
-                  style: TextStyle(
-                    color: _mkTextSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: minCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: _inputDec('Min price'),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        '–',
-                        style: TextStyle(color: _mkTextSecondary, fontSize: 18),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: maxCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: _inputDec('Max price'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _mkTextSecondary,
-                        side: const BorderSide(color: _mkBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      onPressed: () {
-                        setS(() => selCat = null);
-                        minCtrl.clear();
-                        maxCtrl.clear();
-                      },
-                      child: const Text('Clear All'),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _mkGreen,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                        ),
-                        onPressed: () {
-                          final min = double.tryParse(minCtrl.text.trim());
-                          final max = double.tryParse(maxCtrl.text.trim());
-                          ref.read(browseAdsProvider.notifier).setFilters(
-                                category: selCat,
-                                minPrice: min,
-                                maxPrice: max,
-                              );
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text(
-                          'Apply Filters',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    _scaffoldKey.currentState?.openEndDrawer();
   }
-
-  Widget _catChip(String label, bool selected, VoidCallback onTap) =>
-      GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? _mkGreen : _mkCard,
-            border:
-                Border.all(color: selected ? _mkGreen : _mkBorder, width: 1.5),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : _mkTextPrimary,
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ),
-      );
 
   void _showSortSheet() {
     // Otherwise the search box takes focus back and the keyboard reopens.
@@ -900,11 +707,16 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
 
     final filterCount = browse.activeFilterCount;
     final hasFilters = filterCount > 0;
+    final radius = (browse.radiusKm ?? kDefaultRadiusKm).round();
 
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: const _MarketFiltersDrawer(),
       backgroundColor: _mkBg,
       appBar: AppBar(
         title: Text(browse.type == 'WANT' ? 'Wanted' : 'For sale'),
+        // The Filters button opens the side panel; no extra menu icon.
+        automaticallyImplyActions: false,
         backgroundColor: _mkCard,
         foregroundColor: _mkTextPrimary,
         elevation: 0,
@@ -982,21 +794,19 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Row(
                   children: [
+                    // The market is always local; this shows how far.
                     _controlButton(
-                      icon: browse.nearLat != null
-                          ? Icons.location_on_rounded
-                          : Icons.location_on_outlined,
-                      label: 'Near me',
-                      active: browse.nearLat != null,
-                      loading: _nearbyLoading,
-                      onTap: _toggleNearby,
+                      icon: Icons.location_on_rounded,
+                      label: '$radius km',
+                      active: true,
+                      onTap: _openFilters,
                     ),
                     const SizedBox(width: 8),
                     _controlButton(
                       icon: Icons.tune_rounded,
                       label: hasFilters ? 'Filters ($filterCount)' : 'Filters',
                       active: hasFilters,
-                      onTap: _showFilterSheet,
+                      onTap: _openFilters,
                     ),
                     const SizedBox(width: 8),
                     // Sort takes the rest, right-aligned; only it may shorten.
@@ -1037,7 +847,6 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
     required String label,
     required bool active,
     required VoidCallback onTap,
-    bool loading = false,
     IconData? trailing,
   }) {
     final fg = active ? _mkDark : _mkTextSecondary;
@@ -1048,19 +857,13 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       ),
       child: InkWell(
         customBorder: const StadiumBorder(),
-        onTap: loading ? null : onTap,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: _mkGreen),
-                    )
-                  : Icon(icon, size: 16, color: active ? _mkGreen : fg),
+              Icon(icon, size: 16, color: active ? _mkGreen : fg),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -1086,11 +889,6 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
         children: [
-          if (browse.nearLat != null)
-            _activeChip(
-              '📍 Near Me${browse.radiusKm != null ? ' (${browse.radiusKm!.toStringAsFixed(0)} km)' : ''}',
-              onRemove: () => notifier.setNearby(),
-            ),
           if (browse.category != null)
             _activeChip(
               browse.category!,
@@ -1164,15 +962,25 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
     if (browse.error != null && browse.ads.isEmpty) {
       return _ErrorState(
         message: browse.error!,
-        onRetry: () => ref.read(browseAdsProvider.notifier).refresh(),
+        // A missing location is fixed by asking for it again.
+        onRetry: () {
+          ref.invalidate(marketPositionProvider);
+          ref.read(browseAdsProvider.notifier).refresh();
+        },
       );
     }
 
     if (browse.ads.isEmpty) {
-      return const _EmptyState(
-        icon: Icons.search_off_rounded,
-        title: 'No results',
-        subtitle: 'Try a different search term',
+      final km = (browse.radiusKm ?? kDefaultRadiusKm).round();
+      final searching = browse.query.isNotEmpty || browse.activeFilterCount > 0;
+      return _EmptyState(
+        icon: searching ? Icons.search_off_rounded : Icons.location_searching_rounded,
+        title: searching ? 'No matches within $km km' : 'No ads within $km km',
+        subtitle: km < kMaxRadiusKm
+            ? 'Try a larger distance in Filters${searching ? ', or a different search' : ''}'
+            : searching
+                ? 'Try a different search or fewer filters'
+                : 'Nothing nearby yet. Post what you have, or check back soon',
       );
     }
 
@@ -1232,6 +1040,248 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
 
 /// One ad in a list: a compact row so several ads fit on a screen.
 /// Green border and label for FOR SALE, orange for WANTED.
+/// Side panel with everything that narrows the list: how far (saved per
+/// account), category and price. Sort stays a one-tap button on the screen.
+class _MarketFiltersDrawer extends ConsumerStatefulWidget {
+  const _MarketFiltersDrawer();
+
+  @override
+  ConsumerState<_MarketFiltersDrawer> createState() =>
+      _MarketFiltersDrawerState();
+}
+
+class _MarketFiltersDrawerState extends ConsumerState<_MarketFiltersDrawer> {
+  static const _cats = ['Fruit Plants', 'Flower Plants', 'Forest Plants', 'Ornamentals'];
+
+  late double _radius;
+  String? _cat;
+  late final TextEditingController _min;
+  late final TextEditingController _max;
+
+  @override
+  void initState() {
+    super.initState();
+    final b = ref.read(browseAdsProvider);
+    _radius = ref.read(marketRadiusProvider);
+    _cat = b.category;
+    _min = TextEditingController(text: b.minPrice?.toStringAsFixed(0) ?? '');
+    _max = TextEditingController(text: b.maxPrice?.toStringAsFixed(0) ?? '');
+  }
+
+  @override
+  void dispose() {
+    _min.dispose();
+    _max.dispose();
+    super.dispose();
+  }
+
+  void _apply() {
+    ref.read(browseAdsProvider.notifier)
+      ..setArea(radiusKm: _radius)
+      ..setFilters(
+        category: _cat,
+        minPrice: double.tryParse(_min.text.trim()),
+        maxPrice: double.tryParse(_max.text.trim()),
+      );
+    ref.read(marketRadiusProvider.notifier).save(_radius);
+    Navigator.of(context).pop();
+  }
+
+  void _reset() => setState(() {
+        _radius = kDefaultRadiusKm;
+        _cat = null;
+        _min.clear();
+        _max.clear();
+      });
+
+  Widget _heading(String t) => Padding(
+        padding: const EdgeInsets.only(top: 20, bottom: 10),
+        child: Text(
+          t,
+          style: const TextStyle(
+            color: _mkTextSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final pos = ref.watch(marketPositionProvider);
+    final usingPhone = pos.valueOrNull != null;
+    return Drawer(
+      width: MediaQuery.sizeOf(context).width.clamp(0, 380) * 0.9,
+      backgroundColor: _mkCard,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
+              child: Row(
+                children: [
+                  Text(
+                    'Filters',
+                    style: AppTypography.h3.copyWith(color: _mkTextPrimary),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _heading('DISTANCE'),
+                  Text(
+                    'Within ${_radius.round()} km of you',
+                    style: const TextStyle(
+                      color: _mkDark,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Slider(
+                    value: _radius,
+                    min: kMinRadiusKm,
+                    max: kMaxRadiusKm,
+                    divisions: 9,
+                    label: '${_radius.round()} km',
+                    activeColor: _mkGreen,
+                    onChanged: (v) => setState(() => _radius = v),
+                  ),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('10 km', style: TextStyle(color: _mkTextSecondary, fontSize: 12)),
+                      Text('100 km max', style: TextStyle(color: _mkTextSecondary, fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        usingPhone ? Icons.my_location_rounded : Icons.home_work_outlined,
+                        size: 16,
+                        color: _mkGreen,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          pos.isLoading
+                              ? 'Finding your location...'
+                              : usingPhone
+                                  ? "Measured from your phone's location."
+                                  : "Measured from your nursery's address. Turn on location for distances from where you are.",
+                          style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!usingPhone && !pos.isLoading)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => ref.invalidate(marketPositionProvider),
+                        icon: const Icon(Icons.my_location_rounded, size: 18),
+                        label: const Text('Use my location'),
+                      ),
+                    ),
+                  _heading('CATEGORY'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final c in [null, ..._cats])
+                        ChoiceChip(
+                          label: Text(c ?? 'All'),
+                          selected: _cat == c,
+                          onSelected: (_) => setState(() => _cat = c),
+                          selectedColor: _mkGreen,
+                          labelStyle: TextStyle(
+                            color: _cat == c ? Colors.white : _mkTextPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          showCheckmark: false,
+                        ),
+                    ],
+                  ),
+                  _heading('PRICE PER PLANT (₹)'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _min,
+                          keyboardType: TextInputType.number,
+                          decoration: _inputDec('Min'),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('–', style: TextStyle(color: _mkTextSecondary)),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _max,
+                          keyboardType: TextInputType.number,
+                          decoration: _inputDec('Max'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+            // Buttons sit in Expanded: the app theme makes buttons full-width,
+            // which cannot be laid out side by side otherwise.
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: _mkBorder)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _reset,
+                      child: const Text('Reset'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _mkGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                      ),
+                      onPressed: _apply,
+                      child: const Text(
+                        'Show results',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 Future<bool> _confirmDeleteAd(BuildContext context, MarketAd ad) async =>
     await showDialog<bool>(
       context: context,
@@ -1434,7 +1484,11 @@ class _BrowseAdCard extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          _timeAgo(ad.publishedAt ?? ad.createdAt),
+                          [
+                            if (ad.distanceKm != null)
+                              ad.distanceKm! < 1 ? '<1 km' : '${ad.distanceKm!.round()} km',
+                            _timeAgo(ad.publishedAt ?? ad.createdAt),
+                          ].join(' · '),
                           style: AppTypography.caption
                               .copyWith(color: _mkTextSecondary),
                         ),
@@ -3043,6 +3097,7 @@ class _PostWantScreenState extends ConsumerState<_PostWantScreen> {
         );
       } else {
         final id = await post.create(
+          extra: await _gpsPickup(ref),
           adType: 'WANT',
           neededBy: _dateParam,
           plantId: _plantId,
@@ -3372,7 +3427,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              access: _accessJson,
+              extra: _accessJson,
             );
       } else {
         await ref.read(postAdProvider.notifier).create(
@@ -3387,7 +3442,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              access: _accessJson,
+              extra: {..._accessJson, ...await _gpsPickup(ref)},
             );
       }
       if (mounted) Navigator.of(context).pop();
@@ -3427,7 +3482,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              access: _accessJson,
+              extra: _accessJson,
             );
         adId = widget.editingAd!.id;
       } else {
@@ -3443,7 +3498,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              access: _accessJson,
+              extra: {..._accessJson, ...await _gpsPickup(ref)},
             );
       }
       // Only publish if the ad is in DRAFT state (already-live ads just need the update)
@@ -3872,6 +3927,19 @@ class _DetailsStep extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Where a new ad is: the phone's GPS when allowed (the server falls back to
+/// the nursery's address). Nearby browsing needs every live ad placed.
+Future<Map<String, dynamic>> _gpsPickup(WidgetRef ref) async {
+  final pos = await ref.read(marketPositionProvider.future);
+  if (pos == null) return const {};
+  return {
+    'pickup_latitude': pos.latitude,
+    'pickup_longitude': pos.longitude,
+    'pickup_gps_accuracy_meters': pos.accuracy,
+    'pickup_location_source': 'gps_confirmed',
+  };
 }
 
 /// The catalog sizes as chips, writing the chosen name into [controller]
