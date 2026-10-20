@@ -744,7 +744,7 @@ final latestAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async
 final latestWantsProvider =
     FutureProvider.autoDispose<List<MarketAd>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getAds(
-    {'per_page': '3', 'page': '1', 'type': 'WANT'},
+    {'per_page': '6', 'page': '1', 'type': 'WANT'},
   );
   return (data['ads'] as List?)
           ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))

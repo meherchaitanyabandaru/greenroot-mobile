@@ -134,12 +134,22 @@ InputDecoration _inputDec(String hint) => InputDecoration(
 // 1. LOCAL MARKET HOME
 // ══════════════════════════════════════════════════════════════════════════════
 
-class LocalMarketScreen extends ConsumerWidget {
+class LocalMarketScreen extends ConsumerStatefulWidget {
   const LocalMarketScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final latestAsync = ref.watch(latestAdsProvider);
+  ConsumerState<LocalMarketScreen> createState() => _LocalMarketScreenState();
+}
+
+class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
+  /// Which list the home shows: SELL (↑ for sale) or WANT (↓ wanted).
+  String _type = 'SELL';
+
+  @override
+  Widget build(BuildContext context) {
+    final want = _type == 'WANT';
+    final provider = want ? latestWantsProvider : latestAdsProvider;
+    final listAsync = ref.watch(provider);
 
     return Scaffold(
       key: const ValueKey('local_market_screen'),
@@ -157,98 +167,109 @@ class LocalMarketScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(latestAdsProvider);
           ref.invalidate(latestWantsProvider);
+          ref.invalidate(marketUnreadProvider);
         },
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _homeSearchBar(context)),
             SliverToBoxAdapter(child: _postCtas(context)),
             SliverToBoxAdapter(child: _homeQuickActions(context, ref)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                child: _SectionHeader(
-                  title: 'For sale',
-                  actionLabel: 'View All',
-                  onAction: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const _BrowseScreen()),
-                  ),
-                ),
-              ),
-            ),
-            latestAsync.when(
+            SliverToBoxAdapter(child: _typeSwitch()),
+            listAsync.when(
               loading: () => const SliverToBoxAdapter(child: _SkeletonList()),
               error: (e, _) => SliverToBoxAdapter(
                 child: _ErrorState(
                   message: e.toString(),
-                  onRetry: () => ref.invalidate(latestAdsProvider),
+                  onRetry: () => ref.invalidate(provider),
                 ),
               ),
               data: (ads) {
                 if (ads.isEmpty) {
-                  return const SliverToBoxAdapter(
+                  return SliverToBoxAdapter(
                     child: _EmptyState(
-                      icon: Icons.storefront_outlined,
-                      title: 'No ads yet',
-                      subtitle: 'Be the first to post plants on the market',
+                      icon: want ? Icons.campaign_outlined : Icons.storefront_outlined,
+                      title: want ? 'No one is asking for plants' : 'No plants for sale yet',
+                      subtitle: want
+                          ? 'Need something? Tap "Post a need" above'
+                          : 'Have surplus? Tap "Sell plants" above',
                     ),
                   );
                 }
-                final latest = ads.take(6).toList();
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (_, i) => Padding(
-                      padding: EdgeInsets.fromLTRB(16, i == 0 ? 0 : 0, 16, 14),
-                      child: _BrowseAdCard(ad: latest[i]),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: i < ads.length
+                          ? _BrowseAdCard(ad: ads[i])
+                          : TextButton(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => _BrowseScreen(type: _type),
+                                ),
+                              ),
+                              child: Text(
+                                want ? 'See all wanted posts' : 'See all ads for sale',
+                                style: TextStyle(
+                                  color: want ? _wantColor : _saleColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
                     ),
-                    childCount: latest.length,
+                    childCount: ads.length + 1,
                   ),
                 );
               },
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: _SectionHeader(
-                  title: 'Wanted',
-                  actionLabel: 'View All',
-                  onAction: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const _BrowseScreen(type: 'WANT'),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            ref.watch(latestWantsProvider).when(
-                  loading: () => const SliverToBoxAdapter(child: SizedBox()),
-                  error: (_, __) => const SliverToBoxAdapter(child: SizedBox()),
-                  data: (wants) => wants.isEmpty
-                      ? SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'No one is asking for plants right now.',
-                              style: AppTypography.bodySmall
-                                  .copyWith(color: _mkTextSecondary),
-                            ),
-                          ),
-                        )
-                      : SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (_, i) => Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                              child: _BrowseAdCard(ad: wants[i]),
-                            ),
-                            childCount: wants.length,
-                          ),
-                        ),
-                ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
       ),
     );
   }
+
+  /// ↑ For sale / ↓ Wanted: one switch, one list.
+  Widget _typeSwitch() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'SELL',
+                label: Text('For sale'),
+                icon: Icon(Icons.arrow_upward_rounded),
+              ),
+              ButtonSegment(
+                value: 'WANT',
+                label: Text('Wanted'),
+                icon: Icon(Icons.arrow_downward_rounded),
+              ),
+            ],
+            selected: {_type},
+            showSelectedIcon: false,
+            onSelectionChanged: (v) => setState(() => _type = v.first),
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? (_type == 'WANT' ? _wantBg : _saleBg)
+                    : _mkCard,
+              ),
+              foregroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? (_type == 'WANT' ? _wantColor : _saleColor)
+                    : _mkTextSecondary,
+              ),
+              textStyle: const WidgetStatePropertyAll(
+                TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              padding: const WidgetStatePropertyAll(
+                EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ),
+      );
 
   /// The two things a nursery comes here to do, side by side in their colours.
   Widget _postCtas(BuildContext context) {
@@ -347,15 +368,6 @@ class LocalMarketScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 14),
       child: Row(
         children: [
-          Expanded(
-            child: _QuickActionTile(Icons.storefront_outlined, 'For sale',
-                () => open(const _BrowseScreen()), iconColor: _saleColor,),
-          ),
-          Expanded(
-            child: _QuickActionTile(Icons.campaign_outlined, 'Wanted',
-                () => open(const _BrowseScreen(type: 'WANT')),
-                iconColor: _wantColor,),
-          ),
           Expanded(
             child: _QuickActionTile(Icons.inventory_2_outlined, 'My Ads',
                 () => open(const _MyAdsScreen()),),
@@ -5452,44 +5464,6 @@ class _EnquiryStatusChip extends StatelessWidget {
         label,
         style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w700),
       ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: AppTypography.h4
-                .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
-          ),
-        ),
-        if (actionLabel != null && onAction != null)
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: _mkGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            onPressed: onAction,
-            child: Text(
-              actionLabel!,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _mkGreen,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
