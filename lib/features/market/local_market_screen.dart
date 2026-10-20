@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1488,6 +1489,8 @@ class _AdThumb extends StatelessWidget {
             : Image.network(
                 ad.photos.first,
                 fit: BoxFit.cover,
+                cacheWidth:
+                    (size * MediaQuery.devicePixelRatioOf(context)).round(),
                 errorBuilder: (_, __, ___) => placeholder,
               ),
       ),
@@ -2076,6 +2079,10 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           itemBuilder: (_, i) => Image.network(
                             ad.photos[i],
                             fit: BoxFit.cover,
+                            // Decode at screen size, not the full upload.
+                            cacheWidth: (MediaQuery.sizeOf(context).width *
+                                    MediaQuery.devicePixelRatioOf(context))
+                                .round(),
                             errorBuilder: (_, __, ___) => Container(
                               color: _mkLight,
                               child: const Icon(
@@ -2218,6 +2225,17 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                         color: _mkTextPrimary.withValues(alpha: 0.85),
                         height: 1.6,
                       ),
+                    ),
+                  ],
+                  if (!ad.isWant) ...[
+                    const SizedBox(height: 16),
+                    const Divider(color: _mkBorder),
+                    const SizedBox(height: 12),
+                    _AccessInfo(
+                      road: ad.roadAccessible,
+                      truck: ad.truckAccessible,
+                      pickupPoint: ad.pickupPoint,
+                      instructions: ad.accessInstructions,
                     ),
                   ],
                   // How the ad is doing: only for the nursery that posted it.
@@ -3168,6 +3186,13 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   final List<XFile> _pickedFiles = [];
   List<String> _existingPhotos = [];
   String? _selectedCategory;
+
+  // Pickup & access: road and truck are asked separately (a road may be too
+  // narrow for a truck); null until the seller answers.
+  bool? _road;
+  bool? _truck;
+  final _pickupCtrl = TextEditingController();
+  final _accessCtrl = TextEditingController();
   bool _saving = false;
   bool _publishing = false;
 
@@ -3194,7 +3219,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       _sizeCtrl.text = ad.sizeDescription ?? '';
       _existingPhotos = List<String>.from(ad.photos);
       _selectedCategory = ad.categoryName;
+      _road = ad.roadAccessible;
+      _truck = ad.truckAccessible;
+      _pickupCtrl.text = ad.pickupPoint ?? '';
+      _accessCtrl.text = ad.accessInstructions ?? '';
     }
+    _pickupCtrl.addListener(_onRequiredFieldChanged);
   }
 
   void _onRequiredFieldChanged() => setState(() {});
@@ -3203,6 +3233,9 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   void dispose() {
     _plantCtrl.removeListener(_onRequiredFieldChanged);
     _titleCtrl.removeListener(_onRequiredFieldChanged);
+    _pickupCtrl.removeListener(_onRequiredFieldChanged);
+    _pickupCtrl.dispose();
+    _accessCtrl.dispose();
     _pageCtrl.dispose();
     _plantCtrl.dispose();
     _titleCtrl.dispose();
@@ -3224,6 +3257,23 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
 
   bool get _step1Valid =>
       _titleCtrl.text.trim().isNotEmpty && _plantCtrl.text.trim().isNotEmpty;
+
+  /// What still blocks the photos & pickup step, or null when it is complete.
+  String? get _accessError {
+    if (_road == null) return 'Tell buyers if a road reaches your plants';
+    if (_truck == null) return 'Tell buyers if a truck can reach your plants';
+    if (_road == false && _pickupCtrl.text.trim().isEmpty) {
+      return 'No road: add a pickup point buyers can reach';
+    }
+    return null;
+  }
+
+  Map<String, dynamic> get _accessJson => {
+        'road_accessible': _road,
+        'truck_accessible': _truck,
+        'pickup_landmark': _pickupCtrl.text.trim(),
+        'access_instructions': _accessCtrl.text.trim(),
+      };
 
   void _pickPlant() {
     showModalBottomSheet<void>(
@@ -3271,6 +3321,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
+              access: _accessJson,
             );
       } else {
         await ref.read(postAdProvider.notifier).create(
@@ -3285,6 +3336,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
+              access: _accessJson,
             );
       }
       if (mounted) Navigator.of(context).pop();
@@ -3324,6 +3376,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
+              access: _accessJson,
             );
         adId = widget.editingAd!.id;
       } else {
@@ -3339,6 +3392,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
+              access: _accessJson,
             );
       }
       // Only publish if the ad is in DRAFT state (already-live ads just need the update)
@@ -3419,7 +3473,7 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _stepLabel(0, 'Details'),
-                    _stepLabel(1, 'Photos'),
+                    _stepLabel(1, 'Photos & pickup'),
                     _stepLabel(2, 'Preview'),
                   ],
                 ),
@@ -3451,6 +3505,26 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                 setState(() => _existingPhotos.remove(url)),
             onNewPicked: (files) => setState(() => _pickedFiles.addAll(files)),
             onNewRemoved: (f) => setState(() => _pickedFiles.remove(f)),
+            onReplace: (old, file) => setState(() {
+              if (old is XFile) {
+                _pickedFiles[_pickedFiles.indexOf(old)] = file;
+              } else {
+                _existingPhotos.remove(old);
+                _pickedFiles.insert(0, file);
+              }
+            }),
+            pickup: _PickupAccessForm(
+              road: _road,
+              truck: _truck,
+              pickupCtrl: _pickupCtrl,
+              instructionsCtrl: _accessCtrl,
+              error: _accessError,
+              onRoad: (v) => setState(() {
+                _road = v;
+                if (!v) _truck = false; // a truck needs a road
+              }),
+              onTruck: (v) => setState(() => _truck = v),
+            ),
           ),
           _PreviewStep(
             plantCtrl: _plantCtrl,
@@ -3461,6 +3535,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
             sizeCtrl: _sizeCtrl,
             existingPhotos: _existingPhotos,
             pickedFiles: _pickedFiles,
+            access: _AccessInfo(
+              road: _road,
+              truck: _truck,
+              pickupPoint: _pickupCtrl.text.trim(),
+              instructions: _accessCtrl.text.trim(),
+            ),
           ),
         ],
       ),
@@ -3570,7 +3650,8 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    onPressed: (_step == 0 && !_step1Valid)
+                    onPressed: (_step == 0 && !_step1Valid) ||
+                            (_step == 1 && _accessError != null)
                         ? null
                         : () => _goTo(_step + 1),
                     child: const Text(
@@ -3784,6 +3865,31 @@ class _SizeChips extends ConsumerWidget {
   }
 }
 
+const _maxAdPhotos = 3;
+
+// Shrink at pick time: less memory and a faster preview; uploads are
+// resized again to 1200px.
+Future<List<XFile>> _pickAdPhotos(int count) async {
+  final picker = ImagePicker();
+  if (count <= 0) return const [];
+  if (count == 1) {
+    final f = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
+    return f == null ? const [] : [f];
+  }
+  final files = await picker.pickMultiImage(
+    limit: count,
+    maxWidth: 1600,
+    maxHeight: 1600,
+    imageQuality: 85,
+  );
+  return files.take(count).toList();
+}
+
 class _PhotosStep extends StatelessWidget {
   final List<String> existingPhotos;
   final List<XFile> pickedFiles;
@@ -3791,13 +3897,24 @@ class _PhotosStep extends StatelessWidget {
   final void Function(List<XFile>) onNewPicked;
   final void Function(XFile) onNewRemoved;
 
+  /// Swaps a photo (an existing URL or a picked file) for a new pick.
+  final void Function(Object old, XFile file) onReplace;
+  final Widget pickup;
+
   const _PhotosStep({
     required this.existingPhotos,
     required this.pickedFiles,
     required this.onExistingRemoved,
     required this.onNewPicked,
     required this.onNewRemoved,
+    required this.onReplace,
+    required this.pickup,
   });
+
+  Future<void> _replace(Object old) async {
+    final files = await _pickAdPhotos(1);
+    if (files.isNotEmpty) onReplace(old, files.first);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3805,13 +3922,13 @@ class _PhotosStep extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Photos',
+          'Upload images (${existingPhotos.length + pickedFiles.length}/$_maxAdPhotos)',
           style: AppTypography.h3
               .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
         Text(
-          'Add up to 6 photos. First photo is the cover.',
+          'Up to $_maxAdPhotos photos. The first is the cover. Tap a photo to replace it.',
           style: AppTypography.caption.copyWith(color: _mkTextSecondary),
         ),
         const SizedBox(height: 16),
@@ -3824,9 +3941,11 @@ class _PhotosStep extends StatelessWidget {
           children: [
             ...existingPhotos.map(
               (url) => _PhotoTile(
+                onTap: () => _replace(url),
                 child: Image.network(
                   url,
                   fit: BoxFit.cover,
+                  cacheWidth: 400,
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.broken_image_outlined,
                     color: _mkTextSecondary,
@@ -3837,9 +3956,11 @@ class _PhotosStep extends StatelessWidget {
             ),
             ...pickedFiles.map(
               (f) => _PhotoTile(
-                child: Image.network(
-                  f.path,
+                onTap: () => _replace(f),
+                child: Image.file(
+                  File(f.path),
                   fit: BoxFit.cover,
+                  cacheWidth: 400,
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.photo_outlined,
                     color: _mkTextSecondary,
@@ -3848,11 +3969,12 @@ class _PhotosStep extends StatelessWidget {
                 onRemove: () => onNewRemoved(f),
               ),
             ),
-            if (existingPhotos.length + pickedFiles.length < 6)
+            if (existingPhotos.length + pickedFiles.length < _maxAdPhotos)
               GestureDetector(
                 onTap: () async {
-                  final picker = ImagePicker();
-                  final files = await picker.pickMultiImage(limit: 6);
+                  final files = await _pickAdPhotos(
+                    _maxAdPhotos - existingPhotos.length - pickedFiles.length,
+                  );
                   if (files.isNotEmpty) onNewPicked(files);
                 },
                 child: Container(
@@ -3885,6 +4007,240 @@ class _PhotosStep extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 24),
+        pickup,
+      ],
+    );
+  }
+}
+
+/// "Pickup & access" questions on Plants I Have. Road and truck are separate:
+/// a road may be too narrow for a truck. No road means a pickup point.
+class _PickupAccessForm extends StatelessWidget {
+  final bool? road;
+  final bool? truck;
+  final TextEditingController pickupCtrl;
+  final TextEditingController instructionsCtrl;
+  final String? error;
+  final ValueChanged<bool> onRoad;
+  final ValueChanged<bool> onTruck;
+
+  const _PickupAccessForm({
+    required this.road,
+    required this.truck,
+    required this.pickupCtrl,
+    required this.instructionsCtrl,
+    required this.error,
+    required this.onRoad,
+    required this.onTruck,
+  });
+
+  Widget _yesNo(String label, IconData icon, bool? value,
+          ValueChanged<bool>? onChanged, {String? note,}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: _mkGreen),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _mkTextPrimary,
+                    ),
+                  ),
+                ),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: true, label: Text('Yes')),
+                    ButtonSegment(value: false, label: Text('No')),
+                  ],
+                  selected: {if (value != null) value},
+                  emptySelectionAllowed: true,
+                  showSelectedIcon: false,
+                  onSelectionChanged: onChanged == null
+                      ? null
+                      : (v) {
+                          if (v.isNotEmpty) onChanged(v.first);
+                        },
+                  style: ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (st) => st.contains(WidgetState.selected)
+                          ? (value == false ? _stExpiredBg : _mkLight)
+                          : _mkCard,
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (st) => st.contains(WidgetState.selected)
+                          ? (value == false ? _stExpired : _mkDark)
+                          : _mkTextSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (note != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 28, top: 4),
+                child: Text(
+                  note,
+                  style: AppTypography.caption.copyWith(color: _stPaused),
+                ),
+              ),
+          ],
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final pickupRequired = road == false;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pickup & road access',
+          style: AppTypography.h3
+              .copyWith(color: _mkTextPrimary, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Helps buyers know if they can bring a truck or must meet you somewhere.',
+          style: AppTypography.caption.copyWith(color: _mkTextSecondary),
+        ),
+        const SizedBox(height: 16),
+        _yesNo('Road to the plants?', Icons.add_road_rounded, road, onRoad),
+        _yesNo(
+          'Truck can reach directly?',
+          Icons.local_shipping_outlined,
+          truck,
+          road == false ? null : onTruck,
+          note: road == false
+              ? 'No road, so no truck: buyers collect at the pickup point.'
+              : truck == false
+                  ? 'Buyers will see that a truck cannot reach your plants.'
+                  : null,
+        ),
+        Text(
+          pickupRequired ? 'Pickup point *' : 'Pickup point (optional)',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _mkTextPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: pickupCtrl,
+          maxLength: 255,
+          decoration: _inputDec('e.g. Gate on NH-44, near the banyan tree')
+              .copyWith(prefixIcon: const Icon(Icons.place_outlined)),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Additional instructions (optional)',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _mkTextPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: instructionsCtrl,
+          maxLines: 3,
+          maxLength: 500,
+          decoration: _inputDec('Directions, narrow roads, best time to come...'),
+        ),
+        if (error != null)
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 16, color: _stExpired),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  error!,
+                  style: AppTypography.caption.copyWith(color: _stExpired),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// How buyers reach a for-sale ad's plants: road, truck, pickup point, notes.
+class _AccessInfo extends StatelessWidget {
+  final bool? road;
+  final bool? truck;
+  final String? pickupPoint;
+  final String? instructions;
+
+  const _AccessInfo({
+    this.road,
+    this.truck,
+    this.pickupPoint,
+    this.instructions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final point = (pickupPoint ?? '').trim();
+    final notes = (instructions ?? '').trim();
+    if (road == null && truck == null && point.isEmpty && notes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final limited = road == false || truck == false;
+    Widget row(IconData icon, Color color, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: AppTypography.body.copyWith(color: _mkTextPrimary),
+                ),
+              ),
+            ],
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Pickup & access',
+              style: AppTypography.h4.copyWith(color: _mkTextPrimary),
+            ),
+            const Spacer(),
+            if (limited)
+              const _Chip('⚠ Limited access', Color(0xFFFEF3C7), Color(0xFFB45309)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (road != null)
+          road!
+              ? row(Icons.add_road_rounded, _mkGreen, 'Road accessible')
+              : row(Icons.block_rounded, _stExpired, 'No road to the plants'),
+        if (truck != null)
+          truck!
+              ? row(Icons.local_shipping_rounded, _mkGreen, 'Truck accessible')
+              : row(Icons.local_shipping_outlined, _stPaused,
+                  'A truck cannot reach directly',),
+        if (point.isNotEmpty)
+          row(Icons.place_rounded, _mkGreen, 'Pickup point: $point'),
+        if (notes.isNotEmpty)
+          row(Icons.info_outline_rounded, _mkTextSecondary, notes),
       ],
     );
   }
@@ -3893,15 +4249,23 @@ class _PhotosStep extends StatelessWidget {
 class _PhotoTile extends StatelessWidget {
   final Widget child;
   final VoidCallback onRemove;
-  const _PhotoTile({required this.child, required this.onRemove});
+  final VoidCallback onTap;
+  const _PhotoTile({
+    required this.child,
+    required this.onRemove,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox.expand(child: child),
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox.expand(child: child),
+          ),
         ),
         Positioned(
           top: 4,
@@ -3934,8 +4298,10 @@ class _PreviewStep extends StatelessWidget {
       sizeCtrl;
   final List<String> existingPhotos;
   final List<XFile> pickedFiles;
+  final Widget access;
 
   const _PreviewStep({
+    required this.access,
     required this.plantCtrl,
     required this.titleCtrl,
     required this.descCtrl,
@@ -3977,8 +4343,10 @@ class _PreviewStep extends StatelessWidget {
               if (allPhotos.isNotEmpty)
                 SizedBox(
                   height: 200,
-                  child: Image.network(
-                    allPhotos.first,
+                  child: Image(
+                    image: existingPhotos.isNotEmpty
+                        ? NetworkImage(allPhotos.first)
+                        : FileImage(File(allPhotos.first)) as ImageProvider,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
@@ -4042,6 +4410,8 @@ class _PreviewStep extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    access,
                   ],
                 ),
               ),

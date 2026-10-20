@@ -34,6 +34,13 @@ class MarketAd {
   final double? pricePerUnit;
   final String? priceUnit;
   final List<String> photos;
+
+  /// Plants I Have only: can a road / a truck reach the plants (null = not
+  /// stated), where buyers collect, and any directions.
+  final bool? roadAccessible;
+  final bool? truckAccessible;
+  final String? pickupPoint;
+  final String? accessInstructions;
   final String status;
   final int viewCount;
   final int saveCount;
@@ -75,6 +82,10 @@ class MarketAd {
     this.pricePerUnit,
     this.priceUnit,
     required this.photos,
+    this.roadAccessible,
+    this.truckAccessible,
+    this.pickupPoint,
+    this.accessInstructions,
     required this.status,
     required this.viewCount,
     required this.saveCount,
@@ -115,6 +126,10 @@ class MarketAd {
             : null,
         priceUnit: j['price_unit'] as String?,
         photos: (j['photos'] as List?)?.map((e) => e as String).toList() ?? [],
+        roadAccessible: j['road_accessible'] as bool?,
+        truckAccessible: j['truck_accessible'] as bool?,
+        pickupPoint: j['pickup_landmark'] as String?,
+        accessInstructions: j['access_instructions'] as String?,
         status: j['status'] as String,
         viewCount: (j['view_count'] as num?)?.toInt() ?? 0,
         saveCount: (j['save_count'] as num?)?.toInt() ?? 0,
@@ -599,6 +614,7 @@ class MarketRepository {
     double? pricePerUnit,
     String? sizeDescription,
     List<String> photos = const [],
+    Map<String, dynamic> access = const {},
   }) =>
       _client.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
         'ad_type': adType,
@@ -614,6 +630,7 @@ class MarketRepository {
         if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
         if (sizeDescription != null) 'size_description': sizeDescription,
         'photos': photos,
+        ...access,
       },);
 
   Future<void> updateAd(
@@ -628,6 +645,7 @@ class MarketRepository {
     String? sizeDescription,
     List<String>? photos,
     String? neededBy,
+    Map<String, dynamic> access = const {},
   }) =>
       _client.patch<Map<String, dynamic>>(
         ApiConstants.marketAdById(adId),
@@ -643,6 +661,7 @@ class MarketRepository {
           if (pricePerUnit != null) 'price_unit': 'PER_PLANT',
           if (sizeDescription != null) 'size_description': sizeDescription,
           if (photos != null) 'photos': photos,
+          ...access,
         },
       );
 
@@ -1308,6 +1327,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     double? pricePerUnit,
     String? sizeDescription,
     List<String> photos = const [],
+    Map<String, dynamic> access = const {},
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -1323,6 +1343,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
             pricePerUnit: pricePerUnit,
             sizeDescription: sizeDescription,
             photos: photos,
+            access: access,
           );
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
@@ -1349,6 +1370,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     String? sizeDescription,
     List<String>? photos,
     String? neededBy,
+    Map<String, dynamic> access = const {},
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -1364,6 +1386,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
             sizeDescription: sizeDescription,
             photos: photos,
             neededBy: neededBy,
+            access: access,
           );
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(browseAdsProvider);
