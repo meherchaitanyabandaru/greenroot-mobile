@@ -1511,7 +1511,31 @@ class _MyAdCard extends ConsumerStatefulWidget {
 class _MyAdCardState extends ConsumerState<_MyAdCard> {
   bool _actioning = false;
 
+  Future<bool> _confirmDelete() async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(widget.ad.isWant ? 'Delete this need?' : 'Delete this ad?'),
+          content: const Text(
+            'It will be removed from the market and from My Ads. '
+            'This cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep it'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete', style: TextStyle(color: _stExpired)),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
   Future<void> _doAdAction(String action) async {
+    if (action == 'delete' && !await _confirmDelete()) return;
     setState(() => _actioning = true);
     try {
       await ref.read(adActionProvider.notifier).perform(widget.ad.id, action);
@@ -1541,13 +1565,17 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
         if (caps.canResume)
           ('resume', 'Resume', Icons.play_circle_outline_rounded),
         if (caps.canRenew) ('renew', 'Renew', Icons.refresh_rounded),
-        if (caps.canArchive) ('archive', 'Archive', Icons.archive_outlined),
+        // A draft is deleted, not archived.
+        if (caps.canArchive && !(caps.canDelete && widget.ad.status == 'DRAFT'))
+          ('archive', 'Archive', Icons.archive_outlined),
+        if (caps.canDelete) ('delete', 'Delete', Icons.delete_outline_rounded),
       ];
     }
     return switch (widget.ad.status) {
       'DRAFT' => [
           ('edit', 'Edit', Icons.edit_outlined),
           ('publish', 'Publish', Icons.publish_rounded),
+          ('delete', 'Delete', Icons.delete_outline_rounded),
         ],
       'PUBLISHED' => [
           ('edit', 'Edit', Icons.edit_outlined),
@@ -1728,8 +1756,11 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                   return Expanded(
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
-                        foregroundColor:
-                            isPositive ? _mkGreen : _mkTextSecondary,
+                        foregroundColor: a.$1 == 'delete'
+                            ? _stExpired
+                            : isPositive
+                                ? _mkGreen
+                                : _mkTextSecondary,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                       icon:
@@ -3898,7 +3929,7 @@ class _SavedAdsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adsAsync = ref.watch(savedAdsProvider);
+    final firstPage = ref.watch(savedAdsProvider(1));
 
     return Scaffold(
       backgroundColor: _mkBg,
@@ -3913,14 +3944,14 @@ class _SavedAdsScreen extends ConsumerWidget {
           child: Divider(height: 1, color: _mkBorder),
         ),
       ),
-      body: adsAsync.when(
+      body: firstPage.when(
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(
           message: e.toString(),
           onRetry: () => ref.invalidate(savedAdsProvider),
         ),
-        data: (ads) {
-          if (ads.isEmpty) {
+        data: (first) {
+          if (first.total == 0) {
             return const _EmptyState(
               icon: Icons.bookmark_outline_rounded,
               title: 'No saved ads',
@@ -3933,9 +3964,18 @@ class _SavedAdsScreen extends ConsumerWidget {
             onRefresh: () async => ref.invalidate(savedAdsProvider),
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: ads.length,
+              itemCount: first.total,
               separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (_, i) => _BrowseAdCard(ad: ads[i]),
+              // Each row watches its page, so pages load as they scroll in.
+              itemBuilder: (_, i) {
+                final page = ref
+                    .watch(savedAdsProvider(i ~/ savedAdsPageSize + 1))
+                    .valueOrNull;
+                final j = i % savedAdsPageSize;
+                return page == null || j >= page.ads.length
+                    ? const _SkeletonCard()
+                    : _BrowseAdCard(ad: page.ads[j]);
+              },
             ),
           );
         },

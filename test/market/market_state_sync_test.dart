@@ -44,10 +44,12 @@ class _NoOpMarketRepo extends MarketRepository {
       {'ads': [], 'total': 0};
 
   @override
-  Future<Map<String, dynamic>> getMyAds() async => {'ads': []};
+  Future<Map<String, dynamic>> getMyAds({int page = 1, int perPage = 50}) async =>
+      {'ads': [], 'total': 0};
 
   @override
-  Future<Map<String, dynamic>> getSavedAds() async => {'ads': []};
+  Future<Map<String, dynamic>> getSavedAds({int page = 1, int perPage = 20}) async =>
+      {'ads': [], 'total': 0};
 
   @override
   Future<Map<String, dynamic>> createAd({
@@ -195,6 +197,35 @@ void main() {
   });
 
   // ── _AdActionNotifier (adActionProvider) ──────────────────────────────────
+
+  group('paging', () {
+    test('myAdsProvider follows pages until it has the total', () async {
+      fake.enqueue(response: {
+        'ads': [marketAdJson(id: 1), marketAdJson(id: 2)],
+        'total': 3,
+      },);
+      fake.enqueue(response: {
+        'ads': [marketAdJson(id: 3)],
+        'total': 3,
+      },);
+      final container = _makeIsolatedContainer(fake);
+
+      final ads = await container.read(myAdsProvider.future);
+
+      expect(ads.map((a) => a.id), [1, 2, 3]);
+      expect(fake.calls, hasLength(2));
+    });
+
+    test('delete action calls DELETE on the ad', () async {
+      fake.enqueue(response: '');
+      final container = _makeIsolatedContainer(fake);
+
+      await container.read(adActionProvider.notifier).perform(kTestAdId, 'delete');
+
+      expect(fake.calls.single.method, 'DELETE');
+      expect(fake.calls.single.path, endsWith('/market/ads/$kTestAdId'));
+    });
+  });
 
   group('adActionProvider', () {
     test('perform publish action sets AsyncData on success', () async {

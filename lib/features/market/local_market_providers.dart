@@ -152,6 +152,7 @@ class MarketAdCapabilities {
   final bool canResume;
   final bool canRenew;
   final bool canArchive;
+  final bool canDelete;
   final bool canSave;
   final bool canEnquire;
   final bool canReport;
@@ -163,6 +164,7 @@ class MarketAdCapabilities {
     this.canResume = false,
     this.canRenew = false,
     this.canArchive = false,
+    this.canDelete = false,
     this.canSave = false,
     this.canEnquire = false,
     this.canReport = false,
@@ -176,6 +178,7 @@ class MarketAdCapabilities {
         canResume: j['can_resume'] as bool? ?? false,
         canRenew: j['can_renew'] as bool? ?? false,
         canArchive: j['can_archive'] as bool? ?? false,
+        canDelete: j['can_delete'] as bool? ?? false,
         canSave: j['can_save'] as bool? ?? false,
         canEnquire: j['can_enquire'] as bool? ?? false,
         canReport: j['can_report'] as bool? ?? false,
@@ -501,11 +504,21 @@ class MarketRepository {
         queryParameters: params,
       );
 
-  Future<Map<String, dynamic>> getMyAds() =>
-      _client.get<Map<String, dynamic>>(ApiConstants.marketMyAds);
+  Future<Map<String, dynamic>> getMyAds({int page = 1, int perPage = 50}) =>
+      _client.get<Map<String, dynamic>>(
+        ApiConstants.marketMyAds,
+        queryParameters: {'page': '$page', 'per_page': '$perPage'},
+      );
 
-  Future<Map<String, dynamic>> getSavedAds() =>
-      _client.get<Map<String, dynamic>>(ApiConstants.marketSavedAds);
+  Future<Map<String, dynamic>> getSavedAds({int page = 1, int perPage = 20}) =>
+      _client.get<Map<String, dynamic>>(
+        ApiConstants.marketSavedAds,
+        queryParameters: {'page': '$page', 'per_page': '$perPage'},
+      );
+
+  /// Soft delete: the ad disappears everywhere but stays on record.
+  Future<void> deleteAd(int id) =>
+      _client.delete<dynamic>(ApiConstants.marketAdById(id));
 
   Future<Map<String, dynamic>> getEnquiries(Map<String, String> params) =>
       _client.get<Map<String, dynamic>>(
@@ -756,6 +769,8 @@ final latestWantsProvider =
 
 enum MarketSort {
   newest('newest', 'Newest First'),
+  oldest('oldest', 'Oldest First'),
+  name('name', 'Name: A to Z'),
   priceAsc('price_asc', 'Price: Low to High'),
   priceDesc('price_desc', 'Price: High to Low'),
   popular('popular', 'Most Popular');
@@ -1041,18 +1056,38 @@ final browseAdsProvider =
 
 // ── My Ads ────────────────────────────────────────────────────
 
+// My Ads tabs filter and count on the device, so this loads every page.
+// shortcut: fetches all of a nursery's ads 50 at a time; move the tabs to
+// server-side status filters if a nursery ever keeps several hundred ads.
 final myAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
-  final data = await ref.watch(marketRepositoryProvider).getMyAds();
-  final ads = (data['ads'] as List?) ?? [];
-  return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
+  final repo = ref.watch(marketRepositoryProvider);
+  final ads = <MarketAd>[];
+  for (var page = 1;; page++) {
+    final data = await repo.getMyAds(page: page);
+    final batch = ((data['ads'] as List?) ?? [])
+        .map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+        .toList();
+    ads.addAll(batch);
+    final total = (data['total'] as num?)?.toInt() ?? 0;
+    if (batch.isEmpty || ads.length >= total) return ads;
+  }
 });
 
 // ── Saved Ads ─────────────────────────────────────────────────
 
-final savedAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
-  final data = await ref.watch(marketRepositoryProvider).getSavedAds();
-  final ads = (data['ads'] as List?) ?? [];
-  return ads.map((e) => MarketAd.fromJson(e as Map<String, dynamic>)).toList();
+const savedAdsPageSize = 20;
+
+/// One page of saved ads and the total; the Saved list asks for each page as
+/// it scrolls into view. Invalidating the provider reloads every page.
+final savedAdsProvider = FutureProvider.autoDispose
+    .family<({List<MarketAd> ads, int total}), int>((ref, page) async {
+  final data = await ref
+      .watch(marketRepositoryProvider)
+      .getSavedAds(page: page, perPage: savedAdsPageSize);
+  final ads = ((data['ads'] as List?) ?? [])
+      .map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+      .toList();
+  return (ads: ads, total: (data['total'] as num?)?.toInt() ?? ads.length);
 });
 
 // ── Enquiries ─────────────────────────────────────────────────
@@ -1356,7 +1391,10 @@ class _AdActionNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> perform(int adId, String action) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(marketRepositoryProvider).performAdAction(adId, action);
+      final repo = _ref.read(marketRepositoryProvider);
+      await (action == 'delete'
+          ? repo.deleteAd(adId)
+          : repo.performAdAction(adId, action));
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
       _ref.invalidate(latestWantsProvider);
