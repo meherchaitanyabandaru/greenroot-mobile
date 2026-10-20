@@ -1735,7 +1735,8 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
   @override
   Widget build(BuildContext context) {
     final ad = widget.ad;
-    return Container(
+    final closed = const {'EXPIRED', 'ARCHIVED', 'REMOVED'}.contains(ad.status);
+    return _greyIf(closed, Container(
       decoration: BoxDecoration(
         color: _mkCard,
         borderRadius: BorderRadius.circular(16),
@@ -1931,11 +1932,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                                   ),
                                 );
                               } else if (a.$1 == 'enquiries') {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => _AdChatsScreen(ad: widget.ad),
-                                  ),
-                                );
+                                _openAdChats(context, ref, widget.ad);
                               } else {
                                 _doAdAction(a.$1);
                               }
@@ -1948,7 +1945,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
           ],
         ],
       ),
-    );
+    ),);
   }
 
   Widget _miniStat(IconData icon, String label) => Row(
@@ -2425,17 +2422,15 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                         ),
                         icon: const Icon(Icons.forum_outlined, size: 18),
                         label: Text(
-                          'Chats about this ad (${ad.enquiryCount})',
+                          ad.enquiryCount == 1
+                              ? 'Open chat'
+                              : 'Chats about this ad (${ad.enquiryCount})',
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                           ),
                         ),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => _AdChatsScreen(ad: ad),
-                          ),
-                        ),
+                        onPressed: () => _openAdChats(context, ref, ad),
                       ),
                     ),
                   ),
@@ -4623,7 +4618,8 @@ class _EnquiryCard extends StatelessWidget {
     final bold = unread > 0 ? FontWeight.w800 : FontWeight.w600;
     // Only states the user acts on get a label; "new"/"in progress" is noise.
     final ended = const {'DEAL_AGREED', 'CLOSED', 'CANCELLED'}.contains(enquiry.status);
-    return Material(
+    final adClosed = enquiry.adStatus != 'PUBLISHED';
+    return _greyIf(ended || adClosed, Material(
       color: _mkCard,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -4706,6 +4702,9 @@ class _EnquiryCard extends StatelessWidget {
                         if (ended) ...[
                           const SizedBox(width: 6),
                           _EnquiryStatusChip(status: enquiry.status),
+                        ] else if (adClosed) ...[
+                          const SizedBox(width: 6),
+                          const _Chip('Ad closed', _stArchivedBg, _stArchived),
                         ],
                         if (unread > 0) ...[
                           const SizedBox(width: 6),
@@ -4723,7 +4722,7 @@ class _EnquiryCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),);
   }
 }
 
@@ -6038,6 +6037,44 @@ class _StatusChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Closed things (a finished chat, a closed ad) are drawn in grey so they
+/// read as done at a glance; they stay tappable.
+const _greyscale = ColorFilter.matrix(<double>[
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 1, 0, //
+]);
+
+Widget _greyIf(bool closed, Widget child) => closed
+    ? Opacity(
+        opacity: 0.7,
+        child: ColorFiltered(colorFilter: _greyscale, child: child),
+      )
+    : child;
+
+/// The seller's chats on one ad: straight into the conversation when one
+/// nursery wrote, otherwise the list of nurseries for this ad only.
+Future<void> _openAdChats(BuildContext context, WidgetRef ref, MarketAd ad) async {
+  List<MarketEnquiry> chats = const [];
+  try {
+    chats = await ref.read(adEnquiriesProvider(ad.id).future);
+  } catch (_) {
+    // Fall back to the list screen, which shows the error and a retry.
+  }
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => chats.length == 1
+          ? _EnquiryDetailScreen(
+              enquiryId: chats.first.id,
+              title: chats.first.enquiryNurseryName,
+            )
+          : _AdChatsScreen(ad: ad),
+    ),
+  );
 }
 
 class _EnquiryStatusChip extends StatelessWidget {
