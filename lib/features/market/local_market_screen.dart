@@ -43,6 +43,38 @@ const _cardShadow = BoxShadow(
 );
 const _heartRed = Color(0xFFED4956);
 
+// Ad types have their own colours everywhere: green offers plants (FOR SALE),
+// orange asks for them (WANTED). Orange, not amber, so it never reads as the
+// "Paused" status.
+const _saleColor = _mkDark;
+const _saleBg = _mkLight;
+const _wantColor = Color(0xFFC2410C);
+const _wantBg = Color(0xFFFFEDD5);
+
+/// FOR SALE / WANTED label in the type's colours.
+class _TypePill extends StatelessWidget {
+  final bool want;
+  const _TypePill({required this.want});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: want ? _wantBg : _saleBg,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          want ? 'WANTED' : 'FOR SALE',
+          style: TextStyle(
+            color: want ? _wantColor : _saleColor,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+          ),
+        ),
+      );
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 bool _isNewAd(MarketAd ad) {
@@ -139,7 +171,7 @@ class LocalMarketScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                 child: _SectionHeader(
-                  title: 'Latest Listings',
+                  title: 'For sale',
                   actionLabel: 'View All',
                   onAction: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const _BrowseScreen()),
@@ -225,7 +257,7 @@ class LocalMarketScreen extends ConsumerWidget {
   Widget _postWantCta(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Material(
-          color: _stPausedBg,
+          color: _wantBg,
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
@@ -239,7 +271,7 @@ class LocalMarketScreen extends ConsumerWidget {
               padding: EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Icon(Icons.campaign_outlined, color: _stPaused),
+                  Icon(Icons.campaign_outlined, color: _wantColor),
                   SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -248,18 +280,18 @@ class LocalMarketScreen extends ConsumerWidget {
                         Text(
                           'Need plants?',
                           style: TextStyle(
-                            color: _stPaused,
+                            color: _wantColor,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         Text(
                           'Post what you need. Nurseries that have it will reply.',
-                          style: TextStyle(color: _stPaused, fontSize: 12),
+                          style: TextStyle(color: _wantColor, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: _stPaused),
+                  Icon(Icons.chevron_right_rounded, color: _wantColor),
                 ],
               ),
             ),
@@ -878,6 +910,19 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                   ],
                   selected: {browse.type},
                   showSelectedIcon: false,
+                  // The selected side takes its type's colour.
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? (browse.type == 'WANT' ? _wantBg : _saleBg)
+                          : null,
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? (browse.type == 'WANT' ? _wantColor : _saleColor)
+                          : _mkTextSecondary,
+                    ),
+                  ),
                   onSelectionChanged: (v) =>
                       ref.read(browseAdsProvider.notifier).setType(v.first),
                 ),
@@ -1096,14 +1141,31 @@ class _BrowseAdCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: _mkCard,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _mkBorder),
+          // The type's colour around the whole card: green sells, orange wants.
+          border: Border.all(
+            color: (ad.isWant ? _wantColor : _saleColor).withValues(alpha: 0.45),
+            width: 1.5,
+          ),
           boxShadow: const [_cardShadow],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (ad.isWant) _WantBanner(ad: ad) else _CardPhoto(ad: ad, isOwn: false),
+            if (ad.isWant)
+              _WantBanner(ad: ad)
+            else
+              Stack(
+                children: [
+                  _CardPhoto(ad: ad, isOwn: false),
+                  // Bottom-left: your own ads show their status top-left.
+                  const Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: _TypePill(want: false),
+                  ),
+                ],
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
@@ -1182,7 +1244,7 @@ class _BrowseAdCard extends ConsumerWidget {
                       ],
                       if (ad.isWant && ad.neededBy != null) ...[
                         const SizedBox(width: 6),
-                        _Chip('By ${_shortDate(ad.neededBy!)}', _stPausedBg, _stPaused),
+                        _Chip('By ${_shortDate(ad.neededBy!)}', _wantBg, _wantColor),
                       ],
                     ],
                   ),
@@ -1212,15 +1274,15 @@ class _WantBanner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        color: _stPausedBg,
+        color: _wantBg,
         child: Row(
           children: [
-            const Icon(Icons.campaign_outlined, size: 18, color: _stPaused),
+            const Icon(Icons.campaign_outlined, size: 18, color: _wantColor),
             const SizedBox(width: 8),
             const Text(
               'WANTED',
               style: TextStyle(
-                color: _stPaused,
+                color: _wantColor,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,
               ),
@@ -1228,7 +1290,7 @@ class _WantBanner extends StatelessWidget {
             const Spacer(),
             Text(
               ad.plantName,
-              style: const TextStyle(color: _stPaused, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: _wantColor, fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -1731,6 +1793,8 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                         Row(
                           children: [
                             _StatusChip(status: ad.status),
+                            const SizedBox(width: 6),
+                            _TypePill(want: ad.isWant),
                             const Spacer(),
                             if (ad.expiresAt != null)
                               Row(
@@ -1769,7 +1833,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                               if (ad.neededBy != null) 'by ${_shortDate(ad.neededBy!)}',
                             ].join(' · '),
                             style: const TextStyle(
-                              color: _stPaused,
+                              color: _wantColor,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),
@@ -2049,6 +2113,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   Row(
                     children: [
                       _StatusChip(status: ad.status),
+                      const SizedBox(width: 6),
+                      _TypePill(want: ad.isWant),
                       const Spacer(),
                       if (ad.expiresAt != null)
                         Row(
@@ -2086,13 +2152,13 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _stPausedBg,
+                        color: _wantBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
                         'WANTED · sellers offer a price in the chat',
                         style: TextStyle(
-                          color: _stPaused,
+                          color: _wantColor,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2136,8 +2202,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                       if (ad.isWant && ad.neededBy != null)
                         _Chip(
                           'Needed by ${_shortDate(ad.neededBy!)}',
-                          _stPausedBg,
-                          _stPaused,
+                          _wantBg,
+                          _wantColor,
                         ),
                       if (ad.categoryName != null)
                         _Chip(ad.categoryName!, _stPublishedBg, _stPublished),
@@ -4555,19 +4621,26 @@ class _EnquiryDetailHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      enquiry.adTitle,
-                      style: AppTypography.label.copyWith(
-                        color: _mkTextPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        _TypePill(want: enquiry.adType == 'WANT'),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            enquiry.adTitle,
+                            style: AppTypography.label.copyWith(
+                              color: _mkTextPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       [
-                        if (enquiry.adType == 'WANT') 'Wanted',
                         if (enquiry.adPricePerUnit != null)
                           '${_rupees(enquiry.adPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}',
                         if (!live) 'Ad no longer active',

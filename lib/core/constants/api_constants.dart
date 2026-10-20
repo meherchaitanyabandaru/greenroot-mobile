@@ -206,12 +206,6 @@ abstract class ApiConstants {
       '$v1/sourcing-network/nurseries';
   static String sourcingNetworkNursery(int nurseryId) =>
       '$v1/sourcing-network/nurseries/$nurseryId';
-  static const String sourcingPosts = '$v1/sourcing-posts';
-  static String sourcingPostById(int id) => '$v1/sourcing-posts/$id';
-  static String sourcingPostResponses(int id) =>
-      '$v1/sourcing-posts/$id/responses';
-  static String sourcingPostResponse(int id, int responseId) =>
-      '$v1/sourcing-posts/$id/responses/$responseId';
 
   // Ratings
   static const String ratingsApp = '$v1/ratings/app';

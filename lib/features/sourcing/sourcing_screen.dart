@@ -5,8 +5,8 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_search_field.dart';
-import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../market/local_market_screen.dart';
 import 'sourcing.dart';
 
 class SourcingScreen extends ConsumerStatefulWidget {
@@ -16,24 +16,19 @@ class SourcingScreen extends ConsumerStatefulWidget {
   ConsumerState<SourcingScreen> createState() => _SourcingScreenState();
 }
 
-class _SourcingScreenState extends ConsumerState<SourcingScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _SourcingScreenState extends ConsumerState<SourcingScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(sourcingNetworkProvider.notifier).load();
-      ref.read(sourcingPostsProvider('NEED').notifier).load();
     });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -66,25 +61,36 @@ class _SourcingScreenState extends ConsumerState<SourcingScreen>
             ),
           ],
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primaryMain,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primaryMain,
-          labelStyle: AppTypography.label,
-          tabs: const [
-            Tab(text: 'Nearby'),
-            Tab(text: 'Need'),
-            Tab(text: 'Available'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _NearbyNurseriesTab(searchCtrl: _searchCtrl),
-          const _SourcingPostsTab(postType: 'NEED'),
-          const _SourcingPostsTab(postType: 'AVAILABLE'),
+          // Needs moved to the Local Market (Wanted posts, with chat and offers).
+          Material(
+            color: AppColors.primaryLight,
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LocalMarketScreen()),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Icon(Icons.campaign_outlined, color: AppColors.primaryMain),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Need plants? Post a Wanted ad in the Local Market. '
+                        'Nurseries that have it will chat and offer a price.',
+                        style: TextStyle(color: AppColors.primaryMain, fontSize: 13),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppColors.primaryMain),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: _NearbyNurseriesTab(searchCtrl: _searchCtrl)),
         ],
       ),
     );
@@ -255,105 +261,6 @@ class _NearbyNurseriesTabState extends ConsumerState<_NearbyNurseriesTab> {
   }
 }
 
-class _SourcingPostsTab extends ConsumerStatefulWidget {
-  final String postType;
-
-  const _SourcingPostsTab({required this.postType});
-
-  @override
-  ConsumerState<_SourcingPostsTab> createState() => _SourcingPostsTabState();
-}
-
-class _SourcingPostsTabState extends ConsumerState<_SourcingPostsTab> {
-  final _scrollCtrl = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(sourcingPostsProvider(widget.postType).notifier).load();
-    });
-    _scrollCtrl.addListener(() {
-      if (_scrollCtrl.position.pixels >=
-          _scrollCtrl.position.maxScrollExtent - 200) {
-        ref.read(sourcingPostsProvider(widget.postType).notifier).loadMore();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = sourcingPostsProvider(widget.postType);
-    final paged = ref.watch(provider).paged;
-    final label =
-        widget.postType == 'NEED' ? 'need posts' : 'availability posts';
-
-    return RefreshIndicator(
-      color: AppColors.primaryMain,
-      onRefresh: () => ref.read(provider.notifier).load(),
-      child: CustomScrollView(
-        controller: _scrollCtrl,
-        slivers: [
-          if (paged.isLoading)
-            const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.primaryMain),
-              ),
-            )
-          else if (paged.error != null && paged.items.isEmpty)
-            SliverFillRemaining(
-              child: _CenteredMessage(
-                icon: Icons.wifi_off_rounded,
-                title: 'Could not load $label',
-                message: paged.error!.message,
-              ),
-            )
-          else if (paged.items.isEmpty)
-            SliverFillRemaining(
-              child: _CenteredMessage(
-                icon: Icons.eco_outlined,
-                title: 'No open $label',
-                message: 'Posts from participating nurseries will appear here.',
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    if (i >= paged.items.length) {
-                      return const Padding(
-                        padding: EdgeInsets.all(AppSpacing.lg),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryMain,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      );
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _SourcingPostCard(post: paged.items[i]),
-                    );
-                  },
-                  childCount: paged.items.length + (paged.hasMore ? 1 : 0),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _NearbyNurseryCard extends StatelessWidget {
   final NearbyNursery nursery;
 
@@ -437,95 +344,6 @@ class _NearbyNurseryCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               plants,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SourcingPostCard extends StatelessWidget {
-  final SourcingPost post;
-
-  const _SourcingPostCard({required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    final isNeed = post.postType == 'NEED';
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              StatusBadge(
-                label: isNeed ? 'Need' : 'Available',
-                variant: isNeed ? BadgeVariant.warning : BadgeVariant.success,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              StatusBadge(
-                label: post.urgency.replaceAll('_', ' '),
-                variant: post.urgency == 'TODAY'
-                    ? BadgeVariant.error
-                    : BadgeVariant.info,
-              ),
-              const Spacer(),
-              Text(
-                post.postCode,
-                style:
-                    AppTypography.caption.copyWith(color: AppColors.textMuted),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(post.plantName, style: AppTypography.h4),
-          const SizedBox(height: 2),
-          Text(
-            post.nurseryName,
-            style:
-                AppTypography.caption.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              if (post.quantity != null)
-                _FactChip(
-                  icon: Icons.format_list_numbered_rounded,
-                  label: '${post.quantity} plants',
-                ),
-              if (post.sizeDescription?.isNotEmpty == true)
-                _FactChip(
-                  icon: Icons.straighten_rounded,
-                  label: post.sizeDescription!,
-                ),
-              _FactChip(
-                icon: Icons.radar_rounded,
-                label: '${post.radiusKm} km',
-              ),
-              _FactChip(
-                icon: Icons.forum_outlined,
-                label: '${post.responseCount} responses',
-              ),
-            ],
-          ),
-          if (post.notes?.isNotEmpty == true) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              post.notes!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
