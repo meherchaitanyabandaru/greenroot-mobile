@@ -1130,6 +1130,63 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
 
 /// One ad in a list: a compact row so several ads fit on a screen.
 /// Green border and label for FOR SALE, orange for WANTED.
+Future<bool> _confirmDeleteAd(BuildContext context, MarketAd ad) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ad.isWant ? 'Delete this need?' : 'Delete this ad?'),
+        content: const Text(
+          'It will be removed from the market and from My Ads. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: _stExpired)),
+          ),
+        ],
+      ),
+    ) ??
+    false;
+
+/// Asks, then soft-deletes the viewer's own ad; the lists refresh themselves.
+Future<void> _deleteOwnAd(BuildContext context, WidgetRef ref, MarketAd ad) async {
+  if (!await _confirmDeleteAd(context, ad)) return;
+  try {
+    await ref.read(adActionProvider.notifier).perform(ad.id, 'delete');
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: _stExpired,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+}
+
+/// Swipe background: a coloured strip with an icon and label on one side.
+Widget _swipeBg(IconData icon, String label, Color fg, Color bg, {required bool left}) =>
+    Container(
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      alignment: left ? Alignment.centerLeft : Alignment.centerRight,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: fg),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12)),
+        ],
+      ),
+    );
+
 class _BrowseAdCard extends ConsumerWidget {
   final MarketAd ad;
   const _BrowseAdCard({required this.ad});
@@ -1141,6 +1198,9 @@ class _BrowseAdCard extends ConsumerWidget {
         ref.watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
     final isOwn = myNurseryId != null && myNurseryId == ad.nurseryId;
     final isSaved = ref.watch(adSavedProvider(ad.id)) ?? ad.isSavedByMe;
+    final canSave = !isOwn && ad.status == 'PUBLISHED';
+    final canDelete = isOwn && (ad.capabilities?.canDelete ?? false);
+    void toggleSave() => ref.read(toggleSaveProvider(ad.id).notifier).toggle();
     final details = ad.isWant
         ? [
             if (ad.quantity != null) 'Needs ${ad.quantity}',
@@ -1151,7 +1211,7 @@ class _BrowseAdCard extends ConsumerWidget {
             if (ad.quantity != null) '${ad.quantity} available',
             if (ad.sizeDescription != null) 'Size ${ad.sizeDescription}',
           ];
-    return Material(
+    final card = Material(
       color: _mkCard,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -1177,12 +1237,24 @@ class _BrowseAdCard extends ConsumerWidget {
                       children: [
                         _TypePill(want: ad.isWant),
                         const Spacer(),
-                        if (!isOwn && ad.status == 'PUBLISHED')
+                        if (canDelete)
                           InkWell(
                             customBorder: const CircleBorder(),
-                            onTap: () => ref
-                                .read(toggleSaveProvider(ad.id).notifier)
-                                .toggle(),
+                            onTap: () => _deleteOwnAd(context, ref, ad),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 20,
+                                color: _stExpired,
+                                semanticLabel: 'Delete',
+                              ),
+                            ),
+                          )
+                        else if (canSave)
+                          InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: toggleSave,
                             child: Padding(
                               padding: const EdgeInsets.all(6),
                               child: Icon(
@@ -1273,6 +1345,36 @@ class _BrowseAdCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+    if (!canSave && !canDelete) return card;
+    // Swipe right saves (others' ads), swipe left deletes (own ads). The card
+    // always springs back: the lists refresh themselves after the action.
+    return Dismissible(
+      key: ValueKey('swipe_ad_${ad.id}'),
+      direction: canDelete ? DismissDirection.endToStart : DismissDirection.startToEnd,
+      background: _swipeBg(
+        isSaved ? Icons.heart_broken_outlined : Icons.favorite_rounded,
+        isSaved ? 'Unsave' : 'Save',
+        _heartRed,
+        _wantBg,
+        left: true,
+      ),
+      secondaryBackground: _swipeBg(
+        Icons.delete_outline_rounded,
+        'Delete',
+        _stExpired,
+        _stExpiredBg,
+        left: false,
+      ),
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          toggleSave();
+        } else {
+          await _deleteOwnAd(context, ref, ad);
+        }
+        return false;
+      },
+      child: card,
     );
   }
 }
@@ -1511,31 +1613,11 @@ class _MyAdCard extends ConsumerStatefulWidget {
 class _MyAdCardState extends ConsumerState<_MyAdCard> {
   bool _actioning = false;
 
-  Future<bool> _confirmDelete() async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(widget.ad.isWant ? 'Delete this need?' : 'Delete this ad?'),
-          content: const Text(
-            'It will be removed from the market and from My Ads. '
-            'This cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep it'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete', style: TextStyle(color: _stExpired)),
-            ),
-          ],
-        ),
-      ) ??
-      false;
 
   Future<void> _doAdAction(String action) async {
-    if (action == 'delete' && !await _confirmDelete()) return;
+    if (action == 'delete' && !await _confirmDeleteAd(context, widget.ad)) {
+      return;
+    }
     setState(() => _actioning = true);
     try {
       await ref.read(adActionProvider.notifier).perform(widget.ad.id, action);
