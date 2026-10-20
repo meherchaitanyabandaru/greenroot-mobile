@@ -909,77 +909,8 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         foregroundColor: _mkTextPrimary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        actions: [
-          _nearbyLoading
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: _mkGreen,
-                    ),
-                  ),
-                )
-              : IconButton(
-                  tooltip: browse.nearLat != null ? 'Near Me (on)' : 'Near Me',
-                  onPressed: _toggleNearby,
-                  icon: Icon(
-                    browse.nearLat != null
-                        ? Icons.location_on_rounded
-                        : Icons.location_off_outlined,
-                    color: browse.nearLat != null ? _mkGreen : _mkTextSecondary,
-                  ),
-                ),
-          IconButton(
-            tooltip: 'Filters',
-            onPressed: _showFilterSheet,
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  Icons.tune_rounded,
-                  color: hasFilters ? _mkGreen : _mkTextSecondary,
-                ),
-                if (hasFilters)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: const BoxDecoration(
-                        color: _mkGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$filterCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.sort_rounded,
-              color: browse.sort != MarketSort.newest
-                  ? _mkGreen
-                  : _mkTextSecondary,
-            ),
-            tooltip: 'Sort',
-            onPressed: _showSortSheet,
-          ),
-        ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(hasFilters ? 145 : 101),
+          preferredSize: Size.fromHeight(hasFilters ? 189 : 145),
           child: Column(
             children: [
               Padding(
@@ -1046,6 +977,51 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
                   ),
                 ),
               ),
+              // Every control labelled, in one row: no unlabelled icons.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    _controlButton(
+                      icon: browse.nearLat != null
+                          ? Icons.location_on_rounded
+                          : Icons.location_on_outlined,
+                      label: 'Near me',
+                      active: browse.nearLat != null,
+                      loading: _nearbyLoading,
+                      onTap: _toggleNearby,
+                    ),
+                    const SizedBox(width: 8),
+                    _controlButton(
+                      icon: Icons.tune_rounded,
+                      label: hasFilters ? 'Filters ($filterCount)' : 'Filters',
+                      active: hasFilters,
+                      onTap: _showFilterSheet,
+                    ),
+                    const SizedBox(width: 8),
+                    // Sort takes the rest, right-aligned; only it may shorten.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _controlButton(
+                          icon: Icons.swap_vert_rounded,
+                          label: switch (browse.sort) {
+                            MarketSort.newest => 'Newest',
+                            MarketSort.oldest => 'Oldest',
+                            MarketSort.name => 'Name A–Z',
+                            MarketSort.priceAsc => 'Price ↑',
+                            MarketSort.priceDesc => 'Price ↓',
+                            MarketSort.popular => 'Popular',
+                          },
+                          active: browse.sort != MarketSort.newest,
+                          trailing: Icons.arrow_drop_down_rounded,
+                          onTap: _showSortSheet,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               if (hasFilters) _activeFilterChips(browse),
               const Divider(height: 1, color: _mkBorder),
             ],
@@ -1053,6 +1029,52 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
         ),
       ),
       body: _buildBody(browse),
+    );
+  }
+
+  Widget _controlButton({
+    required IconData icon,
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    bool loading = false,
+    IconData? trailing,
+  }) {
+    final fg = active ? _mkDark : _mkTextSecondary;
+    return Material(
+      color: active ? _mkLight : _mkCard,
+      shape: StadiumBorder(
+        side: BorderSide(color: active ? _mkGreen : _mkBorder),
+      ),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: loading ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: _mkGreen),
+                    )
+                  : Icon(icon, size: 16, color: active ? _mkGreen : fg),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (trailing != null) Icon(trailing, size: 18, color: fg),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1164,12 +1186,6 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
               Text(
                 '${browse.total} result${browse.total == 1 ? '' : 's'}',
                 style: AppTypography.caption.copyWith(color: _mkTextSecondary),
-              ),
-              const Spacer(),
-              Text(
-                browse.sort.label,
-                style: AppTypography.caption
-                    .copyWith(color: _mkGreen, fontWeight: FontWeight.w600),
               ),
             ],
           ),
