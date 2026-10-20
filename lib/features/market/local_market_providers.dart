@@ -942,8 +942,10 @@ final savedAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async 
 
 // ── Enquiries ─────────────────────────────────────────────────
 
+// autoDispose: inboxes and chats reload each time they are opened, so a new
+// chat or a chat that turned read-only never shows stale.
 final receivedEnquiriesProvider =
-    FutureProvider<List<MarketEnquiry>>((ref) async {
+    FutureProvider.autoDispose<List<MarketEnquiry>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getEnquiries(
     {'direction': 'received', 'per_page': '50'},
   );
@@ -953,7 +955,8 @@ final receivedEnquiriesProvider =
       [];
 });
 
-final sentEnquiriesProvider = FutureProvider<List<MarketEnquiry>>((ref) async {
+final sentEnquiriesProvider =
+    FutureProvider.autoDispose<List<MarketEnquiry>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getEnquiries(
     {'direction': 'sent', 'per_page': '50'},
   );
@@ -973,8 +976,20 @@ final adDetailProvider = FutureProvider.autoDispose.family<MarketAd, int>(
   (ref, id) => ref.watch(marketRepositoryProvider).getAd(id),
 );
 
+/// The chats other nurseries started about one of my ads.
+final adEnquiriesProvider =
+    FutureProvider.autoDispose.family<List<MarketEnquiry>, int>((ref, adId) async {
+  final data = await ref.watch(marketRepositoryProvider).getEnquiries(
+    {'direction': 'received', 'ad_id': '$adId', 'per_page': '50'},
+  );
+  return (data['enquiries'] as List?)
+          ?.map((e) => MarketEnquiry.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      [];
+});
+
 final enquiryDetailProvider =
-    FutureProvider.family<MarketEnquiry, int>((ref, id) async {
+    FutureProvider.autoDispose.family<MarketEnquiry, int>((ref, id) async {
   final data = await ref.watch(marketRepositoryProvider).getEnquiryById(id);
   return MarketEnquiry.fromJson(data['enquiry'] as Map<String, dynamic>);
 });

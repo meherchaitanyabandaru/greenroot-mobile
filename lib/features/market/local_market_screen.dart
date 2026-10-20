@@ -11,7 +11,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plant_picker.dart';
-import '../profile/profile_selfie.dart';
 import 'local_market_providers.dart';
 import '../top_items/top_items_screen.dart';
 
@@ -2107,7 +2106,44 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
         ],
       ),
       bottomNavigationBar: effectiveIsOwn
-          ? null
+          ? (ad.enquiryCount > 0
+              ? SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                    decoration: const BoxDecoration(
+                      color: _mkCard,
+                      border: Border(top: BorderSide(color: _mkBorder)),
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _mkGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.forum_outlined, size: 18),
+                        label: Text(
+                          'Chats about this ad (${ad.enquiryCount})',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => _AdChatsScreen(ad: ad),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : null)
           : SafeArea(
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
@@ -2385,7 +2421,6 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   }
 
   Future<void> _showEnquirySheet(BuildContext context, MarketAd ad) async {
-    if (!await ensureMarketSelfie(context, ref) || !context.mounted) return;
     final msgCtrl = TextEditingController(text: 'Is it still available?');
     final qtyCtrl = TextEditingController();
     final enquiryId = await showModalBottomSheet<int>(
@@ -2653,7 +2688,6 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   }
 
   Future<void> _saveDraft() async {
-    if (!await ensureMarketSelfie(context, ref)) return;
     setState(() => _saving = true);
     try {
       final uploaded = await _uploadNew();
@@ -2706,7 +2740,6 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   }
 
   Future<void> _publish() async {
-    if (!await ensureMarketSelfie(context, ref)) return;
     setState(() => _publishing = true);
     try {
       final uploaded = await _uploadNew();
@@ -3667,6 +3700,28 @@ class _EnquiryCard extends StatelessWidget {
 // 9. ENQUIRY DETAIL SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 
+/// The seller's chats about one of their ads, newest activity first.
+class _AdChatsScreen extends StatelessWidget {
+  final MarketAd ad;
+  const _AdChatsScreen({required this.ad});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: _mkBg,
+        appBar: AppBar(
+          title: Text('Chats · ${ad.title}', overflow: TextOverflow.ellipsis),
+          backgroundColor: _mkCard,
+          foregroundColor: _mkTextPrimary,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        body: _EnquiryList(
+          provider: adEnquiriesProvider(ad.id),
+          isReceived: true,
+        ),
+      );
+}
+
 /// One chat between two nurseries about one ad, opened by its enquiry id.
 /// Both sides talk, bargain with offers (accept / counter / decline), and the
 /// chat turns read-only once it ends or the ad stops being live.
@@ -3715,6 +3770,9 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
       await action();
       return true;
     } catch (e) {
+      // The chat may have turned read-only (ad paused or removed, chat
+      // closed): reload it so the screen shows why, not a stale reply box.
+      ref.invalidate(enquiryDetailProvider(widget.enquiryId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
