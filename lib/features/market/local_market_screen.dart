@@ -633,6 +633,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
   }
 
   void _showFilterSheet() {
+    FocusScope.of(context).unfocus();
     final browse = ref.read(browseAdsProvider);
     String? selCat = browse.category;
     final minCtrl = TextEditingController(
@@ -829,6 +830,8 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       );
 
   void _showSortSheet() {
+    // Otherwise the search box takes focus back and the keyboard reopens.
+    FocusScope.of(context).unfocus();
     final notifier = ref.read(browseAdsProvider.notifier);
     final currentSort = ref.read(browseAdsProvider).sort;
     showModalBottomSheet<void>(
