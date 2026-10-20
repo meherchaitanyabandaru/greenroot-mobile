@@ -14,6 +14,12 @@ import '../../core/constants/api_constants.dart';
 class MarketAd {
   final int id;
   final String code;
+
+  /// SELL offers plants; WANT asks for them (no price, no photos).
+  final String adType;
+
+  /// WANT only: the date the plants are needed by.
+  final DateTime? neededBy;
   final int nurseryId;
   final String nurseryName;
   final bool nurseryVerified;
@@ -53,6 +59,8 @@ class MarketAd {
   const MarketAd({
     required this.id,
     required this.code,
+    this.adType = 'SELL',
+    this.neededBy,
     required this.nurseryId,
     required this.nurseryName,
     required this.nurseryVerified,
@@ -84,9 +92,13 @@ class MarketAd {
     this.summary,
   });
 
+  bool get isWant => adType == 'WANT';
+
   factory MarketAd.fromJson(Map<String, dynamic> j) => MarketAd(
         id: (j['id'] as num).toInt(),
         code: j['code'] as String,
+        adType: j['ad_type'] as String? ?? 'SELL',
+        neededBy: DateTime.tryParse(j['needed_by'] as String? ?? ''),
         nurseryId: (j['nursery_id'] as num).toInt(),
         nurseryName: j['nursery_name'] as String,
         nurseryVerified: j['nursery_verified'] as bool? ?? false,
@@ -334,6 +346,9 @@ class MarketEnquiry {
   final String code;
   final int adId;
   final String adTitle;
+
+  /// SELL or WANT: on a want the ad's nursery is the one buying.
+  final String adType;
   final String adStatus;
   final double? adPricePerUnit;
   final String? adPriceUnit;
@@ -356,6 +371,7 @@ class MarketEnquiry {
     required this.code,
     required this.adId,
     required this.adTitle,
+    this.adType = 'SELL',
     this.adStatus = 'PUBLISHED',
     this.adPricePerUnit,
     this.adPriceUnit,
@@ -381,6 +397,7 @@ class MarketEnquiry {
         code: j['code'] as String,
         adId: (j['ad_id'] as num).toInt(),
         adTitle: j['ad_title'] as String,
+        adType: j['ad_type'] as String? ?? 'SELL',
         adStatus: j['ad_status'] as String? ?? 'PUBLISHED',
         adPricePerUnit: (j['ad_price_per_unit'] as num?)?.toDouble(),
         adPriceUnit: j['ad_price_unit'] as String?,
@@ -547,6 +564,8 @@ class MarketRepository {
       );
 
   Future<Map<String, dynamic>> createAd({
+    String adType = 'SELL',
+    String? neededBy,
     int? plantId,
     required String plantName,
     required String title,
@@ -558,6 +577,8 @@ class MarketRepository {
     List<String> photos = const [],
   }) =>
       _client.post<Map<String, dynamic>>(ApiConstants.marketAds, data: {
+        'ad_type': adType,
+        if (neededBy != null) 'needed_by': neededBy,
         if (plantId != null) 'plant_id': plantId,
         'plant_name': plantName,
         'title': title,
@@ -580,10 +601,12 @@ class MarketRepository {
     double? pricePerUnit,
     String? sizeDescription,
     List<String>? photos,
+    String? neededBy,
   }) =>
       _client.patch<Map<String, dynamic>>(
         ApiConstants.marketAdById(adId),
         data: {
+          if (neededBy != null) 'needed_by': neededBy,
           if (plantId != null) 'plant_id': plantId,
           if (plantName != null) 'plant_name': plantName,
           if (title != null) 'title': title,
@@ -695,7 +718,19 @@ Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
 
 final latestAdsProvider = FutureProvider.autoDispose<List<MarketAd>>((ref) async {
   final data = await ref.watch(marketRepositoryProvider).getAds(
-    {'per_page': '6', 'page': '1'},
+    {'per_page': '6', 'page': '1', 'type': 'SELL'},
+  );
+  return (data['ads'] as List?)
+          ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      [];
+});
+
+/// The newest wanted posts, for the market home.
+final latestWantsProvider =
+    FutureProvider.autoDispose<List<MarketAd>>((ref) async {
+  final data = await ref.watch(marketRepositoryProvider).getAds(
+    {'per_page': '3', 'page': '1', 'type': 'WANT'},
   );
   return (data['ads'] as List?)
           ?.map((e) => MarketAd.fromJson(e as Map<String, dynamic>))
@@ -724,6 +759,9 @@ class BrowseAdsState {
   final bool isLoadingMore;
   final bool hasMore;
   final String query;
+
+  /// SELL (for sale) or WANT (wanted posts).
+  final String type;
   final MarketSort sort;
   final String? error;
   final String? category;
@@ -741,6 +779,7 @@ class BrowseAdsState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.query = '',
+    this.type = 'SELL',
     this.sort = MarketSort.newest,
     this.error,
     this.category,
@@ -765,6 +804,7 @@ class BrowseAdsState {
     bool? isLoadingMore,
     bool? hasMore,
     String? query,
+    String? type,
     MarketSort? sort,
     String? error,
     bool clearError = false,
@@ -787,6 +827,7 @@ class BrowseAdsState {
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         hasMore: hasMore ?? this.hasMore,
         query: query ?? this.query,
+        type: type ?? this.type,
         sort: sort ?? this.sort,
         error: clearError ? null : (error ?? this.error),
         category: clearCategory ? null : (category ?? this.category),
@@ -811,6 +852,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
     _debounce?.cancel();
     state = BrowseAdsState(
       query: q,
+      type: state.type,
       sort: state.sort,
       category: state.category,
       minPrice: state.minPrice,
@@ -822,10 +864,29 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
     _debounce = Timer(const Duration(milliseconds: 400), _load);
   }
 
+  /// Switches between for-sale ads and wanted posts, keeping the search.
+  void setType(String type) {
+    if (type == state.type) return;
+    _debounce?.cancel();
+    state = BrowseAdsState(
+      query: state.query,
+      type: type,
+      sort: state.sort,
+      category: state.category,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+      nearLat: state.nearLat,
+      nearLon: state.nearLon,
+      radiusKm: state.radiusKm,
+    );
+    _load();
+  }
+
   void setSort(MarketSort sort) {
     if (sort == state.sort) return;
     state = BrowseAdsState(
       query: state.query,
+      type: state.type,
       sort: sort,
       category: state.category,
       minPrice: state.minPrice,
@@ -840,6 +901,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
   void setFilters({String? category, double? minPrice, double? maxPrice}) {
     state = BrowseAdsState(
       query: state.query,
+      type: state.type,
       sort: state.sort,
       category: category,
       minPrice: minPrice,
@@ -854,6 +916,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
   void setNearby({double? lat, double? lon, double radiusKm = 50}) {
     state = BrowseAdsState(
       query: state.query,
+      type: state.type,
       sort: state.sort,
       category: state.category,
       minPrice: state.minPrice,
@@ -868,6 +931,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
   Future<void> refresh() {
     state = BrowseAdsState(
       query: state.query,
+      type: state.type,
       sort: state.sort,
       category: state.category,
       minPrice: state.minPrice,
@@ -889,6 +953,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
 
   Future<void> _load() async {
     final q = state.query;
+    final type = state.type;
     final sort = state.sort;
     final page = state.nextPage;
     final category = state.category;
@@ -902,6 +967,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
       final params = <String, String>{
         'per_page': '$_perPage',
         'page': '$page',
+        'type': type,
         if (q.isNotEmpty) 'q': q,
         if (sort != MarketSort.newest) 'sort': sort.value,
         if (category != null) 'category': category,
@@ -929,6 +995,7 @@ class BrowseAdsNotifier extends StateNotifier<BrowseAdsState> {
         isLoadingMore: false,
         hasMore: combined.length < total,
         query: q,
+        type: type,
         sort: sort,
         category: category,
         minPrice: minPrice,
@@ -1172,6 +1239,8 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
   _PostAdNotifier(this._ref) : super(const AsyncValue.data(null));
 
   Future<int> create({
+    String adType = 'SELL',
+    String? neededBy,
     int? plantId,
     required String plantName,
     required String title,
@@ -1185,6 +1254,8 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final resp = await _ref.read(marketRepositoryProvider).createAd(
+            adType: adType,
+            neededBy: neededBy,
             plantId: plantId,
             plantName: plantName,
             title: title,
@@ -1198,6 +1269,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
       final adId = (resp['ad']['id'] as num).toInt();
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
+      _ref.invalidate(latestWantsProvider);
       _ref.invalidate(browseAdsProvider);
       state = const AsyncValue.data(null);
       return adId;
@@ -1218,6 +1290,7 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
     double? pricePerUnit,
     String? sizeDescription,
     List<String>? photos,
+    String? neededBy,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -1232,11 +1305,13 @@ class _PostAdNotifier extends StateNotifier<AsyncValue<void>> {
             pricePerUnit: pricePerUnit,
             sizeDescription: sizeDescription,
             photos: photos,
+            neededBy: neededBy,
           );
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(browseAdsProvider);
       _ref.invalidate(savedAdsProvider);
       _ref.invalidate(latestAdsProvider);
+      _ref.invalidate(latestWantsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
@@ -1261,6 +1336,8 @@ class _AdActionNotifier extends StateNotifier<AsyncValue<void>> {
       await _ref.read(marketRepositoryProvider).performAdAction(adId, action);
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
+      _ref.invalidate(latestWantsProvider);
+      _ref.invalidate(browseAdsProvider);
       state = const AsyncValue.data(null);
     } catch (e, s) {
       state = AsyncValue.error(e, s);

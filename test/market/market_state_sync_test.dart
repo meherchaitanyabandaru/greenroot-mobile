@@ -51,6 +51,8 @@ class _NoOpMarketRepo extends MarketRepository {
 
   @override
   Future<Map<String, dynamic>> createAd({
+    String adType = 'SELL',
+    String? neededBy,
     int? plantId,
     required String plantName,
     required String title,

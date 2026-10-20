@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/green_root_app_bar.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plant_picker.dart';
+import '../plants/plants.dart';
 import 'local_market_providers.dart';
 import '../top_items/top_items_screen.dart';
 
@@ -125,11 +126,15 @@ class LocalMarketScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         color: _mkGreen,
-        onRefresh: () async => ref.invalidate(latestAdsProvider),
+        onRefresh: () async {
+          ref.invalidate(latestAdsProvider);
+          ref.invalidate(latestWantsProvider);
+        },
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _homeSearchBar(context)),
             SliverToBoxAdapter(child: _homeQuickActions(context)),
+            SliverToBoxAdapter(child: _postWantCta(context)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
@@ -172,12 +177,95 @@ class LocalMarketScreen extends ConsumerWidget {
                 );
               },
             ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: _SectionHeader(
+                  title: 'Wanted',
+                  actionLabel: 'View All',
+                  onAction: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const _BrowseScreen(type: 'WANT'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            ref.watch(latestWantsProvider).when(
+                  loading: () => const SliverToBoxAdapter(child: SizedBox()),
+                  error: (_, __) => const SliverToBoxAdapter(child: SizedBox()),
+                  data: (wants) => wants.isEmpty
+                      ? SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'No one is asking for plants right now.',
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: _mkTextSecondary),
+                            ),
+                          ),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (_, i) => Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                              child: _BrowseAdCard(ad: wants[i]),
+                            ),
+                            childCount: wants.length,
+                          ),
+                        ),
+                ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
       ),
     );
   }
+
+  Widget _postWantCta(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Material(
+          color: _stPausedBg,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const _PostWantScreen(),
+                fullscreenDialog: true,
+              ),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Icon(Icons.campaign_outlined, color: _stPaused),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Need plants?',
+                          style: TextStyle(
+                            color: _stPaused,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Post what you need. Nurseries that have it will reply.',
+                          style: TextStyle(color: _stPaused, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: _stPaused),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
   Widget _homeSearchBar(BuildContext context) {
     return Semantics(
@@ -225,10 +313,19 @@ class LocalMarketScreen extends ConsumerWidget {
   Widget _homeQuickActions(BuildContext context) {
     final items = [
       (
-        Icons.grid_view_rounded,
-        'Browse',
+        Icons.storefront_outlined,
+        'For sale',
         () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const _BrowseScreen()))
+      ),
+      (
+        Icons.campaign_outlined,
+        'Wanted',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const _BrowseScreen(type: 'WANT'),
+              ),
+            )
       ),
       (
         Icons.favorite_rounded,
@@ -250,7 +347,7 @@ class LocalMarketScreen extends ConsumerWidget {
       ),
       (
         Icons.chat_bubble_outline_rounded,
-        'Enquiries',
+        'Chats',
         () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const _EnquiriesScreen()))
       ),
@@ -329,7 +426,10 @@ class _QuickActionTile extends StatelessWidget {
 class _BrowseScreen extends ConsumerStatefulWidget {
   final bool autoFocus;
 
-  const _BrowseScreen({this.autoFocus = false});
+  /// SELL (for sale) or WANT (wanted posts) to open on.
+  final String type;
+
+  const _BrowseScreen({this.autoFocus = false, this.type = 'SELL'});
 
   @override
   ConsumerState<_BrowseScreen> createState() => _BrowseScreenState();
@@ -351,6 +451,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
       // Restore search text from provider state
       final q = ref.read(browseAdsProvider).query;
       if (_searchCtrl.text != q) _searchCtrl.text = q;
+      ref.read(browseAdsProvider.notifier).setType(widget.type);
       if (widget.autoFocus) _focus.requestFocus();
     });
   }
@@ -682,7 +783,7 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
     return Scaffold(
       backgroundColor: _mkBg,
       appBar: AppBar(
-        title: const Text('Browse'),
+        title: Text(browse.type == 'WANT' ? 'Wanted' : 'For sale'),
         backgroundColor: _mkCard,
         foregroundColor: _mkTextPrimary,
         elevation: 0,
@@ -757,9 +858,30 @@ class _BrowseScreenState extends ConsumerState<_BrowseScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(hasFilters ? 101 : 57),
+          preferredSize: Size.fromHeight(hasFilters ? 145 : 101),
           child: Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'SELL',
+                      label: Text('For sale'),
+                      icon: Icon(Icons.storefront_outlined),
+                    ),
+                    ButtonSegment(
+                      value: 'WANT',
+                      label: Text('Wanted'),
+                      icon: Icon(Icons.campaign_outlined),
+                    ),
+                  ],
+                  selected: {browse.type},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (v) =>
+                      ref.read(browseAdsProvider.notifier).setType(v.first),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: TextField(
@@ -981,7 +1103,7 @@ class _BrowseAdCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CardPhoto(ad: ad, isOwn: false),
+            if (ad.isWant) _WantBanner(ad: ad) else _CardPhoto(ad: ad, isOwn: false),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
@@ -1047,10 +1169,20 @@ class _BrowseAdCard extends ConsumerWidget {
                         const SizedBox(width: 10),
                       ],
                       if (ad.quantity != null)
-                        _Chip('${ad.quantity} available', _mkLight, _mkDark),
+                        _Chip(
+                          ad.isWant
+                              ? 'Needs ${ad.quantity}'
+                              : '${ad.quantity} available',
+                          _mkLight,
+                          _mkDark,
+                        ),
                       if (ad.sizeDescription != null) ...[
                         const SizedBox(width: 6),
                         _Chip(ad.sizeDescription!, _stDraftBg, _stDraft),
+                      ],
+                      if (ad.isWant && ad.neededBy != null) ...[
+                        const SizedBox(width: 6),
+                        _Chip('By ${_shortDate(ad.neededBy!)}', _stPausedBg, _stPaused),
                       ],
                     ],
                   ),
@@ -1064,6 +1196,44 @@ class _BrowseAdCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _shortDate(DateTime d) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return '${d.day} ${months[d.month - 1]}';
+}
+
+/// The top strip of a wanted post: wants have no photos or price.
+class _WantBanner extends StatelessWidget {
+  final MarketAd ad;
+  const _WantBanner({required this.ad});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        color: _stPausedBg,
+        child: Row(
+          children: [
+            const Icon(Icons.campaign_outlined, size: 18, color: _stPaused),
+            const SizedBox(width: 8),
+            const Text(
+              'WANTED',
+              style: TextStyle(
+                color: _stPaused,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              ad.plantName,
+              style: const TextStyle(color: _stPaused, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
 }
 
 class _CardPhoto extends ConsumerWidget {
@@ -1590,7 +1760,21 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 5),
-                        if (ad.pricePerUnit != null)
+                        if (ad.isWant)
+                          Text(
+                            [
+                              'Wanted',
+                              if (ad.quantity != null) '${ad.quantity}',
+                              if (ad.sizeDescription != null) ad.sizeDescription!,
+                              if (ad.neededBy != null) 'by ${_shortDate(ad.neededBy!)}',
+                            ].join(' · '),
+                            style: const TextStyle(
+                              color: _stPaused,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          )
+                        else if (ad.pricePerUnit != null)
                           Text(
                             '₹${ad.pricePerUnit!.toStringAsFixed(0)} / ${ad.priceUnit ?? "unit"}',
                             style: const TextStyle(
@@ -1677,15 +1861,16 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                               if (a.$1 == 'edit') {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        _PostAdScreen(editingAd: widget.ad),
+                                    builder: (_) => widget.ad.isWant
+                                        ? _PostWantScreen(editing: widget.ad)
+                                        : _PostAdScreen(editingAd: widget.ad),
                                     fullscreenDialog: true,
                                   ),
                                 );
                               } else if (a.$1 == 'enquiries') {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => const _EnquiriesScreen(),
+                                    builder: (_) => _AdChatsScreen(ad: widget.ad),
                                   ),
                                 );
                               } else {
@@ -1754,7 +1939,8 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 300,
+            // A want has no photos: a short bar instead of a photo header.
+            expandedHeight: ad.isWant ? null : 300,
             pinned: true,
             backgroundColor: _mkCard,
             foregroundColor: _mkTextPrimary,
@@ -1784,14 +1970,16 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => _PostAdScreen(editingAd: ad),
+                      builder: (_) => ad.isWant
+                          ? _PostWantScreen(editing: ad)
+                          : _PostAdScreen(editingAd: ad),
                       fullscreenDialog: true,
                     ),
                   ),
                 ),
               const SizedBox(width: 4),
             ],
-            flexibleSpace: FlexibleSpaceBar(
+            flexibleSpace: ad.isWant ? null : FlexibleSpaceBar(
               background: ad.photos.isEmpty
                   ? Container(
                       color: _mkLight,
@@ -1891,6 +2079,24 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  if (ad.isWant)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _stPausedBg,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'WANTED · sellers offer a price in the chat',
+                        style: TextStyle(
+                          color: _stPaused,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   if (ad.pricePerUnit != null)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -1918,9 +2124,21 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     runSpacing: 8,
                     children: [
                       if (ad.quantity != null)
-                        _Chip('${ad.quantity} available', _mkLight, _mkDark),
+                        _Chip(
+                          ad.isWant
+                              ? 'Needs ${ad.quantity}'
+                              : '${ad.quantity} available',
+                          _mkLight,
+                          _mkDark,
+                        ),
                       if (ad.sizeDescription != null)
                         _Chip(ad.sizeDescription!, _stDraftBg, _stDraft),
+                      if (ad.isWant && ad.neededBy != null)
+                        _Chip(
+                          'Needed by ${_shortDate(ad.neededBy!)}',
+                          _stPausedBg,
+                          _stPaused,
+                        ),
                       if (ad.categoryName != null)
                         _Chip(ad.categoryName!, _stPublishedBg, _stPublished),
                       _Chip(
@@ -2166,7 +2384,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                     icon:
                         const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                     label: Text(
-                      ad.myEnquiryId != null ? 'Open chat' : 'Chat with seller',
+                      ad.myEnquiryId != null
+                          ? 'Open chat'
+                          : ad.isWant
+                              ? 'I have this'
+                              : 'Chat with seller',
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
@@ -2421,7 +2643,11 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
   }
 
   Future<void> _showEnquirySheet(BuildContext context, MarketAd ad) async {
-    final msgCtrl = TextEditingController(text: 'Is it still available?');
+    final msgCtrl = TextEditingController(
+      text: ad.isWant
+          ? 'I have ${ad.plantName}${ad.sizeDescription != null ? ' (${ad.sizeDescription})' : ''}.'
+          : 'Is it still available?',
+    );
     final qtyCtrl = TextEditingController();
     final enquiryId = await showModalBottomSheet<int>(
       context: context,
@@ -2486,7 +2712,7 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Chat with seller',
+              widget.ad.isWant ? 'I have this plant' : 'Chat with seller',
               style: AppTypography.h3.copyWith(
                 color: _mkTextPrimary,
                 fontWeight: FontWeight.w800,
@@ -2571,6 +2797,283 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// POST A WANT: plant + size (+ quantity, date, note). No price, no photos:
+// nurseries that have the plant answer "I have this" and offer in the chat.
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _PostWantScreen extends ConsumerStatefulWidget {
+  final MarketAd? editing;
+  const _PostWantScreen({this.editing});
+
+  @override
+  ConsumerState<_PostWantScreen> createState() => _PostWantScreenState();
+}
+
+class _PostWantScreenState extends ConsumerState<_PostWantScreen> {
+  int? _plantId;
+  String? _plantName;
+  String? _size;
+  DateTime? _neededBy;
+  final _qtyCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ad = widget.editing;
+    if (ad != null) {
+      _plantId = ad.plantId;
+      _plantName = ad.plantName;
+      _size = ad.sizeDescription;
+      _neededBy = ad.neededBy;
+      _qtyCtrl.text = ad.quantity?.toString() ?? '';
+      _noteCtrl.text = ad.description ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  Widget _label(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          t,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _mkTextPrimary,
+          ),
+        ),
+      );
+
+  bool get _valid =>
+      _plantId != null &&
+      _size != null &&
+      (_qtyCtrl.text.trim().isEmpty ||
+          (int.tryParse(_qtyCtrl.text.trim()) ?? 0) > 0);
+
+  String? get _dateParam => _neededBy == null
+      ? null
+      : '${_neededBy!.year}-${_neededBy!.month.toString().padLeft(2, '0')}-${_neededBy!.day.toString().padLeft(2, '0')}';
+
+  void _pickPlant() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => PlantPickerSheet(
+        title: 'Which plant do you need?',
+        onSelected: (plant) {
+          Navigator.of(sheetContext).pop();
+          setState(() {
+            _plantId = plant.id;
+            _plantName = plant.displayName;
+          });
+        },
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _neededBy ?? now.add(const Duration(days: 14)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      helpText: 'Needed by',
+    );
+    if (picked != null) setState(() => _neededBy = picked);
+  }
+
+  Future<void> _submit() async {
+    setState(() => _saving = true);
+    final qty = int.tryParse(_qtyCtrl.text.trim());
+    final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
+    try {
+      final post = ref.read(postAdProvider.notifier);
+      if (widget.editing != null) {
+        await post.update(
+          widget.editing!.id,
+          sizeDescription: _size,
+          quantity: qty,
+          description: note,
+          neededBy: _dateParam ?? '',
+        );
+      } else {
+        final id = await post.create(
+          adType: 'WANT',
+          neededBy: _dateParam,
+          plantId: _plantId,
+          plantName: _plantName!,
+          title: 'Wanted: ${_plantName!}',
+          sizeDescription: _size,
+          quantity: qty,
+          description: note,
+        );
+        // A want goes live at once: there is no draft step for a request.
+        await ref.read(adActionProvider.notifier).perform(id, 'publish');
+      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.editing != null
+                ? 'Wanted post updated'
+                : 'Posted. Nurseries that have it can now reply.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: _stExpired,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sizes = ref.watch(plantSizesProvider);
+    final editing = widget.editing != null;
+    return Scaffold(
+      backgroundColor: _mkBg,
+      appBar: AppBar(
+        title: Text(editing ? 'Edit wanted post' : 'Post what you need'),
+        backgroundColor: _mkCard,
+        foregroundColor: _mkTextPrimary,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Tell nurseries what you are looking for. No price here: '
+            'nurseries that have it reply and offer a price in the chat.',
+            style: AppTypography.bodySmall.copyWith(color: _mkTextSecondary),
+          ),
+          const SizedBox(height: 18),
+          _label('Plant *'),
+          InkWell(
+            onTap: editing ? null : _pickPlant,
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: _inputDec('Search plants, e.g. Neem, Rose...').copyWith(
+                suffixIcon: editing ? null : const Icon(Icons.search_rounded),
+              ),
+              isEmpty: _plantName == null,
+              child: _plantName == null
+                  ? null
+                  : Text(_plantName!, style: AppTypography.body),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _label('Size *'),
+          sizes.when(
+            loading: () => const LinearProgressIndicator(color: _mkGreen),
+            error: (e, _) => Text(e.toString(), style: const TextStyle(color: _stExpired)),
+            data: (list) => Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final PlantSize size in list)
+                  ChoiceChip(
+                    label: Text(size.displayName),
+                    selected: _size == size.displayName,
+                    onSelected: (_) => setState(() => _size = size.displayName),
+                    selectedColor: _mkGreen,
+                    labelStyle: TextStyle(
+                      color: _size == size.displayName ? Colors.white : _mkTextPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    showCheckmark: false,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _label('How many (optional)'),
+          TextField(
+            controller: _qtyCtrl,
+            keyboardType: TextInputType.number,
+            decoration: _inputDec('e.g. 300'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          _label('Needed by (optional)'),
+          InkWell(
+            onTap: _pickDate,
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: _inputDec('Pick a date').copyWith(
+                suffixIcon: _neededBy == null
+                    ? const Icon(Icons.event_outlined)
+                    : IconButton(
+                        tooltip: 'Clear date',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() => _neededBy = null),
+                      ),
+              ),
+              isEmpty: _neededBy == null,
+              child: _neededBy == null
+                  ? null
+                  : Text(_shortDate(_neededBy!), style: AppTypography.body),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _label('Note (optional)'),
+          TextField(
+            controller: _noteCtrl,
+            maxLines: 3,
+            maxLength: 500,
+            decoration: _inputDec('e.g. For a highway project, need healthy stock'),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _mkGreen,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: _valid && !_saving ? _submit : null,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      editing ? 'Save' : 'Post',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3946,7 +4449,12 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                   controller: _replyCtrl,
                   replying: _busy,
                   onSend: () => _send(_replyCtrl.text),
-                  quickReplies: _quickReplies(enquiry, isSeller: isSeller),
+                  // On a want the ad's nursery is the buyer: replies follow
+                  // who is selling, not who posted the ad.
+                  quickReplies: _quickReplies(
+                    enquiry,
+                    isSeller: enquiry.adType == 'WANT' ? !isSeller : isSeller,
+                  ),
                   onQuickReply: _send,
                   onOffer:
                       (caps?.canOffer ?? false) ? () => _offer(enquiry) : null,
@@ -4059,6 +4567,7 @@ class _EnquiryDetailHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       [
+                        if (enquiry.adType == 'WANT') 'Wanted',
                         if (enquiry.adPricePerUnit != null)
                           '${_rupees(enquiry.adPricePerUnit!)} ${_unitLabel(enquiry.adPriceUnit)}',
                         if (!live) 'Ad no longer active',
