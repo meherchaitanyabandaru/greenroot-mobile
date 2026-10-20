@@ -2073,19 +2073,41 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                           controller: _pageCtrl,
                           itemCount: ad.photos.length,
                           onPageChanged: (i) => setState(() => _photoPage = i),
-                          itemBuilder: (_, i) => Image.network(
-                            ad.photos[i],
-                            fit: BoxFit.cover,
-                            // Decode at screen size, not the full upload.
-                            cacheWidth: (MediaQuery.sizeOf(context).width *
-                                    MediaQuery.devicePixelRatioOf(context))
-                                .round(),
-                            errorBuilder: (_, __, ___) => Container(
-                              color: _mkLight,
+                          // Tap opens the photos full screen, uncropped.
+                          itemBuilder: (_, i) => GestureDetector(
+                            onTap: () => _openPhotos(ad.photos, i),
+                            child: Image.network(
+                              ad.photos[i],
+                              fit: BoxFit.cover,
+                              // Decode at screen size, not the full upload.
+                              cacheWidth: (MediaQuery.sizeOf(context).width *
+                                      MediaQuery.devicePixelRatioOf(context))
+                                  .round(),
+                              errorBuilder: (_, __, ___) => Container(
+                                color: _mkLight,
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 48,
+                                  color: _mkTextSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 12,
+                          bottom: 8,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                               child: const Icon(
-                                Icons.broken_image_outlined,
-                                size: 48,
-                                color: _mkTextSecondary,
+                                Icons.zoom_out_map_rounded,
+                                size: 16,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -2478,6 +2500,19 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
               ),
             ),
     );
+  }
+
+  Future<void> _openPhotos(List<String> photos, int index) async {
+    final last = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) => _PhotoViewer(photos: photos, initial: index),
+        fullscreenDialog: true,
+      ),
+    );
+    // Come back on the photo the viewer ended on.
+    if (last != null && last != _photoPage && _pageCtrl.hasClients) {
+      _pageCtrl.jumpToPage(last);
+    }
   }
 
   Widget _ti(IconData icon, String label) => Row(
@@ -4280,6 +4315,116 @@ class _AccessInfo extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Ad photos full screen: swipe between them, pinch or double-tap to zoom,
+/// nothing cropped. Pops with the photo it ended on.
+class _PhotoViewer extends StatefulWidget {
+  final List<String> photos;
+  final int initial;
+  const _PhotoViewer({required this.photos, required this.initial});
+
+  @override
+  State<_PhotoViewer> createState() => _PhotoViewerState();
+}
+
+class _PhotoViewerState extends State<_PhotoViewer> {
+  late final _ctrl = PageController(initialPage: widget.initial);
+  late int _page = widget.initial;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) Navigator.of(context).pop(_page);
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: Text(
+              '${_page + 1} / ${widget.photos.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: PageView.builder(
+            controller: _ctrl,
+            itemCount: widget.photos.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => _ZoomablePhoto(url: widget.photos[i]),
+          ),
+        ),
+      );
+}
+
+class _ZoomablePhoto extends StatefulWidget {
+  final String url;
+  const _ZoomablePhoto({required this.url});
+
+  @override
+  State<_ZoomablePhoto> createState() => _ZoomablePhotoState();
+}
+
+class _ZoomablePhotoState extends State<_ZoomablePhoto> {
+  final _zoom = TransformationController();
+
+  // Dragging moves a zoomed photo; unzoomed, swipes go to the page view.
+  bool _zoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _zoom.addListener(() {
+      final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.01;
+      if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+    });
+  }
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        // Double-tap toggles 2.5x zoom; pinch zooms freely.
+        onDoubleTap: () => _zoom.value = _zoom.value.isIdentity()
+            ? (Matrix4.identity()..scaleByDouble(2.5, 2.5, 1, 1))
+            : Matrix4.identity(),
+        child: InteractiveViewer(
+          transformationController: _zoom,
+          panEnabled: _zoomed,
+          maxScale: 4,
+          child: Center(
+            child: Image.network(
+              widget.url,
+              fit: BoxFit.contain,
+              loadingBuilder: (_, child, progress) => progress == null
+                  ? child
+                  : const CircularProgressIndicator(color: Colors.white),
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                size: 56,
+                color: Colors.white54,
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class _PhotoTile extends StatelessWidget {
