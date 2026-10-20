@@ -286,7 +286,8 @@ class _ContinueWorkingSection extends StatelessWidget {
         const Text('Continue Working', style: AppTypography.h4),
         const SizedBox(height: 10),
         SizedBox(
-          height: 82,
+          // Icon + title + subtitle + padding, with room for larger system fonts.
+          height: 96,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,

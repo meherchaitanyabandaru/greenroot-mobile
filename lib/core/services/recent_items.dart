@@ -1,8 +1,14 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/auth/presentation/providers/session_provider.dart';
 
-const _kKey = 'recent_items_v1';
+// One list per signed-in user: a phone shared by two accounts must not show
+// one account's orders and quotations on the other's home screen.
+const _kKeyPrefix = 'recent_items_v2_';
+// The old list was shared by every account on the device; it cannot be
+// split by owner, so it is deleted.
+const _kLegacyKey = 'recent_items_v1';
 const _kMaxItems = 8;
 
 enum RecentItemType { order, quotation, dispatch }
@@ -49,13 +55,19 @@ class RecentItem {
 }
 
 class RecentItemsNotifier extends StateNotifier<List<RecentItem>> {
-  RecentItemsNotifier() : super(const []) {
+  /// [userId] is null while signed out: nothing is shown or recorded.
+  RecentItemsNotifier(this._userId) : super(const []) {
     _load();
   }
 
+  final int? _userId;
+  String get _key => '$_kKeyPrefix$_userId';
+
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_kKey) ?? [];
+    await prefs.remove(_kLegacyKey);
+    if (_userId == null) return;
+    final raw = prefs.getStringList(_key) ?? [];
     final items = raw
         .map((s) => RecentItem.fromJson(jsonDecode(s) as Map<String, dynamic>))
         .toList();
@@ -67,19 +79,24 @@ class RecentItemsNotifier extends StateNotifier<List<RecentItem>> {
   /// writes are cheap and local, and a detail screen doesn't rebuild often
   /// enough for that to matter in practice.
   Future<void> record(RecentItem item) async {
+    if (_userId == null) return;
     final next = state.where((e) => !(e.type == item.type && e.id == item.id)).toList();
     next.insert(0, item);
     final trimmed = next.take(_kMaxItems).toList();
     state = trimmed;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
-      _kKey,
+      _key,
       trimmed.map((e) => jsonEncode(e.toJson())).toList(),
     );
   }
 }
 
+/// Rebuilt whenever the signed-in user changes, so it always shows that
+/// user's list.
 final recentItemsProvider =
     StateNotifierProvider<RecentItemsNotifier, List<RecentItem>>(
-  (ref) => RecentItemsNotifier(),
+  (ref) => RecentItemsNotifier(
+    ref.watch(sessionProvider.select((s) => s.user?.id)),
+  ),
 );
