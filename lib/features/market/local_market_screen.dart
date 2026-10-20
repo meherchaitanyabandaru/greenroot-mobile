@@ -1864,17 +1864,19 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
                         Row(
                           children: [
                             _miniStat(
-                                Icons.visibility_outlined, '${ad.viewCount}',),
+                              Icons.visibility_outlined,
+                              '${ad.viewCount} ${ad.viewCount == 1 ? 'view' : 'views'}',
+                            ),
                             const SizedBox(width: 10),
                             _miniStat(
                               Icons.bookmark_outline_rounded,
-                              '${ad.saveCount}',
+                              '${ad.saveCount} saved',
                             ),
                             if (ad.enquiryCount > 0) ...[
                               const SizedBox(width: 10),
                               _miniStat(
                                 Icons.mail_outline_rounded,
-                                '${ad.enquiryCount}',
+                                '${ad.enquiryCount} ${ad.enquiryCount == 1 ? 'chat' : 'chats'}',
                               ),
                             ],
                           ],
@@ -3866,9 +3868,11 @@ class _SizeChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ref.watch(plantSizesProvider).when(
           loading: () => const LinearProgressIndicator(color: _mkGreen),
-          error: (_, __) => TextField(
-            controller: controller,
-            decoration: _inputDec('e.g. 3-4 ft'),
+          // No free-text fallback: a typed "44" has no unit buyers can read.
+          error: (_, __) => TextButton.icon(
+            onPressed: () => ref.invalidate(plantSizesProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Could not load sizes. Tap to retry'),
           ),
           data: (sizes) => ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
