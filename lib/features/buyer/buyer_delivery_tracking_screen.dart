@@ -276,7 +276,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     final d = widget.dispatch;
     final truck = _truckLatLng;
     final caps = ref.watch(sessionProvider).capabilities;
-    final isOwnerView = caps.isNurseryOwner == true || caps.isManager == true;
+    final isOwnerView = caps.sellsFor(d.sellerNurseryId);
 
     // Map controls must clear the collapsed bottom sheet (≈ 12% of screen height).
     final controlsBottom = MediaQuery.of(context).size.height * 0.12 + 16;

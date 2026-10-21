@@ -9,6 +9,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/services/storage_service.dart';
 
 /// Driver-only: capture and upload delivery proof photos.
 /// Requires at least 1 photo. Uploaded via POST /api/v1/attachments.
@@ -68,14 +69,23 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
 
     try {
       final client = ApiClient.instance;
+      final storage = ref.read(storageServiceProvider);
       for (int i = 0; i < _photos.length; i++) {
-        await client.uploadXFile(
+        // /attachments takes JSON metadata only: put the file in storage first.
+        final photo = _photos[i];
+        final bytes = await photo.readAsBytes();
+        final contentType = photo.mimeType ?? 'image/jpeg';
+        final fileUrl = await storage.uploadPresigned(
+            'delivery-photos', bytes, photo.name, contentType,);
+        await client.post<Map<String, dynamic>>(
           ApiConstants.attachments,
-          file: _photos[i],
-          extraFields: {
+          data: {
             'entity_type': 'dispatch',
-            'entity_id': widget.dispatchId.toString(),
-            'attachment_type': 'delivery_proof',
+            'entity_id': widget.dispatchId,
+            'file_name': photo.name,
+            'file_url': fileUrl,
+            'file_type': contentType,
+            'file_size': bytes.length,
           },
         );
         if (mounted) setState(() => _uploadedCount = i + 1);

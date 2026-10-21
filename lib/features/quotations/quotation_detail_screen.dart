@@ -441,11 +441,12 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Saved to Documents: $filename')),
-          );
-        }
+        // App documents dir is private on Android; hand the file to the OS so
+        // the user can open/save the copy just rendered for their role.
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: q.quotationCode,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -593,12 +594,16 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
       });
     }
     final caps = ref.watch(sessionProvider).capabilities;
-    final isBuyerView = !caps.canSell;
+    // Seller view only for this quotation's own nursery; an owner/manager
+    // who received a quotation from another nursery is the customer here.
+    final isBuyerView = !caps.sellsFor(q.nurseryId);
     final backendCaps = q.capabilities;
     // Backend capabilities are preferred; local rules remain as fallback for
     // older API responses.
-    final canDelete = backendCaps?.canDelete ?? caps.isNurseryOwner;
-    final isManagerOnly = caps.isManager && !caps.isNurseryOwner;
+    final canDelete = !isBuyerView &&
+        (backendCaps?.canDelete ?? caps.ownedNurseryId == q.nurseryId);
+    final isManagerOnly =
+        !isBuyerView && caps.isManager && !caps.isNurseryOwner;
     // Quotations are editable only while in a DRAFT status.
     final isEditable =
         q.status == 'INTERNAL_DRAFT' || q.status == 'CUSTOMER_DRAFT';
@@ -640,27 +645,19 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                       strokeWidth: 2, color: AppColors.primaryMain,),),
             )
           else if (!isBuyerView) ...[
-            // Edit — only available in DRAFT statuses and when actor is the exclusive editor
-            if (isEditable)
+            // Edit — only when this actor may edit; the locked case is
+            // explained by the banner in the body, not a dead icon.
+            if (isEditable && canEditContent)
               IconButton(
-                tooltip: canEditContent
-                    ? 'Edit'
-                    : 'Editing locked — only the assigned manager can edit',
-                icon: Icon(
-                  canEditContent ? Icons.edit_outlined : Icons.lock_outline,
-                  size: 20,
-                  color: canEditContent ? null : AppColors.textMuted,
-                ),
-                onPressed: canEditContent
-                    ? () async {
-                        final edited = await context
-                            .push<bool>('/quotations/${q.id}/edit', extra: q);
-                        if (edited == true && mounted) {
-                          ref.invalidate(
-                              quotationDetailProvider(widget.quotationId),);
-                        }
-                      }
-                    : null,
+                tooltip: 'Edit',
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () async {
+                  final edited = await context
+                      .push<bool>('/quotations/${q.id}/edit', extra: q);
+                  if (edited == true && mounted) {
+                    ref.invalidate(quotationDetailProvider(widget.quotationId));
+                  }
+                },
               ),
             // More options
             PopupMenuButton<String>(

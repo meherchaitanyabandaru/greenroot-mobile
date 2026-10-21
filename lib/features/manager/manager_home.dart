@@ -147,7 +147,9 @@ final managerHomeProvider =
   try {
     final (items, _) = await quotationRepo.listQuotations(page: 1, perPage: 10);
     pendingQuotations = items
-        .where((q) => q.status == 'DRAFT' || q.status == 'CUSTOMER_ACCEPTED')
+        .where((q) =>
+            (q.capabilities?.canSend ?? q.status == 'CUSTOMER_DRAFT') ||
+            (q.capabilities?.canConvert ?? q.status == 'CUSTOMER_ACCEPTED'),)
         .toList();
   } catch (_) {}
   return _ManagerHomeData(
@@ -773,7 +775,7 @@ class _ManagerQuotationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDraft = quotation.status == 'DRAFT';
+    final isDraft = quotation.status == 'CUSTOMER_DRAFT';
     final color = isDraft ? AppColors.amber600 : AppColors.blue600;
     final bg = isDraft ? const Color(0xFFFFF3E0) : const Color(0xFFE3F2FD);
     final actionLabel = isDraft ? 'Approve & Send' : 'Convert to Order';

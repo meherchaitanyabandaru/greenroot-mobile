@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
@@ -157,34 +156,6 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> uploadXFile(
-    String path, {
-    required XFile file,
-    Map<String, String> extraFields = const {},
-  }) async {
-    try {
-      final bytes = await file.readAsBytes();
-      final formData = FormData.fromMap({
-        ...extraFields,
-        'file': MultipartFile.fromBytes(
-          bytes,
-          filename:
-              file.name.isNotEmpty ? file.name : file.path.split('/').last,
-        ),
-      });
-      final response = await dio.post(
-        path,
-        data: formData,
-        options: Options(contentType: 'multipart/form-data'),
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw NetworkExceptions.fromDioException(e);
-    } catch (e) {
-      AppLogger.e('Unexpected error on file upload $path', e);
-      throw const UnknownError();
-    }
-  }
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient.instance);

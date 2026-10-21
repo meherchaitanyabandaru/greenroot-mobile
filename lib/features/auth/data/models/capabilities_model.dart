@@ -28,6 +28,14 @@ class UserCapabilities {
 
   bool get canSell => isNurseryOwner || isManager;
 
+  /// True when the user works on the seller side of [nurseryId]'s records.
+  /// An owner/manager viewing someone else's order or quotation is acting as
+  /// a buyer there and must get buyer-only controls.
+  bool sellsFor(int? nurseryId) =>
+      nurseryId != null &&
+      (ownedNurseryId == nurseryId ||
+          managedNurseries.any((w) => w.nurseryId == nurseryId));
+
   // True when the user is a driver AND has no selling or buying context.
   // Per BRD: drivers should not see Buy or Sell tabs.
   bool get isDriverOnly => hasDriverProfile && !isNurseryOwner && !isManager;

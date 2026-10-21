@@ -124,7 +124,11 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => TripPreviewScreen(code: raw)),
         );
-        if (mounted) Navigator.of(context).pop();
+        // Accepting a trip calls context.go(), which already removed this
+        // route; popping again would empty the stack (black screen).
+        if (mounted && (ModalRoute.of(context)?.isActive ?? false)) {
+          Navigator.of(context).pop();
+        }
       case QrSheetResult.close:
         Navigator.of(context).pop();
     }

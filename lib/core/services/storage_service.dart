@@ -46,12 +46,21 @@ class StorageService {
     Uint8List bytes,
     String fileName,
     String contentType,
+  ) =>
+      uploadPresigned('nursery-logos', bytes, fileName, contentType);
+
+  /// Uploads bytes to [bucket] in MinIO via presigned URL; returns file_url.
+  Future<String> uploadPresigned(
+    String bucket,
+    Uint8List bytes,
+    String fileName,
+    String contentType,
   ) async {
     // 1. Get presigned upload URL from API
     final presignData = await _api.post<Map<String, dynamic>>(
       ApiConstants.storagePresign,
       data: {
-        'bucket': 'nursery-logos',
+        'bucket': bucket,
         'file_name': fileName,
         'content_type': contentType,
       },

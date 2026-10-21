@@ -646,8 +646,12 @@ class _MgrQuotationCard extends ConsumerStatefulWidget {
 class _MgrQuotationCardState extends ConsumerState<_MgrQuotationCard> {
   bool _acting = false;
 
-  bool get _canApprove => widget.quotation.status == 'DRAFT';
-  bool get _canConvert => widget.quotation.status == 'CUSTOMER_ACCEPTED';
+  bool get _canApprove =>
+      widget.quotation.capabilities?.canSend ??
+      widget.quotation.status == 'CUSTOMER_DRAFT';
+  bool get _canConvert =>
+      widget.quotation.capabilities?.canConvert ??
+      widget.quotation.status == 'CUSTOMER_ACCEPTED';
 
   Future<void> _approve() async {
     setState(() => _acting = true);

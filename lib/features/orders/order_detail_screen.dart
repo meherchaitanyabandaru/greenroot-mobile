@@ -49,9 +49,6 @@ class OrderDetailScreen extends ConsumerWidget {
     final fmt =
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final caps = ref.watch(sessionProvider).capabilities;
-    final canManage = caps.isNurseryOwner || caps.isManager;
-    final isOwner = caps.isNurseryOwner;
-    final isBuyer = !canManage && !caps.hasDriverProfile;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -84,6 +81,12 @@ class OrderDetailScreen extends ConsumerWidget {
           ),
         ),
         data: (order) {
+          // Seller controls only for this order's own nursery; an owner or
+          // manager who bought from another nursery is a buyer here.
+          final canManage = caps.sellsFor(order.sellerNurseryId);
+          final isOwner = caps.ownedNurseryId != null &&
+              caps.ownedNurseryId == order.sellerNurseryId;
+          final isBuyer = !canManage && !caps.hasDriverProfile;
           // "Continue Working" -- deferred to a post-frame callback rather
           // than called directly in build(), since it writes to a provider
           // another still-mounted screen (Home) may be watching.
@@ -785,11 +788,11 @@ class _DownloadOrderPdfRowState extends ConsumerState<_DownloadOrderPdfRow> {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(bytes);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Saved to Documents: $filename')),
-          );
-        }
+        // App documents dir is private on Android; hand the file to the OS.
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: filename,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -1544,9 +1547,16 @@ class _InfoRow extends StatelessWidget {
 // re-running an action that's guaranteed to fail without an address.
 Future<void> _openAndSaveDeliverySheet(
     BuildContext context, WidgetRef ref, Order order,) async {
-  final profile = ref.read(sessionProvider).user;
-  final profileName = profile?.name?.trim();
-  final profileMobile = profile?.mobile?.trim();
+  final session = ref.read(sessionProvider);
+  // The seller fills this in for the customer, so default to the customer's
+  // contact, not the seller's own profile.
+  final forCustomer = session.capabilities.sellsFor(order.sellerNurseryId);
+  final profile = session.user;
+  final profileName =
+      (forCustomer ? order.customerName ?? order.buyerName : profile?.name)
+          ?.trim();
+  final profileMobile =
+      (forCustomer ? order.customerMobile : profile?.mobile)?.trim();
   final result = await showModalBottomSheet<DeliverySnapshotRequest>(
     context: context,
     isScrollControlled: true,
@@ -1555,6 +1565,8 @@ Future<void> _openAndSaveDeliverySheet(
       snapshot: order.deliverySnapshot,
       profileName: profileName,
       profileMobile: profileMobile,
+      contactLabel:
+          forCustomer ? 'Use customer contact' : 'Use profile contact',
     ),
   );
   if (result == null) return;
@@ -1716,11 +1728,13 @@ class _DeliveryEditSheet extends StatefulWidget {
   final DeliverySnapshot? snapshot;
   final String? profileName;
   final String? profileMobile;
+  final String contactLabel;
 
   const _DeliveryEditSheet({
     required this.snapshot,
     required this.profileName,
     required this.profileMobile,
+    required this.contactLabel,
   });
 
   @override
@@ -1759,8 +1773,9 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
     final snapshotMobileMatchesProfile =
         (s?.contactMobile?.trim().isEmpty ?? true) ||
             s?.contactMobile?.trim() == profileMobile;
-    _useProfileContact = !hasSnapshotContact ||
-        (snapshotMatchesProfile && snapshotMobileMatchesProfile);
+    _useProfileContact = (profileMobile?.isNotEmpty ?? false) &&
+        (!hasSnapshotContact ||
+            (snapshotMatchesProfile && snapshotMobileMatchesProfile));
     _line1 = TextEditingController(text: s?.addressLine1 ?? '');
     _line2 = TextEditingController(text: s?.addressLine2 ?? '');
     _city = TextEditingController(text: s?.city ?? '');
@@ -1869,6 +1884,7 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
             const Text('Edit Delivery Address', style: AppTypography.h3),
             const SizedBox(height: AppSpacing.md),
             _DeliveryContactToggle(
+              label: widget.contactLabel,
               value: _useProfileContact,
               profileName: widget.profileName,
               profileMobile: widget.profileMobile,
@@ -1960,12 +1976,14 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
 }
 
 class _DeliveryContactToggle extends StatelessWidget {
+  final String label;
   final bool value;
   final String? profileName;
   final String? profileMobile;
   final ValueChanged<bool> onChanged;
 
   const _DeliveryContactToggle({
+    required this.label,
     required this.value,
     required this.profileName,
     required this.profileMobile,
@@ -1999,7 +2017,7 @@ class _DeliveryContactToggle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Use profile contact',
+                  label,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -2235,7 +2253,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
         Row(
           children: [
             Text('Items (${items.length})', style: AppTypography.h4),
-            if (widget.order.status == 'LOADING')
+            if (_editable)
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: Container(
@@ -2252,7 +2270,7 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
               ),
           ],
         ),
-        if (widget.order.status == 'LOADING') ...[
+        if (_editable) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Items can be added, removed, or updated until Loading Completed.',

@@ -234,6 +234,7 @@ class Order {
   final int? assignedManagerUserId;
   final String? assignedManagerName;
   final String? customerName;
+  final String? customerMobile;
   final DeliverySnapshot? deliverySnapshot;
   final int? activeDispatchId;
   final String? activeDispatchStatus;
@@ -259,6 +260,7 @@ class Order {
     this.assignedManagerUserId,
     this.assignedManagerName,
     this.customerName,
+    this.customerMobile,
     this.deliverySnapshot,
     this.activeDispatchId,
     this.activeDispatchStatus,
@@ -288,6 +290,7 @@ class Order {
         assignedManagerUserId: (j['assigned_manager_user_id'] as num?)?.toInt(),
         assignedManagerName: j['assigned_manager_name'] as String?,
         customerName: j['customer_name'] as String?,
+        customerMobile: j['customer_mobile'] as String?,
         activeDispatchId: (j['active_dispatch_id'] as num?)?.toInt(),
         activeDispatchStatus: j['active_dispatch_status'] as String?,
         deliverySnapshot: j['delivery_snapshot'] is Map<String, dynamic>

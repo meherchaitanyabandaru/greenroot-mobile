@@ -73,6 +73,8 @@ class DispatchDetailScreen extends ConsumerWidget {
                 !caps.isNurseryOwner &&
                 !caps.isManager,
             isManager: caps.isManager,
+            // Seller actions only for this trip's own nursery.
+            isSeller: caps.sellsFor(dispatch.sellerNurseryId),
           );
         },
       ),
@@ -85,11 +87,13 @@ class _DetailView extends ConsumerStatefulWidget {
   final int dispatchId;
   final bool isDriver;
   final bool isManager;
+  final bool isSeller;
   const _DetailView({
     required this.dispatch,
     required this.dispatchId,
     required this.isDriver,
     this.isManager = false,
+    this.isSeller = false,
   });
 
   @override
@@ -178,6 +182,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       dispatch: widget.dispatch,
       isDriver: widget.isDriver,
       isManager: widget.isManager,
+      isSeller: widget.isSeller,
       busy: _busy,
       onUpdateStatus: _updateStatus,
       onAckDeliveryUpdate: _ackDeliveryUpdate,
@@ -190,6 +195,7 @@ class _DetailContent extends StatelessWidget {
   final Dispatch dispatch;
   final bool isDriver;
   final bool isManager;
+  final bool isSeller;
   final bool busy;
   final void Function(String) onUpdateStatus;
   final VoidCallback onAckDeliveryUpdate;
@@ -198,6 +204,7 @@ class _DetailContent extends StatelessWidget {
     required this.dispatch,
     required this.isDriver,
     this.isManager = false,
+    this.isSeller = false,
     required this.busy,
     required this.onUpdateStatus,
     required this.onAckDeliveryUpdate,
@@ -533,7 +540,7 @@ class _DetailContent extends StatelessWidget {
         ],
 
         // ── Manager: Dispatch status actions ───────────────────────────────────
-        if (!isDriver && isManager) ...[
+        if (!isDriver && isManager && isSeller) ...[
           if (dispatch.capabilities?.canMarkDispatched == true)
             SizedBox(
               width: double.infinity,
@@ -586,7 +593,8 @@ class _DetailContent extends StatelessWidget {
         // ── Owner: Status actions + Share QR + Track ──────────────────────────
         if (!isDriver) ...[
           // Owner-only: Mark Dispatched (PENDING or ACCEPTED → DISPATCHED)
-          if (!isManager &&
+          if (isSeller &&
+              !isManager &&
               dispatch.capabilities?.canMarkDispatched == true) ...[
             SizedBox(
               width: double.infinity,
@@ -613,7 +621,8 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Owner: confirm delivery when IN_TRANSIT
-          if (!isManager &&
+          if (isSeller &&
+              !isManager &&
               dispatch.capabilities?.canMarkDelivered == true) ...[
             SizedBox(
               width: double.infinity,
@@ -640,7 +649,7 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Share dispatch code as QR
-          if (dispatch.capabilities?.canShareCode == true)
+          if (isSeller && dispatch.capabilities?.canShareCode == true)
             SizedBox(
               width: double.infinity,
               height: 50,

@@ -583,6 +583,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                     ),
                     _DriversTab(
                       nurseryId: widget.nurseryId,
+                      nurseryName: widget.nurseryName,
                       drivers: state.drivers,
                     ),
                     _CustomersTab(
@@ -735,9 +736,14 @@ class _ManagersTab extends ConsumerWidget {
 
 class _DriversTab extends ConsumerWidget {
   final int nurseryId;
+  final String nurseryName;
   final List<NurseryDriver> drivers;
 
-  const _DriversTab({required this.nurseryId, required this.drivers});
+  const _DriversTab({
+    required this.nurseryId,
+    required this.nurseryName,
+    required this.drivers,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -747,6 +753,23 @@ class _DriversTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
+          AppButton(
+            label: 'Invite Driver',
+            leadingIcon: Icons.local_shipping_rounded,
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => _InviteSheet(
+                nurseryId: nurseryId,
+                nurseryName: nurseryName,
+                inviteType: 'DRIVER_INVITE',
+                onCreated: (_) =>
+                    ref.read(membersProvider(nurseryId).notifier).load(),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x2l),
           const Text('Connected Drivers', style: AppTypography.h4),
           const SizedBox(height: AppSpacing.sm),
           if (drivers.isEmpty)
@@ -754,7 +777,7 @@ class _DriversTab extends ConsumerWidget {
               icon: Icons.local_shipping_outlined,
               title: 'No drivers connected',
               subtitle:
-                  'Send a driver invite from the Members screen to connect drivers.',
+                  'Invite a registered driver. They accept by scanning the invite QR.',
             )
           else
             Container(
@@ -991,12 +1014,15 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
     super.dispose();
   }
 
+  String get _roleLabel => switch (widget.inviteType) {
+        'MANAGER_INVITE' => 'Manager',
+        'DRIVER_INVITE' => 'Driver',
+        _ => 'Customer',
+      };
+
   String get _title => widget.inviteType == 'MANAGER_INVITE'
       ? 'Invite Manager / Gumastha'
-      : 'Invite Customer';
-
-  String get _roleLabel =>
-      widget.inviteType == 'MANAGER_INVITE' ? 'Manager' : 'Customer';
+      : 'Invite $_roleLabel';
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;

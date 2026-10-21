@@ -221,10 +221,16 @@ class _SellerQuotationCard extends ConsumerStatefulWidget {
 class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
   bool _acting = false;
 
-  bool get _canApprove => widget.quotation.status == 'DRAFT';
-  bool get _canConvert => widget.quotation.status == 'CUSTOMER_ACCEPTED';
-  bool get _canDelete => {'DRAFT', 'APPROVED', 'CUSTOMER_REJECTED', 'EXPIRED'}
-      .contains(widget.quotation.status);
+  bool get _canApprove =>
+      widget.quotation.capabilities?.canSend ??
+      widget.quotation.status == 'CUSTOMER_DRAFT';
+  bool get _canConvert =>
+      widget.quotation.capabilities?.canConvert ??
+      widget.quotation.status == 'CUSTOMER_ACCEPTED';
+  bool get _canDelete =>
+      widget.quotation.capabilities?.canDelete ??
+      {'CUSTOMER_DRAFT', 'INTERNAL_DRAFT', 'CUSTOMER_REJECTED'}
+          .contains(widget.quotation.status);
 
   Future<void> _approve() async {
     setState(() => _acting = true);

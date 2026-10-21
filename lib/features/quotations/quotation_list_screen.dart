@@ -475,7 +475,9 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
               final q = (item as _QuotationEntry).quotation;
               final isDraftStatus = ['CUSTOMER_DRAFT', 'INTERNAL_DRAFT'].contains(q.status);
-              final canDeleteThis = canDelete && isDraftStatus;
+              // Per quotation: an owner never deletes one received as a customer.
+              final canDeleteThis = q.capabilities?.canDelete ??
+                  (canDelete && isDraftStatus && caps.ownedNurseryId == q.nurseryId);
               final isPinned = pinnedIds.contains(q.id);
               final card = _QuotationCard(
                 quotation: q,
@@ -563,7 +565,8 @@ class _QuotationCard extends ConsumerWidget {
     final dt = DateTime.tryParse(quotation.createdAt)?.toLocal();
     final dateStr = dt != null ? DateFormat('d MMM yyyy').format(dt) : '';
     final caps = ref.watch(sessionProvider).capabilities;
-    final isOwner = caps.isNurseryOwner;
+    final isOwner = caps.ownedNurseryId != null &&
+        caps.ownedNurseryId == quotation.nurseryId;
     final isUnassigned = quotation.assignedManagerUserId == null;
 
     return Container(
