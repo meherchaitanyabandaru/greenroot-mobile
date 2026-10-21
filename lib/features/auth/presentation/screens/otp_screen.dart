@@ -66,6 +66,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         ref.read(sessionProvider.notifier).setSuspended(
           reason: e.reason,
           suspendedAt: e.suspendedAt,
+          nursery: e.nursery,
         );
         return;
       }

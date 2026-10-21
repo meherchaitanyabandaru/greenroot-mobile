@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import '../../core/domain/lifecycle_models.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/network_exceptions.dart';
 import '../../core/constants/api_constants.dart';
 import 'market_area.dart';
 
@@ -699,7 +700,9 @@ final marketRepositoryProvider = Provider<MarketRepository>(
 
 // Raw Dio instance intentionally without auth headers — used only for S3
 // presigned PUT requests which must not include the Authorization header.
-final _rawDio = Dio();
+// Direct uploads to storage: without a connect timeout an unreachable storage
+// host leaves the post spinning forever.
+final _rawDio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
 
 /// Resizes to max 1200px, draws "GreenRoot" watermark, encodes as JPEG q80.
 /// Falls back to raw bytes if decoding fails (e.g. unsupported HEIC on web).
@@ -751,17 +754,22 @@ Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
   final uploadUrl = presign['upload_url'] as String;
   final fileUrl = presign['file_url'] as String;
 
-  await _rawDio.put<void>(
-    uploadUrl,
-    data: processed,
-    options: Options(
-      headers: {
-        'Content-Type': contentType,
-        'Content-Length': processed.length,
-      },
-      sendTimeout: const Duration(seconds: 60),
-    ),
-  );
+  try {
+    await _rawDio.put<void>(
+      uploadUrl,
+      data: processed,
+      options: Options(
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': processed.length,
+        },
+        sendTimeout: const Duration(seconds: 60),
+      ),
+    );
+  } on DioException catch (e) {
+    // Readable message (no connection / timed out) instead of a raw Dio dump.
+    throw NetworkExceptions.fromDioException(e);
+  }
 
   return fileUrl;
 }

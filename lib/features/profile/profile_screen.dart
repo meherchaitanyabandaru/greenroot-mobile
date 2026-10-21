@@ -210,6 +210,14 @@ class ProfileScreen extends ConsumerWidget {
                   label: 'Leave Nursery',
                   onTap: () => _confirmLeaveNursery(context, ref),
                 ),
+              if (caps.isDriverOnly)
+                _SettingsTile(
+                  icon: Icons.no_transfer_rounded,
+                  iconColor: AppColors.amber600,
+                  label: 'Stop Driving',
+                  subtitle: 'Become a customer again; you can take other roles later',
+                  onTap: () => _confirmStopDriving(context, ref),
+                ),
               if (caps.isDriverOnly && caps.driverNurseryId != null)
                 _SettingsTile(
                   icon: Icons.link_off_rounded,
@@ -302,6 +310,40 @@ class ProfileScreen extends ConsumerWidget {
           const SnackBar(
               content: Text('Failed to leave nursery. Please try again.'),),
         );
+      }
+    }
+  }
+
+  Future<void> _confirmStopDriving(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Stop Driving'),
+        content: const Text(
+          'Your driver profile is closed and you are disconnected from all nurseries. '
+          'Your account stays: you can shop, join a nursery or apply to drive again later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.amber600),
+            child: const Text('Stop Driving'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ApiClient.instance.delete(ApiConstants.driversMe);
+      if (!context.mounted) return;
+      await _signOutAfterExit(context, ref, 'You stopped driving. Sign in again to continue as a customer.');
+    } on AppError catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
   }

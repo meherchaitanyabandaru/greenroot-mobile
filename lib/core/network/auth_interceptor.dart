@@ -7,7 +7,8 @@ class AuthInterceptor extends Interceptor {
   final Dio _dio;
 
   void Function()? onMembershipRevoked;
-  void Function({String? reason, DateTime? suspendedAt})? onAccountSuspended;
+  void Function({String? reason, DateTime? suspendedAt, bool nursery})?
+      onAccountSuspended;
 
   /// Called when the refresh token is gone or refused: the user must sign in again.
   void Function()? onSessionExpired;
@@ -60,7 +61,11 @@ class AuthInterceptor extends Interceptor {
             suspendedAt = DateTime.tryParse(rawDate.toString())?.toLocal();
           }
         }
-        onAccountSuspended?.call(reason: reason, suspendedAt: suspendedAt);
+        onAccountSuspended?.call(
+          reason: reason,
+          suspendedAt: suspendedAt,
+          nursery: code == 'NURSERY_SUSPENDED' || code == 'nursery_suspended',
+        );
       }
       return handler.next(err);
     }
@@ -111,7 +116,11 @@ class AuthInterceptor extends Interceptor {
           }
         }
         await SecureStorageService.clearSession();
-        onAccountSuspended?.call(reason: reason, suspendedAt: suspendedAt);
+        onAccountSuspended?.call(
+          reason: reason,
+          suspendedAt: suspendedAt,
+          nursery: code == 'NURSERY_SUSPENDED' || code == 'nursery_suspended',
+        );
         return handler.next(e);
       }
 

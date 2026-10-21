@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -621,6 +622,7 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
                     controller: _ctrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: NumberInput.whole,
                     textAlign: TextAlign.center,
                     style: AppTypography.bodySmall.copyWith(
                       color: _hasError

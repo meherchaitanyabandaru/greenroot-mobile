@@ -13,7 +13,9 @@ import 'auth_provider.dart';
 class SuspensionInfo {
   final String? reason;
   final DateTime? suspendedAt;
-  const SuspensionInfo({this.reason, this.suspendedAt});
+  /// True when the owner's nursery (not the account itself) is suspended.
+  final bool nursery;
+  const SuspensionInfo({this.reason, this.suspendedAt, this.nursery = false});
 }
 
 enum SessionStatus {
@@ -136,13 +138,14 @@ class SessionNotifier extends StateNotifier<SessionState> {
     });
   }
 
-  void _onAccountSuspended({String? reason, DateTime? suspendedAt}) {
+  void _onAccountSuspended({String? reason, DateTime? suspendedAt, bool nursery = false}) {
     Future.microtask(() {
       if (state.status == SessionStatus.authenticated ||
           state.status == SessionStatus.loading) {
         state = state.copyWith(
           status: SessionStatus.suspended,
-          suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt),
+          suspensionInfo: SuspensionInfo(
+              reason: reason, suspendedAt: suspendedAt, nursery: nursery,),
         );
       }
     });
@@ -203,6 +206,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
         suspensionInfo: SuspensionInfo(
           reason: e.reason,
           suspendedAt: e.suspendedAt,
+          nursery: e.nursery,
         ),
       );
     } on UnauthorizedError {
@@ -226,10 +230,10 @@ class SessionNotifier extends StateNotifier<SessionState> {
     state = state.copyWith(activeRole: role, clearActiveRole: role == null);
   }
 
-  void setSuspended({String? reason, DateTime? suspendedAt}) {
+  void setSuspended({String? reason, DateTime? suspendedAt, bool nursery = false}) {
     state = state.copyWith(
       status: SessionStatus.suspended,
-      suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt),
+      suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt, nursery: nursery),
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart' show Options, ResponseType;
@@ -2570,6 +2571,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
                     controller: _qtyCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: NumberInput.whole,
                     decoration: const InputDecoration(
                       labelText: 'Quantity',
                       border: OutlineInputBorder(),
@@ -2583,6 +2585,7 @@ class _ItemEditSheetState extends ConsumerState<_ItemEditSheet> {
                     controller: _priceCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: NumberInput.money,
                     decoration: const InputDecoration(
                       labelText: 'Unit Price (₹)',
                       border: OutlineInputBorder(),

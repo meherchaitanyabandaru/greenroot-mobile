@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -459,6 +460,7 @@ class _DetailsSheetState extends ConsumerState<_DetailsSheet> {
               controller: _price,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: NumberInput.money,
               decoration: const InputDecoration(
                   labelText: 'Indicative price per plant (optional)',
                   prefixText: '₹ ',),

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/api_constants.dart';
 import '../network/api_client.dart';
+import '../network/network_exceptions.dart';
 import '../../features/auth/data/models/user_models.dart';
 
 class StorageService {
@@ -69,19 +70,24 @@ class StorageService {
     final fileUrl = presignData['file_url'] as String;
 
     // 2. PUT bytes directly to MinIO (no auth header needed on presigned URL)
-    final rawDio = Dio();
-    await rawDio.put(
-      uploadUrl,
-      data: Stream.fromIterable([bytes]),
-      options: Options(
-        headers: {
-          'Content-Type': contentType,
-          'Content-Length': bytes.length,
-        },
-        sendTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 30),
-      ),
-    );
+    // Connect timeout: an unreachable storage host must fail, not spin forever.
+    final rawDio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
+    try {
+      await rawDio.put(
+        uploadUrl,
+        data: Stream.fromIterable([bytes]),
+        options: Options(
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': bytes.length,
+          },
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+    } on DioException catch (e) {
+      throw NetworkExceptions.fromDioException(e);
+    }
 
     return fileUrl;
   }

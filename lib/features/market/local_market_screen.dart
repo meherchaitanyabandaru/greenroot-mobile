@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'dart:async';
 import 'dart:io' show File;
 
@@ -1221,6 +1222,7 @@ class _MarketFiltersDrawerState extends ConsumerState<_MarketFiltersDrawer> {
                         child: TextField(
                           controller: _min,
                           keyboardType: TextInputType.number,
+                          inputFormatters: NumberInput.money,
                           decoration: _inputDec('Min'),
                         ),
                       ),
@@ -1232,6 +1234,7 @@ class _MarketFiltersDrawerState extends ConsumerState<_MarketFiltersDrawer> {
                         child: TextField(
                           controller: _max,
                           keyboardType: TextInputType.number,
+                          inputFormatters: NumberInput.money,
                           decoration: _inputDec('Max'),
                         ),
                       ),
@@ -2918,6 +2921,7 @@ class _EnquirySheetState extends ConsumerState<_EnquirySheet> {
             TextField(
               controller: widget.qtyCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: NumberInput.whole,
               decoration: _inputDec('Quantity needed (optional)'),
             ),
             const SizedBox(height: 20),
@@ -3202,6 +3206,7 @@ class _PostWantScreenState extends ConsumerState<_PostWantScreen> {
           TextField(
             controller: _qtyCtrl,
             keyboardType: TextInputType.number,
+            inputFormatters: NumberInput.whole,
             decoration: _inputDec('e.g. 300'),
             onChanged: (_) => setState(() {}),
           ),
@@ -3301,6 +3306,9 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
   final _accessCtrl = TextEditingController();
   bool _saving = false;
   bool _publishing = false;
+  // Draft created by an earlier Save/Publish attempt on this screen: a retry
+  // updates it instead of creating a duplicate ad each time.
+  int? _createdAdId;
 
   static const _categories = [
     'Fruit Plants',
@@ -3413,9 +3421,10 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       final uploaded = await _uploadNew();
       final photos = [..._existingPhotos, ...uploaded];
       final plantName = _effectivePlantName;
-      if (widget.editingAd != null) {
+      final existingId = widget.editingAd?.id ?? _createdAdId;
+      if (existingId != null) {
         await ref.read(postAdProvider.notifier).update(
-              widget.editingAd!.id,
+              existingId,
               plantId: _plantId,
               plantName: plantName.isNotEmpty ? plantName : null,
               title: _titleCtrl.text.trim(),
@@ -3427,10 +3436,12 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              extra: _accessJson,
+              extra: widget.editingAd != null
+                  ? _accessJson
+                  : {..._accessJson, ...await _gpsPickup(ref)},
             );
       } else {
-        await ref.read(postAdProvider.notifier).create(
+        _createdAdId = await ref.read(postAdProvider.notifier).create(
               plantId: _plantId,
               plantName: plantName,
               title: _titleCtrl.text.trim(),
@@ -3468,9 +3479,10 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
       final photos = [..._existingPhotos, ...uploaded];
       int adId;
       final plantName = _effectivePlantName;
-      if (widget.editingAd != null) {
+      final existingId = widget.editingAd?.id ?? _createdAdId;
+      if (existingId != null) {
         await ref.read(postAdProvider.notifier).update(
-              widget.editingAd!.id,
+              existingId,
               plantId: _plantId,
               plantName: plantName.isNotEmpty ? plantName : null,
               title: _titleCtrl.text.trim(),
@@ -3482,11 +3494,13 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              extra: _accessJson,
+              extra: widget.editingAd != null
+                  ? _accessJson
+                  : {..._accessJson, ...await _gpsPickup(ref)},
             );
-        adId = widget.editingAd!.id;
+        adId = existingId;
       } else {
-        adId = await ref.read(postAdProvider.notifier).create(
+        adId = _createdAdId = await ref.read(postAdProvider.notifier).create(
               plantId: _plantId,
               plantName: plantName,
               title: _titleCtrl.text.trim(),
@@ -3846,6 +3860,7 @@ class _DetailsStep extends StatelessWidget {
                   TextField(
                     controller: qtyCtrl,
                     keyboardType: TextInputType.number,
+                    inputFormatters: NumberInput.whole,
                     decoration: _inputDec('e.g. 50'),
                   ),
                 ],
@@ -3861,6 +3876,7 @@ class _DetailsStep extends StatelessWidget {
                     controller: priceCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: NumberInput.money,
                     decoration: _inputDec('Leave empty: on request'),
                   ),
                 ],
@@ -3932,7 +3948,13 @@ class _DetailsStep extends StatelessWidget {
 /// Where a new ad is: the phone's GPS when allowed (the server falls back to
 /// the nursery's address). Nearby browsing needs every live ad placed.
 Future<Map<String, dynamic>> _gpsPickup(WidgetRef ref) async {
-  final pos = await ref.read(marketPositionProvider.future);
+  var pos = await ref.read(marketPositionProvider.future);
+  if (pos == null) {
+    // The cached "no position" may predate the user turning location on:
+    // ask again now rather than posting (and failing) without a location.
+    ref.invalidate(marketPositionProvider);
+    pos = await ref.read(marketPositionProvider.future);
+  }
   if (pos == null) return const {};
   return {
     'pickup_latitude': pos.latitude,
@@ -5699,6 +5721,7 @@ class _OfferSheetState extends State<_OfferSheet> {
                 autofocus: true,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: NumberInput.money,
                 decoration: _inputDec('Your price').copyWith(
                   prefixText: '₹ ',
                   suffixText: _unitLabel(widget.enquiry.adPriceUnit),
@@ -5709,6 +5732,7 @@ class _OfferSheetState extends State<_OfferSheet> {
               TextField(
                 controller: _qtyCtrl,
                 keyboardType: TextInputType.number,
+                inputFormatters: NumberInput.whole,
                 decoration: _inputDec('Quantity (optional)'),
                 onChanged: (_) => setState(() {}),
               ),

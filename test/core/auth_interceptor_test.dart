@@ -94,9 +94,12 @@ void main() {
     String? capturedReason;
     DateTime? capturedSuspendedAt;
     var expired = 0;
-    interceptor.onAccountSuspended = ({String? reason, DateTime? suspendedAt}) {
+    bool? capturedNursery;
+    interceptor.onAccountSuspended =
+        ({String? reason, DateTime? suspendedAt, bool nursery = false}) {
       capturedReason = reason;
       capturedSuspendedAt = suspendedAt;
+      capturedNursery = nursery;
     };
     interceptor.onSessionExpired = () => expired++;
 
@@ -106,6 +109,7 @@ void main() {
     );
 
     expect(capturedReason, 'KYC documents expired');
+    expect(capturedNursery, isFalse, reason: 'account suspension, not nursery');
     expect(capturedSuspendedAt, DateTime.utc(2026, 10, 19, 9).toLocal());
     expect(expired, 0);
     expect(await SecureStorageService.getAccessToken(), isNull);

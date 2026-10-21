@@ -43,7 +43,9 @@ class UnknownError extends AppError {
 class AccountSuspendedError extends AppError {
   final String? reason;
   final DateTime? suspendedAt;
-  const AccountSuspendedError({this.reason, this.suspendedAt})
+  /// The owner's nursery is suspended, not the account itself.
+  final bool nursery;
+  const AccountSuspendedError({this.reason, this.suspendedAt, this.nursery = false})
       : super('Your account has been suspended. Contact support.');
 }
 

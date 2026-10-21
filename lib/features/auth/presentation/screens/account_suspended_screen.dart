@@ -50,14 +50,18 @@ class AccountSuspendedScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.x2l),
-                const Text(
-                  'Account Suspended',
+                Text(
+                  suspension?.nursery == true
+                      ? 'Nursery Suspended'
+                      : 'Account Suspended',
                   style: AppTypography.h2,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Your account has been suspended by GreenRoot. Please contact our support team to resolve this.',
+                  suspension?.nursery == true
+                      ? 'Your nursery has been suspended by GreenRoot. Please contact our support team to resolve this.'
+                      : 'Your account has been suspended by GreenRoot. Please contact our support team to resolve this.',
                   style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
                 ),

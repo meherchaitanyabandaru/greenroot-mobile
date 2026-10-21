@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -136,6 +137,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
                   child: TextFormField(
                     controller: _capacityCtrl,
                     keyboardType: TextInputType.number,
+                    inputFormatters: NumberInput.whole,
                     decoration: _inputDecoration('e.g. 5000'),
                   ),
                 ),

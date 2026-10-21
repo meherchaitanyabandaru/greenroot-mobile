@@ -1,3 +1,4 @@
+import '../../core/utilities/number_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1071,6 +1072,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: TextField(
                 controller: _minCtrl,
                 keyboardType: TextInputType.number,
+                inputFormatters: NumberInput.money,
                 decoration: InputDecoration(
                   hintText: 'Min',
                   hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
@@ -1089,6 +1091,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: TextField(
                 controller: _maxCtrl,
                 keyboardType: TextInputType.number,
+                inputFormatters: NumberInput.money,
                 decoration: InputDecoration(
                   hintText: 'Max',
                   hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),

@@ -55,7 +55,11 @@ class NetworkExceptions {
               suspendedAt = DateTime.tryParse(rawDate.toString())?.toLocal();
             }
           }
-          return AccountSuspendedError(reason: reason, suspendedAt: suspendedAt);
+          return AccountSuspendedError(
+            reason: reason,
+            suspendedAt: suspendedAt,
+            nursery: code == 'NURSERY_SUSPENDED' || code == 'nursery_suspended',
+          );
         }
         if (code == 'wrong_target') return const WrongTargetInviteError();
         return ForbiddenError(message ?? 'You do not have permission to perform this action.');
