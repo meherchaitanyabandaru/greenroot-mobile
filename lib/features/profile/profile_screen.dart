@@ -131,6 +131,25 @@ class ProfileScreen extends ConsumerWidget {
                   label: 'Payment History',
                   onTap: () => context.push('/my-payments'),
                 ),
+              // Onboarding promises roles can be added later from here: a
+              // customer must be able to start selling or driving.
+              if (!caps.canSell &&
+                  !caps.hasDriverProfile &&
+                  !caps.hasPendingNursery &&
+                  !caps.hasRejectedNursery) ...[
+                _SettingsTile(
+                  icon: Icons.storefront_outlined,
+                  label: 'Register Your Nursery',
+                  subtitle: 'Sell on GreenRoot after approval',
+                  onTap: () => context.push('/register/nursery'),
+                ),
+                _SettingsTile(
+                  icon: Icons.local_shipping_outlined,
+                  label: 'Become a Driver',
+                  subtitle: 'Deliver trips for nurseries',
+                  onTap: () => context.push('/register/driver'),
+                ),
+              ],
               _SettingsTile(
                 icon: Icons.notifications_none_rounded,
                 label: 'Notifications',

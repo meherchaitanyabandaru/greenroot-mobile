@@ -173,6 +173,11 @@ lib/
 | Owner home dashboard counts correct (API fix 2026-10-17: was showing 0 orders/inventory/drivers/customers) | ✅ |
 | CI (`flutter analyze`, `flutter test`), Dependabot (pub + Actions), PR template, `CODEOWNERS` | ✅ |
 | All 7 plant pickers search the catalog + 1.66 M WFO botanical names (`lookupPlants`); picking a name not in the catalog adds it (`resolvePickedPlant`), synonyms show "Now called …" (2026-10-19) | ✅ |
+| Seller vs buyer is decided per record (`UserCapabilities.sellsFor(nurseryId)`), not by role: an owner/manager buying from another nursery gets buyer-only order/quotation/dispatch UI; no "Editable"/locked/dead icons for people who can't act (2026-10-21) | ✅ |
+| Subscription Pay calls the API (renew with `plan_id`, or create) instead of a fake success; success sheet no longer crashes (`en_IN` date locale was never loaded) (2026-10-21) | ✅ |
+| Subscription screen: status banner for paused/cancelled/expired, "Subscribe Again" after cancel, "Choose a Plan" when none, no renew while admin-paused, refetches on open; 402 shows "owner can renew in Profile → Subscription" (2026-10-21) | ✅ |
+| Profile: "Register Your Nursery" / "Become a Driver" for users without a selling or driving role (onboarding promised roles can be added later) (2026-10-21) | ✅ |
+| Delivery proof upload (presigned `delivery-photos` + JSON `/attachments`; never worked before), trip-accept black screen, Invite Driver on Members → Drivers, delivery contact defaults to the customer, manager/owner homes show drafts again (stale `DRAFT` status) (2026-10-21) | ✅ |
 
 ---
 

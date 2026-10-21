@@ -24,6 +24,7 @@ class SubscriptionRemoteDataSource {
 
   Future<SubscriptionModel> renewSubscription({
     required int subscriptionId,
+    int? planId,
     required String billingCycle,
     required String paymentMethod,
     String provider = 'razorpay_mock',
@@ -31,6 +32,7 @@ class SubscriptionRemoteDataSource {
     String? promoCode,
   }) async {
     final body = <String, dynamic>{
+      if (planId != null) 'plan_id': planId,
       'billing_cycle': billingCycle,
       'payment_method': paymentMethod,
       'provider': provider,
@@ -40,6 +42,26 @@ class SubscriptionRemoteDataSource {
     };
     final res = await _client.post(
         '/api/v1/subscriptions/$subscriptionId/renew', data: body,);
+    final sub = res['subscription'] as Map<String, dynamic>?;
+    if (sub == null) throw const ServerError(500, 'Invalid response from server');
+    return SubscriptionModel.fromJson(sub);
+  }
+
+  /// POST /subscriptions — first subscription, or after an old one is gone.
+  Future<SubscriptionModel> createSubscription({
+    required int planId,
+    required String billingCycle,
+    required String paymentMethod,
+    String? promoCode,
+  }) async {
+    final res = await _client.post('/api/v1/subscriptions', data: {
+      'plan_id': planId,
+      'billing_cycle': billingCycle,
+      'payment_method': paymentMethod,
+      'provider': 'razorpay_mock',
+      'provider_order_id': 'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
+      if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
+    },);
     final sub = res['subscription'] as Map<String, dynamic>?;
     if (sub == null) throw const ServerError(500, 'Invalid response from server');
     return SubscriptionModel.fromJson(sub);

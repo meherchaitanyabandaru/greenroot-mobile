@@ -68,6 +68,13 @@ class NetworkExceptions {
           );
         }
         return ConflictingRoleError(message ?? "Your current role doesn't allow you to accept this invite.");
+      case 402:
+        // Subscription gate: say what to do, for owners and managers alike.
+        return ForbiddenError(
+          _extractCode(response.data) == 'subscription_expired'
+              ? "This nursery's subscription has expired. The owner can renew it in Profile → Subscription."
+              : "This nursery's subscription isn't active. The owner can renew it in Profile → Subscription.",
+        );
       case 404:
         return NotFoundError(message ?? 'Not found.');
       case 422:

@@ -134,38 +134,46 @@ class _SubscriptionPaymentScreenState
             }),
             onMethodChanged: (v) => setState(() => _paymentMethod = v),
             onApplyPromo: () => _applyPromo(plan),
-            onPay: _pay,
+            onPay: () => _pay(plan),
           );
         },
       ),
     );
   }
 
-  Future<void> _pay() async {
+  Future<void> _pay(SubscriptionPlan? plan) async {
+    if (plan == null) return;
     setState(() => _paying = true);
-    // DEV BYPASS: simulate payment and show success without gateway call.
-    // Replace this block with real Razorpay SDK when integrating payments.
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _paying = false);
-
-    final now = DateTime.now();
-    final endDate = _billingCycle == 'YEARLY'
-        ? now.add(const Duration(days: 365))
-        : now.add(const Duration(days: 180));
-    final mockSub = SubscriptionModel(
-      id: widget.subscriptionId,
-      subscriptionCode: 'SUB-DEV-${DateTime.now().millisecondsSinceEpoch}',
-      planCode: 'GROWTH',
-      planName: '🚀 Growth',
-      startDate: now,
-      endDate: endDate,
-      status: 'ACTIVE',
-      autoRenew: true,
-      daysRemaining: _billingCycle == 'YEARLY' ? 365 : 180,
-    );
-    ref.invalidate(subscriptionProvider);
-    _showSuccess(mockSub);
+    // Mock gateway phase: the API records the payment with provider
+    // razorpay_mock. Swap in the Razorpay SDK checkout before this call.
+    final ds = ref.read(subscriptionDataSourceProvider);
+    final promo = _promoValid ? _promoController.text.trim() : null;
+    try {
+      final sub = widget.subscriptionId > 0
+          ? await ds.renewSubscription(
+              subscriptionId: widget.subscriptionId,
+              planId: plan.id,
+              billingCycle: _billingCycle,
+              paymentMethod: _paymentMethod,
+              promoCode: promo,
+            )
+          : await ds.createSubscription(
+              planId: plan.id,
+              billingCycle: _billingCycle,
+              paymentMethod: _paymentMethod,
+              promoCode: promo,
+            );
+      if (!mounted) return;
+      ref.invalidate(subscriptionProvider);
+      _showSuccess(sub);
+    } on AppError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+      );
+    } finally {
+      if (mounted) setState(() => _paying = false);
+    }
   }
 
   void _showSuccess(SubscriptionModel sub) {
@@ -681,7 +689,8 @@ class _SuccessSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('d MMM yyyy', 'en_IN');
+    // No locale: date symbols for 'en_IN' are never loaded, so it throws.
+    final fmt = DateFormat('d MMM yyyy');
 
     return SafeArea(
       child: Padding(

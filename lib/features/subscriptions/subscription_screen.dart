@@ -17,11 +17,24 @@ import '../auth/presentation/providers/session_provider.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 
-class SubscriptionScreen extends ConsumerWidget {
+class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
+}
+
+class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The home trial banner keeps subscriptionProvider alive, so without this
+    // the screen shows whatever was loaded at app start (e.g. still "paused").
+    Future.microtask(() => ref.invalidate(subscriptionProvider));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final caps = ref.watch(sessionProvider).capabilities;
 
     return Scaffold(
@@ -66,6 +79,8 @@ class SubscriptionScreen extends ConsumerWidget {
       ),
       data: (sub) => sub == null
           ? _NoSubscription(
+              // Approved owners can subscribe; pending/rejected ones wait.
+              canSubscribe: caps.isNurseryOwner,
               onRefresh: () => ref.invalidate(subscriptionProvider),)
           : _SubscriptionBody(
               sub: sub, onRefresh: () => ref.invalidate(subscriptionProvider),),
@@ -852,8 +867,9 @@ class _ManagerView extends StatelessWidget {
 // ── No subscription state ─────────────────────────────────────────────────────
 
 class _NoSubscription extends StatelessWidget {
+  final bool canSubscribe;
   final VoidCallback onRefresh;
-  const _NoSubscription({required this.onRefresh});
+  const _NoSubscription({required this.canSubscribe, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -879,12 +895,22 @@ class _NoSubscription extends StatelessWidget {
                 style: AppTypography.h2, textAlign: TextAlign.center,),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'You don\'t have an active subscription yet. Contact support or wait for your nursery to be approved.',
+              canSubscribe
+                  ? 'You don\'t have an active subscription. Choose a plan to keep selling.'
+                  : 'You don\'t have an active subscription yet. Contact support or wait for your nursery to be approved.',
               style:
                   AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.x2l),
+            if (canSubscribe) ...[
+              AppButton(
+                label: 'Choose a Plan',
+                onPressed: () => context.push('/subscription/payment'),
+                trailingIcon: Icons.arrow_forward_rounded,
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
             AppButton(
               label: 'Refresh',
               onPressed: onRefresh,
@@ -920,7 +946,10 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         sub.isExpired ||
         sub.isTrial ||
         (sub.isActive && (sub.daysRemaining ?? 999) <= 30);
-    final showCta = (sub.capabilities?.canRenew ?? true) && shouldPromptRenewal;
+    // A cancelled subscription is renewed back to ACTIVE by the API, so the
+    // owner must be offered that way back in.
+    final showCta = (sub.capabilities?.canRenew ?? true) &&
+        (shouldPromptRenewal || sub.isCancelled);
     final canCancel =
         sub.capabilities?.canCancel ?? (!sub.isCancelled && !sub.isExpired);
 
@@ -932,6 +961,20 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
       key: const ValueKey('subscription_active'),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        // Not active → say so: the card alone looks like a healthy plan while
+        // the owner and their managers are blocked.
+        if (!sub.isActive) ...[
+          _StatusBanner(
+            text: sub.isPaused
+                ? 'Paused by GreenRoot. You and your managers can view but not '
+                    'create or change records. Contact support to resume.'
+                : sub.isCancelled
+                    ? 'Cancelled. Selling is blocked for you and your managers '
+                        'until you subscribe again.'
+                    : 'Expired. Renew to keep creating quotations, orders and ads.',
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         // ── Membership card ────────────────────────────────────────────────
         _MembershipCard(
           planLabel: sub.planName,
@@ -944,9 +987,11 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         const SizedBox(height: AppSpacing.lg),
 
         // ── CTA ───────────────────────────────────────────────────────────
-        if (showCta && !sub.isCancelled) ...[
+        if (showCta) ...[
           AppButton(
-            label: sub.isExpired
+            label: sub.isCancelled
+                ? 'Subscribe Again'
+                : sub.isExpired
                 ? 'Renew Subscription'
                 : sub.isTrial
                     ? 'Upgrade to Standard'
@@ -998,7 +1043,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
       builder: (_) => AlertDialog(
         title: const Text('Cancel Subscription?'),
         content: const Text(
-            'Your access will end immediately. This cannot be undone.',),
+            'Your access ends immediately for you and your managers. You can subscribe again any time.',),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1263,5 +1308,32 @@ class _Card extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: child,
+      );
+}
+
+class _StatusBanner extends StatelessWidget {
+  final String text;
+  const _StatusBanner({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('subscription_status_banner'),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.amber100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.amber600.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline_rounded, color: AppColors.amber700),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(text,
+                  style: AppTypography.body.copyWith(color: AppColors.amber700),),
+            ),
+          ],
+        ),
       );
 }

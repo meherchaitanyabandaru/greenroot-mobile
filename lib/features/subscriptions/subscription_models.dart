@@ -109,6 +109,7 @@ class SubscriptionModel {
   bool get isTrial => planCode == 'TRIAL';
   bool get isExpired => status == 'EXPIRED';
   bool get isCancelled => status == 'CANCELLED';
+  bool get isPaused => status == 'PAUSED';
   bool get isExpiringSoon =>
       summary?.isExpiringSoon ??
       (isActive && daysRemaining != null && daysRemaining! <= 30);
