@@ -13,10 +13,18 @@ import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'orders.dart';
 
+/// Loaded-quantity saves still in flight. Typing a quantity and tapping
+/// Complete Loading straight away starts a save (tap outside the field) and
+/// the completion together: completing must wait, or it records a full load.
+final _pendingLoadSaves = <Future<void>>{};
+
 class OrderLoadingScreen extends ConsumerStatefulWidget {
   final int? nurseryId;
 
-  const OrderLoadingScreen({super.key, this.nurseryId});
+  /// Tab to open on: CONFIRMED (default), LOADING, LOADED or PARTIAL.
+  final String? initialTab;
+
+  const OrderLoadingScreen({super.key, this.nurseryId, this.initialTab});
 
   @override
   ConsumerState<OrderLoadingScreen> createState() => _OrderLoadingScreenState();
@@ -35,7 +43,13 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+      initialIndex: _tabs
+          .indexWhere((t) => t.key == widget.initialTab)
+          .clamp(0, _tabs.length - 1),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
   }
 
@@ -59,16 +73,24 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
     try {
       final repo = ref.read(orderRepositoryProvider);
       final results = await Future.wait(
-        tab.statuses.map((s) => repo.listOrders(
-              page: 1,
-              perPage: 50,
-              status: s,
-              nurseryId: widget.nurseryId,
-            ),),
+        tab.statuses.map(
+          (s) => repo.listOrders(
+            page: 1,
+            perPage: 50,
+            status: s,
+            nurseryId: widget.nurseryId,
+          ),
+        ),
       );
       if (!mounted) return;
-      final merged = results.expand((r) => r.$1).toList()
+      var merged = results.expand((r) => r.$1).toList()
         ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+      // The list API has no items; the loaded-quantity panel needs them.
+      // shortcut: one detail call per order in loading (few at a time); add
+      // items to the list API if this tab ever holds dozens.
+      if (key == 'LOADING') {
+        merged = await Future.wait(merged.map((o) => repo.getOrder(o.id)));
+      }
       setState(() {
         tabState.orders = merged;
         tabState.isLoading = false;
@@ -88,6 +110,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
     String successMessage,
   ) async {
     try {
+      await Future.wait(_pendingLoadSaves.toList());
       await action(ref.read(orderRepositoryProvider));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -417,8 +440,11 @@ class _LoadingOrderCard extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.inventory_2_outlined,
-                              size: 14, color: AppColors.textMuted,),
+                          const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 14,
+                            color: AppColors.textMuted,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Adjust Loaded Quantities',
@@ -555,12 +581,14 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
       _saving = true;
       _hasError = false;
     });
+    final save = ref.read(orderRepositoryProvider).setLoadedQuantity(
+          widget.order.id,
+          widget.item.id,
+          qty,
+        );
+    _pendingLoadSaves.add(save);
     try {
-      await ref.read(orderRepositoryProvider).setLoadedQuantity(
-            widget.order.id,
-            widget.item.id,
-            qty,
-          );
+      await save;
     } on AppError catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -570,6 +598,7 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
         ),
       );
     } finally {
+      _pendingLoadSaves.remove(save);
       if (mounted) setState(() => _saving = false);
     }
   }
@@ -633,7 +662,9 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 6,),
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                         borderSide: BorderSide(
@@ -653,7 +684,9 @@ class _LoadingItemRowState extends ConsumerState<_LoadingItemRow> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                         borderSide: const BorderSide(
-                            color: AppColors.primaryMain, width: 1.5,),
+                          color: AppColors.primaryMain,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onSubmitted: (_) => _save(),

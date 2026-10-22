@@ -458,7 +458,10 @@ final appRouter = GoRouter(
       builder: (_, state) {
         final nurseryId =
             int.tryParse(state.uri.queryParameters['nursery'] ?? '');
-        return OrderLoadingScreen(nurseryId: nurseryId);
+        return OrderLoadingScreen(
+          nurseryId: nurseryId,
+          initialTab: state.uri.queryParameters['tab'],
+        );
       },
     ),
     GoRoute(

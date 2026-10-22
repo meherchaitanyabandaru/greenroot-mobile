@@ -59,10 +59,11 @@ class _MangoLayerState extends State<MangoLayer>
     WidgetsBinding.instance.addObserver(this);
   }
 
-  // Back while Mango is open closes Mango, never the page or the app.
+  // Back on the guide picker closes it. During a walkthrough Back navigates
+  // as usual (guides span screens: "go back to Market, open Chats").
   @override
   Future<bool> didPopRoute() async {
-    if (!_c.active) return false;
+    if (!_c.picking) return false;
     _c.exit();
     return true;
   }
@@ -186,7 +187,10 @@ class _MangoLayerState extends State<MangoLayer>
     final visibleH = size.height - MediaQuery.viewInsetsOf(context).bottom;
     final cardAtTop = hole != null && hole.center.dy > visibleH * 0.5;
     return [
-      Positioned.fill(child: _Barrier(hole: hole)),
+      // Dim and guard the screen only while a spotlight is shown. With no
+      // target on screen (an instruction step, or a sheet covering it) the
+      // user must still be able to act: open an ad, pick the customer…
+      if (hole != null) Positioned.fill(child: _Barrier(hole: hole)),
       if (hole != null) _PointingHand(hole: hole, screen: size),
       _StepCard(controller: _c, atTop: cardAtTop, missing: missing),
     ];

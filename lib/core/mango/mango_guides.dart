@@ -141,14 +141,15 @@ const mangoGuides = <MangoGuide>[
     id: 'browse_customer',
     title: 'Find plants and nurseries',
     audiences: {MangoAudience.customer},
-    contextTexts: ['Browse Plants', 'Explore Nurseries'],
+    contextTexts: ['Browse Plants', 'Connected Nurseries', 'Explore Nurseries'],
     steps: [
       MangoStep(
         ['Browse Plants'],
         'Tap Browse Plants to see what nurseries have.',
       ),
       MangoStep.say(
-        'Or use Explore Nurseries on Home to find nurseries near you.',
+        'Or see nurseries on Home: Connected Nurseries, or Explore Nurseries if '
+        'you have none yet.',
       ),
     ],
   ),
@@ -179,10 +180,10 @@ const mangoGuides = <MangoGuide>[
         'Choose Quotation to prepare one for a customer.',
       ),
       MangoStep(['Select connected customer...'], 'Pick the customer.'),
-      MangoStep(
-        ['Add Item'],
-        'Add plants with quantity and price.',
-        advanceOnTap: false,
+      // The plant, quantity and price fields sit around Add Item; a spotlight on
+      // the button alone would block them.
+      MangoStep.say(
+        'Fill in the plant, quantity and price. Tap Add Item for more plants.',
       ),
       MangoStep(['Save Draft'], 'Save the draft.'),
       MangoStep.say(

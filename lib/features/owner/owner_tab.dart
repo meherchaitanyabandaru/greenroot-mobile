@@ -350,7 +350,13 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
     final date = DateTime.tryParse(q.createdAt)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/quotations/${q.id}'),
+      onTap: () async {
+        // Send, recall, convert… change the row: reload when coming back.
+        await context.push('/quotations/${q.id}');
+        if (!mounted) return;
+        ref.read(_sellerQuotationProvider.notifier).load();
+        ref.read(_sellerOrderProvider.notifier).load(); // a convert adds an order
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -571,7 +577,10 @@ class _SellerOrderCard extends ConsumerWidget {
     final date = DateTime.tryParse(o.orderDate)?.toLocal();
 
     return GestureDetector(
-      onTap: () => context.push('/orders/${o.id}'),
+      onTap: () async {
+        await context.push('/orders/${o.id}');
+        if (context.mounted) ref.read(_sellerOrderProvider.notifier).load();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,

@@ -341,6 +341,16 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     if (mounted) _snack('Loading completed', AppColors.primaryMain);
   }
 
+  // The Loading Workflow screen records loaded quantity per item (partial loads).
+  Future<void> _loadPartially() async {
+    await context.push(
+      '/orders/loading?nursery=${_order.sellerNurseryId}&tab=LOADING',
+    );
+    if (!mounted) return;
+    ref.invalidate(orderDetailProvider(widget.orderId));
+    ref.invalidate(orderListProvider);
+  }
+
   Future<void> _markCompleted() async {
     await _doAction(() => ref
         .read(orderRepositoryProvider)
@@ -396,8 +406,13 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
     }
   }
 
-  void _viewDispatch(Dispatch dispatch) {
-    context.push('/dispatches/${dispatch.id}');
+  Future<void> _viewDispatch(Dispatch dispatch) async {
+    await context.push('/dispatches/${dispatch.id}');
+    // Cancelled or delivered there: the next step here changes (e.g. a
+    // cancelled dispatch means "Create Dispatch" again, not "View Dispatch").
+    if (!mounted) return;
+    ref.invalidate(_orderDispatchesProvider(widget.orderId));
+    ref.invalidate(orderDetailProvider(widget.orderId));
   }
 
   Future<void> _assignManager() async {
@@ -520,6 +535,14 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
             color: AppColors.primaryMain,
             onTap: _busy ? null : _completeLoading,
           );
+          // Not everything fits or is in stock: record loaded quantities per item.
+          if (_order.sellerNurseryId != null) {
+            secondaryBtn = _OutlineButton(
+              label: 'Load Some Items Only',
+              color: AppColors.primaryMain,
+              onTap: _busy ? null : _loadPartially,
+            );
+          }
         case 'LOADED':
         case 'PARTIALLY_FULFILLED':
           final hasDeliveredDispatch = existingDispatch?.status == 'DELIVERED';

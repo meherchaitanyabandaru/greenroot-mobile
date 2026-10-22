@@ -104,6 +104,30 @@ class _DetailView extends ConsumerStatefulWidget {
 class _DetailViewState extends ConsumerState<_DetailView> {
   bool _busy = false;
 
+  Future<void> _confirmCancel() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel this dispatch?'),
+        content: const Text(
+          'The driver is released and the order can be dispatched again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
+            child: const Text('Cancel Dispatch'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await _updateStatus('CANCELLED');
+  }
+
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _busy = true);
     try {
@@ -185,7 +209,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       isManager: widget.isManager,
       isSeller: widget.isSeller,
       busy: _busy,
-      onUpdateStatus: _updateStatus,
+      // Cancelling asks first; other status changes are one tap.
+      onUpdateStatus: (s) => s == 'CANCELLED' ? _confirmCancel() : _updateStatus(s),
       onAckDeliveryUpdate: _ackDeliveryUpdate,
     );
   }
@@ -691,6 +716,16 @@ class _DetailContent extends StatelessWidget {
                 label: const Text('Track Shipment', style: AppTypography.label),
               ),
             ),
+          // Wrong driver, truck broke down…: the order can be dispatched again.
+          if (dispatch.capabilities?.canCancel == true) ...[
+            const SizedBox(height: AppSpacing.sm),
+            TextButton.icon(
+              onPressed: busy ? null : () => onUpdateStatus('CANCELLED'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.red600),
+              icon: const Icon(Icons.cancel_outlined, size: 18),
+              label: const Text('Cancel Dispatch'),
+            ),
+          ],
           if (!isManager && dispatch.status == 'DELIVERED') ...[
             const SizedBox(height: AppSpacing.md),
             SizedBox(

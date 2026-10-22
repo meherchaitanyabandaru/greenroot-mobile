@@ -173,6 +173,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.text('All done here.'), findsOneWidget);
+      // An instruction-only step leaves the app usable (e.g. "open any ad").
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Go'));
+      expect(taps, 2);
 
       await tester.tap(find.text('Finish'));
       await tester.pump(const Duration(milliseconds: 50));
@@ -181,9 +184,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.text('Tap Go.'), findsOneWidget);
 
-      // Android Back closes the guide instead of leaving the page.
-      final handled = await tester.binding.handlePopRoute();
-      expect(handled, isTrue);
+      // Android Back closes the picker; during a guide it is left to the app.
+      c.openPicker();
+      await tester.pump();
+      expect(await tester.binding.handlePopRoute(), isTrue);
       await tester.pump();
       expect(c.active, isFalse);
       c.start(_guide);
@@ -208,8 +212,11 @@ void main() {
           );
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
-      expect(tester.getTopLeft(find.text('🥭')).dx, lessThan(100),
-          reason: 'starts on the left',);
+      expect(
+        tester.getTopLeft(find.text('🥭')).dx,
+        lessThan(100),
+        reason: 'starts on the left',
+      );
 
       // Drag most of the way right and up, let go mid-screen: it snaps right.
       await tester.drag(find.text('🥭'), const Offset(500, -150));
