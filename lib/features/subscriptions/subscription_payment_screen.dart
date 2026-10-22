@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
@@ -168,8 +169,12 @@ class _SubscriptionPaymentScreenState
         promoCode: promo,
       );
       if (order != null) {
-        paid =
-            await payWithRazorpay(order, description: '${plan.planName} plan');
+        paid = await payWithRazorpay(
+          order,
+          description: '${plan.planName} plan',
+          contact: ref.read(sessionProvider).user?.mobile,
+          method: _paymentMethod,
+        );
       }
       final sub = widget.subscriptionId > 0
           ? await ds.renewSubscription(
@@ -364,7 +369,8 @@ class _PaymentBody extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
-            for (final m in ['UPI', 'CARD', 'CASH'])
+            // Online only: the chip opens checkout on that method (cash is an admin entry).
+            for (final m in ['UPI', 'CARD'])
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(

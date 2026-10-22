@@ -32,6 +32,7 @@ class _FakeAuthRepo extends AuthRepository {
   final List<Workspace> fakeWorkspaces;
   final List<AppRole> fakeRoles;
   final AppError? bootstrapError;
+  AppError? failWith; // set after construction: later bootstraps fail with it
 
   _FakeAuthRepo({
     bool sessionValid = false,
@@ -57,6 +58,7 @@ class _FakeAuthRepo extends AuthRepository {
   @override
   Future<UserProfile> getCurrentUser() async {
     if (bootstrapError != null) throw bootstrapError!;
+    if (failWith != null) throw failWith!;
     return fakeUser ?? _defaultUser();
   }
 
@@ -64,7 +66,8 @@ class _FakeAuthRepo extends AuthRepository {
   Future<List<Workspace>> getWorkspaces() async => fakeWorkspaces;
 
   @override
-  Future<List<AppRole>> getUserRoles(List<Workspace> workspaces) async => fakeRoles;
+  Future<List<AppRole>> getUserRoles(List<Workspace> workspaces) async =>
+      fakeRoles;
 
   @override
   Future<DriverApplicationStatus?> getDriverApplicationStatus() async => null;
@@ -136,16 +139,49 @@ void main() {
       expect(notifier.state.roles, contains(AppRole.buyer));
     });
 
-    test('offline at launch keeps the session and flags isOffline (splash offers Retry)', () async {
-      final repo = _FakeAuthRepo(sessionValid: true, bootstrapError: const NetworkError());
+    test(
+        'offline at launch keeps the session and flags isOffline (splash offers Retry)',
+        () async {
+      final repo = _FakeAuthRepo(
+          sessionValid: true, bootstrapError: const NetworkError(),);
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
       expect(notifier.state.isOffline, isTrue);
-      expect(await repo.hasValidSession(), isTrue, reason: 'no logout just because the network is down');
+      expect(await repo.hasValidSession(), isTrue,
+          reason: 'no logout just because the network is down',);
+    });
+
+    test('signed in, then the server is unreachable on resume: stays signed in',
+        () async {
+      final repo =
+          _FakeAuthRepo(sessionValid: true, fakeRoles: [AppRole.buyer]);
+      final notifier = SessionNotifier(repo);
+      await notifier.bootstrap();
+      expect(notifier.state.status, SessionStatus.authenticated);
+
+      for (final err in <AppError>[
+        const NetworkError(),
+        const TimeoutError(),
+        const ServerError(502),
+      ]) {
+        repo.failWith = err;
+        await notifier.bootstrap();
+        expect(notifier.state.status, SessionStatus.authenticated,
+            reason: '$err must not sign the user out',);
+        expect(notifier.state.user, isNotNull);
+      }
+      // A refused session still signs out.
+      repo.failWith = const UnauthorizedError();
+      await notifier.bootstrap();
+      expect(notifier.state.status, SessionStatus.unauthenticated);
     });
 
     test('nursery id comes from the owned or managed workspace', () {
-      expect(AuthRepository.nurseryIdOf([Workspace.fromJson({'type': 'PERSONAL'})]), isNull);
+      expect(
+          AuthRepository.nurseryIdOf([
+            Workspace.fromJson({'type': 'PERSONAL'}),
+          ]),
+          isNull,);
       expect(
         AuthRepository.nurseryIdOf([
           Workspace.fromJson({'type': 'PERSONAL'}),
@@ -230,8 +266,11 @@ void main() {
 
       notifier.setActiveRole(null);
       expect(notifier.state.activeRole, isNull);
-      expect(notifier.state.user, isNotNull,
-          reason: 'setActiveRole must NOT clear the user profile',);
+      expect(
+        notifier.state.user,
+        isNotNull,
+        reason: 'setActiveRole must NOT clear the user profile',
+      );
     });
 
     test('updateUser replaces user in state while preserving roles', () async {

@@ -199,7 +199,7 @@ class _TourSheetState extends State<_TourSheet> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Need help later? Tap 🥭 Ask Mango on the left edge.',
+              'Need help later? Tap 🥭 Ask Mango — drag it anywhere you like.',
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
             ),

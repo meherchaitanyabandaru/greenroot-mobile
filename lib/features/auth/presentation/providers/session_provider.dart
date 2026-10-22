@@ -13,6 +13,7 @@ import 'auth_provider.dart';
 class SuspensionInfo {
   final String? reason;
   final DateTime? suspendedAt;
+
   /// True when the owner's nursery (not the account itself) is suspended.
   final bool nursery;
   const SuspensionInfo({this.reason, this.suspendedAt, this.nursery = false});
@@ -75,8 +76,9 @@ class SessionState {
         ownedNurseryStatus: ownedNurseryStatus ?? this.ownedNurseryStatus,
         activeRole: clearActiveRole ? null : (activeRole ?? this.activeRole),
         error: error,
-        suspensionInfo:
-            clearSuspensionInfo ? null : (suspensionInfo ?? this.suspensionInfo),
+        suspensionInfo: clearSuspensionInfo
+            ? null
+            : (suspensionInfo ?? this.suspensionInfo),
       );
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
@@ -138,20 +140,25 @@ class SessionNotifier extends StateNotifier<SessionState> {
     });
   }
 
-  void _onAccountSuspended({String? reason, DateTime? suspendedAt, bool nursery = false}) {
+  void _onAccountSuspended(
+      {String? reason, DateTime? suspendedAt, bool nursery = false,}) {
     Future.microtask(() {
       if (state.status == SessionStatus.authenticated ||
           state.status == SessionStatus.loading) {
         state = state.copyWith(
           status: SessionStatus.suspended,
           suspensionInfo: SuspensionInfo(
-              reason: reason, suspendedAt: suspendedAt, nursery: nursery,),
+            reason: reason,
+            suspendedAt: suspendedAt,
+            nursery: nursery,
+          ),
         );
       }
     });
   }
 
   Future<void> bootstrap() async {
+    final previous = state;
     state = state.copyWith(status: SessionStatus.loading);
     try {
       final hasSession = await _repo.hasValidSession();
@@ -213,6 +220,16 @@ class SessionNotifier extends StateNotifier<SessionState> {
       await _repo.logout();
       state = state.copyWith(status: SessionStatus.unauthenticated);
     } on AppError catch (e) {
+      // Already signed in (app resumed, a refresh) and the server is just out
+      // of reach: stay in the app. Sending the user to login for a network
+      // blip — e.g. right after Razorpay checkout — looked like a logout.
+      final transient = e is NetworkError ||
+          e is TimeoutError ||
+          (e is ServerError && e.statusCode >= 500);
+      if (transient && previous.status == SessionStatus.authenticated) {
+        state = previous;
+        return;
+      }
       state = state.copyWith(status: SessionStatus.unauthenticated, error: e);
     }
   }
@@ -230,10 +247,12 @@ class SessionNotifier extends StateNotifier<SessionState> {
     state = state.copyWith(activeRole: role, clearActiveRole: role == null);
   }
 
-  void setSuspended({String? reason, DateTime? suspendedAt, bool nursery = false}) {
+  void setSuspended(
+      {String? reason, DateTime? suspendedAt, bool nursery = false,}) {
     state = state.copyWith(
       status: SessionStatus.suspended,
-      suspensionInfo: SuspensionInfo(reason: reason, suspendedAt: suspendedAt, nursery: nursery),
+      suspensionInfo: SuspensionInfo(
+          reason: reason, suspendedAt: suspendedAt, nursery: nursery,),
     );
   }
 }

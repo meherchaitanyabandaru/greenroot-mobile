@@ -49,6 +49,8 @@ class CheckoutFailed implements Exception {
 Future<CheckoutResult> payWithRazorpay(
   PaymentOrder order, {
   required String description,
+  String? contact,
+  String? method, // 'UPI' | 'CARD': checkout opens on it
 }) {
   final razorpay = Razorpay();
   final done = Completer<CheckoutResult>();
@@ -57,11 +59,13 @@ Future<CheckoutResult> payWithRazorpay(
     // Missing fields can't be verified; the API would reject them anyway.
     if (r.paymentId == null || r.signature == null) {
       done.completeError(
-          const CheckoutFailed('Payment response was incomplete.'),);
+        const CheckoutFailed('Payment response was incomplete.'),
+      );
       return;
     }
     done.complete(
-        CheckoutResult(r.orderId ?? order.orderId, r.paymentId!, r.signature!),);
+      CheckoutResult(r.orderId ?? order.orderId, r.paymentId!, r.signature!),
+    );
   });
   razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse r) {
     if (done.isCompleted) return;
@@ -83,6 +87,10 @@ Future<CheckoutResult> payWithRazorpay(
     'name': 'GreenRoot',
     'description': description,
     'theme': {'color': '#166534'},
+    'prefill': {
+      if (contact != null && contact.isNotEmpty) 'contact': contact,
+      if (method != null) 'method': method.toLowerCase(),
+    },
   });
   return done.future.whenComplete(razorpay.clear);
 }
