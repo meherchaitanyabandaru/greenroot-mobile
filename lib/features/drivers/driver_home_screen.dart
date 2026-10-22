@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/widgets/next_action_pulse.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -42,6 +43,9 @@ class _DashboardData {
 
 final _driverDashboardProvider =
     FutureProvider.autoDispose<_DashboardData>((ref) async {
+  // Rebuild whenever trip screens refresh the active trip (accept, start,
+  // deliver...); otherwise home kept showing "No Active Trip" after accepting.
+  ref.watch(activeDriverTripProvider);
   final dispatchRepo = ref.read(dispatchRepositoryProvider);
   final notifRepo = ref.read(notificationRepositoryProvider);
 
@@ -978,7 +982,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: _starting ? null : _startJourney,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -1005,7 +1009,7 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
                     fontSize: 15,
                   ),
                 ),
-              ),
+              ),),
             ),
           ],
         ),
@@ -1344,7 +1348,7 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: () => context.push('/driver/trip/${trip.id}'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -1356,7 +1360,7 @@ class _ActiveTripCardState extends ConsumerState<_ActiveTripCard>
                 ),
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Continue Trip'),
-              ),
+              ),),
             ),
           ],
         ),

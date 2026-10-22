@@ -32,6 +32,9 @@ enum FakeResponseType {
 
   /// HTTP 409 — maps to [ConflictingRoleError] (the app's generic 409 type).
   conflict,
+
+  /// HTTP 503 — maps to [ServerError] with statusCode 503.
+  serviceUnavailable,
 }
 
 class _QueuedResponse {
@@ -45,7 +48,9 @@ class FakeCall {
   final String method;
   final String path;
   final FakeResponseType type;
-  const FakeCall({required this.method, required this.path, required this.type});
+  /// Request body, for checking what the app sends.
+  final dynamic data;
+  const FakeCall({required this.method, required this.path, required this.type, this.data});
 
   @override
   String toString() => '$method $path [$type]';
@@ -121,7 +126,9 @@ class _FakeInterceptor extends Interceptor {
         ? queue.removeAt(0)
         : const _QueuedResponse(type: FakeResponseType.success);
 
-    _calls.add(FakeCall(method: options.method, path: options.path, type: queued.type));
+    _calls.add(FakeCall(
+      data: options.data,
+      method: options.method, path: options.path, type: queued.type,),);
 
     if (queued.type == FakeResponseType.networkError) {
       handler.reject(
@@ -170,6 +177,7 @@ class _FakeInterceptor extends Interceptor {
         FakeResponseType.serverError => 500,
         FakeResponseType.notFound => 404,
         FakeResponseType.conflict => 409,
+        FakeResponseType.serviceUnavailable => 503,
         _ => 500,
       };
 }

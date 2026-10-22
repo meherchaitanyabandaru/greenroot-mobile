@@ -99,6 +99,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       final accepted = await ref
           .read(dispatchRepositoryProvider)
           .acceptDispatch(_dispatch!.id);
+      ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -106,7 +107,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
             backgroundColor: AppColors.primaryMain,
           ),
         );
-        context.go('/driver/trip/${accepted.id}');
+        _openTrip(context, accepted.id);
       }
     } on AppError catch (e) {
       if (mounted) {
@@ -474,7 +475,7 @@ class _TripDetails extends StatelessWidget {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/driver/trip/${dispatch.id}'),
+              onPressed: () => _openTrip(context, dispatch.id),
               icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Go to Trip'),
               style: OutlinedButton.styleFrom(
@@ -576,4 +577,13 @@ class _InfoRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Replace the scanner/preview with Home and open the trip on top of it, so
+/// Back from the trip returns to the driver home instead of closing the app
+/// (a bare `go` left the trip as the only page).
+void _openTrip(BuildContext context, int dispatchId) {
+  final router = GoRouter.of(context);
+  router.go('/home');
+  router.push('/driver/trip/$dispatchId');
 }

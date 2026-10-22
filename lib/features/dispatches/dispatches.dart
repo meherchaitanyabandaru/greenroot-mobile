@@ -23,7 +23,7 @@ class TripEvent {
   factory TripEvent.fromJson(Map<String, dynamic> j) => TripEvent(
         id: (j['id'] as num).toInt(),
         eventType: j['event_type'] as String,
-        note: j['note'] as String?,
+        note: (j['remarks'] ?? j['note']) as String?,
         createdAt: j['created_at'] as String,
       );
 }
@@ -312,12 +312,15 @@ class DispatchRepository {
       ApiConstants.tripEvents(dispatchId),
       data: {
         'event_type': eventType,
-        if (note?.isNotEmpty == true) 'note': note,
+        // The API field is `remarks`; `note` was silently dropped.
+        if (note?.isNotEmpty == true) 'remarks': note,
       },
       fromJson: (data) {
+        // The API wraps it as {"event": {...}}; parsing the wrapper failed
+        // after a successful save, so drivers saw an error and re-sent it.
         final d = data as Map<String, dynamic>;
         return TripEvent.fromJson(
-            (d['trip_event'] ?? d) as Map<String, dynamic>,);
+            (d['event'] ?? d['trip_event'] ?? d) as Map<String, dynamic>,);
       },
     );
   }

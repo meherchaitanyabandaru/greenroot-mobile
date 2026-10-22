@@ -1,4 +1,5 @@
 import '../../core/errors/app_error.dart';
+import '../../core/widgets/welcome_tour.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -169,6 +170,22 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           _SettingsSection(
             items: [
+              _SettingsTile(
+                icon: Icons.lightbulb_outline_rounded,
+                label: 'How GreenRoot works',
+                subtitle: 'A 3-step guide for your role',
+                onTap: () => showWelcomeTour(
+                  context,
+                  caps.isNurseryOwner
+                      ? TourRole.owner
+                      : caps.isManager
+                          ? TourRole.manager
+                          : caps.hasDriverProfile
+                              ? TourRole.driver
+                              : TourRole.customer,
+                  force: true,
+                ),
+              ),
               _SettingsTile(
                 icon: Icons.star_rounded,
                 label: 'Rate the App',

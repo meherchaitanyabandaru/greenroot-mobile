@@ -20,6 +20,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/order_timeline.dart';
+import '../../core/widgets/next_action_pulse.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/testing/test_keys.dart';
 import '../../core/widgets/qr_share_sheet.dart';
@@ -525,6 +526,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           if (existingDispatch != null) {
             primaryBtn = _BigButton(
               label: 'View Dispatch',
+              pulse: false,
               icon: Icons.local_shipping_rounded,
               color: AppColors.blue600,
               onTap: _busy ? null : () => _viewDispatch(existingDispatch),
@@ -532,6 +534,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
           } else if (isCheckingDispatches) {
             primaryBtn = const _BigButton(
               label: 'Checking Dispatch',
+              pulse: false,
               icon: Icons.sync_rounded,
               color: AppColors.textSecondary,
               onTap: null,
@@ -939,30 +942,37 @@ class _BigButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
+  // The hero's main action is the order's next step: glow so new users see it.
+  final bool pulse;
 
   const _BigButton({
     required this.label,
     required this.icon,
     required this.color,
     this.onTap,
+    this.pulse = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 18),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.sm),),
-          elevation: 0,
-          textStyle: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
+    return NextActionPulse(
+      active: pulse && onTap != null,
+      borderRadius: BorderRadius.circular(AppSpacing.sm),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.sm),),
+            elevation: 0,
+            textStyle: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     );

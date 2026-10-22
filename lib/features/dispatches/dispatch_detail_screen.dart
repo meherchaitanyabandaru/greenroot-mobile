@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/widgets/next_action_pulse.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/services/recent_items.dart';
@@ -473,7 +474,7 @@ class _DetailContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: busy ? null : () => onUpdateStatus('IN_TRANSIT'),
                 icon: busy
                     ? const SizedBox(
@@ -490,7 +491,7 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
-              ),
+              ),),
             ),
           if (dispatch.capabilities?.canMarkDelivered == true)
             SizedBox(
@@ -545,7 +546,7 @@ class _DetailContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: busy ? null : () => onUpdateStatus('DISPATCHED'),
                 icon: busy
                     ? const SizedBox(
@@ -562,13 +563,13 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
-              ),
+              ),),
             ),
           if (dispatch.capabilities?.canMarkDelivered == true)
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: busy ? null : () => onUpdateStatus('DELIVERED'),
                 icon: busy
                     ? const SizedBox(
@@ -585,7 +586,7 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
-              ),
+              ),),
             ),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -599,7 +600,7 @@ class _DetailContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: busy ? null : () => onUpdateStatus('DISPATCHED'),
                 icon: busy
                     ? const SizedBox(
@@ -616,7 +617,7 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
-              ),
+              ),),
             ),
             const SizedBox(height: AppSpacing.md),
           ],
@@ -627,7 +628,7 @@ class _DetailContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeight,
-              child: ElevatedButton.icon(
+              child: NextActionPulse(child: ElevatedButton.icon(
                 onPressed: busy ? null : () => onUpdateStatus('DELIVERED'),
                 icon: busy
                     ? const SizedBox(
@@ -644,7 +645,7 @@ class _DetailContent extends StatelessWidget {
                       borderRadius: AppRadius.buttonRadius,),
                   elevation: 0,
                 ),
-              ),
+              ),),
             ),
             const SizedBox(height: AppSpacing.md),
           ],

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
+import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 
@@ -141,35 +142,66 @@ class _SubscriptionPaymentScreenState
     );
   }
 
+  void _snack(String message, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? AppColors.red600 : null,
+        duration: Duration(seconds: error ? 8 : 4),
+      ),
+    );
+  }
+
   Future<void> _pay(SubscriptionPlan? plan) async {
     if (plan == null) return;
     setState(() => _paying = true);
-    // Mock gateway phase: the API records the payment with provider
-    // razorpay_mock. Swap in the Razorpay SDK checkout before this call.
     final ds = ref.read(subscriptionDataSourceProvider);
     final promo = _promoValid ? _promoController.text.trim() : null;
+    CheckoutResult? paid;
     try {
+      // The API prices the order; null = online payments off (mock mode).
+      final order = await ds.createPaymentOrder(
+        subscriptionId: widget.subscriptionId,
+        planId: plan.id,
+        billingCycle: _billingCycle,
+        promoCode: promo,
+      );
+      if (order != null) {
+        paid =
+            await payWithRazorpay(order, description: '${plan.planName} plan');
+      }
       final sub = widget.subscriptionId > 0
           ? await ds.renewSubscription(
               subscriptionId: widget.subscriptionId,
               planId: plan.id,
               billingCycle: _billingCycle,
               paymentMethod: _paymentMethod,
+              paid: paid,
               promoCode: promo,
             )
           : await ds.createSubscription(
               planId: plan.id,
               billingCycle: _billingCycle,
               paymentMethod: _paymentMethod,
+              paid: paid,
               promoCode: promo,
             );
       if (!mounted) return;
       ref.invalidate(subscriptionProvider);
       _showSuccess(sub);
+    } on CheckoutCancelled {
+      _snack('Payment cancelled. You have not been charged.');
+    } on CheckoutFailed catch (e) {
+      _snack(e.message, error: true);
     } on AppError catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+      // Money taken but not applied: give the user the id support needs.
+      _snack(
+        paid == null
+            ? e.message
+            : 'Payment ${paid.paymentId} received but not applied: ${e.message} '
+                'Contact support with this payment ID.',
+        error: true,
       );
     } finally {
       if (mounted) setState(() => _paying = false);
@@ -367,14 +399,20 @@ class _PaymentBody extends StatelessWidget {
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   suffixIcon: promoValid
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Colors.green,)
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.green,
+                        )
                       : null,
                 ),
                 style: const TextStyle(
-                    fontFamily: 'monospace', letterSpacing: 1.5, fontSize: 14,),
+                  fontFamily: 'monospace',
+                  letterSpacing: 1.5,
+                  fontSize: 14,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -385,17 +423,25 @@ class _PaymentBody extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: validatingPromo
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white,),)
-                    : const Text('Apply',
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Apply',
                         style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w700,),),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -447,8 +493,9 @@ class _PaymentBody extends StatelessWidget {
           child: Column(
             children: [
               _PriceLine(
-                  label: 'Base Price',
-                  value: '₹${basePrice.toStringAsFixed(2)}',),
+                label: 'Base Price',
+                value: '₹${basePrice.toStringAsFixed(2)}',
+              ),
               if (promoSavings != null && promoSavings! > 0) ...[
                 const SizedBox(height: 8),
                 _PriceLine(
@@ -483,12 +530,17 @@ class _PaymentBody extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.security_rounded,
-                  size: 13, color: AppColors.textMuted,),
+              const Icon(
+                Icons.security_rounded,
+                size: 13,
+                color: AppColors.textMuted,
+              ),
               const SizedBox(width: 4),
-              Text('Secured via Razorpay · Invoice provided',
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.textMuted),),
+              Text(
+                'Secured via Razorpay · Invoice provided',
+                style:
+                    AppTypography.caption.copyWith(color: AppColors.textMuted),
+              ),
             ],
           ),
         ),
@@ -519,21 +571,23 @@ class _FeatureChips extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: chips
-          .map((c) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.forest100,
-                  borderRadius: BorderRadius.circular(20),
+          .map(
+            (c) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.forest100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                c,
+                style: const TextStyle(
+                  color: AppColors.primaryMain,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text(
-                  c,
-                  style: const TextStyle(
-                    color: AppColors.primaryMain,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),)
+              ),
+            ),
+          )
           .toList(),
     );
   }
@@ -579,29 +633,35 @@ class _CycleChip extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(label,
-                      style: TextStyle(
-                        color: selected
-                            ? AppColors.primaryMain
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: selected
+                          ? AppColors.primaryMain
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
                   if (badge != null) ...[
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2,),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFdc2626),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(badge!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                          ),),
+                      child: Text(
+                        badge!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -616,13 +676,15 @@ class _CycleChip extends StatelessWidget {
                     decorationColor: AppColors.textMuted,
                   ),
                 ),
-              Text(sublabel,
-                  style: AppTypography.caption.copyWith(
-                    color: selected
-                        ? AppColors.primaryMain
-                        : AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                  ),),
+              Text(
+                sublabel,
+                style: AppTypography.caption.copyWith(
+                  color: selected
+                      ? AppColors.primaryMain
+                      : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ),
@@ -648,7 +710,9 @@ class _PriceLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = highlight
         ? AppTypography.body.copyWith(
-            color: const Color(0xFF16a34a), fontWeight: FontWeight.w700,)
+            color: const Color(0xFF16a34a),
+            fontWeight: FontWeight.w700,
+          )
         : bold
             ? AppTypography.body
                 .copyWith(fontWeight: FontWeight.w800, fontSize: 16)
@@ -705,12 +769,18 @@ class _SuccessSheet extends StatelessWidget {
                 color: AppColors.primaryMain,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_rounded,
-                  color: Colors.white, size: 40,),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 40,
+              ),
             ),
             const SizedBox(height: AppSpacing.x2l),
-            const Text('Payment Successful!',
-                style: AppTypography.h2, textAlign: TextAlign.center,),
+            const Text(
+              'Payment Successful!',
+              style: AppTypography.h2,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Your ${sub.planName} subscription is now active.',
@@ -733,7 +803,9 @@ class _SuccessSheet extends StatelessWidget {
                   const SizedBox(height: 6),
                   if (sub.endDate != null)
                     _SuccessRow(
-                        label: 'Valid Until', value: fmt.format(sub.endDate!),),
+                      label: 'Valid Until',
+                      value: fmt.format(sub.endDate!),
+                    ),
                 ],
               ),
             ),
@@ -758,13 +830,17 @@ class _SuccessRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          Text(label,
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textSecondary),),
+          Text(
+            label,
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary),
+          ),
           const Spacer(),
-          Text(value,
-              style: AppTypography.bodySmall
-                  .copyWith(fontWeight: FontWeight.w700),),
+          Text(
+            value,
+            style:
+                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       );
 }

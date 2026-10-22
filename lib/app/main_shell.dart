@@ -18,6 +18,7 @@ import '../features/notifications/notifications.dart';
 import '../features/nurseries/nurseries.dart';
 import '../features/selling/selling_screen.dart';
 import '../features/market/local_market_screen.dart';
+import '../core/widgets/welcome_tour.dart';
 
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -46,6 +47,19 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     final session = ref.read(sessionProvider);
     if (!session.isAuthenticated) return;
+
+    // First time in this role on this device: the short "how it works" tour,
+    // instead of the profile prompt (one sheet per launch is enough).
+    final caps0 = session.capabilities;
+    final tourRole = caps0.isNurseryOwner
+        ? TourRole.owner
+        : caps0.isManager
+            ? TourRole.manager
+            : caps0.hasDriverProfile
+                ? TourRole.driver
+                : TourRole.customer;
+    if (await showWelcomeTour(context, tourRole)) return;
+    if (!mounted) return;
 
     final role = session.capabilities.canSell
         ? (session.capabilities.isNurseryOwner
@@ -76,7 +90,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       onEditAddress: nurseryId != null
           ? () => context.push('/nursery/addresses', extra: nurseryId)
           : null,
-        onRegisterDriver: () => context.push('/register/driver'),
+      onRegisterDriver: () => context.push('/register/driver'),
     );
 
     final pct = completionPercent(items);
@@ -107,27 +121,35 @@ class _MainShellState extends ConsumerState<MainShell> {
     // Build a tab the first time it is opened, then keep it: nothing runs
     // (or asks for permissions, like the market's location) behind the scenes.
     _opened.add(tabs[index].label);
-    return Scaffold(
-      body: IndexedStack(
-        index: index,
-        children: [
-          for (final t in tabs)
-            _opened.contains(t.label) ? t.screen : const SizedBox.shrink(),
-        ],
+    // Back on another tab returns to Home first (Android convention); only
+    // Back on Home leaves the app.
+    return PopScope(
+      canPop: index == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) ref.read(mainTabIndexProvider.notifier).state = 0;
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: index,
+          children: [
+            for (final t in tabs)
+              _opened.contains(t.label) ? t.screen : const SizedBox.shrink(),
+          ],
+        ),
+        bottomNavigationBar: caps.isDriverOnly
+            ? _DriverBottomNav(
+                tabs: tabs,
+                selectedIndex: index,
+                onSelected: (i) =>
+                    ref.read(mainTabIndexProvider.notifier).state = i,
+              )
+            : _GreenRootBottomNav(
+                tabs: tabs,
+                selectedIndex: index,
+                onSelected: (i) =>
+                    ref.read(mainTabIndexProvider.notifier).state = i,
+              ),
       ),
-      bottomNavigationBar: caps.isDriverOnly
-          ? _DriverBottomNav(
-              tabs: tabs,
-              selectedIndex: index,
-              onSelected: (i) =>
-                  ref.read(mainTabIndexProvider.notifier).state = i,
-            )
-          : _GreenRootBottomNav(
-              tabs: tabs,
-              selectedIndex: index,
-              onSelected: (i) =>
-                  ref.read(mainTabIndexProvider.notifier).state = i,
-            ),
     );
   }
 }
@@ -438,7 +460,8 @@ class _GreenRootBottomNav extends ConsumerWidget {
                     onTap: () => onSelected(i),
                   ),
                 ),
-              Expanded(child: _CenterScanButton(onTap: () => _openScan(context))),
+              Expanded(
+                  child: _CenterScanButton(onTap: () => _openScan(context)),),
               for (var i = _split; i < tabs.length; i++)
                 Expanded(
                   child: _BottomNavItem(

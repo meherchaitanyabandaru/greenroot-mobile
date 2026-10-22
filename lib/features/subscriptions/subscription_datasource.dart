@@ -1,5 +1,6 @@
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_client.dart';
+import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 
 class SubscriptionRemoteDataSource {
@@ -22,28 +23,71 @@ class SubscriptionRemoteDataSource {
         .toList();
   }
 
+  /// POST /subscriptions/payment-order — the Razorpay order to pay, priced by
+  /// the API. Null when online payments are off (no keys: mock payments).
+  Future<PaymentOrder?> createPaymentOrder({
+    int? subscriptionId,
+    int? planId,
+    required String billingCycle,
+    String? promoCode,
+  }) async {
+    try {
+      final res = await _client.post(
+        '/api/v1/subscriptions/payment-order',
+        data: {
+          if (subscriptionId != null && subscriptionId > 0)
+            'subscription_id': subscriptionId,
+          if (planId != null) 'plan_id': planId,
+          'billing_cycle': billingCycle,
+          if (promoCode != null && promoCode.isNotEmpty)
+            'promo_code': promoCode,
+        },
+      );
+      return PaymentOrder.fromJson(
+          res['payment_order'] as Map<String, dynamic>,);
+    } on ServerError catch (e) {
+      if (e.statusCode == 503) return null;
+      rethrow;
+    }
+  }
+
+  /// Provider fields: the verified Razorpay result, or a mock order.
+  static Map<String, dynamic> _payment(CheckoutResult? paid) => paid == null
+      ? {
+          'provider': 'razorpay_mock',
+          'provider_order_id':
+              'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
+        }
+      : {
+          'provider': 'razorpay',
+          'provider_order_id': paid.orderId,
+          'provider_payment_id': paid.paymentId,
+          'provider_signature': paid.signature,
+        };
+
   Future<SubscriptionModel> renewSubscription({
     required int subscriptionId,
     int? planId,
     required String billingCycle,
     required String paymentMethod,
-    String provider = 'razorpay_mock',
-    String? providerOrderId,
+    CheckoutResult? paid,
     String? promoCode,
   }) async {
     final body = <String, dynamic>{
       if (planId != null) 'plan_id': planId,
       'billing_cycle': billingCycle,
       'payment_method': paymentMethod,
-      'provider': provider,
-      'provider_order_id':
-          providerOrderId ?? 'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
+      ..._payment(paid),
       if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
     };
     final res = await _client.post(
-        '/api/v1/subscriptions/$subscriptionId/renew', data: body,);
+      '/api/v1/subscriptions/$subscriptionId/renew',
+      data: body,
+    );
     final sub = res['subscription'] as Map<String, dynamic>?;
-    if (sub == null) throw const ServerError(500, 'Invalid response from server');
+    if (sub == null) {
+      throw const ServerError(500, 'Invalid response from server');
+    }
     return SubscriptionModel.fromJson(sub);
   }
 
@@ -52,18 +96,23 @@ class SubscriptionRemoteDataSource {
     required int planId,
     required String billingCycle,
     required String paymentMethod,
+    CheckoutResult? paid,
     String? promoCode,
   }) async {
-    final res = await _client.post('/api/v1/subscriptions', data: {
-      'plan_id': planId,
-      'billing_cycle': billingCycle,
-      'payment_method': paymentMethod,
-      'provider': 'razorpay_mock',
-      'provider_order_id': 'MOCK-ORDER-${DateTime.now().millisecondsSinceEpoch}',
-      if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
-    },);
+    final res = await _client.post(
+      '/api/v1/subscriptions',
+      data: {
+        'plan_id': planId,
+        'billing_cycle': billingCycle,
+        'payment_method': paymentMethod,
+        ..._payment(paid),
+        if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
+      },
+    );
     final sub = res['subscription'] as Map<String, dynamic>?;
-    if (sub == null) throw const ServerError(500, 'Invalid response from server');
+    if (sub == null) {
+      throw const ServerError(500, 'Invalid response from server');
+    }
     return SubscriptionModel.fromJson(sub);
   }
 
@@ -72,24 +121,33 @@ class SubscriptionRemoteDataSource {
     required String planCode,
     required String billingCycle,
   }) async {
-    final res = await _client.post('/api/v1/subscription-promos/validate', data: {
-      'promo_code': promoCode,
-      'plan_code': planCode,
-      'billing_cycle': billingCycle,
-    },);
+    final res = await _client.post(
+      '/api/v1/subscription-promos/validate',
+      data: {
+        'promo_code': promoCode,
+        'plan_code': planCode,
+        'billing_cycle': billingCycle,
+      },
+    );
     return (res['validation'] as Map<String, dynamic>?) ?? {};
   }
 
   Future<SubscriptionModel> cancelSubscription(
-      int subscriptionId, String? reason,) async {
+    int subscriptionId,
+    String? reason,
+  ) async {
     final body = <String, dynamic>{
       'cancel_immediately': true,
       if (reason != null && reason.isNotEmpty) 'reason': reason,
     };
     final res = await _client.post(
-        '/api/v1/subscriptions/$subscriptionId/cancel', data: body,);
+      '/api/v1/subscriptions/$subscriptionId/cancel',
+      data: body,
+    );
     final sub = res['subscription'] as Map<String, dynamic>?;
-    if (sub == null) throw const ServerError(500, 'Invalid response from server');
+    if (sub == null) {
+      throw const ServerError(500, 'Invalid response from server');
+    }
     return SubscriptionModel.fromJson(sub);
   }
 

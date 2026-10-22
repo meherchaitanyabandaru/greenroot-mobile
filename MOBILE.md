@@ -180,6 +180,31 @@ lib/
 | Profile → "Stop Driving" (same account, back to customer); "Nursery Suspended" screen with reason for owners and managers; reason shown mid-session too (2026-10-21) | ✅ |
 | Market ad posting: storage uploads time out (15 s) with a readable error instead of spinning; retries reuse the draft (no duplicate ads); location is asked again on retry; quantity/price fields accept only valid numbers — "40.." used to post the ad as "price on request" (shared `NumberInput` rules on all 14 numeric fields) (2026-10-21) | ✅ |
 | Delivery proof upload (presigned `delivery-photos` + JSON `/attachments`; never worked before), trip-accept black screen, Invite Driver on Members → Drivers, delivery contact defaults to the customer, manager/owner homes show drafts again (stale `DRAFT` status) (2026-10-21) | ✅ |
+| Trip events save without an error (API wraps `{event}` and expects `remarks`); Back after accepting a trip returns to Home (accept goes home then pushes the trip) and Back on a non-Home tab goes to Home instead of closing the app; driver Home shows the trip right after accepting (2026-10-22) | ✅ |
+| Subscription payments through Razorpay Standard Checkout (`razorpay_flutter`, `lib/features/subscriptions/razorpay_checkout.dart`): API-priced order → checkout → renew/create sends payment id + signature for verification; cancel / failure / "paid but not applied" messages; falls back to mock when the API has no keys (503); R8 keep-rules in `android/app/proguard-rules.pro` (2026-10-22) | ✅ |
+| User help: first-run "How GreenRoot works" tour (3 cards per role, once per role, replay from Profile), glowing next-action button on order / dispatch / trip screens (`NextActionPulse`), and Ask Mango 🥭 guided walkthroughs (below) (2026-10-22) | ✅ |
+
+---
+
+## User Help: Ask Mango 🥭 (2026-10-22)
+
+Offline, predefined walkthroughs (no AI, no API calls). A 🥭 tab on the left edge opens a picker; guides for the current screen are listed first ("For this screen"). Each step dims the screen, cuts a spotlight around the real control, shows a pointing hand and a short instruction with Back / Skip / Next. Tapping the spotlighted control works normally and moves to the next step; on completion the user can Replay. Android Back while Mango is open only closes Mango.
+
+| File | Role |
+|---|---|
+| `lib/core/mango/mango_guides.dart` | The guides: steps, audiences (guest / owner / manager / customer / driver), screen-context labels |
+| `lib/core/mango/mango_finder.dart` | Finds the visible widget for a label (Text, RichText, tooltip, semantics); skips hidden tabs, Offstage and covered routes; widens to the real button / text field / checkbox row |
+| `lib/core/mango/mango_controller.dart` | State: picker, step, done; `next` / `back` / `replay` / `exit` |
+| `lib/core/mango/mango_layer.dart` | The overlay, mounted once in `app.dart` above the Navigator (so it follows the user across pages and dialogs) |
+| `test/core/mango_test.dart` | Guides per role, controller, finder, and the full layer flow with the real app theme |
+
+**RBAC:** guides are offered by audience from the session's capabilities (`_mangoAudience` in `app.dart`); logged-out users get only the signup guide on `/login`. A guide only points at what is on screen, so it can never show an action the user doesn't have.
+
+**Add a guide:** append a `MangoGuide` to `mangoGuides`. Each step lists the labels to spotlight exactly as the screen shows them (first visible one wins); use `advanceOnTap: false` for fields the user types into and `MangoStep.say` for text-only steps.
+
+**Caveats:**
+- Targets are matched by visible label, so if a button label is renamed, update the guide too. A missing target shows "Can't see it here?" and the user can still tap Next.
+- The layer sits above the app's Overlay. Don't use `Tooltip`s inside it, and give its buttons an explicit size, because the theme makes FilledButtons full width.
 
 ---
 

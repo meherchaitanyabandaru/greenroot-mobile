@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/widgets/next_action_pulse.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
@@ -640,12 +641,12 @@ class _ContextualActions extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          _ActionButton(
+          NextActionPulse(child: _ActionButton(
             icon: Icons.navigation_rounded,
             label: 'Start Journey',
             busy: busy,
             onPressed: onStartTrip,
-          ),
+          ),),
         ],
 
         // IN_TRANSIT: driver is on the road
@@ -717,7 +718,7 @@ class _CompleteButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: AppSpacing.buttonHeight,
-      child: ElevatedButton.icon(
+      child: NextActionPulse(child: ElevatedButton.icon(
         onPressed: busy ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryHover,
@@ -733,7 +734,7 @@ class _CompleteButton extends StatelessWidget {
               )
             : const Icon(Icons.where_to_vote_outlined),
         label: const Text('Complete Delivery', style: AppTypography.label),
-      ),
+      ),),
     );
   }
 }
