@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -35,7 +36,7 @@ class MangoLayer extends StatefulWidget {
 
 class _MangoLayerState extends State<MangoLayer>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  late final Ticker _ticker = createTicker(_onTick);
+  late final Ticker _ticker;
   Element? _target;
   Rect? _hole;
   Duration _lastSearch = Duration.zero;
@@ -50,6 +51,8 @@ class _MangoLayerState extends State<MangoLayer>
   @override
   void initState() {
     super.initState();
+    // Not lazy: dispose() would otherwise create it on a dead element.
+    _ticker = createTicker(_onTick);
     _c.addListener(_onController);
     widget.refresh?.addListener(_rebuild);
     // Added before the router's own observer, so Back reaches Mango first.
@@ -552,45 +555,118 @@ class _Picker extends StatelessWidget {
 
 // ── Button and character ─────────────────────────────────────────────────────
 
-class _AskMangoButton extends StatelessWidget {
+/// The 🥭 tab. Drag it anywhere; on release it snaps to the nearest side edge
+/// (so it never parks over content) and the spot is remembered.
+class _AskMangoButton extends StatefulWidget {
   final VoidCallback onTap;
   const _AskMangoButton({required this.onTap});
 
   @override
+  State<_AskMangoButton> createState() => _AskMangoButtonState();
+}
+
+class _AskMangoButtonState extends State<_AskMangoButton> {
+  static const _prefsKey =
+      'mango_button_pos'; // "L:0.60" = side : top as a fraction of height
+  static const _w = 48.0, _h = 56.0;
+
+  bool _right = false;
+  double _yFraction = 0.6;
+  Offset? _drag; // top-left while dragging
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final saved =
+          (await SharedPreferences.getInstance()).getString(_prefsKey);
+      final parts = saved?.split(':');
+      final y = parts?.length == 2 ? double.tryParse(parts![1]) : null;
+      if (y == null || !mounted) return;
+      setState(() {
+        _right = parts![0] == 'R';
+        _yFraction = y.clamp(0.0, 1.0);
+      });
+    } catch (_) {
+      // No saved spot: keep the default.
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      await (await SharedPreferences.getInstance()).setString(
+          _prefsKey, '${_right ? 'R' : 'L'}:${_yFraction.toStringAsFixed(3)}',);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final h = MediaQuery.sizeOf(context).height;
-    // A small tab on the left edge: away from the right-side action buttons.
-    return Positioned(
-      left: 0,
-      top: h * 0.6,
-      child: Semantics(
-        container: true,
-        button: true,
-        label: 'Ask Mango, app guide',
-        child: Material(
-          color: const Color(0xFFFFF4D6),
-          elevation: 4,
-          borderRadius:
-              const BorderRadius.horizontal(right: Radius.circular(24)),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius:
-                const BorderRadius.horizontal(right: Radius.circular(24)),
-            child: const SizedBox(
-              width: 48,
-              height: 56,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ExcludeSemantics(
-                    child: Text('🥭', style: TextStyle(fontSize: 22)),
-                  ),
-                  Icon(
-                    Icons.touch_app_rounded,
-                    size: 14,
-                    color: Color(0xFFB45309),
-                  ),
-                ],
+    final size = MediaQuery.sizeOf(context);
+    final pad = MediaQuery.paddingOf(context);
+    final minY = pad.top + 8;
+    final maxY = size.height - pad.bottom - _h - 8;
+    final snappedTop = (minY + (maxY - minY) * _yFraction).clamp(minY, maxY);
+    final drag = _drag;
+    final radius = _right && drag == null
+        ? const BorderRadius.horizontal(left: Radius.circular(24))
+        : drag == null
+            ? const BorderRadius.horizontal(right: Radius.circular(24))
+            : BorderRadius.circular(24);
+
+    return AnimatedPositioned(
+      duration:
+          drag == null ? const Duration(milliseconds: 220) : Duration.zero,
+      curve: Curves.easeOut,
+      left: drag?.dx ?? (_right ? size.width - _w : 0),
+      top: drag?.dy ?? snappedTop,
+      child: GestureDetector(
+        onPanStart: (_) => setState(
+            () => _drag = Offset(_right ? size.width - _w : 0, snappedTop),),
+        onPanUpdate: (d) => setState(() {
+          final next = _drag! + d.delta;
+          _drag = Offset(
+              next.dx.clamp(0, size.width - _w), next.dy.clamp(minY, maxY),);
+        }),
+        onPanEnd: (_) {
+          final at = _drag!;
+          setState(() {
+            _right = at.dx + _w / 2 > size.width / 2;
+            _yFraction = maxY > minY ? (at.dy - minY) / (maxY - minY) : 0.5;
+            _drag = null;
+          });
+          _save();
+        },
+        child: Semantics(
+          container: true,
+          button: true,
+          label: 'Ask Mango, app guide',
+          child: Material(
+            color: const Color(0xFFFFF4D6),
+            elevation: drag == null ? 4 : 10,
+            borderRadius: radius,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: radius,
+              child: const SizedBox(
+                width: _w,
+                height: _h,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ExcludeSemantics(
+                      child: Text('🥭', style: TextStyle(fontSize: 22)),
+                    ),
+                    Icon(
+                      Icons.touch_app_rounded,
+                      size: 14,
+                      color: Color(0xFFB45309),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

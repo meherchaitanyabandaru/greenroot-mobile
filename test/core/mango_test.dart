@@ -5,6 +5,7 @@ import 'package:greenroot_mobile/core/mango/mango_finder.dart';
 import 'package:greenroot_mobile/core/mango/mango_guides.dart';
 import 'package:greenroot_mobile/core/mango/mango_layer.dart';
 import 'package:greenroot_mobile/core/theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _guide = MangoGuide(
   id: 'test',
@@ -191,6 +192,40 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(c.active, isFalse);
       expect(find.text('Tap Go.'), findsNothing);
+    });
+
+    testWidgets(
+        'the 🥭 tab can be dragged; it snaps to a side and is remembered',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Widget app() => MaterialApp(
+            builder: (context, child) => MangoLayer(
+              controller: MangoController(),
+              audience: () => MangoAudience.owner,
+              child: child!,
+            ),
+            home: const Scaffold(body: SizedBox()),
+          );
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.text('🥭')).dx, lessThan(100),
+          reason: 'starts on the left',);
+
+      // Drag most of the way right and up, let go mid-screen: it snaps right.
+      await tester.drag(find.text('🥭'), const Offset(500, -150));
+      await tester.pumpAndSettle();
+      final width =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      expect(tester.getTopRight(find.text('🥭')).dx, greaterThan(width - 48));
+      final saved =
+          (await SharedPreferences.getInstance()).getString('mango_button_pos');
+      expect(saved, startsWith('R:'));
+
+      // A fresh start puts it back where the user left it.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+      expect(tester.getTopRight(find.text('🥭')).dx, greaterThan(width - 48));
     });
   });
 }
