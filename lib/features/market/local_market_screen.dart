@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,6 +15,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../plants/plant_picker.dart';
 import '../plants/plants.dart';
 import 'local_market_providers.dart';
+import 'offer_fairness.dart';
 import 'market_area.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -36,6 +38,46 @@ const _stExpired = Color(0xFFDC2626);
 const _stExpiredBg = Color(0xFFFEE2E2);
 const _stArchived = Color(0xFF334155);
 const _stArchivedBg = Color(0xFFE2E8F0);
+
+// Offer fairness (offer_fairness.dart): green fair, orange haggling, red too low.
+const _offerOrange = Color(0xFFEA580C);
+const _offerOrangeBg = Color(0xFFFFEDD5);
+
+(Color, Color) _bandColors(OfferBand band) => switch (band) {
+      OfferBand.good => (_stPublished, _stPublishedBg),
+      OfferBand.bargain => (_offerOrange, _offerOrangeBg),
+      OfferBand.tooLow => (_stExpired, _stExpiredBg),
+    };
+
+/// "Fair offer · 3% below asking" chip, coloured by how fair the offer is.
+class _FairnessChip extends StatelessWidget {
+  final double offer;
+  final double asking;
+  const _FairnessChip({required this.offer, required this.asking});
+
+  @override
+  Widget build(BuildContext context) {
+    final band = offerBand(offer, asking);
+    final (fg, bg) = _bandColors(band);
+    final verdict = switch (band) {
+      // Read by both sides of the chat, so no "you"/"seller" wording.
+      OfferBand.good => 'Fair offer',
+      OfferBand.bargain => 'Bargaining',
+      OfferBand.tooLow => 'Too low',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '$verdict · ${offerVsAsking(offer, asking)}',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
+}
 
 const _cardShadow = BoxShadow(
   color: Color(0x0D000000),
@@ -4875,7 +4917,10 @@ class _EnquiryCard extends StatelessWidget {
     final unread = enquiry.unreadCount;
     final bold = unread > 0 ? FontWeight.w800 : FontWeight.w600;
     // Only states the user acts on get a label; "new"/"in progress" is noise.
-    final ended = const {'DEAL_AGREED', 'CLOSED', 'CANCELLED'}.contains(enquiry.status);
+    // A deal is good news and the chat goes on (pickup): only closed or
+    // cancelled chats are drawn grey.
+    final ended = const {'CLOSED', 'CANCELLED'}.contains(enquiry.status);
+    final showStatus = ended || enquiry.status == 'DEAL_AGREED';
     final adClosed = enquiry.adStatus != 'PUBLISHED';
     return _greyIf(ended || adClosed, Material(
       color: _mkCard,
@@ -4957,7 +5002,7 @@ class _EnquiryCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (ended) ...[
+                        if (showStatus) ...[
                           const SizedBox(width: 6),
                           _EnquiryStatusChip(status: enquiry.status),
                         ] else if (adClosed) ...[
@@ -5088,6 +5133,12 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
         initialPrice: countering?.offerPrice ?? enquiry.adPricePerUnit,
         initialQuantity: countering?.offerQuantity ?? enquiry.quantityNeeded,
         isCounter: countering != null,
+        askingPrice: _askingPrice(enquiry),
+        // Only the buyer has a floor; the seller's counters are their call.
+        minPrice: _askingPrice(enquiry) != null &&
+                (enquiry.summary?.isBuyer ?? false)
+            ? minOfferFor(_askingPrice(enquiry)!)
+            : null,
       ),
     );
     if (result == null) return;
@@ -5206,6 +5257,12 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                       return _OfferCard(
                         msg: msg,
                         priceUnit: enquiry.adPriceUnit,
+                        // Judge the buyer's offers only; the seller's counters
+                        // are their own price.
+                        askingPrice:
+                            msg.isMine == (enquiry.summary?.isBuyer ?? false)
+                                ? _askingPrice(enquiry)
+                                : null,
                         busy: _busy,
                         onAccept: () => _act(
                           () => _chat.respond(msg.id, accept: true),
@@ -5312,8 +5369,16 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
   }
 }
 
-String _rupees(double v) =>
-    '₹${v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2)}';
+/// The asking price offers are judged against: for-sale ads with a price.
+double? _askingPrice(MarketEnquiry e) =>
+    e.adType == 'SELL' && (e.adPricePerUnit ?? 0) > 0 ? e.adPricePerUnit : null;
+
+/// ₹6,400 / ₹1,25,000 / ₹69.30 — Indian digit grouping.
+String _rupees(double v) => NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: v == v.roundToDouble() ? 0 : 2,
+    ).format(v);
 
 /// Price unit codes in words; ads posted from the app are per plant.
 String _unitLabel(String? unit) => switch (unit) {
@@ -5452,9 +5517,13 @@ class _OfferCard extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onDecline;
   final VoidCallback? onCounter;
+
+  /// For-sale ads: shows how fair the offer is against this price.
+  final double? askingPrice;
   const _OfferCard({
     required this.msg,
     required this.priceUnit,
+    this.askingPrice,
     required this.busy,
     required this.onAccept,
     required this.onDecline,
@@ -5472,7 +5541,11 @@ class _OfferCard extends StatelessWidget {
       _ => (msg.isMine ? 'Waiting for reply' : 'Waiting for you', _stPaused),
     };
     final who = msg.isMine ? 'Your offer' : 'Offer from ${msg.nurseryName}';
-    return Align(
+    // Superseded offers step back so the live one stands out in long chats.
+    final replaced = msg.offerStatus == 'WITHDRAWN';
+    return Opacity(
+      opacity: replaced ? 0.55 : 1,
+      child: Align(
       alignment: msg.isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         width: 280,
@@ -5520,6 +5593,10 @@ class _OfferCard extends StatelessWidget {
                 '× $qty  =  ${_rupees(price * qty)} total',
                 style: AppTypography.caption.copyWith(color: _mkTextSecondary),
               ),
+            if (askingPrice != null && price > 0 && !replaced) ...[
+              const SizedBox(height: 8),
+              _FairnessChip(offer: price, asking: askingPrice!),
+            ],
             const SizedBox(height: 8),
             Text(
               label,
@@ -5531,6 +5608,21 @@ class _OfferCard extends StatelessWidget {
             ),
             if (msg.canRespond) ...[
               const SizedBox(height: 10),
+              // Accept on its own row: three buttons side by side in a 280 px
+              // card broke the words ("Decli-ne", "Acce-pt").
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: busy ? null : onAccept,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _mkGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  child: const Text('Accept', maxLines: 1),
+                ),
+              ),
+              const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
@@ -5540,7 +5632,7 @@ class _OfferCard extends StatelessWidget {
                         foregroundColor: _stExpired,
                         side: const BorderSide(color: _mkBorder),
                       ),
-                      child: const Text('Decline'),
+                      child: const Text('Decline', maxLines: 1),
                     ),
                   ),
                   if (onCounter != null) ...[
@@ -5552,28 +5644,17 @@ class _OfferCard extends StatelessWidget {
                           foregroundColor: _mkGreen,
                           side: const BorderSide(color: _mkGreen),
                         ),
-                        child: const Text('Counter'),
+                        child: const Text('Counter', maxLines: 1),
                       ),
                     ),
                   ],
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: busy ? null : onAccept,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _mkGreen,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                      ),
-                      child: const Text('Accept'),
-                    ),
-                  ),
                 ],
               ),
             ],
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -5645,11 +5726,19 @@ class _OfferSheet extends StatefulWidget {
   final double? initialPrice;
   final int? initialQuantity;
   final bool isCounter;
+
+  /// For-sale ads: the asking price offers are compared with (null = none).
+  final double? askingPrice;
+
+  /// The buyer's floor (70% of asking); null when no limit applies.
+  final double? minPrice;
   const _OfferSheet({
     required this.enquiry,
     required this.initialPrice,
     required this.initialQuantity,
     required this.isCounter,
+    this.askingPrice,
+    this.minPrice,
   });
 
   @override
@@ -5683,8 +5772,12 @@ class _OfferSheetState extends State<_OfferSheet> {
   Widget build(BuildContext context) {
     final price = _price;
     final qty = _qty;
+    final asking = widget.askingPrice;
+    final min = widget.minPrice;
+    final tooLow = price != null && min != null && price < min;
     final valid = price != null &&
         price > 0 &&
+        !tooLow &&
         (_qtyCtrl.text.trim().isEmpty || (qty != null && qty > 0));
     return Padding(
       padding:
@@ -5728,6 +5821,18 @@ class _OfferSheetState extends State<_OfferSheet> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
+              if (price != null && price > 0 && asking != null) ...[
+                const SizedBox(height: 8),
+                _FairnessChip(offer: price, asking: asking),
+              ],
+              if (tooLow) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Offer at least ${_rupees(min)} — 70% of the asking price. '
+                  'Very low offers put sellers off.',
+                  style: AppTypography.caption.copyWith(color: _stExpired),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _qtyCtrl,
