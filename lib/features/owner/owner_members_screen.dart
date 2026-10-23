@@ -577,8 +577,13 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
                       nurseryId: widget.nurseryId,
                       nurseryName: widget.nurseryName,
                       managers: state.managers,
+                      // Accepted ones are already under Active Managers.
                       invites: state.invites
-                          .where((i) => i.inviteType == 'MANAGER_INVITE')
+                          .where(
+                            (i) =>
+                                i.inviteType == 'MANAGER_INVITE' &&
+                                i.isPending,
+                          )
                           .toList(),
                     ),
                     _DriversTab(

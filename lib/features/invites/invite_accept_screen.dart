@@ -167,6 +167,8 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
   void _lookup() {
     final uuid = _uuidCtrl.text.trim();
     if (uuid.isEmpty) return;
+    // Hide the keyboard so the invite card (below the field) is visible.
+    FocusScope.of(context).unfocus();
     setState(() => _looked = true);
     ref.read(inviteProvider.notifier).fetchByUUID(uuid);
   }
