@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -31,21 +35,35 @@ class _DriverRegState {
 
 class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
   final ApiClient _client;
-  _DriverRegNotifier(this._client) : super(const _DriverRegState());
+  final StorageService _storage;
+  _DriverRegNotifier(this._client, this._storage)
+      : super(const _DriverRegState());
 
   Future<void> apply({
     required String licenceNumber,
     required String vehicleNumber,
     String vehicleType = 'TRUCK',
+    XFile? licencePhoto,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      String? photoUrl;
+      if (licencePhoto != null) {
+        // Private bucket: only admins (and the driver) open it, by a short link.
+        photoUrl = await _storage.uploadPresigned(
+          'attachments',
+          await licencePhoto.readAsBytes(),
+          licencePhoto.name,
+          licencePhoto.mimeType ?? 'image/jpeg',
+        );
+      }
       await _client.post(
         '/api/v1/drivers/apply',
         data: {
           'licence_number': licenceNumber,
           'vehicle_number': vehicleNumber,
           'vehicle_type': vehicleType,
+          if (photoUrl != null) 'licence_photo_url': photoUrl,
         },
       );
       state = state.copyWith(isLoading: false, submitted: true);
@@ -60,7 +78,10 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
 
 final _driverRegProvider =
     StateNotifierProvider.autoDispose<_DriverRegNotifier, _DriverRegState>(
-  (ref) => _DriverRegNotifier(ApiClient.instance),
+  (ref) => _DriverRegNotifier(
+    ApiClient.instance,
+    ref.read(storageServiceProvider),
+  ),
 );
 
 class DriverRegistrationScreen extends ConsumerStatefulWidget {
@@ -76,6 +97,7 @@ class _DriverRegistrationScreenState
   final _licenceCtrl = TextEditingController();
   final _vehicleCtrl = TextEditingController();
   String _vehicleType = 'TRUCK';
+  XFile? _licencePhoto; // optional
   bool _tried = false; // show "required" only after a submit attempt
 
   @override
@@ -97,6 +119,7 @@ class _DriverRegistrationScreenState
           licenceNumber: licence,
           vehicleNumber: vehicle,
           vehicleType: _vehicleType,
+          licencePhoto: _licencePhoto,
         );
     if (ref.read(_driverRegProvider).submitted) {
       await ref.read(sessionProvider.notifier).bootstrap();
@@ -208,6 +231,11 @@ class _DriverRegistrationScreenState
             onChanged: (_) => _tried ? setState(() {}) : null,
           ),
           const SizedBox(height: AppSpacing.md),
+          _LicencePhotoPicker(
+            photo: _licencePhoto,
+            onChanged: (f) => setState(() => _licencePhoto = f),
+          ),
+          const SizedBox(height: AppSpacing.md),
           AppTextField(
             controller: _vehicleCtrl,
             label: 'Vehicle Number',
@@ -262,6 +290,82 @@ class _DriverRegistrationScreenState
             onPressed: _submit,
           ),
           const SizedBox(height: AppSpacing.x3l),
+        ],
+      ),
+    );
+  }
+}
+
+/// Optional photo of the driving licence, so the admin can check it.
+class _LicencePhotoPicker extends StatelessWidget {
+  final XFile? photo;
+  final ValueChanged<XFile?> onChanged;
+  const _LicencePhotoPicker({required this.photo, required this.onChanged});
+
+  Future<void> _pick(ImageSource source) async {
+    final file = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (file != null) onChanged(file);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = photo;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Driving licence photo (optional)',
+              style: AppTypography.label,),
+          const SizedBox(height: 4),
+          Text(
+            'Helps the admin approve you faster. Only GreenRoot admins see it.',
+            style: AppTypography.caption
+                .copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (p != null)
+            Row(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(File(p.path),
+                    width: 96, height: 64, fit: BoxFit.cover,),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Expanded(
+                child: Text('Photo added', style: AppTypography.body),
+              ),
+              TextButton(
+                onPressed: () => onChanged(null),
+                child: const Text('Remove'),
+              ),
+            ],)
+          else
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pick(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  label: const Text('Camera'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pick(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: const Text('Gallery'),
+                ),
+              ),
+            ],),
         ],
       ),
     );
