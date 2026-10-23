@@ -1076,7 +1076,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
                 : sub.isExpired
                     ? 'Renew Subscription'
                     : sub.isTrial
-                        ? 'Upgrade to Standard'
+                        ? 'Upgrade Plan'
                         : 'Renew Now',
             onPressed: () =>
                 context.push('/subscription/payment?subId=${sub.id}'),
@@ -1225,7 +1225,7 @@ class _IncludedCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Upgrade to Standard for unlimited access after trial.',
+                  'Upgrade to a paid plan for unlimited access after the trial.',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.amber600,
                     fontWeight: FontWeight.w600,
