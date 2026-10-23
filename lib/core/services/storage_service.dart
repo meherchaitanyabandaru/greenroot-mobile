@@ -64,6 +64,7 @@ class StorageService {
         'bucket': bucket,
         'file_name': fileName,
         'content_type': contentType,
+        'size': bytes.length, // signed: the upload must be exactly this size
       },
     );
     final uploadUrl = presignData['upload_url'] as String;

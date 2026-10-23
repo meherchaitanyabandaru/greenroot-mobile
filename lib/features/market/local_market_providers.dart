@@ -681,6 +681,7 @@ class MarketRepository {
     required String bucket,
     required String fileName,
     required String contentType,
+    required int size,
   }) =>
       _client.post<Map<String, dynamic>>(
         ApiConstants.storagePresign,
@@ -688,6 +689,7 @@ class MarketRepository {
           'bucket': bucket,
           'file_name': fileName,
           'content_type': contentType,
+          'size': size, // signed: the upload must be exactly this size
         },
       );
 }
@@ -749,6 +751,7 @@ Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
     bucket: 'market-ads',
     fileName: '${file.name.split('.').first}.jpg',
     contentType: contentType,
+    size: processed.length,
   );
 
   final uploadUrl = presign['upload_url'] as String;

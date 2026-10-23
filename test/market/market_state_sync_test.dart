@@ -181,10 +181,12 @@ void main() {
         bucket: 'market-ads',
         fileName: 'photo.jpg',
         contentType: 'image/jpeg',
+        size: 1024,
       );
 
       expect(fake.calls, hasLength(1));
       expect(fake.calls.first.method, 'POST');
+      expect(fake.calls.first.data['size'], 1024); // signed into the upload URL
       expect(result['upload_url'], isNotNull);
       expect(result['file_url'], isNotNull);
     });

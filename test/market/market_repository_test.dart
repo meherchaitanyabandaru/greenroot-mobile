@@ -116,6 +116,7 @@ void main() {
         bucket: 'market-ads',
         fileName: 'photo.jpg',
         contentType: 'image/jpeg',
+        size: 1024,
       );
 
       expect(result['upload_url'], startsWith('https://'));
@@ -128,7 +129,7 @@ void main() {
       final repo = container.read(marketRepositoryProvider);
 
       expect(
-        () => repo.presignUpload(bucket: 'market-ads', fileName: 'photo.jpg', contentType: 'image/jpeg'),
+        () => repo.presignUpload(bucket: 'market-ads', fileName: 'photo.jpg', contentType: 'image/jpeg', size: 1024),
         throwsA(isA<ServerError>()),
       );
     });
