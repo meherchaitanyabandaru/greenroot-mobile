@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utilities/text_case.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/services/geocoding/geocoding_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -192,6 +193,9 @@ class _NurseryRegistrationScreenState
 
   String? _nullIfEmpty(String val) => val.trim().isEmpty ? null : val.trim();
 
+  // Shown to customers and on invites: "sri lakshmi nursery" → "Sri Lakshmi Nursery".
+  String? _tidyOrNull(String val) => val.trim().isEmpty ? null : tidyName(val);
+
   Future<void> _openMapPicker() async {
     final result = await Navigator.push<MapPickResult>(
       context,
@@ -219,13 +223,13 @@ class _NurseryRegistrationScreenState
     if (!_formKey.currentState!.validate()) return;
     final notifier = ref.read(_nurseryRegProvider.notifier);
     final args = (
-      name: _nameCtrl.text.trim(),
+      name: tidyName(_nameCtrl.text),
       mobile: _nullIfEmpty(_mobileCtrl.text),
       email: _nullIfEmpty(_emailCtrl.text),
       description: _nullIfEmpty(_descCtrl.text),
-      addressLine1: _nullIfEmpty(_addressLine1Ctrl.text),
-      city: _nullIfEmpty(_cityCtrl.text),
-      state: _nullIfEmpty(_stateCtrl.text),
+      addressLine1: _tidyOrNull(_addressLine1Ctrl.text),
+      city: _tidyOrNull(_cityCtrl.text),
+      state: _tidyOrNull(_stateCtrl.text),
       postalCode: _nullIfEmpty(_postalCodeCtrl.text),
       latitude: _pickedLocation?.latitude,
       longitude: _pickedLocation?.longitude,
@@ -343,6 +347,7 @@ class _NurseryRegistrationScreenState
                 hint: 'e.g. Green Valley Nursery',
                 controller: _nameCtrl,
                 textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
                 autofocus: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
@@ -424,6 +429,7 @@ class _NurseryRegistrationScreenState
                 label: 'Street / Locality *',
                 hint: 'e.g. 42, Nursery Road, Jayanagar',
                 controller: _addressLine1Ctrl,
+                textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
@@ -441,6 +447,7 @@ class _NurseryRegistrationScreenState
                       label: 'City *',
                       hint: 'e.g. Bengaluru',
                       controller: _cityCtrl,
+                      textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
@@ -456,6 +463,7 @@ class _NurseryRegistrationScreenState
                       label: 'State *',
                       hint: 'e.g. Karnataka',
                       controller: _stateCtrl,
+                      textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {

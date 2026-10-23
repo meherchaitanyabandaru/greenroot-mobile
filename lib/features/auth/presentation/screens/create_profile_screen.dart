@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utilities/text_case.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -72,7 +73,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     });
 
     try {
-      final fullName = _nameCtrl.text.trim();
+      final fullName = tidyName(_nameCtrl.text);
       final spaceIdx = fullName.indexOf(' ');
       final firstName =
           spaceIdx == -1 ? fullName : fullName.substring(0, spaceIdx);
@@ -145,6 +146,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                   hint: 'Enter your full name',
                   controller: _nameCtrl,
                   textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
                   autofocus: true,
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {

@@ -141,14 +141,14 @@ const mangoGuides = <MangoGuide>[
     id: 'browse_customer',
     title: 'Find plants and nurseries',
     audiences: {MangoAudience.customer},
-    contextTexts: ['Browse Plants', 'Connected Nurseries', 'Explore Nurseries'],
+    contextTexts: ['Browse Plants', 'My Nurseries', 'Explore Nurseries'],
     steps: [
       MangoStep(
         ['Browse Plants'],
         'Tap Browse Plants to see what nurseries have.',
       ),
       MangoStep.say(
-        'Or see nurseries on Home: Connected Nurseries, or Explore Nurseries if '
+        'Or see nurseries on Home: My Nurseries, or Explore Nurseries if '
         'you have none yet.',
       ),
     ],

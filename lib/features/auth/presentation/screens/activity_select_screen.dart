@@ -21,7 +21,10 @@ class ActivitySelectScreen extends ConsumerWidget {
       final user =
           await ref.read(authRepositoryProvider).completeOnboarding(activity);
       ref.read(sessionProvider.notifier).updateUser(user);
-      if (context.mounted) context.go(route);
+      if (!context.mounted) return;
+      // Push the next form so Back returns here to pick again (with go,
+      // Back on "Register Nursery" closed the app). Home replaces it.
+      route == '/home' ? context.go(route) : context.push(route);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

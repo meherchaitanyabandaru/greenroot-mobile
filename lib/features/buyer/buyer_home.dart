@@ -466,7 +466,7 @@ class _BuyerActionGrid extends StatelessWidget {
         ),
         _ActionCell(
           icon: Icons.storefront_outlined,
-          label: 'Connected Nurseries',
+          label: 'My Nurseries', // "Connected Nurseries" was cut off in the tile
           color: AppColors.blue600,
           onTap: () => context.push('/buyer/connections'),
         ),

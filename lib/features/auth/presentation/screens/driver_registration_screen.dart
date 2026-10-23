@@ -76,6 +76,7 @@ class _DriverRegistrationScreenState
   final _licenceCtrl = TextEditingController();
   final _vehicleCtrl = TextEditingController();
   String _vehicleType = 'TRUCK';
+  bool _tried = false; // show "required" only after a submit attempt
 
   @override
   void dispose() {
@@ -85,9 +86,13 @@ class _DriverRegistrationScreenState
   }
 
   Future<void> _submit() async {
-    final licence = _licenceCtrl.text.trim();
-    final vehicle = _vehicleCtrl.text.trim();
-    if (licence.isEmpty || vehicle.isEmpty) return;
+    // Licence and plate numbers are written in capitals.
+    final licence = _licenceCtrl.text.trim().toUpperCase();
+    final vehicle = _vehicleCtrl.text.trim().toUpperCase();
+    if (licence.isEmpty || vehicle.isEmpty) {
+      setState(() => _tried = true); // used to return silently
+      return;
+    }
     await ref.read(_driverRegProvider.notifier).apply(
           licenceNumber: licence,
           vehicleNumber: vehicle,
@@ -196,6 +201,11 @@ class _DriverRegistrationScreenState
             label: 'Driving Licence Number',
             hint: 'Enter your licence number',
             keyboardType: TextInputType.text,
+            textCapitalization: TextCapitalization.characters,
+            errorText: _tried && _licenceCtrl.text.trim().isEmpty
+                ? 'Enter your driving licence number'
+                : null,
+            onChanged: (_) => _tried ? setState(() {}) : null,
           ),
           const SizedBox(height: AppSpacing.md),
           AppTextField(
@@ -203,6 +213,11 @@ class _DriverRegistrationScreenState
             label: 'Vehicle Number',
             hint: 'e.g. KA-01-AB-1234',
             keyboardType: TextInputType.text,
+            textCapitalization: TextCapitalization.characters,
+            errorText: _tried && _vehicleCtrl.text.trim().isEmpty
+                ? 'Enter your vehicle number'
+                : null,
+            onChanged: (_) => _tried ? setState(() {}) : null,
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -214,7 +229,8 @@ class _DriverRegistrationScreenState
             children: ['TRUCK', 'VAN', 'PICKUP', 'AUTO'].map((type) {
               final selected = _vehicleType == type;
               return ChoiceChip(
-                label: Text(type),
+                // TRUCK → Truck: the value sent stays the API's code.
+                label: Text(type[0] + type.substring(1).toLowerCase()),
                 selected: selected,
                 onSelected: (_) => setState(() => _vehicleType = type),
                 selectedColor: AppColors.primaryMain,

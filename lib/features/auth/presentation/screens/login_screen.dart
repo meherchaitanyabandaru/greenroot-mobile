@@ -141,7 +141,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'Mobile Number',
                   hint: '9876543210',
                   controller: _mobileCtrl,
-                  keyboardType: TextInputType.phone,
+                  // Digits only: the dialler pad offers * # , . - too.
+                  keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.done,
                   errorText: _mobileError,
                   autofocus: true,

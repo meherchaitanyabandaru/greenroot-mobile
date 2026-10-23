@@ -14,6 +14,7 @@ class AppTextField extends StatefulWidget {
   final FocusNode? focusNode;
   final TextInputType keyboardType;
   final TextInputAction textInputAction;
+  final TextCapitalization textCapitalization;
   final bool obscureText;
   final bool readOnly;
   final bool autofocus;
@@ -44,6 +45,7 @@ class AppTextField extends StatefulWidget {
     this.focusNode,
     this.keyboardType = TextInputType.text,
     this.textInputAction = TextInputAction.next,
+    this.textCapitalization = TextCapitalization.none,
     this.obscureText = false,
     this.readOnly = false,
     this.autofocus = false,
@@ -86,6 +88,7 @@ class _AppTextFieldState extends State<AppTextField> {
           focusNode: widget.focusNode,
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
+          textCapitalization: widget.textCapitalization,
           obscureText: _obscure,
           readOnly: widget.readOnly,
           autofocus: widget.autofocus,
@@ -106,7 +109,8 @@ class _AppTextFieldState extends State<AppTextField> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                     ),
-                    child: widget.prefixIcon,
+                    // Centred on the input line ("+91" used to sit at the top).
+                    child: Center(widthFactor: 1, child: widget.prefixIcon),
                   )
                 : null,
             prefixIconConstraints: const BoxConstraints(
