@@ -67,7 +67,10 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
     final picked = await showModalBottomSheet<NurseryCustomer>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => CustomerPickerSheet(nurseryId: nurseryId),
     );
     if (picked != null && mounted) _applyCustomer(picked);
