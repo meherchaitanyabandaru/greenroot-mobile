@@ -461,6 +461,22 @@ Widget _header(
   );
 }
 
+/// A star as a labelled button for screen readers ("4 of 5 stars").
+Widget _starSemantics(
+  int star,
+  int value,
+  ValueChanged<int> onChanged,
+  Widget child,
+) =>
+    Semantics(
+      button: true,
+      selected: star <= value,
+      label: '$star of 5 stars',
+      onTap: () => onChanged(star),
+      excludeSemantics: true,
+      child: child,
+    );
+
 class _StarRating extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
@@ -473,7 +489,7 @@ class _StarRating extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(5, (i) {
         final star = i + 1;
-        return GestureDetector(
+        return _starSemantics(star, value, onChanged, GestureDetector(
           onTap: () => onChanged(star),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -485,7 +501,7 @@ class _StarRating extends StatelessWidget {
                   : AppColors.textMuted,
             ),
           ),
-        );
+        ),);
       }),
     );
   }
@@ -536,10 +552,11 @@ class _SubRatingRow extends StatelessWidget {
         Row(
           children: List.generate(5, (i) {
             final star = i + 1;
-            return GestureDetector(
+            return _starSemantics(star, value, onChanged, GestureDetector(
               onTap: () => onChanged(star),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
+                // Taller tap area: 24 px stars alone are hard to hit.
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
                 child: Icon(
                   star <= value
                       ? Icons.star_rounded
@@ -550,7 +567,7 @@ class _SubRatingRow extends StatelessWidget {
                       : AppColors.textMuted,
                 ),
               ),
-            );
+            ),);
           }),
         ),
       ],

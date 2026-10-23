@@ -11,8 +11,11 @@ import '../auth/presentation/providers/session_provider.dart';
 /// Why we ask for the photo, shown wherever we ask for it.
 const selfiePrivacyNote =
     'Other nurseries see this photo on your market ads and chats, so they '
-    'know who they are dealing with. It is taken with the camera, never used '
-    'for face recognition, and you can retake or delete it any time.';
+    'know who they are dealing with. $selfieHandlingNote';
+
+/// For people without the market (customers, drivers): only how it is handled.
+const selfieHandlingNote = 'It is taken with the camera, never used for face '
+    'recognition, and you can retake or delete it any time.';
 
 /// Takes the profile photo with the front camera (never the gallery: it is
 /// the face other nurseries see on your ads) and uploads it. True on success.

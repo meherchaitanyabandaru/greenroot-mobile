@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' show min, max;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -652,6 +653,18 @@ class _FloatingCard extends StatelessWidget {
               onChanged: (_) => onRefresh(),
             ),
             const SizedBox(height: 12),
+
+            // The customer judges the driver, timing and plant condition.
+            if (d.status == 'DELIVERED') ...[
+              OutlinedButton.icon(
+                onPressed: () => context.push(
+                  '/ratings/trip/${d.id}?code=${d.dispatchCode}',
+                ),
+                icon: const Icon(Icons.star_outline_rounded, size: 18),
+                label: const Text('Rate this delivery'),
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // Driver info
             _DriverInfoCard(

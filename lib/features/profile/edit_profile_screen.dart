@@ -280,7 +280,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        selfiePrivacyNote,
+                        // Only owners and managers use the market.
+                        session.capabilities.isNurseryOwner ||
+                                session.capabilities.isManager
+                            ? selfiePrivacyNote
+                            : selfieHandlingNote,
                         textAlign: TextAlign.center,
                         style: AppTypography.caption
                             .copyWith(color: AppColors.textMuted),

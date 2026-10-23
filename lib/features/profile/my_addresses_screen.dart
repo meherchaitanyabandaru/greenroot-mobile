@@ -713,6 +713,8 @@ class AddressFormScreen extends ConsumerStatefulWidget {
 
 class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  // After a failed Save, re-check as the user types so fixed fields clear.
+  bool _triedSave = false;
   final _labelCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _mobileCtrl = TextEditingController();
@@ -821,7 +823,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      setState(() => _triedSave = true);
+      return;
+    }
     setState(() {
       _saving = true;
       _saveError = null;
@@ -883,6 +888,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: _triedSave
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           children: [
             Expanded(

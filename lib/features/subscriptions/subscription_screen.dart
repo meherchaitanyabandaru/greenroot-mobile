@@ -1259,6 +1259,8 @@ class _PaymentHistorySection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
+          // The whole row toggles, not just the title and arrow.
+          behavior: HitTestBehavior.opaque,
           onTap: onToggle,
           child: Row(
             children: [
