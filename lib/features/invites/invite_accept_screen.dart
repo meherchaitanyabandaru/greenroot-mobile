@@ -11,6 +11,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/universal_qr_screen.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import 'join_confirm.dart';
 
 // ── Invite model ──────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ class InviteDetail {
   final String? nurseryName;
   final String? inviterName;
   final String status;
+  final InviteFacts facts;
 
   const InviteDetail({
     required this.uuid,
@@ -27,6 +29,7 @@ class InviteDetail {
     this.nurseryName,
     this.inviterName,
     required this.status,
+    required this.facts,
   });
 
   factory InviteDetail.fromJson(Map<String, dynamic> json) {
@@ -37,6 +40,7 @@ class InviteDetail {
       nurseryName: inv['nursery_name'] as String?,
       inviterName: inv['inviter_name'] as String?,
       status: inv['status'] as String? ?? '',
+      facts: InviteFacts.fromJson(inv),
     );
   }
 
@@ -176,9 +180,12 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     );
   }
 
-  void _accept() {
+  Future<void> _accept() async {
     final uuid = _uuidCtrl.text.trim();
-    if (uuid.isEmpty) return;
+    final invite = ref.read(inviteProvider).invite;
+    if (uuid.isEmpty || invite == null) return;
+    // Say out loud which nursery this is before becoming its employee.
+    if (!await confirmJoinNursery(context, invite.facts)) return;
     ref.read(inviteProvider.notifier).accept(uuid);
   }
 
@@ -195,9 +202,14 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     // After successful accept, redirect
     ref.listen(inviteProvider, (_, next) {
       if (next.accepted && mounted) {
+        final joined = next.invite;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invite accepted! Your access has been updated.'),
+          SnackBar(
+            content: Text(
+              joined?.nurseryName != null
+                  ? 'You joined ${joined!.nurseryName} as ${joined.facts.roleLabel}.'
+                  : 'Invite accepted! Your access has been updated.',
+            ),
             backgroundColor: AppColors.primaryMain,
           ),
         );
@@ -483,23 +495,11 @@ class _InviteCard extends StatelessWidget {
               ),
             ],
           ),
-          if (invite.inviterName != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            const Divider(height: 1),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                const Icon(Icons.person_outline_rounded,
-                    size: 16, color: AppColors.textMuted,),
-                const SizedBox(width: 6),
-                Text(
-                  'Invited by ${invite.inviterName}',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ],
+          // Owner, place and inviter: enough to tell two same-named
+          // nurseries apart before joining.
+          const SizedBox(height: AppSpacing.sm),
+          const Divider(height: 1),
+          InviteFactRows(facts: invite.facts),
         ],
       ),
     );

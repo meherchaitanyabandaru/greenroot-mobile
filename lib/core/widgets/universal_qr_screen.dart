@@ -145,7 +145,23 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
-    final result = await _ctrl.analyzeImage(file.path);
+    BarcodeCapture? result;
+    try {
+      result = await _ctrl.analyzeImage(file.path);
+    } catch (_) {
+      // The scanner plugin can throw when the camera never started (e.g.
+      // camera unavailable): say so instead of failing silently.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't read that image. Try another photo, or enter the code instead.",
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     if (!mounted) return;
     final value = result?.barcodes.firstOrNull?.rawValue;
     if (value != null && value.isNotEmpty) {

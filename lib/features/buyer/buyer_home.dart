@@ -586,6 +586,11 @@ class _EmptyBuyerState extends StatelessWidget {
               minimumSize: const Size(double.infinity, 48),
             ),
           ),
+          // Codes also arrive by message, and some cameras won't scan.
+          TextButton(
+            onPressed: () => context.push('/invite/accept'),
+            child: const Text('Got a code instead? Enter it'),
+          ),
         ],
       ),
     );

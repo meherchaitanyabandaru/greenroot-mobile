@@ -7,6 +7,7 @@ import '../../widgets/qr_shared_widgets.dart';
 import '../classifier.dart';
 import '../qr_models.dart';
 import '../../../features/auth/presentation/providers/session_provider.dart';
+import '../../../features/invites/join_confirm.dart';
 
 class InviteSheet extends ConsumerStatefulWidget {
   final String uuid;
@@ -55,6 +56,7 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
           inviterName: inv['inviter_name'] as String?,
           nurseryName: inv['nursery_name'] as String?,
           isPending: ((inv['status'] as String?) ?? '').toUpperCase() == 'PENDING',
+          facts: InviteFacts.fromJson(inv),
         );
       });
     } catch (e) {
@@ -68,14 +70,21 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
   Future<void> _accept() async {
     final invite = _invite;
     if (invite == null) return;
+    // A scanned code could be another nursery's: name it and ask first.
+    if (!await confirmJoinNursery(context, invite.facts)) return;
+    if (!mounted) return;
     setState(() => _accepting = true);
     try {
       await ApiClient.instance.post(ApiConstants.acceptInvite(invite.uuid));
       await ref.read(sessionProvider.notifier).bootstrap();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invite accepted! Your access has been updated.'),
+        SnackBar(
+          content: Text(
+            invite.nurseryName != null
+                ? 'You joined ${invite.nurseryName} as ${invite.facts.roleLabel}.'
+                : 'Invite accepted! Your access has been updated.',
+          ),
           backgroundColor: AppColors.primaryMain,
         ),
       );
@@ -129,6 +138,24 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
               value: typeLabel,
               valueColor: AppColors.primaryMain,
             ),
+            if (invite.nurseryName != null)
+              QrInfoRow(
+                icon: Icons.storefront_outlined,
+                label: 'Nursery',
+                value: invite.nurseryName!,
+              ),
+            if (invite.facts.ownerLine != null)
+              QrInfoRow(
+                icon: Icons.person_outline_rounded,
+                label: 'Owner',
+                value: invite.facts.ownerLine!,
+              ),
+            if (invite.facts.place != null)
+              QrInfoRow(
+                icon: Icons.place_outlined,
+                label: 'Place',
+                value: invite.facts.place!,
+              ),
           ],
         ),
         if (!invite.isPending) ...[

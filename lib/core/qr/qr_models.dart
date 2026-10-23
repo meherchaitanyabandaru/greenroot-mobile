@@ -1,9 +1,12 @@
+import '../../features/invites/join_confirm.dart';
+
 class QrInviteData {
   final String uuid;
   final String inviteType;
   final String? inviterName;
   final String? nurseryName;
   final bool isPending;
+  final InviteFacts facts;
 
   const QrInviteData({
     required this.uuid,
@@ -11,6 +14,7 @@ class QrInviteData {
     this.inviterName,
     this.nurseryName,
     required this.isPending,
+    required this.facts,
   });
 }
 
