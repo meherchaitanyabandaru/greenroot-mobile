@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart' show ApiClient, apiClientProvider;
@@ -59,7 +60,7 @@ class UserAddress {
         postalCode: j['postal_code'] as String?,
         latitude: (j['latitude'] as num?)?.toDouble(),
         longitude: (j['longitude'] as num?)?.toDouble(),
-        isDefault: j['is_default'] as bool? ?? false,
+        isDefault: (j['is_default'] ?? j['is_primary']) as bool? ?? false,
       );
 
   String get displayAddress {
@@ -204,13 +205,18 @@ class UserAddressRepository {
         .toList();
   }
 
+  // Nursery addresses call "default" primary; sending only is_default
+  // would clear the pickup address on every edit.
+  Map<String, dynamic> _nurseryJson(AddressFormData form) =>
+      {...form.toJson(), 'is_primary': form.isDefault};
+
   Future<UserAddress> addNurseryAddress(
     int nurseryId,
     AddressFormData form,
   ) async {
     final res = await _api.post(
       ApiConstants.nurseryAddresses(nurseryId),
-      data: form.toJson(),
+      data: _nurseryJson(form),
     );
     return UserAddress.fromJson(res['address'] as Map<String, dynamic>);
   }
@@ -221,7 +227,7 @@ class UserAddressRepository {
   ) async {
     final res = await _api.put(
       ApiConstants.nurseryAddressById(id),
-      data: form.toJson(),
+      data: _nurseryJson(form),
     );
     return UserAddress.fromJson(res['address'] as Map<String, dynamic>);
   }
@@ -305,20 +311,16 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
             if (userId == null) return;
             final repo = ref.read(userAddressRepositoryProvider);
             if (existing == null) {
-              final addr = widget.nurseryId == null
+              widget.nurseryId == null
                   ? await repo.addAddress(userId, form)
                   : await repo.addNurseryAddress(widget.nurseryId!, form);
-              if (mounted) setState(() => _addresses = [..._addresses, addr]);
             } else {
-              final addr = widget.nurseryId == null
+              widget.nurseryId == null
                   ? await repo.updateAddress(existing.id, form)
                   : await repo.updateNurseryAddress(existing.id, form);
-              if (mounted) {
-                setState(() => _addresses = _addresses
-                    .map((a) => a.id == existing.id ? addr : a)
-                    .toList(),);
-              }
             }
+            // Reload: a new default clears the old one's badge on the server.
+            if (mounted) _load();
           },
         ),
       ),
@@ -351,7 +353,7 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
             .read(userAddressRepositoryProvider)
             .deleteNurseryAddress(a.id);
       }
-      if (mounted) setState(() => _addresses.removeWhere((x) => x.id == a.id));
+      if (mounted) _load(); // the server may promote another default
     } on AppError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -392,7 +394,11 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
                   : _AddressListView(
                       addresses: _addresses,
                       onEdit: (a) => _openForm(a),
-                      onDelete: _delete,
+                      // A nursery keeps at least one (pickup) address.
+                      onDelete: widget.nurseryId != null &&
+                              _addresses.length == 1
+                          ? null
+                          : _delete,
                       onAdd: () => _openForm(),
                       onRefresh: _load,
                     ),
@@ -449,12 +455,20 @@ class _EmptyState extends StatelessWidget {
 // Shown only when the user has NURSERY_OWNER role and personal address list
 // is empty — prevents confusion between personal and nursery addresses.
 
-class _OwnerAddressHint extends StatelessWidget {
+class _OwnerAddressHint extends ConsumerWidget {
   const _OwnerAddressHint();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nurseryId =
+        ref.watch(sessionProvider.select((s) => s.capabilities.ownedNurseryId));
+    // A link, not just directions: it opens the nursery's addresses directly.
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: nurseryId == null
+          ? null
+          : () => context.push('/nursery/addresses', extra: nurseryId),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.forest100,
@@ -474,21 +488,19 @@ class _OwnerAddressHint extends StatelessWidget {
                 style: AppTypography.bodySmall
                     .copyWith(color: AppColors.textSecondary),
                 children: const [
+                  TextSpan(text: 'Looking for your nursery address? '),
                   TextSpan(
-                      text:
-                          'Looking for your nursery address? Go to ',),
-                  TextSpan(
-                    text: 'Nursery Profile → Addresses',
+                    text: 'Open nursery addresses ›',
                     style: TextStyle(
                         color: AppColors.primaryMain,
                         fontWeight: FontWeight.w700,),
                   ),
-                  TextSpan(text: '.'),
                 ],
               ),
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -499,7 +511,7 @@ class _OwnerAddressHint extends StatelessWidget {
 class _AddressListView extends StatelessWidget {
   final List<UserAddress> addresses;
   final void Function(UserAddress) onEdit;
-  final void Function(UserAddress) onDelete;
+  final void Function(UserAddress)? onDelete;
   final VoidCallback onAdd;
   final Future<void> Function() onRefresh;
 
@@ -526,7 +538,9 @@ class _AddressListView extends StatelessWidget {
               itemBuilder: (_, i) => _AddressCard(
                 address: addresses[i],
                 onEdit: () => onEdit(addresses[i]),
-                onDelete: () => onDelete(addresses[i]),
+                onDelete: onDelete == null
+                    ? null
+                    : () => onDelete!(addresses[i]),
               ),
             ),
           ),
@@ -549,10 +563,10 @@ class _AddressListView extends StatelessWidget {
 class _AddressCard extends StatelessWidget {
   final UserAddress address;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   const _AddressCard(
-      {required this.address, required this.onEdit, required this.onDelete,});
+      {required this.address, required this.onEdit, this.onDelete,});
 
   IconData get _icon {
     switch (address.addressType?.toUpperCase()) {
@@ -639,7 +653,7 @@ class _AddressCard extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 onSelected: (v) {
                   if (v == 'edit') onEdit();
-                  if (v == 'delete') onDelete();
+                  if (v == 'delete') onDelete?.call();
                 },
                 itemBuilder: (_) => [
                   const PopupMenuItem(
@@ -649,7 +663,8 @@ class _AddressCard extends StatelessWidget {
                         SizedBox(width: 8),
                         Text('Edit'),
                       ],),),
-                  const PopupMenuItem(
+                  if (onDelete != null)
+                    const PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
                         Icon(Icons.delete_outline,
@@ -772,6 +787,36 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       _pincodeCtrl.text = result.postalCode ?? '';
       _latitude = result.latitude;
       _longitude = result.longitude;
+    });
+  }
+
+  /// Edit mode: re-pin on the map and take its city, state and PIN.
+  Future<void> _movePin() async {
+    final lat = _latitude, lon = _longitude;
+    final result = await Navigator.push<MapPickResult>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AddressMapPickerScreen(
+          initial: lat == null || lon == null
+              ? null
+              : MapPickResult(
+                  latitude: lat,
+                  longitude: lon,
+                  city: _cityCtrl.text.trim(),
+                  state: _selectedState ?? '',
+                  postalCode: _pincodeCtrl.text.trim(),
+                ),
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _latitude = result.latitude;
+      _longitude = result.longitude;
+      if (result.city.isNotEmpty) _cityCtrl.text = result.city;
+      if (_indianStates.contains(result.state)) _selectedState = result.state;
+      if (result.postalCode != null) _pincodeCtrl.text = result.postalCode!;
     });
   }
 
@@ -1025,14 +1070,30 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           Switch(
                             value: _isDefault,
                             onChanged: (v) => setState(() => _isDefault = v),
-                            activeThumbColor: AppColors.primaryMain,
                           ),
                         ],
                       ),
                     ),
 
                     // ── GPS badge ─────────────────────────────────────────
-                    if (_latitude != null && _longitude != null) ...[
+                    // Editing keeps the pin unless moved: a new street with an
+                    // old pin sends the truck to the old place.
+                    if (isEdit && !_isMapMode) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(children: [
+                        if (_latitude != null && _longitude != null)
+                          _GeocodedBadge(lat: _latitude!, lon: _longitude!),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _movePin,
+                          icon: const Icon(Icons.edit_location_alt_outlined,
+                              size: 18,),
+                          label: Text(_latitude == null
+                              ? 'Pin on map'
+                              : 'Move pin',),
+                        ),
+                      ],),
+                    ] else if (_latitude != null && _longitude != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       _GeocodedBadge(lat: _latitude!, lon: _longitude!),
                     ],
@@ -1426,7 +1487,6 @@ class _ProfileContactToggle extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: AppColors.primaryMain,
         ),
       ],
     );

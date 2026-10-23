@@ -137,7 +137,6 @@ class _SmsPreferencesScreenState extends ConsumerState<SmsPreferencesScreen> {
                   key: const Key(TestKeys.smsPromotionalSwitch),
                   value: p.promotionalOptIn,
                   onChanged: _saving ? null : _toggle,
-                  activeThumbColor: AppColors.primaryMain,
                   secondary: const Icon(Icons.local_offer_outlined,
                       color: AppColors.textSecondary,),
                   title: const Text('Offers & updates', style: AppTypography.body),

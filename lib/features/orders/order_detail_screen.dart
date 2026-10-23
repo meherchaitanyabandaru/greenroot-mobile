@@ -1662,9 +1662,17 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
   @override
   Widget build(BuildContext context) {
     final delivery = widget.order.deliverySnapshot;
-    final profile = ref.watch(sessionProvider).user;
-    final profileName = profile?.name?.trim();
-    final profileMobile = profile?.mobile?.trim();
+    final session = ref.watch(sessionProvider);
+    final profile = session.user;
+    // An empty snapshot contact means "the customer" — not whoever is looking
+    // (the seller must not see their own number as the recipient).
+    final forCustomer =
+        session.capabilities.sellsFor(widget.order.sellerNurseryId);
+    final o = widget.order;
+    final profileName =
+        (forCustomer ? o.customerName ?? o.buyerName : profile?.name)?.trim();
+    final profileMobile =
+        (forCustomer ? o.customerMobile : profile?.mobile)?.trim();
     final profileContact = [
       if (profileName?.isNotEmpty == true) profileName,
       if (profileMobile?.isNotEmpty == true) '+91 $profileMobile',
@@ -1985,7 +1993,6 @@ class _DeliveryEditSheetState extends State<_DeliveryEditSheet> {
               title: const Text('Emergency update'),
               subtitle:
                   const Text('Use after trip starts. Driver must acknowledge.'),
-              activeThumbColor: AppColors.primaryMain,
             ),
             const SizedBox(height: AppSpacing.md),
             SizedBox(
@@ -2072,7 +2079,6 @@ class _DeliveryContactToggle extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.primaryMain,
           ),
         ],
       ),

@@ -149,6 +149,11 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   bool _locationGranted = false;
   Timer? _gpsTimer;
   bool _postingGps = false;
+  // A fix that never comes would hold _postingGps and stop all posting.
+  static const _gpsSettings = LocationSettings(
+    accuracy: LocationAccuracy.high,
+    timeLimit: Duration(seconds: 20),
+  );
 
   // Geocoded markers
   LatLng? _loadingPointLatLng;
@@ -196,9 +201,12 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       return;
     }
 
-    final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+    final Position pos;
+    try {
+      pos = await Geolocator.getCurrentPosition(locationSettings: _gpsSettings);
+    } catch (_) {
+      return; // GPS off or no fix; the 30 s posting retries.
+    }
     if (!mounted) return;
     setState(() {
       _devicePos = pos;
@@ -216,10 +224,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     if (_postingGps) return;
     _postingGps = true;
     try {
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+      final pos =
+          await Geolocator.getCurrentPosition(locationSettings: _gpsSettings);
       if (mounted) setState(() => _devicePos = pos);
       final repo = ref.read(trackingRepositoryProvider);
       await Future.wait([

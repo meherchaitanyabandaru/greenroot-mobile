@@ -109,8 +109,17 @@ class ProfileScreen extends ConsumerWidget {
                 _SettingsTile(
                   icon: Icons.location_on_outlined,
                   label: 'Addresses',
-                  subtitle: 'Nursery, billing, delivery',
+                  subtitle: 'Your delivery addresses',
                   onTap: () => context.push('/my-addresses'),
+                ),
+              // Where trucks pick up orders; only the owner edits it.
+              if (caps.isNurseryOwner && caps.ownedNurseryId != null)
+                _SettingsTile(
+                  icon: Icons.storefront_outlined,
+                  label: 'Nursery Address',
+                  subtitle: 'Pickup location for your orders',
+                  onTap: () => context.push('/nursery/addresses',
+                      extra: caps.ownedNurseryId,),
                 ),
               // Subscription is only relevant for nursery roles.
               if (caps.canSell)

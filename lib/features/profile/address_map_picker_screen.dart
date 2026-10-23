@@ -117,11 +117,20 @@ class _AddressMapPickerScreenState
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+      // Weak GPS (indoors) can take forever: cap it, then try the last fix.
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 15),
+          ),
+        );
+      } catch (_) {
+        pos = await Geolocator.getLastKnownPosition();
+      }
       if (!mounted) return;
+      if (pos == null) throw StateError('no location');
       setState(() {
         _locatingDevice = false;
         _awaitingInitialLocation = false;
@@ -737,7 +746,7 @@ class _BottomPanel extends StatelessWidget {
                 ? 'Detecting your location…'
                 : moving
                     ? 'Move the map to your location'
-                    : 'Pin your delivery location',
+                    : 'Pin the exact location',
             style: AppTypography.caption
                 .copyWith(color: AppColors.textSecondary),
           ),

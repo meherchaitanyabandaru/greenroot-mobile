@@ -241,6 +241,7 @@ Offline, predefined walkthroughs (no AI, no API calls). A 🥭 tab on the left e
 - **One nursery per owner:** `POST /nurseries` returns `409 manager_conflict` if user is a manager.
 - **Order editing locked after LOADING_COMPLETED:** Hide add/edit/remove item buttons when order is locked.
 - **Orders never deleted:** No delete action in mobile UI; show cancel with reason only.
+- **Addresses (2026-10-23):** first address is the default (nursery: primary = pickup point); deleting it promotes another; a nursery's last address can't be deleted (Delete is hidden, API 409 `last_address`). Nursery addresses send `is_primary`. Lists reload after every change. Profile → **Nursery Address** (owner) opens them; editing an address offers **Move pin**. GPS reads time out (picker 15 s → last known fix; driver/dispatch 20 s) so a weak signal never hangs a screen or stops trip posting.
 - **Global account control:** Owners can only manage nursery-level relationships. Never show UI that affects another user's global account.
 
 ---
