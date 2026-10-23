@@ -164,7 +164,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   List<TrackingPoint> _trackingPts = [];
 
   // UI state — timeline starts collapsed so the map is the focus
-  bool _journeyExpanded = false;
+  // Before dispatch there is no map: the journey is the screen, so show it.
+  late bool _journeyExpanded = !_usesLiveMap(widget.dispatch.status);
   bool _plantsExpanded = false;
   bool _busy = false;
   bool _mapReady = false;
@@ -305,6 +306,8 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       CameraFit.bounds(
         bounds: LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
         padding: const EdgeInsets.all(64),
+        // Truck at the destination = zero-size bounds; past ~18 there are no tiles.
+        maxZoom: 16,
       ),
     );
   }
@@ -1210,7 +1213,6 @@ class _JourneyTimeline extends StatelessWidget {
   }
 
   List<_Step> _buildSteps() {
-    final created = _fmt(createdAt);
     final updated = _fmt(updatedAt ?? createdAt);
     final loadingStarted = _fmt(loadingStartedAt);
     final loadingCompleted = _fmt(loadingCompletedAt);
@@ -1247,12 +1249,12 @@ class _JourneyTimeline extends StatelessWidget {
       }
     }
 
+    // Only recorded times: the trip's last update belongs to the latest step,
+    // not to every earlier one (that printed times out of order).
     String? timeFor(int step) {
-      if (step == 1) return created;
-      if (step == 2 && loadingStartedAt != null) return loadingStarted;
       if (step == 3 && loadingStartedAt != null) return loadingStarted;
       if (step == 5 && loadingCompletedAt != null) return loadingCompleted;
-      if (step <= completedUpTo) return updated;
+      if (step == completedUpTo) return updated;
       return null;
     }
 
@@ -1401,7 +1403,7 @@ class _StepRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 5),
                     child: Text(
-                      step.time ?? '--',
+                      step.time ?? '',
                       style: AppTypography.caption.copyWith(
                         color: step.state != _StepState.pending
                             ? AppColors.textSecondary

@@ -94,6 +94,7 @@ class Dispatch {
   final String? dispatchNumber;
   final String status;
   final int? sellerNurseryId;
+  final String? sellerNurseryName;
   final String? vehicleNumber;
   final String? driverName;
   final String? driverMobile;
@@ -122,6 +123,7 @@ class Dispatch {
     this.dispatchNumber,
     required this.status,
     this.sellerNurseryId,
+    this.sellerNurseryName,
     this.vehicleNumber,
     this.driverName,
     this.driverMobile,
@@ -153,6 +155,7 @@ class Dispatch {
         sellerNurseryId: j['seller_nursery_id'] != null
             ? (j['seller_nursery_id'] as num).toInt()
             : null,
+        sellerNurseryName: j['seller_nursery_name'] as String?,
         vehicleNumber: j['vehicle_number'] as String?,
         driverName: j['driver_name'] as String?,
         driverMobile: j['driver_mobile'] as String?,

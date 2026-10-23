@@ -159,7 +159,8 @@ class OrderWorkflow {
       order.assignedManagerName,
       order.assignedManagerUserId,
       'Manager',
-      'Nursery Owner',
+      // Unassigned: who confirmed isn't recorded (often a manager), so don't name a role.
+      'the nursery',
     );
 
     final steps = <WorkflowStep>[

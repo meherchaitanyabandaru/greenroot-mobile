@@ -957,10 +957,10 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
             const Divider(color: Colors.white24, height: 1),
             const SizedBox(height: AppSpacing.md),
 
-            const _TripInfoRow(
+            _TripInfoRow(
               icon: Icons.store_outlined,
               label: 'Pickup',
-              value: 'Nursery',
+              value: trip.sellerNurseryName ?? 'Nursery',
             ),
             const SizedBox(height: AppSpacing.sm),
             _TripInfoRow(

@@ -304,12 +304,12 @@ class _TripDetails extends StatelessWidget {
           ),
           child: Column(
             children: [
-              const _InfoRow(
+              _InfoRow(
                 icon: Icons.store_outlined,
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primaryMain,
                 label: 'From (Pickup)',
-                value: 'Nursery',
+                value: dispatch.sellerNurseryName ?? 'Nursery',
               ),
               const Divider(height: 1, indent: 56),
               _InfoRow(

@@ -254,6 +254,8 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
         // Extra bottom padding so markers aren't hidden behind the floating card
         padding:
             const EdgeInsets.only(top: 100, left: 40, right: 40, bottom: 260),
+        // Truck at the destination = zero-size bounds; past ~18 there are no tiles.
+        maxZoom: 16,
       ),
     );
   }

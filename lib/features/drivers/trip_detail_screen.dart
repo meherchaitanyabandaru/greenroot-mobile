@@ -280,12 +280,12 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
           ),
           child: Column(
             children: [
-              const _InfoRow(
+              _InfoRow(
                 icon: Icons.store_outlined,
                 iconBg: AppColors.forest100,
                 iconColor: AppColors.primaryMain,
                 label: 'Pickup',
-                value: 'Nursery',
+                value: dispatch.sellerNurseryName ?? 'Nursery',
               ),
               const Divider(height: 1, indent: 56),
               _InfoRow(

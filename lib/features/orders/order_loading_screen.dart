@@ -113,6 +113,8 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
       await Future.wait(_pendingLoadSaves.toList());
       await action(ref.read(orderRepositoryProvider));
       if (!mounted) return;
+      // The order's detail (still on the stack, kept alive) is now stale.
+      ref.invalidate(orderDetailProvider(order.id));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(successMessage),
