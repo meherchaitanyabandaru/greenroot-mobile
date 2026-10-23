@@ -50,7 +50,9 @@ class FakeCall {
   final FakeResponseType type;
   /// Request body, for checking what the app sends.
   final dynamic data;
-  const FakeCall({required this.method, required this.path, required this.type, this.data});
+  /// Query parameters, e.g. `{'buying': true}`.
+  final Map<String, dynamic> query;
+  const FakeCall({required this.method, required this.path, required this.type, this.data, this.query = const {}});
 
   @override
   String toString() => '$method $path [$type]';
@@ -93,6 +95,12 @@ class FakeApiClient {
     _interceptor.queue.add(_QueuedResponse(type: type, responseData: response));
   }
 
+  /// Answer every request whose path ends with [pathSuffix] with [response]
+  /// (checked before the queue). For screens that load several lists at once.
+  void route(String pathSuffix, dynamic response) {
+    _interceptor.routes[pathSuffix] = response;
+  }
+
   /// Replace queue with a single success response.
   void setResponse(dynamic response) {
     _interceptor.queue
@@ -110,6 +118,7 @@ class FakeApiClient {
   /// Clear all queued responses and captured calls.
   void reset() {
     _interceptor.queue.clear();
+    _interceptor.routes.clear();
     calls.clear();
   }
 }
@@ -117,17 +126,24 @@ class FakeApiClient {
 class _FakeInterceptor extends Interceptor {
   final List<FakeCall> _calls;
   final List<_QueuedResponse> queue = [];
+  final Map<String, dynamic> routes = {};
 
   _FakeInterceptor(this._calls);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final queued = queue.isNotEmpty
-        ? queue.removeAt(0)
-        : const _QueuedResponse(type: FakeResponseType.success);
+    final routed = routes.entries
+        .where((e) => options.path.endsWith(e.key))
+        .firstOrNull;
+    final queued = routed != null
+        ? _QueuedResponse(type: FakeResponseType.success, responseData: routed.value)
+        : queue.isNotEmpty
+            ? queue.removeAt(0)
+            : const _QueuedResponse(type: FakeResponseType.success);
 
     _calls.add(FakeCall(
       data: options.data,
+      query: options.queryParameters,
       method: options.method, path: options.path, type: queued.type,),);
 
     if (queued.type == FakeResponseType.networkError) {

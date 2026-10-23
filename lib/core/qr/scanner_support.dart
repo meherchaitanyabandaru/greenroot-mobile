@@ -109,8 +109,9 @@ class ScannerErrorView extends StatelessWidget {
     return ColoredBox(
       color: Colors.black,
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+        // Scrolls on short screens / large text instead of overflowing.
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

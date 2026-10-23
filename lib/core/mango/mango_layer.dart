@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/rendering.dart';
@@ -91,7 +93,12 @@ class _MangoLayerState extends State<MangoLayer>
   }
 
   void _rebuild() {
-    if (mounted) setState(() {});
+    // The router notifies while the tree below this layer is still being
+    // built (the very first frame): a setState then marks this widget dirty
+    // mid-build (debug '!_dirty' assertion). Rebuild right after instead.
+    scheduleMicrotask(() {
+      if (mounted) setState(() {});
+    });
   }
 
   void _onController() {
