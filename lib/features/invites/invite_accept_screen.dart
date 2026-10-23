@@ -150,6 +150,7 @@ class InviteAcceptScreen extends ConsumerStatefulWidget {
 class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
   final _uuidCtrl = TextEditingController();
   bool _looked = false;
+  ProviderSubscription<SessionState>? _sessionSub;
 
   @override
   void initState() {
@@ -157,9 +158,17 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     if (widget.preloadedUUID != null) {
       _uuidCtrl.text = widget.preloadedUUID!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         // Only auto-lookup if authenticated; unauthenticated users see a login prompt.
-        final session = ref.read(sessionProvider);
-        if (session.isAuthenticated) _lookup();
+        if (ref.read(sessionProvider).isAuthenticated) {
+          _lookup();
+          return;
+        }
+        // The session may be re-checking (e.g. just back from the gallery,
+        // which pauses the app): look up as soon as it is signed in again.
+        _sessionSub = ref.listenManual(sessionProvider, (_, s) {
+          if (s.isAuthenticated && !_looked && mounted) _lookup();
+        });
       });
     }
   }
@@ -193,6 +202,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
 
   @override
   void dispose() {
+    _sessionSub?.close();
     _uuidCtrl.dispose();
     super.dispose();
   }
@@ -425,7 +435,10 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           ),
           child: TextButton(
             onPressed: () => context.go('/home'),
-            child: const Text('Continue as Customer for now'),
+            // A customer invite changes no role: "for now" would confuse.
+            child: Text(state.invite?.inviteType == 'CUSTOMER_INVITE'
+                ? 'Not now'
+                : 'Continue as Customer for now',),
           ),
         ),
       ),

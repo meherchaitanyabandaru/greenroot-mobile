@@ -698,8 +698,6 @@ class _ManagersTab extends ConsumerWidget {
         nurseryId: nurseryId,
         nurseryName: nurseryName,
         inviteType: inviteType,
-        onCreated: (inv) =>
-            ref.read(membersProvider(nurseryId).notifier).load(),
       ),
     );
   }
@@ -769,8 +767,6 @@ class _DriversTab extends ConsumerWidget {
                 nurseryId: nurseryId,
                 nurseryName: nurseryName,
                 inviteType: 'DRIVER_INVITE',
-                onCreated: (_) =>
-                    ref.read(membersProvider(nurseryId).notifier).load(),
               ),
             ),
           ),
@@ -978,8 +974,6 @@ class _CustomersTab extends ConsumerWidget {
         nurseryId: nurseryId,
         nurseryName: nurseryName,
         inviteType: 'CUSTOMER_INVITE',
-        onCreated: (inv) =>
-            ref.read(membersProvider(nurseryId).notifier).load(),
       ),
     );
   }
@@ -991,13 +985,11 @@ class _InviteSheet extends ConsumerStatefulWidget {
   final int nurseryId;
   final String nurseryName;
   final String inviteType;
-  final void Function(NurseryInvite) onCreated;
 
   const _InviteSheet({
     required this.nurseryId,
     required this.nurseryName,
     required this.inviteType,
-    required this.onCreated,
   });
 
   @override
@@ -1046,7 +1038,7 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
     setState(() => _isLoading = false);
     if (invite != null) {
       setState(() => _created = invite);
-      widget.onCreated(invite);
+      // createInvite already reloaded the list (the caller's ref may be gone).
     } else {
       final state = ref.read(membersProvider(widget.nurseryId));
       setState(() => _error = state.error ?? 'Failed to create invite');
