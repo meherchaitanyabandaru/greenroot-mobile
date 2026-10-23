@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,18 +57,31 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
   List<PlantMatch> _results = [];
   bool _loading = false;
   bool _searched = false;
+  Timer? _debounce;
+  int _seq = 0; // only the latest search may show its results
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// Searches once typing pauses. Long names take the server longer than
+  /// short prefixes, so an older reply can arrive last: it is ignored.
+  void _searchSoon(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () => _search(query));
+  }
+
   Future<void> _search(String query) async {
+    _debounce?.cancel();
+    final seq = ++_seq;
     if (query.trim().isEmpty) {
       setState(() {
         _results = [];
         _searched = false;
+        _loading = false;
       });
       return;
     }
@@ -74,13 +89,14 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
     try {
       final repo = ref.read(plantRepositoryProvider);
       final plants = await repo.lookupPlants(query.trim(), limit: 30);
+      if (!mounted || seq != _seq) return;
       setState(() {
         _results = plants;
         _searched = true;
         _loading = false;
       });
     } catch (_) {
-      setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
@@ -153,7 +169,7 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
                       ),
                     ),
                     onChanged: (v) {
-                      if (v.trim().length >= 2) _search(v);
+                      if (v.trim().length >= 2) _searchSoon(v);
                     },
                     onSubmitted: _search,
                   ),

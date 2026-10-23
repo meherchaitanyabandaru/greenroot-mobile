@@ -420,7 +420,8 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
     setState(() => _searching = true);
     try {
       final results = await ref.read(plantRepositoryProvider).lookupPlants(query);
-      if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; _noMatchFor = results.isEmpty ? query : ''; });
+      // Replies can arrive out of order: keep only the one for the current text.
+      if (mounted && query == _searchCtrl.text) setState(() { _results = results; _showDropdown = results.isNotEmpty; _noMatchFor = results.isEmpty ? query : ''; });
     } catch (e) {
       if (mounted) {
         setState(() { _results = []; _showDropdown = false; });

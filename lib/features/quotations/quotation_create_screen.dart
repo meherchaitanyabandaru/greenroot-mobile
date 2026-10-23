@@ -971,7 +971,8 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
     try {
       final results =
           await ref.read(plantRepositoryProvider).lookupPlants(q);
-      if (mounted) {
+      // Replies can arrive out of order: keep only the one for the current text.
+      if (mounted && q == _searchCtrl.text) {
         setState(() {
           _results = results;
           _showDropdown = results.isNotEmpty;

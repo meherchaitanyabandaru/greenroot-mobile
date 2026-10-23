@@ -2687,7 +2687,8 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
     try {
       final plants =
           await ref.read(plantRepositoryProvider).lookupPlants(q, limit: 20);
-      if (mounted) setState(() => _results = plants);
+      // Replies can arrive out of order: keep only the one for the current text.
+      if (mounted && q == _ctrl.text.trim()) setState(() => _results = plants);
     } catch (_) {
       // leave results as-is
     } finally {

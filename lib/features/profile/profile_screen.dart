@@ -105,6 +105,15 @@ class ProfileScreen extends ConsumerWidget {
                     }
                   },
                 ),
+              // The nursery's showcase (owner and managers edit it). Its only
+              // link went with the old dashboards.
+              if (caps.canSell)
+                _SettingsTile(
+                  icon: Icons.star_outline_rounded,
+                  label: 'Top Items',
+                  subtitle: 'Your best plants, shown to buyers (up to 20)',
+                  onTap: () => context.push('/nursery/top-items'),
+                ),
               if (!caps.isDriverOnly)
                 _SettingsTile(
                   icon: Icons.location_on_outlined,
