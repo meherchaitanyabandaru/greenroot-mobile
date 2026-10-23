@@ -193,12 +193,14 @@ class DispatchRepository {
     int perPage = 20,
     String? status,
     int? nurseryId,
+    bool buying = false, // incoming deliveries, not this nursery's outgoing ones
   }) async {
     final params = <String, dynamic>{
       'page': page,
       'per_page': perPage,
       if (status?.isNotEmpty == true) 'dispatch_status': status,
       if (nurseryId != null) 'nursery_id': nurseryId,
+      if (buying) 'buying': true,
     };
     return _client.get(
       ApiConstants.dispatches,

@@ -1063,13 +1063,27 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           const Icon(Icons.star_outline_rounded,
                               color: AppColors.primaryMain, size: 20,),
                           const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text('Set as default address',
-                                style: AppTypography.body,),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Set as default address',
+                                    style: AppTypography.body,),
+                                // The default moves only by choosing another one.
+                                if (widget.existing?.isDefault == true)
+                                  Text(
+                                    'To change it, set another address as default.',
+                                    style: AppTypography.caption.copyWith(
+                                        color: AppColors.textMuted,),
+                                  ),
+                              ],
+                            ),
                           ),
                           Switch(
                             value: _isDefault,
-                            onChanged: (v) => setState(() => _isDefault = v),
+                            onChanged: widget.existing?.isDefault == true
+                                ? null
+                                : (v) => setState(() => _isDefault = v),
                           ),
                         ],
                       ),

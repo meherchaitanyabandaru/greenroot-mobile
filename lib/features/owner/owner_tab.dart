@@ -21,6 +21,7 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/seller_order_card_actions.dart';
 import '../../core/widgets/trade_status_chip.dart';
+import '../dispatches/dispatch_list_screen.dart';
 import '../orders/orders.dart';
 import '../quotations/quotation_create_screen.dart';
 import '../quotations/quotations.dart';
@@ -74,7 +75,7 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
     _tabs.addListener(() {
       if (_tabs.index != _tabIndex) setState(() => _tabIndex = _tabs.index);
     });
@@ -114,7 +115,10 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton.extended(
+      // Deliveries are created from an order, not from this tab.
+      floatingActionButton: _tabIndex == 2
+          ? null
+          : FloatingActionButton.extended(
         onPressed: _tabIndex == 0 ? _createQuotation : _createOrder,
         icon: Icon(
           _tabIndex == 0 ? Icons.add_rounded : Icons.shopping_bag_outlined,
@@ -140,6 +144,7 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
           tabs: const [
             Tab(text: 'Quotations'),
             Tab(text: 'Orders'),
+            Tab(text: 'Deliveries'),
           ],
         ),
       ),
@@ -148,6 +153,8 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
         children: const [
           _SellerQuotationsTab(),
           _SellerOrdersTab(),
+          // Outgoing deliveries: Dispatched, In Transit, Delivered (chips).
+          DispatchListScreen(),
         ],
       ),
     );

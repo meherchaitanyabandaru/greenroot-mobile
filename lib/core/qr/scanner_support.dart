@@ -43,6 +43,10 @@ mixin ScannerLifecycle<T extends StatefulWidget>
 
   /// Starts the camera; never throws (the error view shows the problem).
   Future<void> startScanner() async {
+    // The plugin won't start again while an error is stored (permission
+    // denied, start failure), e.g. after the user allowed the camera in
+    // Settings. copyWith() without `error` clears it.
+    if (scanner.value.error != null) scanner.value = scanner.value.copyWith();
     try {
       if (!scanner.value.isRunning) await scanner.start();
     } catch (_) {}

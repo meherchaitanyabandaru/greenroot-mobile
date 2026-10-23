@@ -59,7 +59,10 @@ final _buyerOrderProvider =
 class _BuyerDispatchNotifier extends PagedNotifier<Dispatch> {
   _BuyerDispatchNotifier(DispatchRepository repo)
       : super(
-          fetch: (p, pp) => repo.listDispatches(page: p, perPage: pp),
+          // buying: an owner/manager would otherwise get their own outgoing
+          // dispatches here instead of deliveries coming to them.
+          fetch: (p, pp) =>
+              repo.listDispatches(page: p, perPage: pp, buying: true),
           idOf: (d) => d.id,
         );
 }
