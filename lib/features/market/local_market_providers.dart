@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +10,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/network_exceptions.dart';
 import '../../core/constants/api_constants.dart';
 import 'market_area.dart';
+import '../../core/media/photos.dart';
 
 // ── Models ────────────────────────────────────────────────────
 
@@ -709,8 +710,9 @@ final _rawDio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
 /// Resizes to max 1200px, draws "GreenRoot" watermark, encodes as JPEG q80.
 /// Falls back to raw bytes if decoding fails (e.g. unsupported HEIC on web).
 Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
-  final decoded = img.decodeImage(rawBytes);
-  if (decoded == null) return rawBytes;
+  final raw = img.decodeImage(rawBytes);
+  if (raw == null) return rawBytes;
+  final decoded = img.bakeOrientation(raw); // camera photos are often stored sideways
 
   // Resize — max 1200px on longest side
   const maxDim = 1200;
@@ -744,7 +746,11 @@ int _bitmapTextWidth(img.BitmapFont font, String text) => text.codeUnits
 
 Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
   final rawBytes = await file.readAsBytes();
-  final processed = await _processAdPhoto(rawBytes);
+  if (photoType(rawBytes) == null) {
+    throw const PhotoRejected('Only photos can be used in an ad (JPG, PNG, WebP or HEIC).');
+  }
+  // Decoding a camera photo takes a moment: keep it off the UI thread.
+  final processed = await compute(_processAdPhoto, rawBytes);
   const contentType = 'image/jpeg';
 
   final presign = await repo.presignUpload(

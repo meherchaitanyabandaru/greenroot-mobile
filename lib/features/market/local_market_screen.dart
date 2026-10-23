@@ -17,6 +17,7 @@ import '../plants/plants.dart';
 import 'local_market_providers.dart';
 import 'offer_fairness.dart';
 import 'market_area.dart';
+import '../../core/media/photos.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _mkGreen = Color(0xFF00A86B);
@@ -4081,38 +4082,14 @@ Future<List<XFile>> _pickAdPhotos(BuildContext context, int count) async {
     ),
   );
   if (source == null) return const [];
-  final picker = ImagePicker();
-  try {
-    if (source == ImageSource.camera || count == 1) {
-      final f = await picker.pickImage(
-        source: source,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
-      );
-      return f == null ? const [] : [f];
-    }
-    final files = await picker.pickMultiImage(
-      limit: count,
-      maxWidth: 1600,
-      maxHeight: 1600,
-      imageQuality: 85,
-    );
-    return files.take(count).toList();
-  } catch (_) {
-    // Camera or gallery permission refused, or no camera.
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(source == ImageSource.camera
-              ? 'Could not open the camera. Allow camera access in Settings.'
-              : 'Could not open the gallery.',),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-    return const [];
+  if (!context.mounted) return const [];
+  // The phone shrinks to 1600px at pick time (less memory, faster preview);
+  // uploads are resized again to 1200px with the watermark.
+  if (source == ImageSource.camera || count == 1) {
+    final f = await pickPhoto(context, source, maxSide: 1600, quality: 85);
+    return f == null ? const [] : [f];
   }
+  return pickPhotos(context, limit: count, maxSide: 1600, quality: 85);
 }
 
 class _PhotosStep extends StatelessWidget {

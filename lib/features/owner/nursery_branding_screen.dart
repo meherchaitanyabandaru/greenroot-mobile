@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/media/photos.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -141,27 +142,20 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
-    );
+    final file = await pickPhoto(context, ImageSource.gallery);
     if (file == null || !mounted) return;
 
     setState(() => _bs = _bs.with_(saving: true, clearError: true));
 
     try {
-      final bytes = await file.readAsBytes();
-      final ext = file.name.split('.').last.toLowerCase();
-      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+      // A logo shows small: 800 px is plenty; PNG transparency is kept.
+      final photo = await preparePhoto(file, maxSide: 800);
       final fileName =
-          'nursery-${widget.nursery.id}-${DateTime.now().millisecondsSinceEpoch}.$ext';
+          'nursery-${widget.nursery.id}-${DateTime.now().millisecondsSinceEpoch}${photo.extension}';
 
       final url = await ref
           .read(storageServiceProvider)
-          .uploadNurseryLogo(bytes, fileName, contentType);
+          .uploadNurseryLogo(photo.bytes, fileName, photo.mimeType);
 
       if (!mounted) return;
       setState(() => _bs = _bs.with_(
@@ -173,7 +167,7 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
       if (!mounted) return;
       setState(() => _bs = _bs.with_(
             saving: false,
-            error: 'Upload failed. Please try again.',
+            error: e is PhotoRejected ? e.message : 'Upload failed. Please try again.',
           ),);
     }
   }

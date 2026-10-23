@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/media/photos.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -23,8 +24,8 @@ class DeliveryProofScreen extends ConsumerStatefulWidget {
 }
 
 class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
-  final _picker = ImagePicker();
   final List<XFile> _photos = [];
+  final List<PreparedPhoto> _prepared = []; // upload-ready, same order
   bool _uploading = false;
   String? _uploadError;
   int _uploadedCount = 0;
@@ -36,18 +37,28 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
       );
       return;
     }
-    final file = await _picker.pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 1920,
-    );
-    if (file != null && mounted) {
-      setState(() => _photos.add(file));
+    final file = await pickPhoto(context, source);
+    if (file == null || !mounted) return;
+    try {
+      final prepared = await preparePhoto(file);
+      if (!mounted) return;
+      setState(() {
+        _photos.add(file);
+        _prepared.add(prepared);
+      });
+    } on PhotoRejected catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+      );
     }
   }
 
   void _removePhoto(int index) {
-    setState(() => _photos.removeAt(index));
+    setState(() {
+      _photos.removeAt(index);
+      _prepared.removeAt(index);
+    });
   }
 
   Future<void> _upload() async {
@@ -73,8 +84,8 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
       for (int i = 0; i < _photos.length; i++) {
         // /attachments takes JSON metadata only: put the file in storage first.
         final photo = _photos[i];
-        final bytes = await photo.readAsBytes();
-        final contentType = photo.mimeType ?? 'image/jpeg';
+        final bytes = _prepared[i].bytes;
+        final contentType = _prepared[i].mimeType;
         final fileUrl = await storage.uploadPresigned(
             'delivery-photos', bytes, photo.name, contentType,);
         await client.post<Map<String, dynamic>>(

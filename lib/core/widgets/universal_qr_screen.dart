@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../qr/classifier.dart';
+import '../media/photos.dart';
 import '../qr/scan_frame.dart';
+import '../qr/scanner_support.dart';
 import '../qr/sheets/invite_sheet.dart';
 import '../qr/sheets/order_verify_sheet.dart';
 import '../qr/sheets/trip_sheet.dart';
@@ -28,8 +30,19 @@ class UniversalQrScreen extends ConsumerStatefulWidget {
 }
 
 class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
-    with SingleTickerProviderStateMixin {
+    with
+        SingleTickerProviderStateMixin,
+        WidgetsBindingObserver,
+        ScannerLifecycle {
   late final MobileScannerController _ctrl;
+
+  @override
+  MobileScannerController get scanner => _ctrl;
+
+  // While a result sheet is open the camera stays off, even after the app
+  // comes back to the foreground.
+  @override
+  bool get scannerPaused => _detected;
   bool _torchOn = false;
   bool _detected = false;
 
@@ -53,11 +66,10 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
       CurvedAnimation(parent: _lineCtrl, curve: Curves.easeInOut),
     );
     // Auto-torch after 2.5 s if nothing scanned yet (dark room heuristic).
-    _autoTorchTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (!_detected && mounted && !_torchOn) {
-        _ctrl.toggleTorch();
-        setState(() => _torchOn = true);
-      }
+    _autoTorchTimer = Timer(const Duration(milliseconds: 2500), () async {
+      if (_detected || !mounted || _torchOn) return;
+      final on = await toggleTorchSafely(); // no-op without a running camera/torch
+      if (mounted) setState(() => _torchOn = on);
     });
   }
 
@@ -81,7 +93,7 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
   Future<void> _processValue(String raw) async {
     if (_detected) return;
     _detected = true;
-    await _ctrl.stop();
+    await stopScanner();
     HapticFeedback.mediumImpact();
     if (!mounted) return;
 
@@ -119,7 +131,7 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
     switch (result ?? QrSheetResult.resume) {
       case QrSheetResult.resume:
         setState(() => _detected = false);
-        await _ctrl.start();
+        await startScanner();
       case QrSheetResult.goToTrip:
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => TripPreviewScreen(code: raw)),
@@ -137,13 +149,12 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
   // ── Torch + gallery ───────────────────────────────────────────────────────
 
   Future<void> _toggleTorch() async {
-    await _ctrl.toggleTorch();
-    setState(() => _torchOn = !_torchOn);
+    final on = await toggleTorchSafely();
+    if (mounted) setState(() => _torchOn = on);
   }
 
   Future<void> _pickFromGallery() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+    final file = await pickPhoto(context, ImageSource.gallery);
     if (file == null) return;
     BarcodeCapture? result;
     try {
@@ -188,23 +199,17 @@ class _UniversalQrScreenState extends ConsumerState<UniversalQrScreen>
           MobileScanner(
             controller: _ctrl,
             onDetect: _onDetect,
-            errorBuilder: (context, error, child) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.camera_alt_outlined,
-                      color: Colors.white54, size: 64,),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Camera unavailable\n${error.errorCode.name}',
-                    style: const TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            errorBuilder: (context, error, child) => ScannerErrorView(
+              error: error,
+              onRetry: restartScanner,
             ),
           ),
-          QrScanFrame(lineAnimation: _lineAnim),
+          // No scan frame over the error message.
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _ctrl,
+            builder: (_, v, __) =>
+                v.error != null ? const SizedBox.shrink() : QrScanFrame(lineAnimation: _lineAnim),
+          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

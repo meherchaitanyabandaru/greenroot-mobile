@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/errors/app_error.dart';
+import '../../core/media/photos.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/presentation/providers/session_provider.dart';
@@ -20,19 +21,14 @@ Future<bool> takeProfileSelfie(BuildContext context, WidgetRef ref) async {
   void fail(String message) => messenger.showSnackBar(
         SnackBar(content: Text(message), backgroundColor: AppColors.red600),
       );
-  XFile? shot;
-  try {
-    shot = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
-    );
-  } catch (_) {
-    fail('Could not open the camera.');
-    return false;
-  }
+  // A face photo shows small: the phone shrinks it to 800 px itself.
+  final shot = await pickPhoto(
+    context,
+    ImageSource.camera,
+    camera: CameraDevice.front,
+    maxSide: 800,
+    quality: 85,
+  );
   if (shot == null) return false;
   try {
     final bytes = await shot.readAsBytes();

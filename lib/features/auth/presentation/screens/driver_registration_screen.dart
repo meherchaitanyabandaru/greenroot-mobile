@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/media/photos.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -50,11 +51,12 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
       String? photoUrl;
       if (licencePhoto != null) {
         // Private bucket: only admins (and the driver) open it, by a short link.
+        final photo = await preparePhoto(licencePhoto);
         photoUrl = await _storage.uploadPresigned(
           'attachments',
-          await licencePhoto.readAsBytes(),
+          photo.bytes,
           licencePhoto.name,
-          licencePhoto.mimeType ?? 'image/jpeg',
+          photo.mimeType,
         );
       }
       await _client.post(
@@ -67,6 +69,8 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
         },
       );
       state = state.copyWith(isLoading: false, submitted: true);
+    } on PhotoRejected catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
     } on AppError catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
     } catch (_) {
@@ -302,12 +306,8 @@ class _LicencePhotoPicker extends StatelessWidget {
   final ValueChanged<XFile?> onChanged;
   const _LicencePhotoPicker({required this.photo, required this.onChanged});
 
-  Future<void> _pick(ImageSource source) async {
-    final file = await ImagePicker().pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 1920,
-    );
+  Future<void> _pick(BuildContext context, ImageSource source) async {
+    final file = await pickPhoto(context, source);
     if (file != null) onChanged(file);
   }
 
@@ -352,7 +352,7 @@ class _LicencePhotoPicker extends StatelessWidget {
             Row(children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _pick(ImageSource.camera),
+                  onPressed: () => _pick(context, ImageSource.camera),
                   icon: const Icon(Icons.photo_camera_outlined, size: 18),
                   label: const Text('Camera'),
                 ),
@@ -360,7 +360,7 @@ class _LicencePhotoPicker extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _pick(ImageSource.gallery),
+                  onPressed: () => _pick(context, ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined, size: 18),
                   label: const Text('Gallery'),
                 ),

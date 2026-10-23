@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../media/photos.dart';
+import '../qr/scanner_support.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -21,8 +23,17 @@ class QrScannerScreen extends StatefulWidget {
 }
 
 class _QrScannerScreenState extends State<QrScannerScreen>
-    with SingleTickerProviderStateMixin {
+    with
+        SingleTickerProviderStateMixin,
+        WidgetsBindingObserver,
+        ScannerLifecycle {
   late final MobileScannerController _ctrl;
+
+  @override
+  MobileScannerController get scanner => _ctrl;
+
+  @override
+  bool get scannerPaused => _detected;
   bool _torchOn = false;
   bool _detected = false;
 
@@ -51,11 +62,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       CurvedAnimation(parent: _lineCtrl, curve: Curves.easeInOut),
     );
 
-    _autoTorchTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (!_detected && mounted && !_torchOn) {
-        _ctrl.toggleTorch();
-        setState(() => _torchOn = true);
-      }
+    _autoTorchTimer = Timer(const Duration(milliseconds: 2500), () async {
+      if (_detected || !mounted || _torchOn) return;
+      final on = await toggleTorchSafely(); // no-op without a running camera/torch
+      if (mounted) setState(() => _torchOn = on);
     });
   }
 
@@ -77,16 +87,20 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   Future<void> _toggleTorch() async {
-    await _ctrl.toggleTorch();
-    setState(() => _torchOn = !_torchOn);
+    final on = await toggleTorchSafely();
+    if (mounted) setState(() => _torchOn = on);
   }
 
   Future<void> _pickFromGallery() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+    final file = await pickPhoto(context, ImageSource.gallery);
     if (file == null) return;
 
-    final result = await _ctrl.analyzeImage(file.path);
+    BarcodeCapture? result;
+    try {
+      result = await _ctrl.analyzeImage(file.path);
+    } catch (_) {
+      result = null; // unreadable image: reported below as "no QR code"
+    }
     if (!mounted) return;
 
     final value = result?.barcodes.firstOrNull?.rawValue;
@@ -114,27 +128,19 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           MobileScanner(
             controller: _ctrl,
             onDetect: _onDetect,
-            errorBuilder: (context, error, child) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.camera_alt_outlined,
-                        color: Colors.white54, size: 64,),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Camera unavailable\n${error.errorCode.name}',
-                      style: const TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
+            errorBuilder: (context, error, child) => ScannerErrorView(
+              error: error,
+              onRetry: restartScanner,
+            ),
           ),
 
           // Overlay: dark border + transparent square cutout
-          _ScanOverlay(lineAnimation: _lineAnim),
+          // No scan frame over the error message.
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _ctrl,
+            builder: (_, v, __) =>
+                v.error != null ? const SizedBox.shrink() : _ScanOverlay(lineAnimation: _lineAnim),
+          ),
 
           // Top bar
           SafeArea(
