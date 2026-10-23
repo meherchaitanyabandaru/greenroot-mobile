@@ -995,12 +995,14 @@ class _DispatchCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                if (d.vehicleNumber?.isNotEmpty == true) ...[
+                if ((d.isOutsideTransport ? d.outsideVehicleNumber : d.vehicleNumber)
+                        ?.isNotEmpty ==
+                    true) ...[
                   const Icon(Icons.local_shipping_outlined,
                       size: 14, color: AppColors.textMuted,),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    d.vehicleNumber!,
+                    (d.isOutsideTransport ? d.outsideVehicleNumber : d.vehicleNumber)!,
                     style: AppTypography.caption
                         .copyWith(color: AppColors.textSecondary),
                   ),
@@ -1021,7 +1023,8 @@ class _DispatchCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Track Live',
+                        // An outside lorry has no GPS: the card holds the code.
+                        d.isOutsideTransport ? 'Delivery code' : 'Track Live',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.primaryMain,
                           fontWeight: FontWeight.w600,

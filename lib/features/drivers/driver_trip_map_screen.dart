@@ -23,6 +23,7 @@ import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../tracking/tracking.dart';
+import '../dispatches/delivery_confirmation.dart';
 
 // ── Screen shell ───────────────────────────────────────────────────────────────
 
@@ -425,45 +426,16 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   }
 
   Future<void> _completeDelivery() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Complete Delivery?'),
-        content: const Text(
-            'Make sure you have uploaded at least one delivery proof photo.',),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style:
-                FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
-            child: const Text('Complete'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(dispatchRepositoryProvider)
-          .updateStatus(widget.dispatchId, 'DELIVERED');
-      _gpsTimer?.cancel();
-      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
-      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
-      ref.invalidate(orderListProvider);
-      ref.invalidate(buyingOrderListProvider);
-      ref.invalidate(activeDriverTripProvider);
-      _snack('Delivery completed. Well done!');
-    } on AppError catch (e) {
-      _snack(e.message, isError: true);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    // The customer's code confirms delivery (see delivery_confirmation.dart).
+    final done = await showDeliverSheet(context, ref, widget.dispatch);
+    if (done == null || !mounted) return;
+    _gpsTimer?.cancel();
+    ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+    ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+    ref.invalidate(orderListProvider);
+    ref.invalidate(buyingOrderListProvider);
+    ref.invalidate(activeDriverTripProvider);
+    _snack('Delivery completed. Well done!');
   }
 
   Future<void> _openGoogleMaps() async {

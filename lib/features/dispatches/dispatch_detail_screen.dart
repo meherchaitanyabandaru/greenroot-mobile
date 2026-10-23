@@ -17,6 +17,7 @@ import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import 'dispatches.dart';
+import 'delivery_confirmation.dart';
 
 class DispatchDetailScreen extends ConsumerWidget {
   final int dispatchId;
@@ -168,6 +169,21 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     }
   }
 
+  Future<void> _deliver() async {
+    final done = await showDeliverSheet(context, ref, widget.dispatch);
+    if (done == null || !mounted) return;
+    ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+    ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+    ref.invalidate(orderListProvider);
+    ref.invalidate(buyingOrderListProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(deliveryConfirmationLabel(done) ?? 'Delivered.'),
+        backgroundColor: AppColors.primaryMain,
+      ),
+    );
+  }
+
   Future<void> _ackDeliveryUpdate() async {
     setState(() => _busy = true);
     try {
@@ -209,8 +225,12 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       isManager: widget.isManager,
       isSeller: widget.isSeller,
       busy: _busy,
-      // Cancelling asks first; other status changes are one tap.
-      onUpdateStatus: (s) => s == 'CANCELLED' ? _confirmCancel() : _updateStatus(s),
+      // Cancelling asks first; delivering needs the customer's code.
+      onUpdateStatus: (s) => switch (s) {
+        'CANCELLED' => _confirmCancel(),
+        'DELIVERED' => _deliver(),
+        _ => _updateStatus(s),
+      },
       onAckDeliveryUpdate: _ackDeliveryUpdate,
     );
   }
@@ -315,6 +335,22 @@ class _DetailContent extends StatelessWidget {
                   name: dispatch.driverName!,
                   phone: dispatch.driverMobile,
                 ),
+              if (dispatch.isOutsideTransport) ...[
+                _Row(
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Outside lorry',
+                    value: [
+                      dispatch.outsideVehicleNumber,
+                      dispatch.outsideDriverName,
+                    ].whereType<String>().where((v) => v.isNotEmpty).join(' · '),),
+                if (dispatch.outsideDriverMobile != null)
+                  _PersonRow(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Lorry driver',
+                    name: dispatch.outsideDriverName ?? 'Driver',
+                    phone: dispatch.outsideDriverMobile,
+                  ),
+              ],
               if (dispatch.vehicleNumber != null) ...[
                 if (dispatch.driverName != null)
                   const Divider(height: 1, indent: 56),
@@ -344,6 +380,22 @@ class _DetailContent extends StatelessWidget {
                     icon: Icons.check_circle_outline_rounded,
                     label: 'Delivery Date',
                     value: DateFormat('dd MMM yyyy').format(delDate.toLocal()),),
+              ],
+              if (deliveryConfirmationLabel(dispatch) case final label?) ...[
+                const Divider(height: 1, indent: 56),
+                _Row(
+                    icon: dispatch.deliveryUnconfirmed
+                        ? Icons.gpp_maybe_outlined
+                        : Icons.verified_outlined,
+                    label: 'Confirmation',
+                    value: label,),
+              ],
+              if (dispatch.deliveryIssue != null) ...[
+                const Divider(height: 1, indent: 56),
+                _Row(
+                    icon: Icons.report_problem_outlined,
+                    label: 'Customer reported',
+                    value: dispatch.deliveryIssue!,),
               ],
             ],
           ),
@@ -698,7 +750,9 @@ class _DetailContent extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.md),
-          if (dispatch.capabilities?.canViewTracking == true)
+          // An outside lorry has no app, so no GPS to track.
+          if (dispatch.capabilities?.canViewTracking == true &&
+              !dispatch.isOutsideTransport)
             SizedBox(
               width: double.infinity,
               height: 50,

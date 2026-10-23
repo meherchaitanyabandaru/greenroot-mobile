@@ -359,31 +359,37 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   }
 
   Future<void> _createDispatch() async {
-    String? dest;
-    String? notes;
-    final confirmed = await showModalBottomSheet<bool>(
+    final input = await showModalBottomSheet<_DispatchInput>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _CreateDispatchSheet(
-        onSubmit: (d, n) {
-          dest = d;
-          notes = n;
-          Navigator.pop(ctx, true);
-        },
-        onCancel: () => Navigator.pop(ctx, false),
+        onSubmit: (i) => Navigator.pop(ctx, i),
+        onCancel: () => Navigator.pop(ctx),
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (input == null || !mounted) return;
     setState(() => _busy = true);
     try {
       final dispatch =
           await ref.read(dispatchRepositoryProvider).createDispatch(
                 widget.orderId,
-                destinationAddress: dest,
-                notes: notes,
+                destinationAddress: input.dest,
+                notes: input.notes,
+                outsideVehicleNumber: input.outsideVehicle,
+                outsideDriverName: input.outsideDriverName,
+                outsideDriverMobile: input.outsideDriverMobile,
               );
-      if (mounted) {
+      if (mounted && dispatch.isOutsideTransport) {
+        // No app driver to share a QR with: the nursery runs the trip.
+        _snack(
+          'Dispatch created. Mark it dispatched when the lorry leaves.',
+          AppColors.primaryMain,
+        );
+        ref.invalidate(orderDetailProvider(widget.orderId));
+        ref.invalidate(_orderDispatchesProvider(widget.orderId));
+        context.push('/dispatches/${dispatch.id}');
+      } else if (mounted) {
         await QrShareSheet.show(
           context,
           code: dispatch.dispatchCode,
@@ -2894,8 +2900,17 @@ class _AssignManagerSheet extends StatelessWidget {
 
 // ── Create Dispatch Sheet ──────────────────────────────────────────────────────
 
+typedef _DispatchInput = ({
+  String? dest,
+  String? notes,
+  // Set for an outside lorry (driver without the app).
+  String? outsideVehicle,
+  String? outsideDriverName,
+  String? outsideDriverMobile,
+});
+
 class _CreateDispatchSheet extends StatefulWidget {
-  final void Function(String? dest, String? notes) onSubmit;
+  final ValueChanged<_DispatchInput> onSubmit;
   final VoidCallback onCancel;
   const _CreateDispatchSheet({required this.onSubmit, required this.onCancel});
 
@@ -2906,13 +2921,23 @@ class _CreateDispatchSheet extends StatefulWidget {
 class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
   final _destCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _vehicleCtrl = TextEditingController();
+  final _driverNameCtrl = TextEditingController();
+  final _driverMobileCtrl = TextEditingController();
+  bool _outside = false;
 
   @override
   void dispose() {
     _destCtrl.dispose();
     _notesCtrl.dispose();
+    _vehicleCtrl.dispose();
+    _driverNameCtrl.dispose();
+    _driverMobileCtrl.dispose();
     super.dispose();
   }
+
+  String? _text(TextEditingController c) =>
+      c.text.trim().isEmpty ? null : c.text.trim();
 
   @override
   Widget build(BuildContext context) {
@@ -2927,7 +2952,8 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
         top: AppSpacing.lg,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.x3l,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2942,12 +2968,54 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
           ),
           const SizedBox(height: AppSpacing.x2l),
           const Text('Create Dispatch', style: AppTypography.h3),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.md),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('GreenRoot driver')),
+              ButtonSegment(value: true, label: Text('Outside lorry')),
+            ],
+            selected: {_outside},
+            onSelectionChanged: (v) => setState(() => _outside = v.first),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            'Optionally add a destination address and notes. After creating, share the dispatch QR with your driver.',
+            _outside
+                ? "For a lorry whose driver doesn't use GreenRoot. No tracking: you mark it dispatched, and confirm delivery with the customer's code."
+                : 'After creating, share the trip QR with your driver.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
-          const SizedBox(height: AppSpacing.x2l),
+          const SizedBox(height: AppSpacing.lg),
+          if (_outside) ...[
+            TextField(
+              key: const Key('dispatchOutsideVehicle'),
+              controller: _vehicleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Lorry number *',
+                prefixIcon: Icon(Icons.local_shipping_outlined),
+              ),
+              textCapitalization: TextCapitalization.characters,
+              maxLength: 20,
+              onChanged: (_) => setState(() {}),
+            ),
+            TextField(
+              controller: _driverNameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Driver name (optional)',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+              ),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _driverMobileCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Driver mobile (optional)',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           TextField(
             key: const Key(TestKeys.dispatchCreateDestination),
             controller: _destCtrl,
@@ -2973,10 +3041,17 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
             height: AppSpacing.buttonHeight,
             child: ElevatedButton.icon(
               key: const Key(TestKeys.dispatchCreateSubmit),
-              onPressed: () => widget.onSubmit(
-                _destCtrl.text.trim().isEmpty ? null : _destCtrl.text.trim(),
-                _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-              ),
+              onPressed: _outside && _text(_vehicleCtrl) == null
+                  ? null
+                  : () => widget.onSubmit((
+                        dest: _text(_destCtrl),
+                        notes: _text(_notesCtrl),
+                        outsideVehicle: _outside ? _text(_vehicleCtrl) : null,
+                        outsideDriverName:
+                            _outside ? _text(_driverNameCtrl) : null,
+                        outsideDriverMobile:
+                            _outside ? _text(_driverMobileCtrl) : null,
+                      ),),
               icon: const Icon(Icons.local_shipping_rounded),
               label: const Text('Create Dispatch'),
               style: ElevatedButton.styleFrom(
@@ -2997,6 +3072,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
             ),
           ),
         ],
+       ),
       ),
     );
   }

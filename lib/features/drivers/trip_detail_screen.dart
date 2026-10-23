@@ -13,6 +13,7 @@ import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
+import '../dispatches/delivery_confirmation.dart';
 
 class DriverTripDetailScreen extends ConsumerWidget {
   final int dispatchId;
@@ -111,54 +112,20 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
   }
 
   Future<void> _completeDelivery() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Complete Delivery'),
-        content: const Text(
-            'Are you sure you want to mark this delivery as completed? Make sure you have uploaded the delivery proof.',),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style:
-                FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
-            child: const Text('Complete'),
-          ),
-        ],
+    // The customer's code confirms delivery (see delivery_confirmation.dart).
+    final done = await showDeliverSheet(context, ref, widget.dispatch);
+    if (done == null || !mounted) return;
+    ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+    ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
+    ref.invalidate(orderListProvider);
+    ref.invalidate(buyingOrderListProvider);
+    ref.invalidate(activeDriverTripProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Delivery completed. Well done!'),
+        backgroundColor: AppColors.primaryMain,
       ),
     );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(dispatchRepositoryProvider)
-          .updateStatus(widget.dispatchId, 'DELIVERED');
-      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
-      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
-      ref.invalidate(orderListProvider);
-      ref.invalidate(buyingOrderListProvider);
-      ref.invalidate(activeDriverTripProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Delivery completed. Well done!'),
-            backgroundColor: AppColors.primaryMain,
-          ),
-        );
-      }
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
   }
 
   void _refreshStatus() {

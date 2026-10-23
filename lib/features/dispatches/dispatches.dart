@@ -58,6 +58,11 @@ class DispatchCapabilities {
   final bool canAddItems;
   final bool canViewTracking;
   final bool canShareCode;
+  // Delivery confirmation: staff without the code (with a reason); the
+  // customer's "received" and "report a problem".
+  final bool canOverrideDelivery;
+  final bool canConfirmReceipt;
+  final bool canReportIssue;
 
   const DispatchCapabilities({
     this.canAccept = false,
@@ -68,6 +73,9 @@ class DispatchCapabilities {
     this.canAddItems = false,
     this.canViewTracking = false,
     this.canShareCode = false,
+    this.canOverrideDelivery = false,
+    this.canConfirmReceipt = false,
+    this.canReportIssue = false,
   });
 
   factory DispatchCapabilities.fromJson(Map<String, dynamic> j) =>
@@ -80,6 +88,9 @@ class DispatchCapabilities {
         canAddItems: j['can_add_items'] == true,
         canViewTracking: j['can_view_tracking'] == true,
         canShareCode: j['can_share_code'] == true,
+        canOverrideDelivery: j['can_override_delivery'] == true,
+        canConfirmReceipt: j['can_confirm_receipt'] == true,
+        canReportIssue: j['can_report_issue'] == true,
       );
 }
 
@@ -111,6 +122,19 @@ class Dispatch {
   final List<DispatchItem> items;
   final BackendLifecycle? lifecycle;
   final DispatchCapabilities? capabilities;
+  // Outside lorry: the driver has no app.
+  final bool isOutsideTransport;
+  final String? outsideVehicleNumber;
+  final String? outsideDriverName;
+  final String? outsideDriverMobile;
+  // CUSTOMER_CODE, CUSTOMER_APP or UNCONFIRMED (nursery override).
+  final String? deliveryConfirmation;
+  final String? deliveryOverrideReason;
+  final String? deliveryIssue;
+  // Only in the customer's own view, while the trip is on its way.
+  final String? deliveryCode;
+
+  bool get deliveryUnconfirmed => deliveryConfirmation == 'UNCONFIRMED';
 
   const Dispatch({
     required this.id,
@@ -140,6 +164,14 @@ class Dispatch {
     required this.items,
     this.lifecycle,
     this.capabilities,
+    this.isOutsideTransport = false,
+    this.outsideVehicleNumber,
+    this.outsideDriverName,
+    this.outsideDriverMobile,
+    this.deliveryConfirmation,
+    this.deliveryOverrideReason,
+    this.deliveryIssue,
+    this.deliveryCode,
   });
 
   factory Dispatch.fromJson(Map<String, dynamic> j) => Dispatch(
@@ -182,6 +214,14 @@ class Dispatch {
                 ?.map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        isOutsideTransport: j['is_outside_transport'] == true,
+        outsideVehicleNumber: j['outside_vehicle_number'] as String?,
+        outsideDriverName: j['outside_driver_name'] as String?,
+        outsideDriverMobile: j['outside_driver_mobile'] as String?,
+        deliveryConfirmation: j['delivery_confirmation'] as String?,
+        deliveryOverrideReason: j['delivery_override_reason'] as String?,
+        deliveryIssue: j['delivery_issue'] as String?,
+        deliveryCode: j['delivery_code'] as String?,
       );
 }
 
@@ -269,6 +309,30 @@ class DispatchRepository {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
       },
+    );
+  }
+
+  /// Driver or nursery: delivered with the customer's [code], or (nursery
+  /// only) without it, giving [overrideReason].
+  Future<Dispatch> deliver(int id, {String? code, String? overrideReason}) {
+    return _client.post(
+      ApiConstants.deliverDispatch(id),
+      data: {
+        if (code != null) 'code': code,
+        if (overrideReason != null) 'override_reason': overrideReason,
+      },
+      fromJson: (data) => Dispatch.fromJson(
+          (data as Map<String, dynamic>)['dispatch'] as Map<String, dynamic>,),
+    );
+  }
+
+  /// Customer: "I received the plants" and/or a problem ([issue]).
+  Future<Dispatch> confirmReceipt(int id, {String? issue}) {
+    return _client.post(
+      ApiConstants.dispatchReceipt(id),
+      data: {if (issue != null) 'issue': issue},
+      fromJson: (data) => Dispatch.fromJson(
+          (data as Map<String, dynamic>)['dispatch'] as Map<String, dynamic>,),
     );
   }
 
@@ -370,6 +434,10 @@ class DispatchRepository {
     int orderId, {
     String? destinationAddress,
     String? notes,
+    // Outside lorry (driver without the app): vehicle number required.
+    String? outsideVehicleNumber,
+    String? outsideDriverName,
+    String? outsideDriverMobile,
   }) async {
     return _client.post(
       ApiConstants.dispatches,
@@ -378,6 +446,14 @@ class DispatchRepository {
         if (destinationAddress?.isNotEmpty == true)
           'destination_address': destinationAddress,
         if (notes?.isNotEmpty == true) 'notes': notes,
+        if (outsideVehicleNumber != null) ...{
+          'is_outside_transport': true,
+          'outside_vehicle_number': outsideVehicleNumber,
+          if (outsideDriverName?.isNotEmpty == true)
+            'outside_driver_name': outsideDriverName,
+          if (outsideDriverMobile?.isNotEmpty == true)
+            'outside_driver_mobile': outsideDriverMobile,
+        },
       },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;

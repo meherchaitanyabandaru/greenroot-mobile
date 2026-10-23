@@ -17,6 +17,7 @@ import '../../core/widgets/map_widgets.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
+import '../dispatches/delivery_confirmation.dart';
 
 String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
@@ -97,9 +98,11 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     super.dispose();
   }
 
+  // An outside lorry sends no GPS, so there is nothing live to poll or show.
   bool get _isLive =>
-      widget.dispatch.status == 'IN_TRANSIT' ||
-      widget.dispatch.status == 'DISPATCHED';
+      !widget.dispatch.isOutsideTransport &&
+      (widget.dispatch.status == 'IN_TRANSIT' ||
+          widget.dispatch.status == 'DISPATCHED');
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -643,6 +646,13 @@ class _FloatingCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
+            // The customer's code / "received" / report a problem
+            CustomerDeliveryCard(
+              dispatch: d,
+              onChanged: (_) => onRefresh(),
+            ),
+            const SizedBox(height: 12),
+
             // Driver info
             _DriverInfoCard(
               dispatch: d,
@@ -746,8 +756,13 @@ class _DriverInfoCard extends StatelessWidget {
       dispatch: d,
       role: LifecycleRole.buyer,
     );
-    final hasDriver = d.driverName?.isNotEmpty == true;
-    final hasVehicle = d.vehicleNumber?.isNotEmpty == true;
+    // An outside lorry has no app driver: show the lorry the nursery recorded.
+    final driverName =
+        d.isOutsideTransport ? d.outsideDriverName : d.driverName;
+    final vehicle =
+        d.isOutsideTransport ? d.outsideVehicleNumber : d.vehicleNumber;
+    final hasDriver = driverName?.isNotEmpty == true;
+    final hasVehicle = vehicle?.isNotEmpty == true;
 
     return Container(
       decoration: BoxDecoration(
@@ -774,7 +789,11 @@ class _DriverInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasDriver ? d.driverName! : 'Driver Assigned',
+                  hasDriver
+                      ? driverName!
+                      : d.isOutsideTransport
+                          ? "Nursery's lorry"
+                          : 'Driver Assigned',
                   style: AppTypography.h4,
                 ),
                 if (hasVehicle) ...[
@@ -785,7 +804,7 @@ class _DriverInfoCard extends StatelessWidget {
                           size: 13, color: AppColors.textSecondary,),
                       const SizedBox(width: 4),
                       Text(
-                        d.vehicleNumber!,
+                        vehicle!,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
                       ),

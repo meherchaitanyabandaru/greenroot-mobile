@@ -86,6 +86,8 @@ abstract class ApiConstants {
       '$v1/dispatches/$id/ack-delivery-update';
   static String dispatchByCode(String code) => '$v1/dispatches/code/$code';
   static String acceptDispatch(int id) => '$v1/dispatches/$id/accept';
+  static String deliverDispatch(int id) => '$v1/dispatches/$id/deliver';
+  static String dispatchReceipt(int id) => '$v1/dispatches/$id/receipt';
   static String dispatchTracking(int id) => '$v1/dispatches/$id/tracking';
   static String dispatchTrackingLatest(int id) =>
       '$v1/dispatches/$id/tracking/latest';
