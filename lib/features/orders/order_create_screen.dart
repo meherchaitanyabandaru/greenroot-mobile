@@ -394,6 +394,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
   List<PlantMatch> _results = [];
   bool _searching = false;
   bool _showDropdown = false;
+  String _noMatchFor = ''; // a finished search that found nothing
 
   @override
   void initState() {
@@ -413,13 +414,13 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
 
   Future<void> _search(String query) async {
     if (query.length < 2) {
-      setState(() { _results = []; _showDropdown = false; });
+      setState(() { _results = []; _showDropdown = false; _noMatchFor = ''; });
       return;
     }
     setState(() => _searching = true);
     try {
       final results = await ref.read(plantRepositoryProvider).lookupPlants(query);
-      if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; });
+      if (mounted) setState(() { _results = results; _showDropdown = results.isNotEmpty; _noMatchFor = results.isEmpty ? query : ''; });
     } catch (e) {
       if (mounted) {
         setState(() { _results = []; _showDropdown = false; });
@@ -477,6 +478,8 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
               });
             },
           ),
+          if (!_showDropdown && _noMatchFor.isNotEmpty && _searchCtrl.text == _noMatchFor)
+            PlantNotFound(query: _noMatchFor, compact: true),
           if (_showDropdown) ...[
             const SizedBox(height: 4),
             Container(
@@ -489,9 +492,12 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
               ),
               child: ListView.separated(
                 shrinkWrap: true,
-                itemCount: _results.length,
+                itemCount: _results.length + 1,
                 separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
                 itemBuilder: (_, i) {
+                  if (i == _results.length) {
+                    return SuggestPlantTile(query: _searchCtrl.text);
+                  }
                   final match = _results[i];
                   return ListTile(
                     dense: true,

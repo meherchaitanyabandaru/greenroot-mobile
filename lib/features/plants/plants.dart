@@ -253,6 +253,31 @@ class PlantRepository {
     );
   }
 
+  /// Suggests a plant the search could not find. Returns the API result:
+  /// SUBMITTED, ALREADY_SUGGESTED or EXISTS (with that catalog [Plant]).
+  Future<(String, Plant?)> suggestPlant({
+    required String name,
+    String? scientificName,
+    String? notes,
+  }) async {
+    return _client.post(
+      ApiConstants.plantSuggestions,
+      data: {
+        'name': name,
+        if (scientificName != null) 'scientific_name': scientificName,
+        if (notes != null) 'notes': notes,
+      },
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        final plant = d['plant'] as Map<String, dynamic>?;
+        return (
+          d['result'] as String? ?? 'SUBMITTED',
+          plant == null ? null : Plant.fromJson(plant),
+        );
+      },
+    );
+  }
+
   Future<List<PlantSize>> getSizes() async {
     return _client.get(
       ApiConstants.plantSizes,

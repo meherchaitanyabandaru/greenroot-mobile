@@ -1045,15 +1045,20 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _results.isEmpty
-                    ? Center(
-                        child: Text('No plants found',
-                            style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary),),)
+                    ? _searchCtrl.text.trim().length >= 2
+                        ? PlantNotFound(query: _searchCtrl.text)
+                        : Center(
+                            child: Text('No plants found',
+                                style: AppTypography.body
+                                    .copyWith(color: AppColors.textSecondary),),)
                     : ListView.separated(
                         controller: controller,
-                        itemCount: _results.length,
+                        itemCount: _results.length + 1,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
+                          if (i == _results.length) {
+                            return SuggestPlantTile(query: _searchCtrl.text);
+                          }
                           final m = _results[i];
                           return ListTile(
                             leading: const CircleAvatar(

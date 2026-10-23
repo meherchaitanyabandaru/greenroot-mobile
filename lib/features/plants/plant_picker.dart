@@ -172,22 +172,19 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
                       ),
                     )
                   : _results.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No plants found',
-                            style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary),
-                          ),
-                        )
+                      ? PlantNotFound(query: _searchCtrl.text)
                       : ListView.separated(
                           controller: controller,
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.sm,
                           ),
-                          itemCount: _results.length,
+                          itemCount: _results.length + 1,
                           separatorBuilder: (_, __) =>
                               const Divider(height: 1, indent: 16),
                           itemBuilder: (_, i) {
+                            if (i == _results.length) {
+                              return SuggestPlantTile(query: _searchCtrl.text);
+                            }
                             final match = _results[i];
                             // Another size of a listed plant is fine; same plant + size is refused by the API.
                             final alreadyAdded = match.plant != null &&
@@ -250,6 +247,175 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Not found: suggest it ─────────────────────────────────────────────────────
+
+/// "No plants found" with a way to suggest [query] to GreenRoot's plant list.
+/// Admins review suggestions; nothing is added until they do.
+class PlantNotFound extends ConsumerWidget {
+  final String query;
+  final bool compact; // inline under a search field
+  const PlantNotFound({super.key, required this.query, this.compact = false});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final q = query.trim();
+    final children = [
+      Text(
+        'No plants found for "$q"',
+        textAlign: TextAlign.center,
+        style: (compact ? AppTypography.bodySmall : AppTypography.body)
+            .copyWith(color: AppColors.textSecondary),
+      ),
+      TextButton.icon(
+        onPressed: () => suggestPlant(context, ref, q),
+        icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+        label: Text('Suggest "$q" to GreenRoot'),
+      ),
+    ];
+    return compact
+        ? Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          )
+        : Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              child: Column(mainAxisSize: MainAxisSize.min, children: children),
+            ),
+          );
+  }
+}
+
+/// Asks for the details and sends the suggestion; tells the user the outcome.
+Future<void> suggestPlant(BuildContext context, WidgetRef ref, String name) async {
+  final nameCtrl = TextEditingController(text: name);
+  final sciCtrl = TextEditingController();
+  final notesCtrl = TextEditingController();
+  final send = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Suggest a plant'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Our team checks it and adds it to the plant list. '
+              "You'll get a notification.",
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Plant name *'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: sciCtrl,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Scientific name (if you know it)',
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: notesCtrl,
+              maxLength: 500,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                hintText: 'Local name, flower colour, variety...',
+                counterText: '',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          // The theme makes filled buttons full width; not in a dialog row.
+          style: FilledButton.styleFrom(minimumSize: const Size(88, 44)),
+          onPressed: () {
+            if (nameCtrl.text.trim().length >= 2) Navigator.pop(ctx, true);
+          },
+          child: const Text('Send'),
+        ),
+      ],
+    ),
+  );
+  final plantName = nameCtrl.text.trim();
+  final sci = sciCtrl.text.trim();
+  final notes = notesCtrl.text.trim();
+  // Not disposed: the dialog may still be animating out with them.
+  if (send != true || !context.mounted) return;
+
+  String message;
+  var ok = true;
+  try {
+    final (result, plant) = await ref.read(plantRepositoryProvider).suggestPlant(
+          name: plantName,
+          scientificName: sci.isEmpty ? null : sci,
+          notes: notes.isEmpty ? null : notes,
+        );
+    message = switch (result) {
+      'EXISTS' => 'GreenRoot already has it as '
+          '"${plant?.commonName?.isNotEmpty == true ? plant!.commonName : plant?.scientificName ?? plantName}". '
+          'Search for that name.',
+      'ALREADY_SUGGESTED' =>
+        '"$plantName" is already suggested. We will add it soon.',
+      _ => "Thanks! We'll review \"$plantName\" and let you know.",
+    };
+  } catch (e) {
+    ok = false;
+    message = e is AppError ? e.message : 'Could not send the suggestion';
+  }
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: ok ? AppColors.primaryMain : AppColors.red600,
+    ),
+  );
+}
+
+/// Last row of a results list: fuzzy botanical matches rarely come back
+/// empty, so "not found" alone would hide the suggestion for local names.
+class SuggestPlantTile extends ConsumerWidget {
+  final String query;
+  const SuggestPlantTile({super.key, required this.query});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final q = query.trim();
+    if (q.length < 2) return const SizedBox.shrink(); // nothing typed yet
+    return ListTile(
+      dense: true,
+      leading: const Icon(
+        Icons.add_circle_outline_rounded,
+        color: AppColors.primaryMain,
+      ),
+      title: Text(
+        'Not in the list? Suggest "$q"',
+        style: AppTypography.bodySmall.copyWith(
+          color: AppColors.primaryMain,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onTap: () => suggestPlant(context, ref, q),
     );
   }
 }

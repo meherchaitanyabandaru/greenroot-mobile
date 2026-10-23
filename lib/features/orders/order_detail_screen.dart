@@ -2732,15 +2732,20 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
                     child:
                         CircularProgressIndicator(color: AppColors.primaryMain),)
                 : _results.isEmpty
-                    ? Center(
-                        child: Text('No plants found',
-                            style: AppTypography.body
-                                .copyWith(color: AppColors.textSecondary),),)
+                    ? _ctrl.text.trim().length >= 2
+                        ? PlantNotFound(query: _ctrl.text)
+                        : Center(
+                            child: Text('No plants found',
+                                style: AppTypography.body
+                                    .copyWith(color: AppColors.textSecondary),),)
                     : ListView.separated(
                         controller: controller,
-                        itemCount: _results.length,
+                        itemCount: _results.length + 1,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
+                          if (i == _results.length) {
+                            return SuggestPlantTile(query: _ctrl.text);
+                          }
                           final m = _results[i];
                           return ListTile(
                             title: Text(m.title),

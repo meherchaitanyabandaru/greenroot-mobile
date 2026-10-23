@@ -942,6 +942,7 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
   List<PlantMatch> _results = [];
   bool _searching = false;
   bool _showDropdown = false;
+  String _noMatchFor = ''; // a finished search that found nothing
 
   @override
   void initState() {
@@ -962,6 +963,7 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
       setState(() {
         _results = [];
         _showDropdown = false;
+        _noMatchFor = '';
       });
       return;
     }
@@ -973,6 +975,7 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
         setState(() {
           _results = results;
           _showDropdown = results.isNotEmpty;
+          _noMatchFor = results.isEmpty ? q : '';
         });
       }
     } catch (e) {
@@ -1106,6 +1109,10 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
                 });
               },
             ),
+            if (!_showDropdown &&
+                _noMatchFor.isNotEmpty &&
+                _searchCtrl.text == _noMatchFor)
+              PlantNotFound(query: _noMatchFor, compact: true),
             if (_showDropdown)
               Container(
                 constraints: const BoxConstraints(maxHeight: 140),
@@ -1123,10 +1130,13 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: _results.length,
+                  itemCount: _results.length + 1,
                   separatorBuilder: (_, __) =>
                       const Divider(height: 1, color: AppColors.border),
                   itemBuilder: (_, i) {
+                    if (i == _results.length) {
+                      return SuggestPlantTile(query: _searchCtrl.text);
+                    }
                     final match = _results[i];
                     return ListTile(
                       dense: true,
