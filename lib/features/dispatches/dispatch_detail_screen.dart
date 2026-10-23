@@ -343,13 +343,15 @@ class _DetailContent extends StatelessWidget {
                       dispatch.outsideVehicleNumber,
                       dispatch.outsideDriverName,
                     ].whereType<String>().where((v) => v.isNotEmpty).join(' · '),),
-                if (dispatch.outsideDriverMobile != null)
+                if (dispatch.outsideDriverMobile != null) ...[
+                  const Divider(height: 1, indent: 56),
                   _PersonRow(
                     icon: Icons.person_outline_rounded,
                     label: 'Lorry driver',
                     name: dispatch.outsideDriverName ?? 'Driver',
                     phone: dispatch.outsideDriverMobile,
                   ),
+                ],
               ],
               if (dispatch.vehicleNumber != null) ...[
                 if (dispatch.driverName != null)

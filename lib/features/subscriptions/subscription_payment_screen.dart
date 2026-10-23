@@ -790,7 +790,9 @@ class _SuccessSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Your ${sub.planName} subscription is now active.',
+              sub.startDate.isAfter(DateTime.now())
+                  ? 'Your ${sub.planName} plan is paid. It starts when your current period ends.'
+                  : 'Your ${sub.planName} subscription is now active.',
               style:
                   AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
@@ -808,6 +810,15 @@ class _SuccessSheet extends StatelessWidget {
                   const SizedBox(height: 6),
                   _SuccessRow(label: 'Plan', value: sub.planName),
                   const SizedBox(height: 6),
+                  // Renewals stack: a paid period can start after the trial
+                  // or the current period ends.
+                  if (sub.startDate.isAfter(DateTime.now())) ...[
+                    _SuccessRow(
+                      label: 'Starts',
+                      value: fmt.format(sub.startDate),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   if (sub.endDate != null)
                     _SuccessRow(
                       label: 'Valid Until',
