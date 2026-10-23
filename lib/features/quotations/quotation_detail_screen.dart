@@ -23,6 +23,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import '../profile/my_addresses_screen.dart';
 import 'quotations.dart';
+import '../../core/utilities/money.dart';
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -1130,13 +1131,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                                 textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 68,
-                            child: Text('₹${item.unitPrice.toStringAsFixed(2)}',
+                            child: Text(inr(item.unitPrice),
                                 style: AppTypography.bodySmall,
                                 textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 70,
                             child: Text(
-                                '₹${item.totalPrice.toStringAsFixed(2)}',
+                                inr(item.totalPrice),
                                 style: AppTypography.bodySmall.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primaryMain,),
@@ -1165,7 +1166,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   SizedBox(
                     width: 70,
                     child: Text(
-                      '₹${q.totalAmount.toStringAsFixed(2)}',
+                      inr(q.totalAmount),
                       style: AppTypography.body.copyWith(
                           fontWeight: FontWeight.w800,
                           color: AppColors.primaryMain,),

@@ -10,7 +10,9 @@ import '../owner/customer_picker_sheet.dart';
 import '../owner/owner_members_screen.dart' show NurseryCustomer;
 import '../plants/plants.dart';
 import '../plants/plant_picker.dart';
+import '../../core/widgets/unsaved_changes_guard.dart';
 import 'orders.dart';
+import '../../core/utilities/money.dart';
 
 class OrderCreateScreen extends ConsumerStatefulWidget {
   const OrderCreateScreen({super.key});
@@ -131,7 +133,10 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return UnsavedChangesGuard(
+      hasChanges: _selectedCustomer != null || _items.any((r) => r.plant != null),
+      what: 'order',
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('New Order'),
@@ -148,6 +153,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -314,7 +320,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
                       style: AppTypography.caption
                           .copyWith(color: AppColors.textSecondary),),
                   Text(
-                    '₹${_grandTotal.toStringAsFixed(2)}',
+                    inr(_grandTotal),
                     style: AppTypography.h3.copyWith(color: AppColors.primaryMain),
                   ),
                 ],
@@ -550,7 +556,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
-                    '₹${row.lineTotal.toStringAsFixed(0)}',
+                    inr(row.lineTotal, paise: false),
                     style: AppTypography.body.copyWith(
                         color: AppColors.primaryMain, fontWeight: FontWeight.w600,),
                     textAlign: TextAlign.center,

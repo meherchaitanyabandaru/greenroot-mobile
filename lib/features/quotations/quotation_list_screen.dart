@@ -13,6 +13,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import 'quotation_create_screen.dart';
 import 'quotation_pins.dart';
 import 'quotations.dart';
+import '../../core/utilities/money.dart';
 
 // ── Grouped list item types ────────────────────────────────────────────────────
 
@@ -727,7 +728,7 @@ class _QuotationCard extends ConsumerWidget {
                       ],),
                     ],
                     Row(children: [
-                      Text('₹${quotation.totalAmount.toStringAsFixed(2)}',
+                      Text(inr(quotation.totalAmount),
                           style: AppTypography.bodySmall.copyWith(
                               color: AppColors.primaryMain,
                               fontWeight: FontWeight.w700,),),

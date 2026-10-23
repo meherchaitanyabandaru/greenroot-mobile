@@ -9,8 +9,10 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart';
 import '../plants/plants.dart';
 import '../plants/plant_picker.dart';
+import '../../core/widgets/unsaved_changes_guard.dart';
 import '../profile/my_addresses_screen.dart';
 import 'orders.dart';
+import '../../core/utilities/money.dart';
 
 // ── Buyer Order Create Screen ─────────────────────────────────────────────────
 // Customers use this to place a direct order with any active nursery.
@@ -188,7 +190,10 @@ class _BuyerOrderCreateScreenState
     final profileName = profile?.name?.trim();
     final profileMobile = profile?.mobile?.trim();
 
-    return Scaffold(
+    return UnsavedChangesGuard(
+      hasChanges: _items.any((r) => r.plant != null),
+      what: 'order',
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Buy Plants'),
         backgroundColor: AppColors.primaryMain,
@@ -289,7 +294,7 @@ class _BuyerOrderCreateScreenState
                             color: AppColors.primaryHover,
                             fontWeight: FontWeight.bold,),),
                     Text(
-                      '₹${_grandTotal.toStringAsFixed(2)}',
+                      inr(_grandTotal),
                       style: AppTypography.h4
                           .copyWith(color: AppColors.primaryHover),
                     ),
@@ -341,6 +346,7 @@ class _BuyerOrderCreateScreenState
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -964,7 +970,7 @@ class _ItemRowWidgetState extends ConsumerState<_ItemRowWidget> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Line total: ₹${row.lineTotal.toStringAsFixed(2)}',
+                'Line total: ${inr(row.lineTotal)}',
                 style: AppTypography.bodySmall
                     .copyWith(color: AppColors.textSecondary),
               ),

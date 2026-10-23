@@ -11,6 +11,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
+import '../../core/utilities/money.dart';
 
 class SubscriptionPaymentScreen extends ConsumerStatefulWidget {
   final int subscriptionId;
@@ -500,13 +501,13 @@ class _PaymentBody extends StatelessWidget {
             children: [
               _PriceLine(
                 label: 'Base Price',
-                value: '₹${basePrice.toStringAsFixed(2)}',
+                value: inr(basePrice),
               ),
               if (promoSavings != null && promoSavings! > 0) ...[
                 const SizedBox(height: 8),
                 _PriceLine(
                   label: 'Promo Discount',
-                  value: '−₹${promoSavings!.toStringAsFixed(2)}',
+                  value: '−${inr(promoSavings!)}',
                   highlight: true,
                 ),
               ],
@@ -516,7 +517,7 @@ class _PaymentBody extends StatelessWidget {
               ),
               _PriceLine(
                 label: 'Total',
-                value: '₹${total.toStringAsFixed(2)}',
+                value: inr(total),
                 bold: true,
               ),
             ],
@@ -526,7 +527,7 @@ class _PaymentBody extends StatelessWidget {
 
         // ── Pay button ───────────────────────────────────────────────────────
         AppButton(
-          label: 'Pay ₹${total.toStringAsFixed(2)} Securely',
+          label: 'Pay ${inr(total)} Securely',
           onPressed: paying ? null : onPay,
           isLoading: paying,
           trailingIcon: Icons.lock_outline_rounded,

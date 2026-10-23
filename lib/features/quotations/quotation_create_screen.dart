@@ -15,7 +15,9 @@ import '../plants/plant_picker.dart';
 import '../owner/owner_members_screen.dart'
     show NurseryCustomer, NurseryManager;
 import '../owner/customer_picker_sheet.dart';
+import '../../core/widgets/unsaved_changes_guard.dart';
 import 'quotations.dart';
+import '../../core/utilities/money.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
 
@@ -452,7 +454,13 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
         ? customerInitialSource[0].toUpperCase()
         : 'C';
 
-    return Scaffold(
+    return UnsavedChangesGuard(
+      hasChanges: !_isEdit &&
+          (_selectedCustomer != null ||
+              _nameCtrl.text.trim().isNotEmpty ||
+              _items.any((r) => r.plantId != null)),
+      what: 'quotation',
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(title),
@@ -834,7 +842,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(children: [
-                Text('₹${_grandTotal.toStringAsFixed(2)}',
+                Text(inr(_grandTotal),
                     style: AppTypography.h3
                         .copyWith(color: AppColors.primaryMain),),
                 const Spacer(),
@@ -865,6 +873,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1218,7 +1227,7 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Text(
-                '₹${row.lineTotal.toStringAsFixed(0)}',
+                inr(row.lineTotal, paise: false),
                 style: AppTypography.bodySmall.copyWith(
                     color: AppColors.primaryMain, fontWeight: FontWeight.w700,),
                 textAlign: TextAlign.center,

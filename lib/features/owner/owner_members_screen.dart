@@ -181,7 +181,9 @@ class NurseryManager {
   }
 
   String get identityLabel {
-    final parts = <String>['User ID: $userId'];
+    // Mobile (or email) identifies a person to the nursery; the internal
+    // id only when there is neither.
+    final parts = <String>[];
     final trimmedMobile = mobile?.trim();
     final trimmedEmail = email?.trim();
     if (trimmedMobile?.isNotEmpty == true) {
@@ -189,7 +191,7 @@ class NurseryManager {
     } else if (trimmedEmail?.isNotEmpty == true) {
       parts.add(trimmedEmail!);
     }
-    return parts.join(' | ');
+    return parts.isEmpty ? 'User #$userId' : parts.join(' | ');
   }
 }
 
@@ -240,7 +242,9 @@ class NurseryCustomer {
   }
 
   String get identityLabel {
-    final parts = <String>['User ID: $userId'];
+    // Mobile (or email) identifies a person to the nursery; the internal
+    // id only when there is neither.
+    final parts = <String>[];
     final trimmedMobile = mobile.trim();
     final trimmedEmail = email?.trim();
     if (trimmedMobile.isNotEmpty) {
@@ -248,7 +252,7 @@ class NurseryCustomer {
     } else if (trimmedEmail?.isNotEmpty == true) {
       parts.add(trimmedEmail!);
     }
-    return parts.join(' | ');
+    return parts.isEmpty ? 'User #$userId' : parts.join(' | ');
   }
 }
 

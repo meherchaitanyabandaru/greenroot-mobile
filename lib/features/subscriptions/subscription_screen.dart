@@ -16,6 +16,7 @@ import '../auth/data/models/capabilities_model.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
+import '../../core/utilities/money.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -1347,7 +1348,7 @@ class _PaymentRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '₹${payment.amount.toStringAsFixed(2)}',
+                inr(payment.amount),
                 style: AppTypography.bodySmall
                     .copyWith(fontWeight: FontWeight.w700),
               ),
