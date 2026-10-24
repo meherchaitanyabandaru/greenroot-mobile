@@ -1,0 +1,76 @@
+{
+  "pagination": {
+    "page": 1,
+    "per_page": 50,
+    "total": 1,
+    "total_pages": 1
+  },
+  "subscriptions": [
+    {
+      "auto_renew": false,
+      "capabilities": {
+        "can_cancel": true,
+        "can_change_plan": true,
+        "can_pause": false,
+        "can_renew": true,
+        "can_resume": false,
+        "can_retry_payment": false
+      },
+      "created_at": "2026-10-23T16:51:57.393943Z",
+      "days_remaining": 180,
+      "end_date": "2027-04-22T00:00:00Z",
+      "id": 1,
+      "latest_payment": {
+        "amount": 2499,
+        "created_at": "2026-10-23T17:12:21.114145Z",
+        "id": 1,
+        "payment_code": "PAY-20261023-0001",
+        "payment_date": "2026-10-23T17:12:21.114145Z",
+        "payment_method": "CARD",
+        "payment_status": "REFUNDED",
+        "provider": "razorpay",
+        "provider_order_id": "order_TrQU9Nd3EpwLnP",
+        "provider_payment_id": "pay_TrQZKV2HLzWJuu"
+      },
+      "lifecycle": {
+        "customer": {
+          "label": "Active",
+          "subtitle": "Your subscription is active.",
+          "title": "Subscription Active",
+          "variant": "success"
+        },
+        "next_actions": {
+          "customer": [
+            "Manage Subscription"
+          ],
+          "operator": [
+            "View Subscription"
+          ]
+        },
+        "operator": {
+          "label": "Active",
+          "subtitle": "Your subscription is active.",
+          "title": "Subscription Active",
+          "variant": "success"
+        }
+      },
+      "nursery_name": "Green Valley Nursery",
+      "plan_code": "GROWTH",
+      "plan_id": 3,
+      "plan_name": "Growth",
+      "start_date": "2026-10-23T00:00:00Z",
+      "subscription_code": "SUB-000001",
+      "subscription_status": "ACTIVE",
+      "summary": {
+        "is_active": true,
+        "is_expired": false,
+        "is_expiring_soon": false,
+        "payment_status": "REFUNDED"
+      },
+      "updated_at": "2026-10-23T19:31:10.781286Z",
+      "user_id": 2,
+      "user_mobile": "7010000001",
+      "user_name": "Lakshmi Devi"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "dispatch": {
+    "capabilities": {
+      "can_accept": false,
+      "can_add_items": false,
+      "can_cancel": false,
+      "can_confirm_receipt": false,
+      "can_mark_delivered": false,
+      "can_mark_dispatched": false,
+      "can_override_delivery": false,
+      "can_report_issue": false,
+      "can_share_code": false,
+      "can_start_trip": false,
+      "can_view_tracking": false
+    },
+    "created_at": "2026-10-23T18:52:04.14707Z",
+    "customer_user_id": 21,
+    "delivery_confirmation": "CUSTOMER_APP",
+    "delivery_confirmed_at": "2026-10-23T19:02:22.580115Z",
+    "delivery_confirmed_by_user_id": 21,
+    "delivery_date": "2026-10-23T19:00:41.644428Z",
+    "delivery_latitude": 17.44,
+    "delivery_longitude": 78.38,
+    "delivery_override_reason": "Customer phone switched off, plants given to his son",
+    "destination_address": "12-4 Main Road, Hyderabad",
+    "dispatch_code": "DSP-20261024-0002",
+    "dispatch_number": "DSP-20261024-0002",
+    "dispatch_status": "DELIVERED",
+    "dispatched_by": 2,
+    "id": 8,
+    "is_outside_transport": true,
+    "lifecycle": {
+      "customer": {
+        "label": "Delivered",
+        "subtitle": "Your order has been delivered.",
+        "title": "Delivered",
+        "variant": "success"
+      },
+      "driver": {
+        "label": "Delivered",
+        "subtitle": "Delivery is complete.",
+        "title": "Delivered",
+        "variant": "success"
+      },
+      "next_actions": {
+        "customer": [
+          "View Delivery"
+        ],
+        "driver": [
+          "View Completed Trip"
+        ],
+        "operator": [
+          "Complete Order"
+        ]
+      },
+      "operator": {
+        "label": "Delivered",
+        "subtitle": "Delivery is complete.",
+        "title": "Delivered",
+        "variant": "success"
+      }
+    },
+    "loading_completed_at": "2026-10-23T18:52:04.037899Z",
+    "loading_started_at": "2026-10-23T18:52:04.023915Z",
+    "nursery_id": 1,
+    "order_id": 18,
+    "order_number": "ORD-20261024-0001",
+    "order_status": "COMPLETED",
+    "outside_driver_mobile": "9876501234",
+    "outside_driver_name": "Ramesh",
+    "outside_vehicle_number": "TS09 UB 7788",
+    "owner_user_id_snapshot": 2,
+    "requires_driver_ack": false,
+    "seller_nursery_id": 1,
+    "seller_nursery_name": "Green Valley Nursery",
+    "trip_uuid": "e03f0b8b-186d-41de-b059-624d4e93e218",
+    "updated_at": "2026-10-23T19:02:22.580115Z",
+    "version": 4
+  }
+}

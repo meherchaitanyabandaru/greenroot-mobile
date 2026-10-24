@@ -1,0 +1,30 @@
+{
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "total_pages": 1
+  },
+  "payments": [
+    {
+      "amount": 2499,
+      "created_at": "2026-10-23T17:12:21.114145Z",
+      "id": 1,
+      "notes": "Subscription renewed | Refunded rfnd_TrSqOy0K80VKlb: E2E test: customer changed mind within 7 days",
+      "payer_name": "Lakshmi",
+      "payer_user_id": 2,
+      "payment_code": "PAY-20261023-0001",
+      "payment_date": "2026-10-23T17:12:21.114145Z",
+      "payment_for": "SUBSCRIPTION",
+      "payment_method": "CARD",
+      "payment_status": "REFUNDED",
+      "provider": "razorpay",
+      "provider_order_id": "order_TrQU9Nd3EpwLnP",
+      "provider_payment_id": "pay_TrQZKV2HLzWJuu",
+      "subscription_plan": "Growth",
+      "updated_at": "2026-10-23T19:25:17.837233Z",
+      "user_subscription_id": 1,
+      "version": 2
+    }
+  ]
+}

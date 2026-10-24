@@ -1,0 +1,75 @@
+{
+  "notifications": [
+    {
+      "channel": "IN_APP",
+      "created_at": "2026-10-24T04:24:43.507666Z",
+      "data": "{}",
+      "id": 34,
+      "message": "Your order dispatch DSP-20261024-0006 is on the way.",
+      "notification_code": "NTF-000034",
+      "notification_status": "PENDING",
+      "notification_type": "ORDER_DISPATCHED",
+      "title": "Order Dispatched",
+      "updated_at": "2026-10-24T04:24:43.507666Z",
+      "user_id": 21
+    },
+    {
+      "channel": "IN_APP",
+      "created_at": "2026-10-23T19:00:41.75874Z",
+      "data": "{}",
+      "id": 25,
+      "message": "DSP-20261024-0002 was marked delivered by the nursery: Customer phone switched off, plants given to his son. If you did not receive your plants, report a problem in the app within 48 hours.",
+      "notification_code": "NTF-000025",
+      "notification_status": "PENDING",
+      "notification_type": "ORDER_DELIVERED",
+      "title": "Delivery marked without your confirmation",
+      "updated_at": "2026-10-23T19:00:41.75874Z",
+      "user_id": 21
+    },
+    {
+      "channel": "IN_APP",
+      "created_at": "2026-10-23T18:52:04.180214Z",
+      "data": "{}",
+      "id": 24,
+      "message": "Your order dispatch DSP-20261024-0002 is on the way.",
+      "notification_code": "NTF-000024",
+      "notification_status": "PENDING",
+      "notification_type": "ORDER_DISPATCHED",
+      "title": "Order Dispatched",
+      "updated_at": "2026-10-23T18:52:04.180214Z",
+      "user_id": 21
+    },
+    {
+      "channel": "IN_APP",
+      "created_at": "2026-10-23T18:40:59.320368Z",
+      "data": "{}",
+      "id": 23,
+      "message": "DSP-20261024-0001 was delivered with your code.",
+      "notification_code": "NTF-000023",
+      "notification_status": "PENDING",
+      "notification_type": "ORDER_DELIVERED",
+      "title": "Order delivered",
+      "updated_at": "2026-10-23T18:40:59.320368Z",
+      "user_id": 21
+    },
+    {
+      "channel": "IN_APP",
+      "created_at": "2026-10-23T18:33:11.336684Z",
+      "data": "{}",
+      "id": 22,
+      "message": "Your order dispatch DSP-20261024-0001 is on the way.",
+      "notification_code": "NTF-000022",
+      "notification_status": "PENDING",
+      "notification_type": "ORDER_DISPATCHED",
+      "title": "Order Dispatched",
+      "updated_at": "2026-10-23T18:33:11.336684Z",
+      "user_id": 21
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 10,
+    "total": 5,
+    "total_pages": 1
+  }
+}

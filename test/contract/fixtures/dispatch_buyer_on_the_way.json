@@ -1,0 +1,75 @@
+{
+  "dispatch": {
+    "capabilities": {
+      "can_accept": false,
+      "can_add_items": false,
+      "can_cancel": false,
+      "can_confirm_receipt": true,
+      "can_mark_delivered": false,
+      "can_mark_dispatched": false,
+      "can_override_delivery": false,
+      "can_report_issue": true,
+      "can_share_code": false,
+      "can_start_trip": false,
+      "can_view_tracking": true
+    },
+    "created_at": "2026-10-24T04:24:43.456194Z",
+    "customer_user_id": 21,
+    "delivery_code": "2520",
+    "delivery_latitude": 17.44,
+    "delivery_longitude": 78.38,
+    "destination_address": "12-4 Main Road, Hyderabad",
+    "dispatch_code": "DSP-20261024-0006",
+    "dispatch_number": "DSP-20261024-0006",
+    "dispatch_status": "DISPATCHED",
+    "dispatched_by": 2,
+    "id": 12,
+    "is_outside_transport": true,
+    "lifecycle": {
+      "customer": {
+        "label": "Out for Delivery",
+        "subtitle": "Your order has left the nursery.",
+        "title": "Out for Delivery",
+        "variant": "info"
+      },
+      "driver": {
+        "label": "Dispatched",
+        "subtitle": "Order has left the nursery.",
+        "title": "Out for Delivery",
+        "variant": "info"
+      },
+      "next_actions": {
+        "customer": [
+          "Track Delivery"
+        ],
+        "driver": [
+          "Start Navigation"
+        ],
+        "operator": [
+          "View Dispatch"
+        ]
+      },
+      "operator": {
+        "label": "Dispatched",
+        "subtitle": "Order has left the nursery.",
+        "title": "Out for Delivery",
+        "variant": "info"
+      }
+    },
+    "loading_completed_at": "2026-10-24T04:24:43.346309Z",
+    "loading_started_at": "2026-10-24T04:24:43.334037Z",
+    "nursery_id": 1,
+    "order_id": 22,
+    "order_number": "ORD-20261024-0005",
+    "order_status": "LOADED",
+    "outside_driver_name": "Suresh",
+    "outside_vehicle_number": "AP09 CD 4455",
+    "owner_user_id_snapshot": 2,
+    "requires_driver_ack": false,
+    "seller_nursery_id": 1,
+    "seller_nursery_name": "Green Valley Nursery",
+    "trip_uuid": "68dec681-19b3-4332-bc95-bb9a91a263d2",
+    "updated_at": "2026-10-24T04:24:43.495783Z",
+    "version": 2
+  }
+}

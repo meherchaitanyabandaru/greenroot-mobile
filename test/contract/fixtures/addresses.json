@@ -1,0 +1,20 @@
+{
+  "addresses": [
+    {
+      "address_line1": "Survey 45 Shankarpally Road",
+      "address_line2": "Near water tank",
+      "address_type": "Farm",
+      "city": "Hyderabad",
+      "country": "India",
+      "created_at": "2026-10-23T19:22:37.407563Z",
+      "id": 14,
+      "is_default": true,
+      "latitude": 17.4401,
+      "longitude": 78.3489,
+      "postal_code": "500032",
+      "state": "Telangana",
+      "updated_at": "2026-10-23T19:23:20.881599Z",
+      "user_id": 21
+    }
+  ]
+}

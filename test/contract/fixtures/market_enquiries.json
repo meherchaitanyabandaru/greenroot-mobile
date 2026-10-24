@@ -1,0 +1,72 @@
+{
+  "enquiries": [
+    {
+      "ad_id": 1,
+      "ad_nursery_id": 1,
+      "ad_nursery_name": "Green Valley Nursery",
+      "ad_photo": "https://files.example.com/market-ads/f1bd688f-87a6-4497-b588-8084a6c74405.jpg",
+      "ad_price_per_unit": 45,
+      "ad_price_unit": "PER_PLANT",
+      "ad_quantity": 300,
+      "ad_status": "PUBLISHED",
+      "ad_title": "Guava",
+      "ad_type": "SELL",
+      "agreed_at": "2026-10-23T17:03:07.218184Z",
+      "agreed_price_per_unit": 40,
+      "agreed_quantity": 100,
+      "capabilities": {
+        "can_cancel": false,
+        "can_close": true,
+        "can_offer": false,
+        "can_reply": true
+      },
+      "code": "ENQ-000001",
+      "created_at": "2026-10-23T17:00:35.838335Z",
+      "created_by_user_id": 3,
+      "enquiring_nursery_id": 2,
+      "enquiring_nursery_name": "Rose Garden Nursery",
+      "id": 1,
+      "last_message": "Deal agreed: ₹40 per plant × 100",
+      "last_message_at": "2026-10-23T17:03:07.218184Z",
+      "last_message_type": "SYSTEM",
+      "lifecycle": {
+        "buyer": {
+          "label": "Deal Agreed",
+          "subtitle": "Arrange the pickup with the seller.",
+          "title": "Deal Agreed",
+          "variant": "success"
+        },
+        "next_actions": {
+          "buyer": [
+            "Reply",
+            "Cancel Enquiry"
+          ],
+          "seller": [
+            "Reply",
+            "Close Enquiry"
+          ]
+        },
+        "seller": {
+          "label": "Deal Agreed",
+          "subtitle": "Arrange the pickup with the buyer.",
+          "title": "Deal Agreed",
+          "variant": "success"
+        }
+      },
+      "message": "Is it still available?",
+      "status": "DEAL_AGREED",
+      "summary": {
+        "is_buyer": false,
+        "is_open": true,
+        "is_seller": true
+      },
+      "unread_count": 0,
+      "updated_at": "2026-10-23T17:03:07.218184Z",
+      "viewed_at": "2026-10-23T17:02:56.098949Z"
+    }
+  ],
+  "page": 1,
+  "per_page": 10,
+  "total": 1,
+  "unread_total": 0
+}

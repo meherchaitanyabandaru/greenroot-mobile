@@ -1,0 +1,210 @@
+{
+  "orders": [
+    {
+      "active_dispatch": {
+        "id": 12,
+        "status": "DISPATCHED"
+      },
+      "active_dispatch_id": 12,
+      "active_dispatch_status": "DISPATCHED",
+      "buyer_name": "Ravi",
+      "buyer_user_id": 21,
+      "capabilities": {
+        "can_add_items": false,
+        "can_cancel": false,
+        "can_complete_loading": false,
+        "can_confirm": false,
+        "can_delete": false,
+        "can_edit": false,
+        "can_start_loading": false
+      },
+      "created_at": "2026-10-24T04:24:42.902375Z",
+      "created_by_user_id": 2,
+      "customer_mobile": "7010000002",
+      "customer_name": "Ravi Teja",
+      "id": 22,
+      "lifecycle": {
+        "customer": {
+          "label": "Out for Delivery",
+          "subtitle": "Your order has left the nursery.",
+          "title": "Out for Delivery",
+          "variant": "info"
+        },
+        "driver": {
+          "label": "Loaded",
+          "subtitle": "Ready for delivery.",
+          "title": "Order Loaded",
+          "variant": "success"
+        },
+        "next_actions": {
+          "customer": [
+            "Track Delivery"
+          ],
+          "driver": [
+            "Update Trip"
+          ],
+          "operator": [
+            "View Dispatch"
+          ]
+        },
+        "operator": {
+          "label": "Loaded",
+          "subtitle": "Ready for delivery.",
+          "title": "Order Loaded",
+          "variant": "success"
+        }
+      },
+      "loading_completed_at": "2026-10-24T04:24:43.346309Z",
+      "loading_completed_by_user_id": 2,
+      "loading_started_at": "2026-10-24T04:24:43.334037Z",
+      "nursery_name": "Green Valley Nursery",
+      "order_code": "ORD-20261024-0005",
+      "order_date": "2026-10-24T04:24:42.902375Z",
+      "order_number": "ORD-20261024-0005",
+      "order_status": "LOADED",
+      "seller_nursery": "Green Valley Nursery",
+      "seller_nursery_id": 1,
+      "total_amount": 3000,
+      "updated_at": "2026-10-24T04:24:43.346309Z",
+      "version": 6
+    },
+    {
+      "active_dispatch": {
+        "id": 8,
+        "status": "DELIVERED"
+      },
+      "active_dispatch_id": 8,
+      "active_dispatch_status": "DELIVERED",
+      "buyer_name": "Ravi",
+      "buyer_user_id": 21,
+      "capabilities": {
+        "can_add_items": false,
+        "can_cancel": false,
+        "can_complete_loading": false,
+        "can_confirm": false,
+        "can_delete": false,
+        "can_edit": false,
+        "can_start_loading": false
+      },
+      "created_at": "2026-10-23T18:52:03.620169Z",
+      "created_by_user_id": 2,
+      "customer_mobile": "7010000002",
+      "customer_name": "Ravi Teja",
+      "id": 18,
+      "lifecycle": {
+        "customer": {
+          "label": "Delivered",
+          "subtitle": "Order delivered and completed.",
+          "title": "Delivered",
+          "variant": "success"
+        },
+        "driver": {
+          "label": "Completed",
+          "subtitle": "Order delivered and completed.",
+          "title": "Order Completed",
+          "variant": "success"
+        },
+        "next_actions": {
+          "customer": [
+            "View Receipt",
+            "Rate Order"
+          ],
+          "operator": [
+            "View Order"
+          ]
+        },
+        "operator": {
+          "label": "Completed",
+          "subtitle": "Order delivered and completed.",
+          "title": "Order Completed",
+          "variant": "success"
+        }
+      },
+      "loading_completed_at": "2026-10-23T18:52:04.037899Z",
+      "loading_completed_by_user_id": 2,
+      "loading_started_at": "2026-10-23T18:52:04.023915Z",
+      "nursery_name": "Green Valley Nursery",
+      "order_code": "ORD-20261024-0001",
+      "order_date": "2026-10-23T18:52:03.620169Z",
+      "order_number": "ORD-20261024-0001",
+      "order_status": "COMPLETED",
+      "seller_nursery": "Green Valley Nursery",
+      "seller_nursery_id": 1,
+      "total_amount": 3000,
+      "updated_at": "2026-10-23T19:00:41.680201Z",
+      "version": 7
+    },
+    {
+      "active_dispatch": {
+        "id": 7,
+        "status": "DELIVERED"
+      },
+      "active_dispatch_id": 7,
+      "active_dispatch_status": "DELIVERED",
+      "buyer_name": "Ravi",
+      "buyer_user_id": 21,
+      "capabilities": {
+        "can_add_items": false,
+        "can_cancel": false,
+        "can_complete_loading": false,
+        "can_confirm": false,
+        "can_delete": false,
+        "can_edit": false,
+        "can_start_loading": false
+      },
+      "created_at": "2026-10-23T17:39:57.998366Z",
+      "created_by_user_id": 2,
+      "customer_mobile": "7010000002",
+      "customer_name": "Ravi Teja",
+      "id": 4,
+      "lifecycle": {
+        "customer": {
+          "label": "Delivered",
+          "subtitle": "Order delivered and completed.",
+          "title": "Delivered",
+          "variant": "success"
+        },
+        "driver": {
+          "label": "Completed",
+          "subtitle": "Order delivered and completed.",
+          "title": "Order Completed",
+          "variant": "success"
+        },
+        "next_actions": {
+          "customer": [
+            "View Receipt",
+            "Rate Order"
+          ],
+          "operator": [
+            "View Order"
+          ]
+        },
+        "operator": {
+          "label": "Completed",
+          "subtitle": "Order delivered and completed.",
+          "title": "Order Completed",
+          "variant": "success"
+        }
+      },
+      "loading_completed_at": "2026-10-23T17:39:58.192019Z",
+      "loading_completed_by_user_id": 2,
+      "loading_started_at": "2026-10-23T17:39:58.184063Z",
+      "nursery_name": "Green Valley Nursery",
+      "order_code": "ORD-20261023-0004",
+      "order_date": "2026-10-23T17:39:57.998366Z",
+      "order_number": "ORD-20261023-0004",
+      "order_status": "COMPLETED",
+      "seller_nursery": "Green Valley Nursery",
+      "seller_nursery_id": 1,
+      "total_amount": 3000,
+      "updated_at": "2026-10-23T18:40:59.264382Z",
+      "version": 7
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 10,
+    "total": 3,
+    "total_pages": 1
+  }
+}

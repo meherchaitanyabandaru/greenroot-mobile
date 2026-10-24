@@ -192,6 +192,22 @@ lib/
 
 ---
 
+## Tests and the API contract (2026-10-24)
+
+The app parses API JSON by hand, so a renamed API field shows up as a blank on screen, not as an error. Two kinds of test guard against that, and both run in CI with `flutter test`:
+
+- **Contract tests** (`test/contract/`). Real API responses in `test/contract/fixtures/` are parsed with the app's own models, and the fields screens rely on are checked. Renaming `delivery_code` in a fixture fails a test.
+- **Flow tests** (`test/screens/main_flows_test.dart`). Quotation decline, order confirm and payment pricing run on the same real responses, signed in through `test/helpers/fixtures.dart`.
+
+**When the API changes a response on purpose:**
+1. With the local API running and dev data loaded, run `python3 -I tool/contract_capture.py`. It only reads (GETs as the dev cast), drops payment proofs and rewrites local file URLs.
+2. Run `flutter test`. A failure shows which screens read the changed field.
+3. Update the model, and commit it together with the new fixtures.
+
+Coverage: 17% of lines (`flutter test --coverage`). It's concentrated on login, quotations, orders, delivery confirmation and payment.
+
+---
+
 ## User Help: Ask Mango 🥭 (2026-10-22)
 
 Offline, predefined walkthroughs (no AI, no API calls). A 🥭 tab on the left edge opens a picker; guides for the current screen are listed first ("For this screen"). Each step dims the screen, cuts a spotlight around the real control, shows a pointing hand and a short instruction with Back / Skip / Next. Tapping the spotlighted control works normally and moves to the next step; on completion the user can Replay. Android Back while Mango is open only closes Mango.

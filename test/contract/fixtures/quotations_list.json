@@ -1,0 +1,70 @@
+{
+  "pagination": {
+    "page": 1,
+    "per_page": 5,
+    "total": 1,
+    "total_pages": 1
+  },
+  "quotations": [
+    {
+      "capabilities": {
+        "can_accept": false,
+        "can_assign_manager": true,
+        "can_convert": false,
+        "can_delete": true,
+        "can_edit": false,
+        "can_generate_document": true,
+        "can_manage_verify_token": true,
+        "can_recall": false,
+        "can_reject": false,
+        "can_send": false,
+        "can_update_customer": false
+      },
+      "created_at": "2026-10-23T19:09:14.403663Z",
+      "created_by_name": "Lakshmi",
+      "created_by_user_id": 2,
+      "customer_responded_at": "2026-10-23T19:10:07.821894Z",
+      "expiry_summary": {
+        "days_remaining": 14,
+        "is_expired": false
+      },
+      "id": 9,
+      "lifecycle": {
+        "customer": {
+          "label": "Rejected",
+          "subtitle": "You rejected this quotation.",
+          "title": "Quotation Rejected",
+          "variant": "error"
+        },
+        "next_actions": {
+          "customer": [
+            "View Quotation"
+          ],
+          "operator": [
+            "Review Rejection"
+          ]
+        },
+        "operator": {
+          "label": "Rejected",
+          "subtitle": "Review the rejection before next follow-up.",
+          "title": "Customer Rejected",
+          "variant": "error"
+        }
+      },
+      "nursery_id": 1,
+      "nursery_name": "Green Valley Nursery",
+      "nursery_phone": "7010000001",
+      "quotation_code": "QUO-20261024-0001",
+      "quotation_type": "CUSTOMER",
+      "recipient_mobile": "7010000002",
+      "recipient_name": "Ravi Teja",
+      "rejection_reason": "Price too high, found cheaper nearby",
+      "sent_at": "2026-10-23T19:09:14.464726Z",
+      "status": "CUSTOMER_REJECTED",
+      "total_amount": 2200,
+      "updated_at": "2026-10-23T19:10:07.821894Z",
+      "valid_until": "2026-11-07T19:09:14.464726Z",
+      "version": 4
+    }
+  ]
+}

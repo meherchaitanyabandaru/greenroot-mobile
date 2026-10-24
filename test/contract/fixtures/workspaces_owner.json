@@ -1,0 +1,13 @@
+[
+  {
+    "role": "CUSTOMER",
+    "type": "PERSONAL"
+  },
+  {
+    "nursery_id": 1,
+    "nursery_name": "Green Valley Nursery",
+    "nursery_status": "APPROVED",
+    "role": "OWNER",
+    "type": "OWNED_NURSERY"
+  }
+]

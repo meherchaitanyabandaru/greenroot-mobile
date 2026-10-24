@@ -1,0 +1,88 @@
+{
+  "ad": {
+    "access_instructions": "",
+    "ad_type": "SELL",
+    "capabilities": {
+      "can_archive": false,
+      "can_delete": false,
+      "can_edit": false,
+      "can_enquire": false,
+      "can_pause": false,
+      "can_publish": false,
+      "can_renew": false,
+      "can_report": true,
+      "can_resume": false,
+      "can_save": true
+    },
+    "category_name": "Fruit Plants",
+    "code": "MKT-000001",
+    "created_at": "2026-10-23T16:58:20.873478Z",
+    "created_by_user_id": 2,
+    "description": "Grafted Allahabad Safeda, 2 ft",
+    "enquiry_count": 1,
+    "expires_at": "2026-11-22T16:58:20.980408Z",
+    "id": 1,
+    "is_saved_by_me": false,
+    "lifecycle": {
+      "buyer": {
+        "label": "Available",
+        "subtitle": "Send an enquiry if this stock matches your need.",
+        "title": "Market Ad Available",
+        "variant": "success"
+      },
+      "next_actions": {
+        "buyer": [
+          "Send Enquiry",
+          "Save Ad"
+        ],
+        "seller": [
+          "Pause Ad",
+          "Review Enquiries"
+        ]
+      },
+      "seller": {
+        "label": "Published",
+        "subtitle": "Buyers can view and enquire.",
+        "title": "Live on Market",
+        "variant": "success"
+      }
+    },
+    "my_enquiry_id": 1,
+    "nursery_id": 1,
+    "nursery_mobile": "7010000001",
+    "nursery_name": "Green Valley Nursery",
+    "nursery_verified": true,
+    "photos": [
+      "https://files.example.com/market-ads/f1bd688f-87a6-4497-b588-8084a6c74405.jpg"
+    ],
+    "pickup_address": "Plot 7, Botanical Garden Road, Kondapur, Hyderabad",
+    "pickup_confirmed_at": "2026-10-23T16:58:20.74855Z",
+    "pickup_confirmed_by": 2,
+    "pickup_gps_accuracy_meters": 5,
+    "pickup_landmark": "",
+    "pickup_latitude": 17.0004983,
+    "pickup_location_source": "gps_confirmed",
+    "pickup_longitude": 81.804,
+    "plant_id": 8,
+    "plant_name": "Guava",
+    "posted_by_name": "Lakshmi Devi",
+    "price_per_unit": 45,
+    "price_unit": "PER_PLANT",
+    "published_at": "2026-10-23T16:58:20.980408Z",
+    "quantity": 300,
+    "road_accessible": true,
+    "save_count": 0,
+    "size_description": "Medium",
+    "status": "PUBLISHED",
+    "summary": {
+      "days_remaining": 29,
+      "is_expired": false,
+      "is_live": true,
+      "is_owner": false
+    },
+    "title": "Guava",
+    "truck_accessible": true,
+    "updated_at": "2026-10-24T04:25:48.948339Z",
+    "view_count": 5
+  }
+}
