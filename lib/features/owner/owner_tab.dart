@@ -423,26 +423,36 @@ class _SellerQuotationCardState extends ConsumerState<_SellerQuotationCard> {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                if (q.items.isNotEmpty) ...[
-                  const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted,),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
+                // Items and date take what is left and wrap on a narrow phone
+                // or large text; the total stays on the right.
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 2,
+                    children: [
+                      if (q.items.isNotEmpty) ...[
+                        const Icon(Icons.eco_outlined,
+                            size: 14, color: AppColors.textMuted,),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                      ],
+                      if (date != null) ...[
+                        const Icon(Icons.schedule_outlined,
+                            size: 14, color: AppColors.textMuted,),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(dateFmt.format(date),
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.textSecondary),),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.lg),
-                ],
-                if (date != null) ...[
-                  const Icon(Icons.schedule_outlined,
-                      size: 14, color: AppColors.textMuted,),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(dateFmt.format(date),
-                      style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary),),
-                ],
-                const Spacer(),
+                ),
+                const SizedBox(width: AppSpacing.sm),
                 Text(fmt.format(q.totalAmount),
                     style: AppTypography.h3
                         .copyWith(color: AppColors.primaryMain),),
@@ -630,26 +640,36 @@ class _SellerOrderCard extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                if (o.items.isNotEmpty) ...[
-                  const Icon(Icons.eco_outlined,
-                      size: 14, color: AppColors.textMuted,),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
+                // Items and date take what is left and wrap on a narrow phone
+                // or large text; the total stays on the right.
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 2,
+                    children: [
+                      if (o.items.isNotEmpty) ...[
+                        const Icon(Icons.eco_outlined,
+                            size: 14, color: AppColors.textMuted,),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                      ],
+                      if (date != null) ...[
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 14, color: AppColors.textMuted,),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(dateFmt.format(date),
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.textSecondary),),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.lg),
-                ],
-                if (date != null) ...[
-                  const Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textMuted,),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(dateFmt.format(date),
-                      style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary),),
-                ],
-                const Spacer(),
+                ),
+                const SizedBox(width: AppSpacing.sm),
                 Text(fmt.format(o.totalAmount),
                     style: AppTypography.h3
                         .copyWith(color: AppColors.primaryMain),),

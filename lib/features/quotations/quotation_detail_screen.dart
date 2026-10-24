@@ -694,13 +694,19 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
           _InfoCard(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(
-                    child: Text(q.quotationCode,
-                        style: AppTypography.h3
-                            .copyWith(color: AppColors.primaryMain),),),
-                _StatusBadge(status: q.status),
-              ],),
+              // Wraps: on a narrow phone or large text the badge goes below
+              // the code instead of squeezing it.
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(q.quotationCode,
+                      style: AppTypography.h3
+                          .copyWith(color: AppColors.primaryMain),),
+                  _StatusBadge(status: q.status),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(_fmt(q.createdAt),
                   style: AppTypography.caption

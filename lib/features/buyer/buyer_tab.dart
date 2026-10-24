@@ -419,13 +419,15 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                     color: q.isExpired ? AppColors.red600 : AppColors.textMuted,
                   ),
                   const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '${q.isExpired ? "Expired" : "Valid until"}: ${DateFormat("d MMM yyyy").format(q.validUntil!)}',
-                    style: AppTypography.caption.copyWith(
-                      color:
-                          q.isExpired ? AppColors.red600 : AppColors.textMuted,
-                      fontWeight:
-                          q.isExpired ? FontWeight.w600 : FontWeight.normal,
+                  Flexible(
+                    child: Text(
+                      '${q.isExpired ? "Expired" : "Valid until"}: ${DateFormat("d MMM yyyy").format(q.validUntil!)}',
+                      style: AppTypography.caption.copyWith(
+                        color:
+                            q.isExpired ? AppColors.red600 : AppColors.textMuted,
+                        fontWeight:
+                            q.isExpired ? FontWeight.w600 : FontWeight.normal,
+                      ),
                     ),
                   ),
                 ],
@@ -434,34 +436,44 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                if (q.items.isNotEmpty) ...[
-                  const Icon(
-                    Icons.eco_outlined,
-                    size: 14,
-                    color: AppColors.textMuted,
+                // Items and date take what is left and wrap on a narrow phone
+                // or large text; the total stays on the right.
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 2,
+                    children: [
+                      if (q.items.isNotEmpty) ...[
+                        const Icon(
+                          Icons.eco_outlined,
+                          size: 14,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          '${q.items.length} ${q.items.length == 1 ? 'item' : 'items'}',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                      ],
+                      if (date != null) ...[
+                        const Icon(
+                          Icons.schedule_outlined,
+                          size: 14,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          dateFmt.format(date),
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '${q.items.length} ${q.items.length == 1 ? 'item' : 'items'}',
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                ],
-                if (date != null) ...[
-                  const Icon(
-                    Icons.schedule_outlined,
-                    size: 14,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    dateFmt.format(date),
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-                const Spacer(),
+                ),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   fmt.format(q.totalAmount),
                   style:

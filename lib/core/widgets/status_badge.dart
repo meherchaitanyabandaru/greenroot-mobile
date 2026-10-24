@@ -61,11 +61,17 @@ class StatusBadge extends StatelessWidget {
               ),
               const SizedBox(width: 4),
             ],
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(
-                color: colors.text,
-                fontWeight: FontWeight.w600,
+            // Shortens with "…" only when the badge has no room (narrow phone,
+            // large text); otherwise unchanged.
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(
+                  color: colors.text,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

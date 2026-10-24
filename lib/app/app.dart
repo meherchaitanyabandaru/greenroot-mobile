@@ -69,7 +69,9 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
       builder: (context, child) {
         final media = MediaQuery.of(context);
         final scale = media.textScaler.scale(1);
-        final cappedScale = scale > 1 ? 1.0 : scale;
+        // Honour the phone's larger font up to 130% (readability); beyond that
+        // layouts break. test/screens/small_screen_test.dart checks 130%.
+        final cappedScale = scale > 1.3 ? 1.3 : scale;
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.linear(cappedScale)),
           // Below the API's minimum version only the update screen shows.

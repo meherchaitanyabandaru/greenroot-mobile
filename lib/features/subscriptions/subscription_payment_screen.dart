@@ -638,7 +638,11 @@ class _CycleChip extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              // Wraps: on a narrow phone or large text the badge drops below.
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     label,
@@ -651,7 +655,6 @@ class _CycleChip extends StatelessWidget {
                     ),
                   ),
                   if (badge != null) ...[
-                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,

@@ -227,12 +227,15 @@ class _NotificationTile extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.sm),
-                  Row(
+                  // Wraps: a long type badge goes below the time.
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(timeStr,
                           style: AppTypography.caption
                               .copyWith(color: AppColors.textMuted),),
-                      const SizedBox(width: AppSpacing.sm),
                       StatusBadge(
                         label: notification.type
                             .replaceAll('_', ' ')
