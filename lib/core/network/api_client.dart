@@ -7,6 +7,7 @@ import '../constants/app_constants.dart';
 import '../errors/app_error.dart';
 import '../utilities/logger.dart';
 import 'auth_interceptor.dart';
+import 'idempotency_interceptor.dart';
 import 'network_exceptions.dart';
 
 class ApiClient {
@@ -43,6 +44,7 @@ class ApiClient {
 
     // Interceptors (order matters)
     _dio.interceptors.addAll([
+      IdempotencyInterceptor(), // before auth: a 401 retry reuses the key
       _authInterceptor,
       if (AppConfig.enableLogging) _LoggingInterceptor(),
     ]);

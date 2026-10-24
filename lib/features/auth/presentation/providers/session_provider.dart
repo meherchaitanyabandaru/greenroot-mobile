@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import '../../../../core/push/push_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_client.dart';
@@ -207,6 +210,8 @@ class SessionNotifier extends StateNotifier<SessionState> {
         ownedNurseryStatus: ownedNurseryStatus,
         activeRole: activeRole,
       );
+      // Best-effort and idempotent: never delays or fails sign-in.
+      unawaited(PushService.instance.register());
     } on AccountSuspendedError catch (e) {
       state = state.copyWith(
         status: SessionStatus.suspended,
@@ -235,6 +240,9 @@ class SessionNotifier extends StateNotifier<SessionState> {
   }
 
   Future<void> logout() async {
+    // While the session is still valid, so this phone stops getting the
+    // previous user's pushes.
+    await PushService.instance.unregister();
     await _repo.logout();
     state = const SessionState(status: SessionStatus.unauthenticated);
   }
