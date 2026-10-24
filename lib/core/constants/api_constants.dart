@@ -7,6 +7,7 @@ abstract class ApiConstants {
   static const String refreshToken = '$v1/auth/refresh-token';
   static const String logout = '$v1/auth/logout';
   static const String myWorkspaces = '$v1/me/workspaces';
+  static const String appVersionPolicy = '$v1/app/version-policy';
 
   // Users
   static const String usersMe = '$v1/users/me';

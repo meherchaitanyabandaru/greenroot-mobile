@@ -10,12 +10,12 @@ import '../../core/services/profile_completion_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/update/update_gate.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart' show nurseryDetailProvider;
 
-const _appVersion = '1.0.0';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -228,7 +228,8 @@ class ProfileScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 label: 'About GreenRoot',
-                subtitle: 'Version $_appVersion',
+                // The installed build's version, not a hard-coded one.
+                subtitle: 'Version ${ref.watch(appVersionProvider).valueOrNull ?? ''}',
                 onTap: () => context.push('/about-greenroot'),
               ),
             ],

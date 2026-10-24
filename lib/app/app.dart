@@ -5,6 +5,7 @@ import '../features/auth/presentation/providers/session_provider.dart';
 import '../core/mango/mango_controller.dart';
 import '../core/mango/mango_guides.dart';
 import '../core/mango/mango_layer.dart';
+import '../core/update/update_gate.dart';
 import 'router.dart';
 
 class GreenRootApp extends ConsumerStatefulWidget {
@@ -71,12 +72,15 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
         final cappedScale = scale > 1 ? 1.0 : scale;
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.linear(cappedScale)),
-          // Ask Mango sits above every screen; it adds nothing to them.
-          child: MangoLayer(
-            controller: mango,
-            refresh: appRouter.routerDelegate,
-            audience: _mangoAudience,
-            child: child ?? const SizedBox.shrink(),
+          // Below the API's minimum version only the update screen shows.
+          child: UpdateGate(
+            // Ask Mango sits above every screen; it adds nothing to them.
+            child: MangoLayer(
+              controller: mango,
+              refresh: appRouter.routerDelegate,
+              audience: _mangoAudience,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },
