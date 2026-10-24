@@ -305,6 +305,7 @@ class QuotationRepository {
     DateTime? validUntil,
     String? notes,
     required List<QuotationItemRequest> items,
+    String? idempotencyKey, // see newIdempotencyKey
   }) async {
     final body = <String, dynamic>{
       'quotation_type': quotationType,
@@ -323,6 +324,7 @@ class QuotationRepository {
     return _client.post(
       ApiConstants.quotations,
       data: body,
+      headers: idempotencyKey == null ? null : {'Idempotency-Key': idempotencyKey},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);
@@ -338,6 +340,7 @@ class QuotationRepository {
     DateTime? validUntil,
     String? notes,
     required List<QuotationItemRequest> items,
+    String? idempotencyKey, // see newIdempotencyKey
   }) async {
     final body = <String, dynamic>{
       if (customerUserId != null) 'customer_user_id': customerUserId,

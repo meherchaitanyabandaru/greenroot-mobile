@@ -530,6 +530,7 @@ class OrderRepository {
     required List<OrderItemRequest> items,
     DeliverySnapshotRequest? delivery,
     String? notes,
+    String? idempotencyKey, // see newIdempotencyKey
   }) async {
     final body = <String, dynamic>{
       'buyer_mobile': buyerMobile,
@@ -542,6 +543,7 @@ class OrderRepository {
     return _client.post(
       ApiConstants.orders,
       data: body,
+      headers: idempotencyKey == null ? null : {'Idempotency-Key': idempotencyKey},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);
@@ -556,6 +558,7 @@ class OrderRepository {
     String? buyerName,
     DeliverySnapshotRequest? delivery,
     String? notes,
+    String? idempotencyKey, // see newIdempotencyKey
   }) async {
     final body = <String, dynamic>{
       'seller_nursery_id': sellerNurseryId,
@@ -567,6 +570,7 @@ class OrderRepository {
     return _client.post(
       ApiConstants.orders,
       data: body,
+      headers: idempotencyKey == null ? null : {'Idempotency-Key': idempotencyKey},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);

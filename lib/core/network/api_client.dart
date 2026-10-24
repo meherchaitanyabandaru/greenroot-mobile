@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,9 +71,14 @@ class ApiClient {
     String path, {
     dynamic data,
     T Function(dynamic)? fromJson,
+    Map<String, String>? headers,
   }) async {
     try {
-      final response = await dio.post(path, data: data);
+      final response = await dio.post(
+        path,
+        data: data,
+        options: headers == null ? null : Options(headers: headers),
+      );
       return fromJson != null ? fromJson(response.data) : response.data as T;
     } on DioException catch (e) {
       throw NetworkExceptions.fromDioException(e);
@@ -187,4 +193,12 @@ class _LoggingInterceptor extends Interceptor {
     );
     handler.next(err);
   }
+}
+
+/// A random key for one create action (Idempotency-Key). Keep it for the life
+/// of the form: if a response is lost on a weak network and the user taps
+/// again, the API returns the first result instead of creating a duplicate.
+String newIdempotencyKey() {
+  final r = Random.secure();
+  return List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
 }

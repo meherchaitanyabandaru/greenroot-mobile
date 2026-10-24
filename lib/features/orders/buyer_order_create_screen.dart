@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_client.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +29,8 @@ class BuyerOrderCreateScreen extends ConsumerStatefulWidget {
 
 class _BuyerOrderCreateScreenState
     extends ConsumerState<BuyerOrderCreateScreen> {
+  // One key per form: a retry after a lost response returns the same order.
+  final _submitKey = newIdempotencyKey();
   final _formKey = GlobalKey<FormState>();
   final _notesCtrl = TextEditingController();
   final List<_ItemRow> _items = [];
@@ -166,6 +169,7 @@ class _BuyerOrderCreateScreenState
             delivery: _deliveryFromSelectedAddress(),
             notes:
                 _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+            idempotencyKey: _submitKey,
           );
 
       if (mounted) {

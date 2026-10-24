@@ -52,7 +52,9 @@ class FakeCall {
   final dynamic data;
   /// Query parameters, e.g. `{'buying': true}`.
   final Map<String, dynamic> query;
-  const FakeCall({required this.method, required this.path, required this.type, this.data, this.query = const {}});
+  /// Request headers, e.g. `Idempotency-Key`.
+  final Map<String, dynamic> headers;
+  const FakeCall({required this.method, required this.path, required this.type, this.data, this.query = const {}, this.headers = const {}});
 
   @override
   String toString() => '$method $path [$type]';
@@ -144,6 +146,7 @@ class _FakeInterceptor extends Interceptor {
     _calls.add(FakeCall(
       data: options.data,
       query: options.queryParameters,
+      headers: options.headers,
       method: options.method, path: options.path, type: queued.type,),);
 
     if (queued.type == FakeResponseType.networkError) {

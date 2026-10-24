@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_client.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -22,6 +23,8 @@ class OrderCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
+  // One key per form: a retry after a lost response returns the same record.
+  final _submitKey = newIdempotencyKey();
   final _formKey = GlobalKey<FormState>();
   final _mobileCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
@@ -112,6 +115,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
         sellerNurseryId: nurseryId,
         items: itemRequests,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        idempotencyKey: _submitKey,
       );
 
       if (mounted) {

@@ -171,6 +171,8 @@ class QuotationCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
+  // One key per form: a retry after a lost response returns the same record.
+  final _submitKey = newIdempotencyKey();
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _mobileCtrl = TextEditingController();
@@ -387,6 +389,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
         );
       } else {
         await repo.createQuotation(
+          idempotencyKey: _submitKey,
           quotationType: _quotationType ?? 'CUSTOMER',
           nurseryId: nurseryId,
           assignedManagerUserId: isOwner ? _assignedManager?.userId : null,
