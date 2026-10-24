@@ -33,4 +33,14 @@ jobs:
         run: flutter analyze
 
       - name: Unit and widget tests
-        run: flutter test
+        run: flutter test --coverage
+
+      # Report line coverage on the run, and stop it sliding: the floor is
+      # just under today's level (17.1% on 2026-10-24); raise it as tests grow.
+      - name: Coverage
+        env:
+          MIN_COVERAGE: '16'
+        run: |
+          pct=$(awk -F: '/^LF:/ {lf+=$2} /^LH:/ {lh+=$2} END {printf "%.1f", 100*lh/lf}' coverage/lcov.info)
+          echo "### Mobile line coverage: ${pct}% (floor ${MIN_COVERAGE}%)" >> "$GITHUB_STEP_SUMMARY"
+          awk -v p="$pct" -v m="$MIN_COVERAGE" 'BEGIN {exit !(p >= m)}' || { echo "coverage ${pct}% fell below ${MIN_COVERAGE}%"; exit 1; }
