@@ -9,7 +9,6 @@ class _NoTripCard extends ConsumerStatefulWidget {
 
 class _NoTripCardState extends ConsumerState<_NoTripCard> {
   final _codeCtrl = TextEditingController();
-  bool _joining = false;
   String? _codeError;
 
   @override
@@ -28,7 +27,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
     super.dispose();
   }
 
-  Future<void> _joinTrip() async {
+  void _joinTrip() {
     final code = _codeCtrl.text.trim();
     if (code.isEmpty) {
       setState(() => _codeError = 'Please enter a Trip ID to continue');
@@ -36,117 +35,9 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
     }
     FocusScope.of(context).unfocus();
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: AppColors.forest100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.question_mark_rounded,
-                  color: AppColors.primaryMain,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Join Trip?',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Are you sure you want to join this trip?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                  fontFamily: 'Inter',
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  // Join Trip — LEFT
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primaryMain,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text(
-                        'Join Trip',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Cancel — RIGHT
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryMain,
-                        side: const BorderSide(color: AppColors.primaryMain),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-    setState(() => _joining = true);
-    await Future.delayed(const Duration(milliseconds: 80));
-    if (mounted) {
-      setState(() => _joining = false);
-      context
-          .push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
-    }
+    // The trip preview shows the trip and asks Accept / Reject: no extra
+    // "are you sure" step before it.
+    context.push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
   }
 
   void _scanQr() {
@@ -356,27 +247,18 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
               width: double.infinity,
               height: AppSpacing.buttonHeight,
               child: FilledButton(
-                onPressed: _joining ? null : _joinTrip,
+                onPressed: _joinTrip,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primaryMain,
                   shape: const RoundedRectangleBorder(
                     borderRadius: AppRadius.buttonRadius,
                   ),
                 ),
-                child: _joining
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Join Trip',
-                        style: AppTypography.label
-                            .copyWith(color: Colors.white, fontSize: 15),
-                      ),
+                child: Text(
+                  'Join Trip',
+                  style: AppTypography.label
+                      .copyWith(color: Colors.white, fontSize: 15),
+                ),
               ),
             ),
           ],
