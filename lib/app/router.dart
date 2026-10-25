@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'pending_deep_link.dart';
 import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
@@ -200,11 +201,13 @@ final appRouter = GoRouter(
     // Session not yet bootstrapped — send every deep-link to splash so
     // bootstrap() runs before any authenticated screen is rendered.
     if (session.status == SessionStatus.unknown && !_isPublic(path)) {
+      PendingDeepLink.remember(state.uri);
       return '/';
     }
 
     // Fully unauthenticated after bootstrap — go to login.
     if (session.status == SessionStatus.unauthenticated && !_isPublic(path)) {
+      PendingDeepLink.remember(state.uri);
       return '/login';
     }
 
