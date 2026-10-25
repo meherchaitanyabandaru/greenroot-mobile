@@ -270,6 +270,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   }
 
   void _snack(String msg, Color bg) {
+    bg == AppColors.red600 ? AppHaptics.error() : AppHaptics.success();
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg), backgroundColor: bg));
   }
@@ -536,6 +537,10 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_status == 'LOADING') ...[
+                          const LiveActivityStrip(activity: LiveActivity.loading),
+                          const SizedBox(height: AppSpacing.sm),
+                        ],
                         if (primaryBtn != null) ...[
                           primaryBtn,
                           if (secondaryBtn != null)

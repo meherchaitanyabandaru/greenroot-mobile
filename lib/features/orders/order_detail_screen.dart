@@ -34,6 +34,8 @@ import '../plants/plant_picker.dart';
 import '../profile/address_map_picker_screen.dart';
 import '../ratings/ratings.dart';
 import 'orders.dart';
+import '../../core/feedback/app_haptics.dart';
+import '../../core/widgets/live_activity_strip.dart';
 
 part 'order_detail_sheets.dart';
 part 'order_detail_items.dart';

@@ -226,6 +226,7 @@ class Order {
   final String? createdAt;
   final List<OrderItem> items;
   // Timestamps
+  final String? confirmedAt;
   final String? loadingStartedAt;
   final String? loadingCompletedAt;
   final String? cancelledAt;
@@ -253,6 +254,7 @@ class Order {
     required this.orderDate,
     this.createdAt,
     required this.items,
+    this.confirmedAt,
     this.loadingStartedAt,
     this.loadingCompletedAt,
     this.cancelledAt,
@@ -283,6 +285,7 @@ class Order {
                 ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        confirmedAt: j['confirmed_at'] as String?,
         loadingStartedAt: j['loading_started_at'] as String?,
         loadingCompletedAt: j['loading_completed_at'] as String?,
         cancelledAt: j['cancelled_at'] as String?,

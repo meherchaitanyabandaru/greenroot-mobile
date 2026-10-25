@@ -19,6 +19,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
 import '../dispatches/delivery_confirmation.dart';
+import '../../core/widgets/live_activity_strip.dart';
 
 String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
@@ -673,6 +674,13 @@ class _FloatingCard extends StatelessWidget {
               approxDistanceKm: approxDistanceKm,
             ),
             const SizedBox(height: 12),
+            if (d.status == 'IN_TRANSIT') ...[
+              const LiveActivityStrip(
+                activity: LiveActivity.inTransit,
+                label: 'Your plants are on the way',
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // Delivery status timeline
             _BuyerJourneyCard(
