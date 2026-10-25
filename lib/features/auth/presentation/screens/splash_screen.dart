@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../app/pending_deep_link.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/rbac/roles.dart';
@@ -52,7 +53,7 @@ class SplashScreen extends ConsumerStatefulWidget {
       context.go('/select-activity');
       return;
     }
-    context.go('/home');
+    context.go(PendingDeepLink.take() ?? '/home');
   }
 
   @override

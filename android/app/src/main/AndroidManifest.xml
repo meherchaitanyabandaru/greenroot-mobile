@@ -8,11 +8,15 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <!-- Android 13+: asked at runtime before push notifications are shown. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Release builds speak HTTPS only; plain HTTP to a local API is enabled
+         in the debug and profile manifests (src/debug, src/profile). -->
     <application
-        android:label="greenroot_mobile"
+        android:label="GreenRoot"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

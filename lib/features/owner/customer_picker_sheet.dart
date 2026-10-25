@@ -135,7 +135,7 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                       hintText: 'Search name or mobile',
                       prefixIcon: const Icon(Icons.search_rounded),
                       helperText: _query.trim().isEmpty
-                          ? '${_customers!.length} customers · newest first'
+                          ? '${_customers!.length} ${_customers!.length == 1 ? 'customer' : 'customers'} · newest first'
                           : '${_shown.length} of ${_customers!.length}',
                     ),
                   ),

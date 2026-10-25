@@ -132,8 +132,15 @@ class _MainShellState extends ConsumerState<MainShell> {
         body: IndexedStack(
           index: index,
           children: [
-            for (final t in tabs)
-              _opened.contains(t.label) ? t.screen : const SizedBox.shrink(),
+            // TickerMode tells a kept-alive tab whether it is on screen, so
+            // it can pause animations and reload its lists when shown again.
+            for (var i = 0; i < tabs.length; i++)
+              TickerMode(
+                enabled: i == index,
+                child: _opened.contains(tabs[i].label)
+                    ? tabs[i].screen
+                    : const SizedBox.shrink(),
+              ),
           ],
         ),
         bottomNavigationBar: caps.isDriverOnly

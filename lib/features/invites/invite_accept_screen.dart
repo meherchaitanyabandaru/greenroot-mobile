@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/pending_deep_link.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/network/api_client.dart';
 import '../../core/testing/test_keys.dart';
@@ -169,6 +170,12 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
         _sessionSub = ref.listenManual(sessionProvider, (_, s) {
           if (s.isAuthenticated && !_looked && mounted) _lookup();
         });
+        // Opened straight from the link: this route skips the splash, so
+        // load the saved session here instead of asking a signed-in user
+        // to log in.
+        if (ref.read(sessionProvider).status == SessionStatus.unknown) {
+          ref.read(sessionProvider.notifier).bootstrap();
+        }
       });
     }
   }
@@ -231,7 +238,17 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
       }
     });
 
-    final isAuthenticated = ref.watch(sessionProvider).isAuthenticated;
+    final session = ref.watch(sessionProvider);
+    final isAuthenticated = session.isAuthenticated;
+    final sessionLoading = session.status == SessionStatus.unknown ||
+        session.status == SessionStatus.loading;
+
+    if (!isAuthenticated && sessionLoading && widget.preloadedUUID != null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // Unauthenticated deep link: show login prompt instead of invite form.
     if (!isAuthenticated && widget.preloadedUUID != null) {
@@ -272,7 +289,12 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () {
+                    // Come back to this invite after signing in.
+                    PendingDeepLink.remember(
+                        Uri(path: '/invite/${widget.preloadedUUID}'),);
+                    context.go('/login');
+                  },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryMain,
                     padding: const EdgeInsets.symmetric(vertical: 14),

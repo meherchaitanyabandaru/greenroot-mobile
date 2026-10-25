@@ -24,6 +24,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../profile/my_addresses_screen.dart';
+import '../quotations/accept_confirm.dart';
 import '../quotations/quotations.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -96,6 +97,22 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
       ref.read(_buyerOrderProvider.notifier).load();
       ref.read(_buyerDispatchProvider.notifier).load();
     });
+  }
+
+  // Back on this tab: a nursery may have sent a quotation or dispatched an
+  // order meanwhile, so show it without a pull to refresh.
+  bool _visible = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible && !_visible) {
+      ref.read(_buyerQuotationProvider.notifier).load();
+      ref.read(_buyerOrderProvider.notifier).load();
+      ref.read(_buyerDispatchProvider.notifier).load();
+    }
+    _visible = visible;
   }
 
   @override
@@ -258,6 +275,9 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
   }
 
   Future<void> _accept() async {
+    if (!await confirmAcceptQuotation(context, widget.quotation) || !mounted) {
+      return;
+    }
     final hasDeliveryAddress = await _ensureDeliveryAddress();
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _acting = true);
