@@ -300,7 +300,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
               textCapitalization: TextCapitalization.none,
               onSubmitted: (_) => _joinTrip(),
               decoration: InputDecoration(
-                hintText: 'e.g. 3f7a2c9b-8d11-4f6a-9b2d-1e7c9f3a6b12',
+                hintText: 'e.g. DSP-20261025-0001',
                 hintStyle: const TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 13,

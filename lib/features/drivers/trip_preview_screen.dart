@@ -103,7 +103,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Trip accepted! Get ready to start loading.'),
+            content: Text('Trip accepted. Follow the steps on the trip screen.'),
             backgroundColor: AppColors.primaryMain,
           ),
         );
