@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'pending_deep_link.dart';
+import '../core/mango/mango_popups.dart';
 import '../features/auth/data/models/capabilities_model.dart';
 import '../features/auth/domain/rbac/roles.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
@@ -193,6 +194,7 @@ bool _isPublic(String path) =>
 final appRouter = GoRouter(
   initialLocation: '/',
   debugLogDiagnostics: true,
+  observers: [mangoPopups],
   redirect: (BuildContext context, GoRouterState state) {
     final container = ProviderScope.containerOf(context, listen: false);
     final session = container.read(sessionProvider);

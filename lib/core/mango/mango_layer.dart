@@ -10,6 +10,7 @@ import '../theme/app_typography.dart';
 import 'mango_controller.dart';
 import 'mango_finder.dart';
 import 'mango_guides.dart';
+import 'mango_popups.dart';
 
 /// Sits above the whole app (MaterialApp.router `builder`): the Ask Mango
 /// button, the guide picker and the spotlight walkthrough. Screens are not
@@ -170,7 +171,7 @@ class _MangoLayerState extends State<MangoLayer>
             _Picker(controller: _c, ranked: _ranked)
           else if (_c.guide != null)
             ..._walkthrough(context)
-          else if (audience != null)
+          else if (audience != null && !_buttonInTheWay(context))
             _AskMangoButton(
               onTap: () {
                 // Read the screen now: the tree can't be walked during build.
@@ -182,6 +183,12 @@ class _MangoLayerState extends State<MangoLayer>
       ),
     );
   }
+
+  /// The floating button steps aside while a dialog or sheet is open or the
+  /// keyboard is up: it would cover their buttons and fields, and nobody
+  /// asks for a guide mid-form. It comes back as soon as they close.
+  bool _buttonInTheWay(BuildContext context) =>
+      mangoPopups.open.value > 0 || MediaQuery.viewInsetsOf(context).bottom > 0;
 
   List<Widget> _walkthrough(BuildContext context) {
     final step = _c.step;

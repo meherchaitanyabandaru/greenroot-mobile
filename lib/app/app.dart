@@ -7,6 +7,7 @@ import '../core/mango/mango_guides.dart';
 import '../core/mango/mango_layer.dart';
 import '../core/update/update_gate.dart';
 import 'router.dart';
+import '../core/mango/mango_popups.dart';
 
 class GreenRootApp extends ConsumerStatefulWidget {
   const GreenRootApp({super.key});
@@ -79,7 +80,8 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
             // Ask Mango sits above every screen; it adds nothing to them.
             child: MangoLayer(
               controller: mango,
-              refresh: appRouter.routerDelegate,
+              refresh: Listenable.merge(
+                  [appRouter.routerDelegate, mangoPopups.open],),
               audience: _mangoAudience,
               child: child ?? const SizedBox.shrink(),
             ),
