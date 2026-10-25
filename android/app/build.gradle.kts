@@ -25,7 +25,7 @@ val releaseStoreFile = signingValue("storeFile", "GREENROOT_KEYSTORE_FILE")
 
 android {
     namespace = "in.greenroot.greenroot_mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37 // permission_handler_android 14.1 requires 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
