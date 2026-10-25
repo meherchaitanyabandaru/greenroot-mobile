@@ -19,13 +19,15 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
 import '../dispatches/delivery_confirmation.dart';
-import '../../core/widgets/live_activity_strip.dart';
 
 String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
     : '${km.toStringAsFixed(1)} km';
 
 // ── Screen shell ───────────────────────────────────────────────────────────────
+
+/// How often a live trip's position is fetched; the truck glides across it.
+const _trackingRefresh = Duration(seconds: 30);
 
 class BuyerDeliveryTrackingScreen extends ConsumerWidget {
   final int dispatchId;
@@ -87,7 +89,7 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
     _loadTracking();
     if (_isLive) {
       _pollTimer = Timer.periodic(
-        const Duration(seconds: 30),
+        _trackingRefresh,
         (_) => _loadTracking(silent: true),
       );
     }
@@ -239,9 +241,13 @@ class _BuyerDeliveryBodyState extends ConsumerState<_BuyerDeliveryBody> {
 
   void _fitBounds() {
     if (!_mapReady || !mounted) return;
+    // Once the truck is live, frame truck → destination only: the nursery it
+    // left is behind it, and leaving it out zooms in enough to see it move.
     final points = <LatLng>[
-      if (_truckLatLng != null) _truckLatLng!,
-      if (_loadingPointLatLng != null) _loadingPointLatLng!,
+      if (_truckLatLng != null)
+        _truckLatLng!
+      else if (_loadingPointLatLng != null)
+        _loadingPointLatLng!,
       if (_deliveryPointLatLng != null) _deliveryPointLatLng!,
     ];
     if (points.isEmpty) return;
@@ -482,7 +488,11 @@ class _FullMapSection extends StatelessWidget {
         ],),
         // Truck — glides to each new position, pulses when IN_TRANSIT
         if (truckLatLng != null)
-          GlidingTruckLayer(point: truckLatLng!, active: isInTransit),
+          GlidingTruckLayer(
+            point: truckLatLng!,
+            active: isInTransit,
+            glide: _trackingRefresh,
+          ),
       ],
     );
   }
@@ -669,13 +679,6 @@ class _FloatingCard extends StatelessWidget {
               approxDistanceKm: approxDistanceKm,
             ),
             const SizedBox(height: 12),
-            if (d.status == 'IN_TRANSIT') ...[
-              const LiveActivityStrip(
-                activity: LiveActivity.inTransit,
-                label: 'Your plants are on the way',
-              ),
-              const SizedBox(height: 12),
-            ],
 
             // Delivery status timeline
             _BuyerJourneyCard(
@@ -796,7 +799,7 @@ class _DriverInfoCard extends StatelessWidget {
               color: AppColors.forest100,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.local_shipping_rounded,
+            child: const Icon(Icons.person_rounded,
                 color: AppColors.primaryMain, size: 24,),
           ),
           const SizedBox(width: AppSpacing.md),

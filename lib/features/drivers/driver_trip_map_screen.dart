@@ -25,7 +25,6 @@ import '../orders/orders.dart';
 import '../tracking/tracking.dart';
 import '../dispatches/delivery_confirmation.dart';
 import '../../core/feedback/app_haptics.dart';
-import '../../core/widgets/live_activity_strip.dart';
 
 part 'driver_trip_map_actions.dart';
 part 'driver_trip_map_journey.dart';
@@ -518,11 +517,6 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
             hasDelivery: _deliveryPointLatLng != null,
           ),
         ],
-        if (d.status == 'IN_TRANSIT')
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: LiveActivityStrip(activity: LiveActivity.inTransit),
-          ),
 
         // ── Scrollable content ─────────────────────────────────────────────────
         Expanded(

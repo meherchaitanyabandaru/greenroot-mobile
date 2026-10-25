@@ -10,21 +10,15 @@ Widget _host(Widget child, {bool reduceMotion = false}) => MaterialApp(
     );
 
 void main() {
-  testWidgets('loading and in-transit say what is happening', (tester) async {
+  testWidgets('loading says what is happening', (tester) async {
     await tester.pumpWidget(_host(const LiveActivityStrip(activity: LiveActivity.loading)));
     expect(find.bySemanticsLabel('Loading plants…'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 600)); // it animates without errors
-
-    await tester.pumpWidget(_host(const LiveActivityStrip(
-      activity: LiveActivity.inTransit,
-      label: 'Your plants are on the way',
-    ),),);
-    expect(find.bySemanticsLabel('Your plants are on the way'), findsOneWidget);
   });
 
   testWidgets('stands still when the phone asks for reduced motion', (tester) async {
     await tester.pumpWidget(_host(
-      const LiveActivityStrip(activity: LiveActivity.inTransit),
+      const LiveActivityStrip(activity: LiveActivity.loading),
       reduceMotion: true,
     ),);
     // pumpAndSettle only returns when nothing is animating.

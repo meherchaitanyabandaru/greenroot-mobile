@@ -630,11 +630,18 @@ class HomeIconPainter extends CustomPainter {
 }
 
 /// The truck on a live map. A new GPS fix moves it smoothly from where it was
-/// instead of jumping, so following a delivery feels alive.
+/// instead of jumping, so following a delivery feels alive. Pass the refresh
+/// interval as [glide] and it rolls at a steady speed until the next fix.
 class GlidingTruckLayer extends StatelessWidget {
   final LatLng point;
   final bool active;
-  const GlidingTruckLayer({super.key, required this.point, this.active = false});
+  final Duration glide;
+  const GlidingTruckLayer({
+    super.key,
+    required this.point,
+    this.active = false,
+    this.glide = const Duration(milliseconds: 1500),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -642,8 +649,8 @@ class GlidingTruckLayer extends StatelessWidget {
       tween: _LatLngTween(end: point),
       duration: MediaQuery.of(context).disableAnimations
           ? Duration.zero
-          : const Duration(milliseconds: 1500),
-      curve: Curves.easeInOut,
+          : glide,
+      curve: Curves.linear,
       builder: (_, p, __) => MarkerLayer(markers: [
         Marker(
           point: p,
