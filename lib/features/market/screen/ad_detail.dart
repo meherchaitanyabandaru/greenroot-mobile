@@ -431,7 +431,13 @@ class _AdDetailScreenState extends ConsumerState<_AdDetailScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            icon: const Icon(Icons.chat_outlined, size: 16),
+                            icon: SvgPicture.asset(
+                              'assets/icons/whatsapp.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                  Colors.white, BlendMode.srcIn,),
+                            ),
                             label: const Text(
                               'WhatsApp',
                               style: TextStyle(fontWeight: FontWeight.w700),
