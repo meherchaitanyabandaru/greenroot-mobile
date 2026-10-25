@@ -331,6 +331,10 @@ class MarketEnquiryMessage {
   /// The viewer can accept or decline this offer.
   final bool canRespond;
   final DateTime createdAt;
+  final String? senderAvatarUrl;
+
+  /// SENT, DELIVERED or READ by the other side (WhatsApp-style ticks).
+  final String receipt;
 
   const MarketEnquiryMessage({
     required this.id,
@@ -345,6 +349,8 @@ class MarketEnquiryMessage {
     this.isMine = false,
     this.canRespond = false,
     required this.createdAt,
+    this.senderAvatarUrl,
+    this.receipt = 'SENT',
   });
 
   bool get isOffer => type == 'OFFER';
@@ -364,6 +370,8 @@ class MarketEnquiryMessage {
         isMine: j['is_mine'] as bool? ?? false,
         canRespond: j['can_respond'] as bool? ?? false,
         createdAt: DateTime.parse(j['created_at'] as String),
+        senderAvatarUrl: j['sender_avatar_url'] as String?,
+        receipt: j['receipt'] as String? ?? 'SENT',
       );
 }
 

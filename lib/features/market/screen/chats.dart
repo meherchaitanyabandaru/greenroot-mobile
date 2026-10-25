@@ -518,6 +518,8 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
                           : '${msg.senderName} · ${msg.nurseryName}',
                       isMe: msg.isMine,
                       time: msg.createdAt,
+                      avatarUrl: msg.senderAvatarUrl,
+                      receipt: msg.receipt,
                     );
                   },
                 ),
@@ -1125,11 +1127,15 @@ class _MessageBubble extends StatelessWidget {
   final String senderName;
   final bool isMe;
   final DateTime time;
+  final String? avatarUrl;
+  final String receipt;
   const _MessageBubble({
     required this.body,
     required this.senderName,
     required this.isMe,
     required this.time,
+    this.avatarUrl,
+    this.receipt = 'SENT',
   });
 
   @override
@@ -1142,22 +1148,7 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            Container(
-              width: 32,
-              height: 32,
-              decoration:
-                  const BoxDecoration(color: _mkLight, shape: BoxShape.circle),
-              child: Center(
-                child: Text(
-                  senderName.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: _mkGreen,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
+            _ChatAvatar(url: avatarUrl, name: senderName),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -1200,18 +1191,72 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  _timeAgo(time),
-                  style: AppTypography.caption.copyWith(
-                    color: _mkTextSecondary.withValues(alpha: 0.7),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _timeAgo(time),
+                      style: AppTypography.caption.copyWith(
+                        color: _mkTextSecondary.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        receipt == 'SENT'
+                            ? Icons.done_rounded
+                            : Icons.done_all_rounded,
+                        size: 16,
+                        color: receipt == 'READ'
+                            ? const Color(0xFF34B7F1)
+                            : _mkTextSecondary,
+                        semanticLabel: receipt == 'READ'
+                            ? 'Read'
+                            : receipt == 'DELIVERED'
+                                ? 'Delivered'
+                                : 'Sent',
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
-          if (isMe) const SizedBox(width: 8),
+          if (isMe) ...[
+            const SizedBox(width: 8),
+            _ChatAvatar(url: avatarUrl, name: senderName),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// The sender's photo, or their first letter when they have none.
+class _ChatAvatar extends StatelessWidget {
+  final String? url;
+  final String name;
+  const _ChatAvatar({this.url, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto = url != null && url!.isNotEmpty;
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: _mkLight,
+      foregroundImage: hasPhoto ? NetworkImage(url!) : null,
+      onForegroundImageError: hasPhoto ? (_, __) {} : null,
+      // CircleAvatar paints its child over the photo: letter only without one.
+      child: hasPhoto
+          ? null
+          : Text(
+              name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
+              style: const TextStyle(
+                color: _mkGreen,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
     );
   }
 }
