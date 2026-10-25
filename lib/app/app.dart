@@ -8,6 +8,12 @@ import '../core/mango/mango_layer.dart';
 import '../core/update/update_gate.dart';
 import 'router.dart';
 import '../core/mango/mango_popups.dart';
+import '../core/feedback/app_haptics.dart';
+import '../core/push/push_service.dart';
+import '../features/notifications/notifications.dart';
+
+/// Shows banners from outside any screen (pushes arriving while open).
+final appMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class GreenRootApp extends ConsumerStatefulWidget {
   const GreenRootApp({super.key});
@@ -22,6 +28,28 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    PushService.instance.onForeground = _showForegroundPush;
+  }
+
+  /// A push while the app is open: Android shows nothing on its own, so show
+  /// it as a banner with a haptic, and refresh the bell's unread count.
+  void _showForegroundPush(PushMessage m) {
+    final text = [m.title, m.body]
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .join(' — ');
+    if (text.isEmpty) return;
+    AppHaptics.success();
+    ref.read(notificationListProvider.notifier).load();
+    appMessengerKey.currentState?.showSnackBar(SnackBar(
+      content: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 4),
+      action: SnackBarAction(
+        label: 'View',
+        onPressed: () => appRouter.push('/notifications'),
+      ),
+    ),);
   }
 
   @override
@@ -62,6 +90,7 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
 
     return MaterialApp.router(
       title: 'GreenRoot',
+      scaffoldMessengerKey: appMessengerKey,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.light,

@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -625,4 +627,41 @@ class HomeIconPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter old) =>
       old is HomeIconPainter && old.accent != accent;
+}
+
+/// The truck on a live map. A new GPS fix moves it smoothly from where it was
+/// instead of jumping, so following a delivery feels alive.
+class GlidingTruckLayer extends StatelessWidget {
+  final LatLng point;
+  final bool active;
+  const GlidingTruckLayer({super.key, required this.point, this.active = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<LatLng>(
+      tween: _LatLngTween(end: point),
+      duration: MediaQuery.of(context).disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 1500),
+      curve: Curves.easeInOut,
+      builder: (_, p, __) => MarkerLayer(markers: [
+        Marker(
+          point: p,
+          width: 62,
+          height: 62,
+          child: MapTruckMarker(active: active),
+        ),
+      ],),
+    );
+  }
+}
+
+class _LatLngTween extends Tween<LatLng> {
+  _LatLngTween({required LatLng end}) : super(begin: end, end: end);
+
+  @override
+  LatLng lerp(double t) => LatLng(
+        begin!.latitude + (end!.latitude - begin!.latitude) * t,
+        begin!.longitude + (end!.longitude - begin!.longitude) * t,
+      );
 }
