@@ -224,7 +224,7 @@ class _JourneyTimeline extends StatelessWidget {
       (8, 'Reached Delivery Location', 'You have reached the delivery point'),
       (9, 'Upload Delivery Proof', 'Upload photos / proof of delivery'),
       (10, 'Confirm Delivery', 'Confirm delivery after handover'),
-      (11, 'Trip Completed', 'This trip will be marked as completed'),
+      (11, 'Trip Completed', 'The trip closes once delivery is confirmed'),
     ];
 
     return definitions.map((d) {
