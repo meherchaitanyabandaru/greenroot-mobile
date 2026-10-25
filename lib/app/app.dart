@@ -76,6 +76,17 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
     final session = ref.read(sessionProvider);
     final path = appRouter.routerDelegate.currentConfiguration.uri.path;
     if (!session.isAuthenticated) return path == '/login' ? MangoAudience.guest : null;
+    // Signing up: a few simple choices, nothing to guide yet, and the button
+    // sat on the role cards.
+    const signingUp = {
+      '/create-profile',
+      '/account-ready',
+      '/select-activity',
+      '/workspace-select',
+    };
+    if (signingUp.contains(path)) {
+      return null;
+    }
     final caps = session.capabilities;
     if (caps.isNurseryOwner) return MangoAudience.owner;
     if (caps.isManager) return MangoAudience.manager;
