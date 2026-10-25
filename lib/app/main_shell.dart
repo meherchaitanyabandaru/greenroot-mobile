@@ -19,6 +19,7 @@ import '../features/nurseries/nurseries.dart';
 import '../features/selling/selling_screen.dart';
 import '../features/market/local_market_screen.dart';
 import '../core/widgets/welcome_tour.dart';
+import '../core/feedback/app_haptics.dart';
 
 // ── Active tab index (reset to 0 on role change) ──────────────────────────────
 final mainTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -147,14 +148,18 @@ class _MainShellState extends ConsumerState<MainShell> {
             ? _DriverBottomNav(
                 tabs: tabs,
                 selectedIndex: index,
-                onSelected: (i) =>
-                    ref.read(mainTabIndexProvider.notifier).state = i,
+                onSelected: (i) {
+                  AppHaptics.tap();
+                  ref.read(mainTabIndexProvider.notifier).state = i;
+                },
               )
             : _GreenRootBottomNav(
                 tabs: tabs,
                 selectedIndex: index,
-                onSelected: (i) =>
-                    ref.read(mainTabIndexProvider.notifier).state = i,
+                onSelected: (i) {
+                  AppHaptics.tap();
+                  ref.read(mainTabIndexProvider.notifier).state = i;
+                },
               ),
       ),
     );

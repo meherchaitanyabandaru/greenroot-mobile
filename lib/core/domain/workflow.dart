@@ -172,7 +172,11 @@ class OrderWorkflow {
       ),
       WorkflowStep(
         title: 'Order Accepted',
-        subtitle: accepted ? byLine : 'Awaiting confirmation',
+        subtitle: accepted
+            ? (order.confirmedAt != null
+                ? '${_fmt(order.confirmedAt)} · $byLine'
+                : byLine)
+            : 'Awaiting confirmation',
         state: cancelled
             ? WorkflowStepState.pending
             : (accepted ? WorkflowStepState.completed : WorkflowStepState.current),

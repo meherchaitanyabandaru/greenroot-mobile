@@ -25,6 +25,7 @@ import '../profile/my_addresses_screen.dart';
 import 'accept_confirm.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
+import '../../core/feedback/app_haptics.dart';
 
 part 'quotation_detail_widgets.dart';
 
@@ -107,6 +108,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     try {
       await ref.read(quotationRepositoryProvider).acceptQuotation(q.id);
       if (mounted) {
+        AppHaptics.success();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Quotation accepted'),
           backgroundColor: AppColors.primaryMain,

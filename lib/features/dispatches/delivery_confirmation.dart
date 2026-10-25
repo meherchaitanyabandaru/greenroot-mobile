@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/theme/app_colors.dart';
 import 'dispatches.dart';
+import '../../core/feedback/app_haptics.dart';
 
 /// Driver / nursery: asks for the customer's code (or, when allowed, a reason
 /// to deliver without it). Returns the delivered trip, or null if closed.
@@ -60,8 +61,10 @@ class _DeliverSheetState extends ConsumerState<_DeliverSheet> {
           ? await repo.deliver(widget.dispatch.id,
               overrideReason: _reason.text.trim(),)
           : await repo.deliver(widget.dispatch.id, code: _code.text.trim());
+      AppHaptics.success();
       if (mounted) Navigator.of(context).pop(done);
     } on AppError catch (e) {
+      AppHaptics.error();
       if (mounted) {
         setState(() {
           _error = e.message;

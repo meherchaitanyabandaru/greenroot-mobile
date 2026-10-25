@@ -26,6 +26,7 @@ import '../orders/orders.dart';
 import '../profile/my_addresses_screen.dart';
 import '../quotations/accept_confirm.dart';
 import '../quotations/quotations.dart';
+import '../../core/feedback/app_haptics.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PROVIDERS
@@ -287,6 +288,7 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
           .acceptQuotation(widget.quotation.id);
       ref.read(_buyerQuotationProvider.notifier).updateItem(updated);
       if (mounted) {
+        AppHaptics.success();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Offer accepted'),
