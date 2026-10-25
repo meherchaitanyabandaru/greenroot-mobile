@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/status_badge.dart';
 import 'notifications.dart';
 
 class NotificationListScreen extends ConsumerStatefulWidget {
@@ -227,23 +226,11 @@ class _NotificationTile extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.sm),
-                  // Wraps: a long type badge goes below the time.
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(timeStr,
-                          style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted),),
-                      StatusBadge(
-                        label: notification.type
-                            .replaceAll('_', ' ')
-                            .toLowerCase(),
-                        variant: BadgeVariant.neutral,
-                      ),
-                    ],
-                  ),
+                  // The icon and title already say what kind it is; a badge
+                  // with the raw type ("order delivered") only repeated it.
+                  Text(timeStr,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted),),
                 ],
               ),
             ),

@@ -146,6 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   textInputAction: TextInputAction.done,
                   errorText: _mobileError,
                   autofocus: true,
+                  autofillHints: const [AutofillHints.telephoneNumberNational],
                   inputFormatters: [IndianMobileInputFormatter()],
                   prefixIcon: const Text(
                     '+91',

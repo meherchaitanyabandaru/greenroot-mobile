@@ -34,9 +34,13 @@ class AppTextField extends StatefulWidget {
   /// since [key] only marks this wrapper in the widget tree.
   final Key? fieldKey;
 
+  /// Lets the keyboard offer saved values, e.g. the phone's own number.
+  final Iterable<String>? autofillHints;
+
   const AppTextField({
     super.key,
     this.fieldKey,
+    this.autofillHints,
     this.label,
     this.hint,
     this.errorText,
@@ -95,6 +99,7 @@ class _AppTextFieldState extends State<AppTextField> {
           maxLines: widget.obscureText ? 1 : widget.maxLines,
           maxLength: widget.maxLength,
           inputFormatters: widget.inputFormatters,
+          autofillHints: widget.autofillHints,
           onChanged: widget.onChanged,
           onTap: widget.onTap,
           onFieldSubmitted: widget.onSubmitted,
