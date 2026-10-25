@@ -478,13 +478,15 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     final isDelivered = d.status == 'DELIVERED' || d.status == 'CANCELLED';
     final showMap = _usesLiveMap(d.status);
 
+    // On the road, what is left from the truck; before that, the whole trip.
+    final pos = _devicePos;
+    final from = d.status == 'IN_TRANSIT' && pos != null
+        ? LatLng(pos.latitude, pos.longitude)
+        : _loadingPointLatLng;
     double? distKm;
-    if (showMap &&
-        _loadingPointLatLng != null &&
-        _deliveryPointLatLng != null) {
+    if (showMap && from != null && _deliveryPointLatLng != null) {
       const calc = Distance();
-      distKm = calc.as(
-          LengthUnit.Kilometer, _loadingPointLatLng!, _deliveryPointLatLng!,);
+      distKm = calc.as(LengthUnit.Kilometer, from, _deliveryPointLatLng!);
     }
 
     return Column(
