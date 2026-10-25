@@ -668,7 +668,7 @@ class _ActionButton extends StatelessWidget {
                     strokeWidth: 2, color: Colors.white,),
               )
             : Icon(icon),
-        label: Text(label, style: AppTypography.label),
+        label: Text(label, style: AppTypography.buttonLabel),
       ),
     );
   }
@@ -700,7 +700,7 @@ class _CompleteButton extends StatelessWidget {
                     strokeWidth: 2, color: Colors.white,),
               )
             : const Icon(Icons.where_to_vote_outlined),
-        label: const Text('Complete Delivery', style: AppTypography.label),
+        label: const Text('Complete Delivery', style: AppTypography.buttonLabel),
       ),),
     );
   }

@@ -82,6 +82,15 @@ abstract class AppTypography {
     color: AppColors.textPrimary,
   );
 
+  /// [label] without a color, for button labels: the button's foreground
+  /// colors it (white on a filled button), so it is never dark-on-green.
+  static const buttonLabel = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+  );
+
   static const caption = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 12,

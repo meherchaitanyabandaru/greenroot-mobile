@@ -172,7 +172,7 @@ class _DriverScanScreenState extends State<DriverScanScreen> {
                   style:
                       FilledButton.styleFrom(backgroundColor: AppColors.primaryMain),
                   icon: const Icon(Icons.search_rounded),
-                  label: const Text('Find Trip', style: AppTypography.label),
+                  label: const Text('Find Trip', style: AppTypography.buttonLabel),
                 );
               },
             ),
