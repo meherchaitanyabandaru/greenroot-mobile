@@ -85,6 +85,21 @@ class _OwnerTabState extends ConsumerState<OwnerTab>
     });
   }
 
+  // Back on this tab: a buyer may have accepted or declined meanwhile, so
+  // show it without a pull to refresh.
+  bool _visible = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible && !_visible) {
+      ref.read(_sellerOrderProvider.notifier).load();
+      ref.read(_sellerQuotationProvider.notifier).load();
+    }
+    _visible = visible;
+  }
+
   @override
   void dispose() {
     _tabs.dispose();
