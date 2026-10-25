@@ -54,12 +54,23 @@ class PushConfig {
 }
 
 /// The device side of push (Firebase), behind an interface for tests.
+/// A push that arrived while the app was open.
+class PushMessage {
+  final String? title;
+  final String? body;
+  const PushMessage({this.title, this.body});
+}
+
 abstract class PushPlatform {
   /// Starts the SDK and asks for permission; false = push unavailable.
   Future<bool> start();
   Future<String?> token();
   Stream<String> get onTokenRefresh;
   Future<void> deleteToken();
+
+  /// Pushes that arrive while the app is in the foreground (the system shows
+  /// nothing for these on Android).
+  Stream<PushMessage> get onForegroundMessage;
 }
 
 class FirebasePushPlatform implements PushPlatform {
@@ -81,6 +92,12 @@ class FirebasePushPlatform implements PushPlatform {
       );
     }
     final settings = await FirebaseMessaging.instance.requestPermission();
+    // iOS: show the banner with its sound even while the app is open.
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
     return settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional;
   }
@@ -101,6 +118,13 @@ class FirebasePushPlatform implements PushPlatform {
   @override
   // ignore: deprecated_member_use
   Future<void> deleteToken() => FirebaseMessaging.instance.deleteToken();
+
+  @override
+  Stream<PushMessage> get onForegroundMessage =>
+      FirebaseMessaging.onMessage.map((m) => PushMessage(
+            title: m.notification?.title,
+            body: m.notification?.body,
+          ),);
 }
 
 /// The API side: POST/DELETE /notifications/devices.
@@ -151,6 +175,12 @@ class PushService {
   int? _deviceId;
   StreamSubscription<String>? _refresh;
 
+  StreamSubscription<PushMessage>? _foreground;
+
+  /// Called for each push that arrives while the app is open; the app shows
+  /// it as an in-app banner (with a haptic) and refreshes its lists.
+  void Function(PushMessage message)? onForeground;
+
   int? get deviceId => _deviceId;
 
   Future<void> register() async {
@@ -163,6 +193,8 @@ class PushService {
         _deviceId = await _registry.register(token);
         _token = token;
       }
+      _foreground ??= _platform.onForegroundMessage
+          .listen((m) => onForeground?.call(m));
       _refresh ??= _platform.onTokenRefresh.listen((t) async {
         try {
           _deviceId = await _registry.register(t);
@@ -182,6 +214,8 @@ class PushService {
     _token = null;
     await _refresh?.cancel();
     _refresh = null;
+    await _foreground?.cancel();
+    _foreground = null;
     if (_available != true) return;
     try {
       if (id != null) await _registry.unregister(id);

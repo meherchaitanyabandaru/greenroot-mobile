@@ -14,6 +14,10 @@ class FakePlatform implements PushPlatform {
   int starts = 0;
   int deletes = 0;
   final refresh = StreamController<String>.broadcast();
+  final foreground = StreamController<PushMessage>.broadcast();
+
+  @override
+  Stream<PushMessage> get onForegroundMessage => foreground.stream;
 
   @override
   Future<bool> start() async {
@@ -105,5 +109,21 @@ void main() {
     expect(android.enabledFor(TargetPlatform.iOS), isFalse);
     expect(PushConfig.fromEnvironment().enabledFor(TargetPlatform.android), isFalse,
         reason: 'tests build without FCM_* defines',);
+  });
+
+  test('a push that arrives while the app is open reaches the app', () async {
+    final platform = FakePlatform();
+    final service = PushService(platform: platform, registry: FakeRegistry());
+    final got = <String?>[];
+    service.onForeground = (m) => got.add(m.title);
+    await service.register();
+    platform.foreground.add(const PushMessage(title: 'Order dispatched'));
+    await Future<void>.delayed(Duration.zero);
+    expect(got, ['Order dispatched']);
+
+    await service.unregister(); // signed out: no more banners
+    platform.foreground.add(const PushMessage(title: 'late'));
+    await Future<void>.delayed(Duration.zero);
+    expect(got, ['Order dispatched']);
   });
 }

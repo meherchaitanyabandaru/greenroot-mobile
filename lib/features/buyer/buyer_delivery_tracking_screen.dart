@@ -479,15 +479,10 @@ class _FullMapSection extends StatelessWidget {
                 isNursery: false,
               ),
             ),
-          // Truck — pulses when IN_TRANSIT
-          if (truckLatLng != null)
-            Marker(
-              point: truckLatLng!,
-              width: 62,
-              height: 62,
-              child: MapTruckMarker(active: isInTransit),
-            ),
         ],),
+        // Truck — glides to each new position, pulses when IN_TRANSIT
+        if (truckLatLng != null)
+          GlidingTruckLayer(point: truckLatLng!, active: isInTransit),
       ],
     );
   }
