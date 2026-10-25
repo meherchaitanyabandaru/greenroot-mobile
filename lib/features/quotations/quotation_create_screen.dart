@@ -374,6 +374,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
               ),)
           .toList();
 
+      Quotation? created;
       if (_isEdit) {
         await repo.updateQuotation(
           id: widget.quotation!.id,
@@ -388,7 +389,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           items: itemRequests,
         );
       } else {
-        await repo.createQuotation(
+        created = await repo.createQuotation(
           idempotencyKey: _submitKey,
           quotationType: _quotationType ?? 'CUSTOMER',
           nurseryId: nurseryId,
@@ -406,9 +407,19 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
       if (mounted) {
         HapticFeedback.mediumImpact();
+        // The next step is sending it: offer to open the new draft.
+        final router = GoRouter.of(context);
+        final newId = created?.id;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_isEdit ? 'Quotation updated' : 'Quotation created'),
           backgroundColor: AppColors.primaryMain,
+          action: newId == null
+              ? null
+              : SnackBarAction(
+                  label: 'View',
+                  textColor: Colors.white,
+                  onPressed: () => router.push('/quotations/$newId'),
+                ),
         ),);
         Navigator.of(context).pop(true);
       }

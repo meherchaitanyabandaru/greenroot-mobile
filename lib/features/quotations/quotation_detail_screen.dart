@@ -22,6 +22,7 @@ import '../../core/widgets/order_timeline.dart' show QuotationTimeline;
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import '../profile/my_addresses_screen.dart';
+import 'accept_confirm.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
 
@@ -99,6 +100,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   }
 
   Future<void> _buyerAccept(Quotation q) async {
+    if (!await confirmAcceptQuotation(context, q) || !mounted) return;
     final hasDeliveryAddress = await _ensureDeliveryAddress();
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _buyerActing = true);
