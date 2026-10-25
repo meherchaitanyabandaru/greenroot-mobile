@@ -60,7 +60,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 ? TourRole.driver
                 : TourRole.customer;
     if (await showWelcomeTour(context, tourRole)) return;
-    if (!mounted) return;
+    if (await completionPromptSnoozed() || !mounted) return;
 
     final role = session.capabilities.canSell
         ? (session.capabilities.isNurseryOwner

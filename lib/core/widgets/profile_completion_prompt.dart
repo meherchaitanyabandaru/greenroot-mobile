@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -11,8 +12,26 @@ import 'profile_completion_card.dart';
 /// Resets on cold start (StateProvider = in-memory only).
 final completionPromptShownProvider = StateProvider<bool>((ref) => false);
 
+const _promptAtKey = 'profile_prompt_shown_at';
+
+/// "Later" holds for a few days, not just until the next app start.
+const completionPromptSnooze = Duration(days: 3);
+
+/// True while the prompt was shown on this device within [completionPromptSnooze].
+Future<bool> completionPromptSnoozed() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final at = prefs.getInt(_promptAtKey);
+    return at != null &&
+        DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(at)) <
+            completionPromptSnooze;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// Shows a modal bottom sheet prompting the user to complete their profile.
-/// Should be called once per app session when completion < 90%.
+/// Shown when completion < 90%, at most once per [completionPromptSnooze].
 Future<void> showCompletionPrompt(
   BuildContext context,
   WidgetRef ref, {
@@ -21,6 +40,10 @@ Future<void> showCompletionPrompt(
   VoidCallback? onCompleteNow,
 }) async {
   ref.read(completionPromptShownProvider.notifier).state = true;
+  // Not awaited: the sheet opens now; a failed save only means asking sooner.
+  SharedPreferences.getInstance()
+      .then((p) => p.setInt(_promptAtKey, DateTime.now().millisecondsSinceEpoch))
+      .ignore();
 
   await showModalBottomSheet(
     context: context,
