@@ -3,6 +3,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
+import '../auth/presentation/providers/session_provider.dart';
 
 // ── Model ─────────────────────────────────────────────────────────────────────
 
@@ -242,5 +243,11 @@ class NotificationListNotifier
 final notificationListProvider =
     StateNotifierProvider<NotificationListNotifier, NotificationListState>(
         (ref) {
-  return NotificationListNotifier(ref.watch(notificationRepositoryProvider));
+  // Rebuilt per signed-in user and loaded at once, so the bell's badge is
+  // right from launch (and never shows the previous account's count).
+  final userId = ref.watch(sessionProvider.select((s) => s.user?.id));
+  final notifier =
+      NotificationListNotifier(ref.watch(notificationRepositoryProvider));
+  if (userId != null) notifier.load();
+  return notifier;
 });
