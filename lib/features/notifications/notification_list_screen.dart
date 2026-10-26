@@ -34,6 +34,36 @@ class _NotificationListScreenState
     });
   }
 
+  // Gone at once; deleted on the server only if Undo is not tapped in time.
+  void _deleteWithUndo(int id) {
+    final notifier = ref.read(notificationListProvider.notifier);
+    final hidden = notifier.hide(id);
+    if (hidden == null) return;
+    final (n, index) = hidden;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger
+        .showSnackBar(
+          SnackBar(
+            content: const Text('Notification deleted'),
+            duration: const Duration(seconds: 4),
+            persist: false, // with an action it would otherwise wait forever
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => notifier.restore(n, index),
+            ),
+          ),
+        )
+        .closed
+        .then((reason) async {
+      if (reason == SnackBarClosedReason.action) return;
+      if (!await notifier.commitDelete(n, index)) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Could not delete. Try again.')),
+        );
+      }
+    });
+  }
+
   @override
   void dispose() {
     _scrollCtrl.dispose();
@@ -136,17 +166,29 @@ class _NotificationListScreenState
             else ...[
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) => _NotificationTile(
-                    notification: paged.items[i],
-                    onTap: () {
-                      final n = paged.items[i];
-                      if (n.isUnread) {
-                        ref.read(notificationListProvider.notifier).markRead(n.id);
-                      }
-                      final route = notificationRoute(
-                          n, ref.read(sessionProvider).capabilities,);
-                      if (route != null) context.push(route);
-                    },
+                  (context, i) => Dismissible(
+                    key: ValueKey(paged.items[i].id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      color: AppColors.red600,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      child: const Icon(Icons.delete_outline,
+                          color: Colors.white, semanticLabel: 'Delete',),
+                    ),
+                    onDismissed: (_) => _deleteWithUndo(paged.items[i].id),
+                    child: _NotificationTile(
+                      notification: paged.items[i],
+                      onTap: () {
+                        final n = paged.items[i];
+                        if (n.isUnread) {
+                          ref.read(notificationListProvider.notifier).markRead(n.id);
+                        }
+                        final route = notificationRoute(
+                            n, ref.read(sessionProvider).capabilities,);
+                        if (route != null) context.push(route);
+                      },
+                    ),
                   ),
                   childCount: paged.items.length,
                 ),

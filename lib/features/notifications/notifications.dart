@@ -267,6 +267,44 @@ class NotificationListNotifier
     return count < 0 ? 0 : count;
   }
 
+  // ── Swipe to delete with Undo: hide now, delete on the server only once the
+  // Undo window has passed ([commitDelete]), or put it back ([restore]).
+
+  /// Takes [id] out of the list; returns it and where it was, to restore.
+  (AppNotification, int)? hide(int id) {
+    final items = state.paged.items;
+    final index = items.indexWhere((n) => n.id == id);
+    if (index < 0) return null;
+    final n = items[index];
+    state = state.copyWith(
+      unreadCount: _countWithout(id),
+      paged: state.paged.copyWith(items: [...items]..removeAt(index)),
+    );
+    return (n, index);
+  }
+
+  void restore(AppNotification n, int index) {
+    final items = state.paged.items;
+    if (items.any((x) => x.id == n.id)) return; // a reload already brought it back
+    state = state.copyWith(
+      unreadCount: state.unreadCount + (n.isUnread ? 1 : 0),
+      paged: state.paged.copyWith(
+        items: [...items]..insert(index.clamp(0, items.length), n),
+      ),
+    );
+  }
+
+  /// Deletes a hidden notification on the server; puts it back if that fails.
+  Future<bool> commitDelete(AppNotification n, int index) async {
+    try {
+      await _repo.deleteNotification(n.id);
+      return true;
+    } on AppError {
+      restore(n, index);
+      return false;
+    }
+  }
+
   Future<void> deleteNotification(int id) async {
     try {
       await _repo.deleteNotification(id);
