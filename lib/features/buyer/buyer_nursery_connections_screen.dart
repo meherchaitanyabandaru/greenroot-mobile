@@ -482,19 +482,6 @@ class _NurseryDetailSheet extends StatelessWidget {
                 '${entry.orderCount} order${entry.orderCount == 1 ? '' : 's'} placed',
           ),
           const SizedBox(height: AppSpacing.x2l),
-          // Customers may order on their own (orders RBAC: buyer creates own).
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.push('/orders/create');
-              },
-              icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-              label: const Text('Place Order'),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
           // Action buttons
           if (hasCall || hasEmail)
             Row(
