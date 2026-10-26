@@ -64,6 +64,21 @@ class AppNotification {
   }
 
   bool get isUnread => readAt == null;
+
+  /// The same notification, read now. Keeps everything else, the link included.
+  AppNotification asRead() => AppNotification(
+        id: id,
+        notificationCode: notificationCode,
+        type: type,
+        title: title,
+        message: message,
+        channel: channel,
+        status: 'read',
+        readAt: readAt ?? DateTime.now().toIso8601String(),
+        createdAt: createdAt,
+        entity: entity,
+        entityId: entityId,
+      );
 }
 
 /// Where tapping a notification goes, for this person: the driver's trip map,
@@ -219,19 +234,7 @@ class NotificationListNotifier
       await _repo.markRead(id);
       // Update local state
       final updatedItems = state.paged.items
-          .map((n) => n.id == id
-              ? AppNotification(
-                  id: n.id,
-                  notificationCode: n.notificationCode,
-                  type: n.type,
-                  title: n.title,
-                  message: n.message,
-                  channel: n.channel,
-                  status: 'read',
-                  readAt: DateTime.now().toIso8601String(),
-                  createdAt: n.createdAt,
-                )
-              : n,)
+          .map((n) => n.id == id ? n.asRead() : n)
           .toList();
       final unreadCount = updatedItems.where((n) => n.isUnread).length;
       state = state.copyWith(
@@ -245,17 +248,7 @@ class NotificationListNotifier
     try {
       await _repo.markAllRead();
       final updatedItems = state.paged.items
-          .map((n) => AppNotification(
-                id: n.id,
-                notificationCode: n.notificationCode,
-                type: n.type,
-                title: n.title,
-                message: n.message,
-                channel: n.channel,
-                status: 'read',
-                readAt: DateTime.now().toIso8601String(),
-                createdAt: n.createdAt,
-              ),)
+          .map((n) => n.asRead())
           .toList();
       state = state.copyWith(
         unreadCount: 0,
