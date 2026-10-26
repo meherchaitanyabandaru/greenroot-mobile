@@ -639,7 +639,9 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
                       color: Colors.white, size: 16,),
                   const SizedBox(width: 8),
                   Text(
-                    'Loading complete! All plants are loaded.',
+                    widget.trip.orderStatus == 'PARTIALLY_FULFILLED'
+                        ? 'Loading complete. Some plants were short.'
+                        : 'Loading complete! All plants are loaded.',
                     style: AppTypography.caption.copyWith(color: Colors.white),
                   ),
                 ],
