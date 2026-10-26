@@ -347,7 +347,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
               style: AppTypography.h3, textAlign: TextAlign.center,),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Ask your nursery owner or manager for the invite link/UUID.',
+            'Ask your nursery owner or manager for the invite link or code.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -392,7 +392,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           AppTextField(
             fieldKey: const Key(TestKeys.inviteCodeField),
             controller: _uuidCtrl,
-            label: 'Invite UUID',
+            label: 'Invite code',
             hint: 'e.g. 550e8400-e29b-41d4-a716-446655440000',
             keyboardType: TextInputType.text,
           ),
