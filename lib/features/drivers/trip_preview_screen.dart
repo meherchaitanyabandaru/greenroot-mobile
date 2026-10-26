@@ -63,6 +63,11 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       final d =
           await ref.read(dispatchRepositoryProvider).findByCode(widget.code);
       if (mounted) setState(() => _dispatch = d);
+    } on NotFoundError {
+      if (mounted) {
+        setState(() => _error =
+            'Check the trip code from the nursery. The trip number (DSP-…) does not work here.',);
+      }
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
@@ -99,7 +104,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
 
       final accepted = await ref
           .read(dispatchRepositoryProvider)
-          .acceptDispatch(_dispatch!.id);
+          .acceptDispatch(_dispatch!.id, widget.code);
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -409,10 +414,7 @@ class _TripDetails extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white,),)
                   : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(
-                accepting ? 'Accepting...' : 'Accept Trip',
-                style: AppTypography.label,
-              ),
+              label: Text(accepting ? 'Accepting...' : 'Accept Trip'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,

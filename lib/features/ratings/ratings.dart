@@ -143,6 +143,22 @@ class RatingRepository {
     );
   }
 
+  /// The caller's own app rating, or null before they rate (or on error:
+  /// the form then simply starts empty).
+  Future<Rating?> getMyAppRating() async {
+    try {
+      return await _client.get(
+        ApiConstants.ratingsApp,
+        fromJson: (data) {
+          final r = (data as Map<String, dynamic>)['rating'];
+          return r == null ? null : Rating.fromJson(r as Map<String, dynamic>);
+        },
+      );
+    } on AppError {
+      return null;
+    }
+  }
+
   Future<Rating?> getMyOrderRating(int orderId) async {
     return _client.get(
       ApiConstants.ratingsOrder(orderId),

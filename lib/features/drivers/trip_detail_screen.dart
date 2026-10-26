@@ -139,7 +139,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .acceptDispatch(widget.dispatchId);
+          .acceptDispatch(widget.dispatchId, widget.dispatch.tripCode ?? '');
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {

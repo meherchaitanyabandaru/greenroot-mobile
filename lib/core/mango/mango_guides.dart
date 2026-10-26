@@ -249,7 +249,7 @@ const mangoGuides = <MangoGuide>[
         'Tap Scan and point at the trip QR the nursery shows you.',
       ),
       MangoStep.say(
-        'Or type the Trip ID under Join Trip on Home. Then tap Accept Trip.',
+        'Or paste the trip code the nursery sent under Join a Trip on Home. Then tap Accept Trip.',
       ),
       MangoStep(
         ['Start Journey', 'Continue Trip'],

@@ -69,7 +69,7 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
     Clipboard.setData(ClipboardData(text: _created!.uuid));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Invite UUID copied to clipboard'),
+        content: Text('Invite code copied'),
         duration: Duration(seconds: 2),
       ),
     );
@@ -297,7 +297,7 @@ class _SuccessView extends StatelessWidget {
         const Text('Invite Created!', style: AppTypography.h3),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Share the invite UUID with ${invite.targetName ?? invite.targetMobile ?? 'the recipient'}.',
+          'Send this invite to ${invite.targetName ?? invite.targetMobile ?? 'them'}: share the QR, or the code below.',
           style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -315,7 +315,7 @@ class _SuccessView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Invite UUID',
+                'Invite code',
                 style: AppTypography.caption
                     .copyWith(color: AppColors.textSecondary),
               ),
@@ -338,7 +338,7 @@ class _SuccessView extends StatelessWidget {
                       size: 20,
                     ),
                     onPressed: onCopy,
-                    tooltip: 'Copy UUID',
+                    tooltip: 'Copy code',
                   ),
                 ],
               ),
@@ -369,7 +369,7 @@ class _SuccessView extends StatelessWidget {
             foregroundColor: AppColors.textPrimary,
           ),
           icon: const Icon(Icons.copy_rounded, size: 16),
-          label: const Text('Copy UUID'),
+          label: const Text('Copy code'),
         ),
         const SizedBox(height: AppSpacing.sm),
         TextButton(

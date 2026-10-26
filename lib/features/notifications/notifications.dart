@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth/data/models/capabilities_model.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
@@ -18,6 +21,11 @@ class AppNotification {
   final String? readAt;
   final String createdAt;
 
+  /// The record this notification is about ("quotation", "order",
+  /// "dispatch"), from the API's data; null when it is not about one.
+  final String? entity;
+  final int? entityId;
+
   const AppNotification({
     required this.id,
     required this.notificationCode,
@@ -28,9 +36,21 @@ class AppNotification {
     required this.status,
     this.readAt,
     required this.createdAt,
+    this.entity,
+    this.entityId,
   });
 
-  factory AppNotification.fromJson(Map<String, dynamic> j) => AppNotification(
+  factory AppNotification.fromJson(Map<String, dynamic> j) {
+    // data arrives as a JSON string ("{}" when there is no link).
+    final raw = j['data'];
+    Map<String, dynamic> data = const {};
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is Map) data = decoded.cast<String, dynamic>();
+    } catch (_) {}
+    return AppNotification(
+        entity: data['entity'] as String?,
+        entityId: (data['id'] as num?)?.toInt(),
         id: (j['id'] as num).toInt(),
         notificationCode: j['notification_code'] as String,
         type: j['notification_type'] as String,
@@ -41,8 +61,26 @@ class AppNotification {
         readAt: j['read_at'] as String?,
         createdAt: j['created_at'] as String,
       );
+  }
 
   bool get isUnread => readAt == null;
+}
+
+/// Where tapping a notification goes, for this person: the driver's trip map,
+/// the seller's dispatch page or the customer's delivery tracking.
+String? notificationRoute(AppNotification n, UserCapabilities caps) {
+  final id = n.entityId;
+  if (id == null) return null;
+  return switch (n.entity) {
+    'quotation' => '/quotations/$id',
+    'order' => '/orders/$id',
+    'dispatch' => caps.isDriverOnly
+        ? '/driver/trip/$id'
+        : caps.canSell
+            ? '/dispatches/$id'
+            : '/dispatches/$id/buyer-track',
+    _ => null,
+  };
 }
 
 // ── Repository ────────────────────────────────────────────────────────────────

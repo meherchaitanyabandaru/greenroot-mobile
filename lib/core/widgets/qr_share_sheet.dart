@@ -41,7 +41,7 @@ extension _QrMeta on QrCodeType {
       };
 
   String get idLabel => switch (this) {
-        QrCodeType.tripQr         => 'Trip ID',
+        QrCodeType.tripQr         => 'Trip code',
         QrCodeType.managerInvite  => 'Invitation ID',
         QrCodeType.customerInvite => 'Invitation ID',
       };
@@ -79,9 +79,9 @@ extension _QrMeta on QrCodeType {
           _Step(icon: Icons.check_circle_outlined,  text: 'QR is scanned → they join your nursery as a manager'),
         ],
         QrCodeType.tripQr => const [
-          _Step(icon: Icons.share_rounded,          text: 'Send this QR image to your driver'),
+          _Step(icon: Icons.share_rounded,          text: 'Send this QR image or the trip code to your driver'),
           _Step(icon: Icons.smartphone_rounded,     text: 'Driver opens GreenRoot on their phone'),
-          _Step(icon: Icons.qr_code_scanner_rounded,text: 'Driver taps the QR scan button on the Driver screen'),
+          _Step(icon: Icons.qr_code_scanner_rounded,text: 'Driver scans it, or pastes the code under Join a Trip'),
           _Step(icon: Icons.check_circle_outlined,  text: 'QR scanned → driver is assigned to this trip'),
         ],
       };

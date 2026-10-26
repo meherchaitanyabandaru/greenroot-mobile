@@ -97,6 +97,8 @@ class DispatchCapabilities {
 class Dispatch {
   final int id;
   final String dispatchCode;
+  // The trip's secret: only the QR / join code carries it (dispatch codes are guessable).
+  final String? tripUuid;
   final int orderId;
   final String? orderNumber;
   final String? orderStatus;
@@ -139,6 +141,7 @@ class Dispatch {
   const Dispatch({
     required this.id,
     required this.dispatchCode,
+    this.tripUuid,
     required this.orderId,
     this.orderNumber,
     this.orderStatus,
@@ -174,9 +177,13 @@ class Dispatch {
     this.deliveryCode,
   });
 
+  /// What the nursery shares (QR or text) and the driver joins with.
+  String? get tripCode => tripUuid == null ? null : 'TRIP-$tripUuid';
+
   factory Dispatch.fromJson(Map<String, dynamic> j) => Dispatch(
         id: (j['id'] as num).toInt(),
         dispatchCode: j['dispatch_code'] as String,
+        tripUuid: j['trip_uuid'] as String?,
         orderId: (j['order_id'] as num).toInt(),
         orderNumber: j['order_number'] as String?,
         orderStatus: j['order_status'] as String?,
@@ -356,9 +363,11 @@ class DispatchRepository {
     );
   }
 
-  Future<Dispatch> acceptDispatch(int id) async {
+  /// [tripCode] is the trip's QR code (`TRIP-<uuid>`); the API refuses anything else.
+  Future<Dispatch> acceptDispatch(int id, String tripCode) async {
     return _client.post(
       ApiConstants.acceptDispatch(id),
+      data: {'trip_code': tripCode},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
@@ -551,7 +560,7 @@ final dispatchListProvider =
 });
 
 final dispatchDetailProvider =
-    FutureProvider.family<Dispatch, int>((ref, id) async {
+    FutureProvider.autoDispose.family<Dispatch, int>((ref, id) async {
   return ref.watch(dispatchRepositoryProvider).getDispatch(id);
 });
 

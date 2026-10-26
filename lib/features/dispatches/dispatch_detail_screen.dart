@@ -730,17 +730,19 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           // Share dispatch code as QR
-          if (isSeller && dispatch.capabilities?.canShareCode == true)
+          if (isSeller &&
+              dispatch.capabilities?.canShareCode == true &&
+              dispatch.tripCode != null)
             SizedBox(
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
                 onPressed: () => QrShareSheet.show(
                   context,
-                  code: dispatch.dispatchCode,
+                  code: dispatch.tripCode!,
                   qrType: QrCodeType.tripQr,
                   shareMessage:
-                      'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${dispatch.orderNumber ?? '-'}',
+                      'GreenRoot trip ${dispatch.dispatchCode} for order ${dispatch.orderNumber ?? '-'}.\n\nOpen GreenRoot and scan this QR, or paste this trip code under Join a Trip:\n${dispatch.tripCode}',
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primaryMain),

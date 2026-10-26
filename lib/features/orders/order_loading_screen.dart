@@ -25,7 +25,16 @@ class OrderLoadingScreen extends ConsumerStatefulWidget {
   /// Tab to open on: CONFIRMED (default), LOADING, LOADED or PARTIAL.
   final String? initialTab;
 
-  const OrderLoadingScreen({super.key, this.nurseryId, this.initialTab});
+  /// Set when opened from that order's page: tapping it goes back there
+  /// instead of stacking another copy of the order page.
+  final int? fromOrderId;
+
+  const OrderLoadingScreen({
+    super.key,
+    this.nurseryId,
+    this.initialTab,
+    this.fromOrderId,
+  });
 
   @override
   ConsumerState<OrderLoadingScreen> createState() => _OrderLoadingScreenState();
@@ -134,6 +143,14 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
     }
   }
 
+  void _open(Order order) {
+    if (order.id == widget.fromOrderId) {
+      context.pop();
+    } else {
+      context.push('/orders/${order.id}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final caps = ref.watch(sessionProvider).capabilities;
@@ -148,6 +165,9 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          // Four labels with counts do not fit a phone's width.
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: AppColors.primaryMain,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primaryMain,
@@ -172,7 +192,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               canManage: canManage,
               showItemAdjust: false,
               onRefresh: () => _load('CONFIRMED'),
-              onOpen: (order) => context.push('/orders/${order.id}'),
+              onOpen: _open,
               onStartLoading: (order) => _runAction(
                 order,
                 (repo) => repo.startLoading(order.id),
@@ -187,7 +207,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               canManage: canManage,
               showItemAdjust: true,
               onRefresh: () => _load('LOADING'),
-              onOpen: (order) => context.push('/orders/${order.id}'),
+              onOpen: _open,
               onStartLoading: null,
               onCompleteLoading: (order) => _runAction(
                 order,
@@ -202,7 +222,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               canManage: canManage,
               showItemAdjust: false,
               onRefresh: () => _load('LOADED'),
-              onOpen: (order) => context.push('/orders/${order.id}'),
+              onOpen: _open,
               onStartLoading: null,
               onCompleteLoading: (order) => _runAction(
                 order,
@@ -218,7 +238,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               canManage: canManage,
               showItemAdjust: false,
               onRefresh: () => _load('PARTIAL'),
-              onOpen: (order) => context.push('/orders/${order.id}'),
+              onOpen: _open,
               onStartLoading: null,
               onCompleteLoading: (order) => _runAction(
                 order,

@@ -22,6 +22,20 @@ class _AppRatingScreenState extends ConsumerState<AppRatingScreen> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    // One app rating per person: show theirs so a second visit edits it.
+    ref.read(ratingRepositoryProvider).getMyAppRating().then((r) {
+      if (r == null || !mounted || _rating != 0) return;
+      setState(() {
+        _rating = r.overallRating ?? 0;
+        _wouldRecommend = r.wouldRecommend;
+        _commentCtrl.text = r.comment ?? '';
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _commentCtrl.dispose();
     super.dispose();
@@ -161,6 +175,24 @@ class _TripRatingScreenState extends ConsumerState<TripRatingScreen> {
   int _plantCondition = 0;
   final _commentCtrl = TextEditingController();
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // One rating per trip: show theirs so a second visit edits it.
+    ref
+        .read(ratingRepositoryProvider)
+        .getMyTripRating(widget.dispatchId)
+        .then((r) {
+      if (r == null || !mounted || _driverBehaviour != 0) return;
+      setState(() {
+        _driverBehaviour = r.driverBehaviourRating ?? 0;
+        _onTime = r.onTimeDeliveryRating ?? 0;
+        _plantCondition = r.plantConditionRating ?? 0;
+        _commentCtrl.text = r.comment ?? '';
+      });
+    });
+  }
 
   @override
   void dispose() {

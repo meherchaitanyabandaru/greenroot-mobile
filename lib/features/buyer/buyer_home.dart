@@ -82,6 +82,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/universal_qr_screen.dart';
 import '../dispatches/dispatches.dart';
+import 'buyer_tab.dart';
 import '../orders/orders.dart';
 
 /// Fetches buyer home data: orders scoped to the current buyer.
@@ -139,6 +140,10 @@ class BuyerHome extends ConsumerWidget {
     final isEmpty = data.orders.isEmpty;
 
     void goToBuying() => ref.read(mainTabIndexProvider.notifier).state = 1;
+    void goToBuyingTab(int tab) {
+      ref.read(buyerSubTabProvider.notifier).state = tab;
+      goToBuying();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,8 +160,8 @@ class BuyerHome extends ConsumerWidget {
         _BuyerActionGrid(
           onBrowsePlants: () => context.push('/plants'),
           onBrowseNurseries: () => context.push('/nurseries'),
-          onMyOrders: goToBuying,
-          onTrackDeliveries: goToBuying,
+          onMyOrders: () => goToBuyingTab(1),
+          onTrackDeliveries: () => goToBuyingTab(2),
         ),
         const SizedBox(height: 22),
         // Active orders list (up to 3)

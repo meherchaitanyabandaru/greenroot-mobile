@@ -113,6 +113,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         color: AppColors.primaryMain,
         displacement: 20,
         onRefresh: () async {
+          // A nursery connection lives in the session, so reload it until connected.
+          if (ref.read(sessionProvider).capabilities.driverNurseryId == null) {
+            await ref.read(sessionProvider.notifier).bootstrap();
+          }
           ref.invalidate(_driverDashboardProvider);
           await ref.read(notificationListProvider.notifier).load();
         },

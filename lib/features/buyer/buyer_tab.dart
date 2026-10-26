@@ -79,6 +79,10 @@ final _buyerDispatchProvider = StateNotifierProvider.autoDispose<
 // MAIN SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 
+/// The open Buying tab (0 quotations, 1 orders, 2 deliveries), so Home's
+/// shortcuts land on the right one.
+final buyerSubTabProvider = StateProvider<int>((ref) => 0);
+
 class BuyerTab extends ConsumerStatefulWidget {
   const BuyerTab({super.key});
 
@@ -93,7 +97,10 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(
+        length: 3, vsync: this, initialIndex: ref.read(buyerSubTabProvider),)
+      ..addListener(
+          () => ref.read(buyerSubTabProvider.notifier).state = _tabs.index,);
     Future.microtask(() {
       ref.read(_buyerQuotationProvider.notifier).load();
       ref.read(_buyerOrderProvider.notifier).load();
@@ -125,6 +132,9 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(buyerSubTabProvider, (_, i) {
+      if (_tabs.index != i) _tabs.animateTo(i);
+    });
     ref.watch(_buyerQuotationProvider);
     ref.watch(_buyerOrderProvider);
     ref.watch(_buyerDispatchProvider);
@@ -391,24 +401,8 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.red100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('Expired',
-                        style: AppTypography.caption.copyWith(
-                            color: AppColors.red600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,),),
-                  ),
-                  const SizedBox(width: 6),
-                ],
                 TradeStatusChip(
-                    status: q.status, kind: TradeChipKind.quotation,),
+                    status: q.displayStatus, kind: TradeChipKind.quotation,),
               ],
             ),
             if (q.nurseryName?.isNotEmpty == true) ...[
