@@ -135,7 +135,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   // The Loading Workflow screen records loaded quantity per item (partial loads).
   Future<void> _loadPartially() async {
     await context.push(
-      '/orders/loading?nursery=${_order.sellerNurseryId}&tab=LOADING',
+      '/orders/loading?nursery=${_order.sellerNurseryId}&tab=LOADING&order=${widget.orderId}',
     );
     if (!mounted) return;
     ref.invalidate(orderDetailProvider(widget.orderId));
