@@ -71,7 +71,6 @@
 //   • "Cancel Order" visible ONLY when order.status == 'PENDING'
 //   • Empty state: show "Explore nurseries →" CTA, NOT "Create your first order"
 
-import '../invites/pending_invites_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,8 +143,6 @@ class BuyerHome extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Invites sent to this number before they had the app.
-        const PendingInvitesBanner(),
         // KPI summary row
         _BuyerSummaryRow(
           totalCount: data.orders.length,

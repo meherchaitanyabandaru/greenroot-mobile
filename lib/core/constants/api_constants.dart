@@ -164,7 +164,6 @@ abstract class ApiConstants {
 
   // Invites
   static const String invites = '$v1/invites';
-  static const String myInvites = '$v1/invites/mine';
   static String inviteByUUID(String uuid) => '$v1/invites/$uuid';
   static String acceptInvite(String uuid) => '$v1/invites/$uuid/accept';
   static String cancelInvite(String uuid) => '$v1/invites/$uuid/cancel';
