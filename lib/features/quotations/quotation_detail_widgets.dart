@@ -222,6 +222,11 @@ class _StatusBadge extends StatelessWidget {
         fg = AppColors.primaryMain;
         label = 'Converted to Order';
         break;
+      case 'EXPIRED':
+        bg = AppColors.red100;
+        fg = AppColors.red600;
+        label = 'Expired';
+        break;
       // Legacy
       case 'DRAFT':
         bg = AppColors.amber100;

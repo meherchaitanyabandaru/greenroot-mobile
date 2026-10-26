@@ -711,7 +711,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                   Text(q.quotationCode,
                       style: AppTypography.h3
                           .copyWith(color: AppColors.primaryMain),),
-                  _StatusBadge(status: q.status),
+                  _StatusBadge(status: q.displayStatus),
                 ],
               ),
               const SizedBox(height: 4),

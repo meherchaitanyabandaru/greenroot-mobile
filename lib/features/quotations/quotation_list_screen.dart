@@ -687,22 +687,7 @@ class _QuotationCard extends ConsumerWidget {
                                     .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700, fontSize: 9),),
                           ),
                         ),
-                      _StatusChip(status: quotation.status, quotationType: quotation.quotationType),
-                      if (quotation.isExpired && quotation.status == 'CUSTOMER_SENT') ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.red100,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text('Expired',
-                              style: AppTypography.caption.copyWith(
-                                  color: AppColors.red600,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 9,),),
-                        ),
-                      ],
+                      _StatusChip(status: quotation.displayStatus, quotationType: quotation.quotationType),
                     ],),
                     const SizedBox(height: 2),
                     if (quotation.recipientName != null)
@@ -826,6 +811,11 @@ class _StatusChip extends StatelessWidget {
         bg = AppColors.forest100;
         fg = AppColors.primaryMain;
         label = 'Converted';
+        break;
+      case 'EXPIRED':
+        bg = AppColors.red100;
+        fg = AppColors.red600;
+        label = 'Expired';
         break;
       case 'DELETED':
         bg = AppColors.red100;

@@ -111,6 +111,11 @@ class Quotation {
   bool get isExpired =>
       validUntil != null && DateTime.now().isAfter(validUntil!);
 
+  /// The status to show: a sent quotation past its valid-until date can no
+  /// longer be answered, so it reads as EXPIRED (the API refuses an answer).
+  String get displayStatus =>
+      status == 'CUSTOMER_SENT' && isExpired ? 'EXPIRED' : status;
+
   factory Quotation.fromJson(Map<String, dynamic> j) => Quotation(
         id: (j['id'] as num).toInt(),
         quotationCode: j['quotation_code'] as String,

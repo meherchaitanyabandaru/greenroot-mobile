@@ -391,24 +391,8 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (q.isExpired && q.status == 'CUSTOMER_SENT') ...[
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.red100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('Expired',
-                        style: AppTypography.caption.copyWith(
-                            color: AppColors.red600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,),),
-                  ),
-                  const SizedBox(width: 6),
-                ],
                 TradeStatusChip(
-                    status: q.status, kind: TradeChipKind.quotation,),
+                    status: q.displayStatus, kind: TradeChipKind.quotation,),
               ],
             ),
             if (q.nurseryName?.isNotEmpty == true) ...[

@@ -468,6 +468,8 @@ class QuotationWorkflow {
     final accepted = !rejected &&
         {'CUSTOMER_ACCEPTED', 'ACCEPTED', 'CONVERTED'}.contains(s);
     final converted = s == 'CONVERTED';
+    // Sent but never answered before valid-until: it can no longer be answered.
+    final expired = quotation.displayStatus == 'EXPIRED' || s == 'EXPIRED';
 
     final steps = <WorkflowStep>[
       WorkflowStep(
@@ -492,8 +494,12 @@ class QuotationWorkflow {
         icon: Icons.send_outlined,
       ),);
       steps.add(WorkflowStep(
-        title: rejected ? 'Rejected by Customer' : 'Customer Response',
-        subtitle: rejected
+        title: rejected
+            ? 'Rejected by Customer'
+            : (expired ? 'Expired' : 'Customer Response'),
+        subtitle: expired
+            ? 'Not answered in time${quotation.validUntil != null ? ' (valid until ${_fmt(quotation.validUntil!.toIso8601String())})' : ''}. Ask for a new quotation.'
+            : rejected
             ? (quotation.rejectionReason?.isNotEmpty == true
                 ? quotation.rejectionReason
                 : (quotation.customerRespondedAt != null
@@ -504,16 +510,16 @@ class QuotationWorkflow {
                     ? _fmtDt(quotation.customerRespondedAt)
                     : 'Accepted')
                 : (sent ? 'Awaiting customer response' : null)),
-        state: rejected
+        state: rejected || expired
             ? WorkflowStepState.cancelled
             : (accepted
                 ? WorkflowStepState.completed
                 : (sent ? WorkflowStepState.current : WorkflowStepState.pending)),
-        icon: rejected ? Icons.cancel_rounded : Icons.task_alt_rounded,
+        icon: rejected || expired ? Icons.cancel_rounded : Icons.task_alt_rounded,
       ),);
     }
 
-    if (!rejected) {
+    if (!rejected && !expired) {
       steps.add(WorkflowStep(
         title: 'Converted to Order',
         subtitle: converted
