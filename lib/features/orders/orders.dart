@@ -666,7 +666,7 @@ final orderListProvider =
   return OrderListNotifier(ref.watch(orderRepositoryProvider));
 });
 
-final orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
+final orderDetailProvider = FutureProvider.autoDispose.family<Order, int>((ref, id) async {
   return ref.watch(orderRepositoryProvider).getOrder(id);
 });
 

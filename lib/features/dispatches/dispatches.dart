@@ -551,7 +551,7 @@ final dispatchListProvider =
 });
 
 final dispatchDetailProvider =
-    FutureProvider.family<Dispatch, int>((ref, id) async {
+    FutureProvider.autoDispose.family<Dispatch, int>((ref, id) async {
   return ref.watch(dispatchRepositoryProvider).getDispatch(id);
 });
 
