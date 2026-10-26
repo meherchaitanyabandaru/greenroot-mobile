@@ -145,6 +145,13 @@ class NotificationRepository {
   Future<void> deleteNotification(int id) async {
     await _client.delete<dynamic>(ApiConstants.deleteNotification(id));
   }
+
+  /// Deletes the user's read notifications (never unread ones); how many went.
+  Future<int> clearRead() => _client.delete(
+        ApiConstants.clearReadNotifications,
+        fromJson: (data) =>
+            ((data as Map<String, dynamic>)['deleted'] as num?)?.toInt() ?? 0,
+      );
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -265,6 +272,18 @@ class NotificationListNotifier
     final was = state.paged.items.where((n) => n.id == id).firstOrNull;
     final count = state.unreadCount - (was != null && was.isUnread ? 1 : 0);
     return count < 0 ? 0 : count;
+  }
+
+  /// Clears read notifications on the server, then reloads (pages shift).
+  /// Returns how many were deleted, or null if it failed.
+  Future<int?> clearRead() async {
+    try {
+      final deleted = await _repo.clearRead();
+      await load();
+      return deleted;
+    } on AppError {
+      return null;
+    }
   }
 
   // ── Swipe to delete with Undo: hide now, delete on the server only once the

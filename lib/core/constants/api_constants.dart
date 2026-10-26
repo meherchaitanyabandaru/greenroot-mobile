@@ -159,6 +159,7 @@ abstract class ApiConstants {
   static String notificationById(int id) => '$v1/notifications/$id';
   static String markNotificationRead(int id) => '$v1/notifications/$id/read';
   static const String markAllNotificationsRead = '$v1/notifications/read-all';
+  static const String clearReadNotifications = '$v1/notifications/read';
   static const String notificationDevices = '$v1/notifications/devices';
   static String deleteNotification(int id) => '$v1/notifications/$id';
 

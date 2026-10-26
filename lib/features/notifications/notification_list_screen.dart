@@ -34,6 +34,38 @@ class _NotificationListScreenState
     });
   }
 
+  Future<void> _clearRead() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear read notifications?'),
+        content: const Text(
+            'All notifications you have read will be deleted. Unread ones stay.',),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear', style: TextStyle(color: AppColors.red600)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final deleted =
+        await ref.read(notificationListProvider.notifier).clearRead();
+    messenger.showSnackBar(SnackBar(
+      content: Text(deleted == null
+          ? 'Could not clear notifications. Try again.'
+          : deleted == 0
+              ? 'No read notifications to clear'
+              : 'Cleared $deleted read notification${deleted == 1 ? '' : 's'}',),
+    ),);
+  }
+
   // Gone at once; deleted on the server only if Undo is not tapped in time.
   void _deleteWithUndo(int id) {
     final notifier = ref.read(notificationListProvider.notifier);
@@ -111,6 +143,13 @@ class _NotificationListScreenState
                   .read(notificationListProvider.notifier)
                   .load(unreadOnly: !state.unreadOnly),
             ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (_) => _clearRead(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'clear', child: Text('Clear read notifications')),
+            ],
           ),
         ],
       ),
