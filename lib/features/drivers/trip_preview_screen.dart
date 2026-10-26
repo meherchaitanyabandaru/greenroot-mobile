@@ -409,10 +409,7 @@ class _TripDetails extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white,),)
                   : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(
-                accepting ? 'Accepting...' : 'Accept Trip',
-                style: AppTypography.label,
-              ),
+              label: Text(accepting ? 'Accepting...' : 'Accept Trip'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
                 foregroundColor: Colors.white,

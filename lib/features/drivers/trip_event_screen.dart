@@ -208,10 +208,7 @@ class _TripEventScreenState extends ConsumerState<TripEventScreen> {
                           strokeWidth: 2, color: Colors.white,),
                     )
                   : const Icon(Icons.add_circle_outline_rounded),
-              label: Text(
-                _submitting ? 'Saving…' : 'Save Event',
-                style: AppTypography.label,
-              ),
+              label: Text(_submitting ? 'Saving…' : 'Save Event'),
             ),
           ),
 
