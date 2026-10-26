@@ -126,23 +126,20 @@ class _NotificationListScreenState
                 style: TextStyle(color: AppColors.primaryMain),
               ),
             ),
-          // Unread toggle
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: IconButton(
-              icon: Icon(
-                state.unreadOnly
-                    ? Icons.filter_list_rounded
-                    : Icons.filter_list_outlined,
-                color: state.unreadOnly
-                    ? AppColors.primaryMain
-                    : AppColors.textSecondary,
-              ),
-              tooltip: state.unreadOnly ? 'Show all' : 'Show unread only',
-              onPressed: () => ref
-                  .read(notificationListProvider.notifier)
-                  .load(unreadOnly: !state.unreadOnly),
+          // Unread toggle (no edge padding: the menu button is last now)
+          IconButton(
+            icon: Icon(
+              state.unreadOnly
+                  ? Icons.filter_list_rounded
+                  : Icons.filter_list_outlined,
+              color: state.unreadOnly
+                  ? AppColors.primaryMain
+                  : AppColors.textSecondary,
             ),
+            tooltip: state.unreadOnly ? 'Show all' : 'Show unread only',
+            onPressed: () => ref
+                .read(notificationListProvider.notifier)
+                .load(unreadOnly: !state.unreadOnly),
           ),
           PopupMenuButton<String>(
             tooltip: 'More',
