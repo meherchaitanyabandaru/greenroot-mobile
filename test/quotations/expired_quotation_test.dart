@@ -23,7 +23,7 @@ void main() {
     expect(quote('CUSTOMER_SENT', past).displayStatus, 'EXPIRED');
     expect(quote('CUSTOMER_SENT', future).displayStatus, 'CUSTOMER_SENT');
     expect(quote('CONVERTED', past).displayStatus, 'CONVERTED',
-        reason: 'an answered quotation does not expire');
+        reason: 'an answered quotation does not expire',);
   });
 
   test('timeline: expired instead of "Awaiting customer response", no convert step', () {
