@@ -138,6 +138,16 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: 'Plan, status, billing',
                   onTap: () => context.push('/subscription'),
                 ),
+              _SettingsTile(
+                icon: Icons.insert_chart_outlined_rounded,
+                label: 'Reports',
+                subtitle: caps.isDriverOnly
+                    ? 'Your trips by date, download CSV'
+                    : caps.canSell
+                        ? 'Orders, quotations, deliveries · download CSV'
+                        : 'Your purchases by date, download CSV',
+                onTap: () => context.push('/reports'),
+              ),
               if (caps.isDriverOnly)
                 _SettingsTile(
                   icon: Icons.route_outlined,

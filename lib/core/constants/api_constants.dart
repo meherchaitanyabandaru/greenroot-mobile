@@ -189,6 +189,9 @@ abstract class ApiConstants {
   static const String marketAds = '$v1/market/ads';
   static const String marketMyAds = '$v1/market/ads/mine';
   static const String marketSavedAds = '$v1/market/ads/saved';
+
+  // ── Reports ─────────────────────────────────────────────────
+  static String report(String type) => '$v1/reports/$type';
   static const String marketEnquiries = '$v1/market/enquiries';
   static const String marketNurseries = '$v1/market/nurseries';
   static String marketAdById(int id) => '$v1/market/ads/$id';

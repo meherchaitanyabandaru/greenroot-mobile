@@ -67,6 +67,7 @@ import '../features/tracking/dispatch_tracking_screen.dart';
 import '../features/buyer/buyer_delivery_tracking_screen.dart';
 import '../features/buyer/buyer_nursery_connections_screen.dart';
 import '../features/ratings/rating_screen.dart';
+import '../features/reports/reports_screen.dart';
 import 'main_shell.dart';
 
 UserCapabilities _capabilities(BuildContext context) {
@@ -432,6 +433,11 @@ final appRouter = GoRouter(
       path: '/nursery/addresses',
       redirect: _ownerGuard,
       builder: (_, state) => MyAddressesScreen(nurseryId: state.extra as int),
+    ),
+    // Every role: the API scopes the rows (nursery, own work, trips, purchases).
+    GoRoute(
+      path: '/reports',
+      builder: (_, __) => const ReportsScreen(),
     ),
     GoRoute(
       path: '/my-payments',

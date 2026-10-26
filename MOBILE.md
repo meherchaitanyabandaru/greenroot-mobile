@@ -230,6 +230,10 @@ Offline, predefined walkthroughs (no AI, no API calls). A 🥭 tab on the left e
 
 ---
 
+## Reports (2026-10-26)
+
+Profile → **Reports** (`/reports`, `lib/features/reports/`), every role. One screen: Orders / Quotations / Deliveries (drivers: deliveries only), This month / Last month / This year / Custom (max 3 years), summary cards, paged rows, **Download CSV** (shared through the share sheet). The API (`GET /reports/{type}`) decides whose rows: owner = nursery, manager = their work, driver = their trips, customer = their purchases. Sales = delivered (COMPLETED) orders; Paid = successful payments; mobiles masked.
+
 ## Pending Work
 
 ### Tracking access (API change 2026-10-17)
