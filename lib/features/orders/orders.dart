@@ -78,11 +78,8 @@ class NurseryManager {
     );
   }
 
-  String get identityLabel {
-    final parts = <String>['User ID: $userId'];
-    if (mobile.isNotEmpty) parts.add(mobile);
-    return parts.join(' | ');
-  }
+  // The mobile identifies a person to the nursery; the internal id only without one.
+  String get identityLabel => mobile.isNotEmpty ? mobile : 'User ID: $userId';
 }
 
 class DeliverySnapshot {
