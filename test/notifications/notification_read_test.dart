@@ -27,11 +27,13 @@ void main() {
   setUp(() async {
     fake = FakeApiClient()..reset();
     notifier = NotificationListNotifier(NotificationRepository(fake.apiClient));
-    fake.enqueue(response: _page([
-      _n(1, data: '{"entity":"order","id":41}'),
-      _n(2, data: '{"entity":"dispatch","id":22}'),
-      _n(3, readAt: '2026-10-25T00:00:00Z', data: '{"entity":"quotation","id":65}'),
-    ]));
+    fake.enqueue(
+      response: _page([
+        _n(1, data: '{"entity":"order","id":41}'),
+        _n(2, data: '{"entity":"dispatch","id":22}'),
+        _n(3, readAt: '2026-10-25T00:00:00Z', data: '{"entity":"quotation","id":65}'),
+      ]),
+    );
     await notifier.load();
   });
 
