@@ -8,6 +8,7 @@ import '../../core/widgets/app_search_field.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../market/local_market_screen.dart';
 import 'sourcing.dart';
+import '../../core/widgets/app_loader.dart';
 
 class SourcingScreen extends ConsumerStatefulWidget {
   const SourcingScreen({super.key});
@@ -205,7 +206,7 @@ class _NearbyNurseriesTabState extends ConsumerState<_NearbyNurseriesTab> {
           if (paged.isLoading)
             const SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: AppColors.primaryMain),
+                child: AppLoader(),
               ),
             )
           else if (paged.error != null && paged.items.isEmpty)

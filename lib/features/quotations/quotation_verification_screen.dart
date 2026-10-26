@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Shared colors ─────────────────────────────────────────────────────────────
 
@@ -144,7 +145,7 @@ class _QuotationVerificationScreenState
       body: SafeArea(
         child: _loading
             ? const Center(
-                child: CircularProgressIndicator(color: _cGreen),
+                child: AppLoader(),
               )
             : _error != null
                 ? _InvalidPage(

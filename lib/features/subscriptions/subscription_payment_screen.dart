@@ -12,6 +12,7 @@ import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 import '../../core/utilities/money.dart';
+import '../../core/widgets/app_loader.dart';
 
 class SubscriptionPaymentScreen extends ConsumerStatefulWidget {
   final int subscriptionId;
@@ -110,7 +111,7 @@ class _SubscriptionPaymentScreenState
         title: const Text('Upgrade Plan', style: AppTypography.h3),
       ),
       body: plansAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (e, _) =>
             Center(child: Text(e is AppError ? e.message : e.toString())),
         data: (plans) {

@@ -18,6 +18,7 @@ import '../owner/customer_picker_sheet.dart';
 import '../../core/widgets/unsaved_changes_guard.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
 
@@ -445,7 +446,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
           elevation: 0,
         ),
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
       );
     }
 
@@ -1348,7 +1349,7 @@ class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
             child: _loading
                 ? const Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain),)
+                        AppLoader(),)
                 : _error != null
                     ? Center(
                         child:

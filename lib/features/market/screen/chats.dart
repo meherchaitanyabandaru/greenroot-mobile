@@ -465,7 +465,7 @@ class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
       ),
       body: detailAsync.when(
         loading: () =>
-            const Center(child: CircularProgressIndicator(color: _mkGreen)),
+            const Center(child: AppLoader()),
         error: (e, _) => _ErrorState(
           message: e.toString(),
           onRetry: () =>

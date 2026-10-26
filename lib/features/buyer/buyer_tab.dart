@@ -27,6 +27,7 @@ import '../profile/my_addresses_screen.dart';
 import '../quotations/accept_confirm.dart';
 import '../quotations/quotations.dart';
 import '../../core/feedback/app_haptics.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PROVIDERS
@@ -172,7 +173,7 @@ class _OffersTab extends ConsumerWidget {
     final paged = ref.watch(_buyerQuotationProvider);
 
     if (paged.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoader());
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -206,7 +207,7 @@ class _OffersTab extends ConsumerWidget {
             ref.read(_buyerQuotationProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _QuotationCard(quotation: paged.items[i]);
@@ -660,7 +661,7 @@ class _OrdersTab extends ConsumerWidget {
     final paged = ref.watch(_buyerOrderProvider);
 
     if (paged.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoader());
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -694,7 +695,7 @@ class _OrdersTab extends ConsumerWidget {
             ref.read(_buyerOrderProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _OrderCard(order: paged.items[i]);
@@ -921,7 +922,7 @@ class _DeliveriesTab extends ConsumerWidget {
     final paged = ref.watch(_buyerDispatchProvider);
 
     if (paged.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoader());
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -956,7 +957,7 @@ class _DeliveriesTab extends ConsumerWidget {
             ref.read(_buyerDispatchProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _DispatchCard(dispatch: paged.items[i]);

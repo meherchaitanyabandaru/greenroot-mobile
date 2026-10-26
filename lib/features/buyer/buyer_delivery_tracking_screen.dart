@@ -19,6 +19,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../tracking/tracking.dart';
 import '../dispatches/delivery_confirmation.dart';
+import '../../core/widgets/app_loader.dart';
 
 String _formatDistance(double km) => km < 1
     ? '${(km * 1000).toStringAsFixed(0)} m'
@@ -41,7 +42,7 @@ class BuyerDeliveryTrackingScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => _ErrorView(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),

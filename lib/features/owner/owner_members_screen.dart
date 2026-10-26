@@ -98,6 +98,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/qr_share_sheet.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'owner_members_invite.dart';
 part 'owner_members_tabs.dart';
@@ -189,7 +190,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen>
       ),
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain),
+              child: AppLoader(),
             )
           : state.error != null &&
                   state.managers.isEmpty &&

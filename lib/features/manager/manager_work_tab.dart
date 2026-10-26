@@ -23,6 +23,7 @@ import '../../core/widgets/seller_order_card_actions.dart';
 import '../../core/widgets/trade_status_chip.dart';
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PROVIDERS
@@ -219,7 +220,7 @@ class _MgrOrdersTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),);
+          child: AppLoader(),);
     }
     if (paged.error != null && paged.items.isEmpty) {
       return ErrorState(
@@ -247,7 +248,7 @@ class _MgrOrdersTab extends ConsumerWidget {
             ref.read(_mgrOrderProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _MgrOrderCard(order: paged.items[i]);
@@ -428,7 +429,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
 
     if (paged.isLoading && paged.items.isEmpty) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),);
+          child: AppLoader(),);
     }
     if (paged.error != null && paged.items.isEmpty) {
       return ErrorState(
@@ -571,7 +572,7 @@ class _MgrQuotationsTabState extends ConsumerState<_MgrQuotationsTab> {
                           ref.read(_mgrQuotationProvider.notifier).loadMore();
                           return const Padding(
                             padding: EdgeInsets.all(AppSpacing.lg),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(child: AppLoader(size: 28)),
                           );
                         }
                         final q = paged.items[i];

@@ -15,6 +15,7 @@ import '../auth/data/models/user_models.dart';
 import '../auth/presentation/providers/auth_provider.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'profile_selfie.dart';
+import '../../core/widgets/app_loader.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -191,7 +192,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           title: const Text('Personal Information', style: AppTypography.h3),
           foregroundColor: AppColors.textPrimary,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: AppLoader()),
       );
     }
 

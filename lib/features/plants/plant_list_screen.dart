@@ -8,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_search_field.dart';
 import 'plants.dart';
+import '../../core/widgets/app_loader.dart';
 
 class PlantListScreen extends ConsumerStatefulWidget {
   const PlantListScreen({super.key});
@@ -117,7 +118,7 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
               const SliverFillRemaining(
                 child: Center(
                   child:
-                      CircularProgressIndicator(color: AppColors.primaryMain),
+                      AppLoader(),
                 ),
               )
             else if (paged.error != null && paged.items.isEmpty)
@@ -187,8 +188,7 @@ class _PlantListScreenState extends ConsumerState<PlantListScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primaryMain,),
+                      child: AppLoader(size: 28),
                     ),
                   ),
                 ),

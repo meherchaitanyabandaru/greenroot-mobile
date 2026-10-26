@@ -14,6 +14,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../dispatches/delivery_confirmation.dart';
+import '../../core/widgets/app_loader.dart';
 
 class DriverTripDetailScreen extends ConsumerWidget {
   final int dispatchId;
@@ -40,7 +41,7 @@ class DriverTripDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => _ErrorState(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),

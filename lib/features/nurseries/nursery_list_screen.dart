@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import 'nurseries.dart';
+import '../../core/widgets/app_loader.dart';
 
 class NurseryListScreen extends ConsumerStatefulWidget {
   const NurseryListScreen({super.key});
@@ -60,7 +61,7 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
             if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryMain),
+                  child: AppLoader(),
                 ),
               )
             else if (paged.error != null && paged.items.isEmpty)
@@ -129,8 +130,7 @@ class _NurseryListScreenState extends ConsumerState<NurseryListScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primaryMain,),
+                      child: AppLoader(size: 28),
                     ),
                   ),
                 ),

@@ -12,6 +12,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/nursery_branding_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart';
+import '../../core/widgets/app_loader.dart';
 
 class NurseryProfileScreen extends ConsumerWidget {
   final int nurseryId;
@@ -31,7 +32,7 @@ class NurseryProfileScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),
+          child: AppLoader(),
         ),
         error: (err, _) => Center(
           child: Text(err.toString(), style: AppTypography.body),

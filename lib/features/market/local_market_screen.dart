@@ -19,6 +19,7 @@ import 'local_market_providers.dart';
 import 'offer_fairness.dart';
 import 'market_area.dart';
 import '../../core/media/photos.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'screen/browse.dart';
 part 'screen/my_ads.dart';

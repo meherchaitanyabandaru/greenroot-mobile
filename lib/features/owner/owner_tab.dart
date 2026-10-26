@@ -25,6 +25,7 @@ import '../dispatches/dispatch_list_screen.dart';
 import '../orders/orders.dart';
 import '../quotations/quotation_create_screen.dart';
 import '../quotations/quotations.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PROVIDERS
@@ -189,7 +190,7 @@ class _SellerQuotationsTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),);
+          child: AppLoader(),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -221,7 +222,7 @@ class _SellerQuotationsTab extends ConsumerWidget {
             ref.read(_sellerQuotationProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _SellerQuotationCard(quotation: paged.items[i]);
@@ -555,7 +556,7 @@ class _SellerOrdersTab extends ConsumerWidget {
 
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),);
+          child: AppLoader(),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
@@ -586,7 +587,7 @@ class _SellerOrdersTab extends ConsumerWidget {
             ref.read(_sellerOrderProvider.notifier).loadMore();
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader(size: 28)),
             );
           }
           return _SellerOrderCard(order: paged.items[i]);

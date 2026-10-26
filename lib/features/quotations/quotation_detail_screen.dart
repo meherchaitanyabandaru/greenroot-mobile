@@ -26,6 +26,7 @@ import 'accept_confirm.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
 import '../../core/feedback/app_haptics.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'quotation_detail_widgets.dart';
 
@@ -557,7 +558,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
             foregroundColor: AppColors.textPrimary,
             elevation: 0,),
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(

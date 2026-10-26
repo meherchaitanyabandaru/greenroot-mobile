@@ -613,7 +613,7 @@ class _PlantSearchSheetState extends ConsumerState<_PlantSearchSheet> {
             child: _loading
                 ? const Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain),)
+                        AppLoader(),)
                 : _results.isEmpty
                     ? _ctrl.text.trim().length >= 2
                         ? PlantNotFound(query: _ctrl.text)

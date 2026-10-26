@@ -11,6 +11,7 @@ import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import 'driver_trip_map_screen.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ class _ActiveTab extends ConsumerWidget {
 
     return async.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryMain),
+        child: AppLoader(),
       ),
       error: (err, _) => _centred(
         icon: Icons.error_outline_rounded,
@@ -213,7 +214,7 @@ class _HistoryTab extends ConsumerWidget {
 
     return async.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryMain),
+        child: AppLoader(),
       ),
       error: (err, _) => _RetryView(
         message: err.toString(),

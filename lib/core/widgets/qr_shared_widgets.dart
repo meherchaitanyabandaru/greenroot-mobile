@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'app_loader.dart';
 
 // ── Header row ────────────────────────────────────────────────────────────────
 
@@ -212,7 +213,7 @@ class QrLoadingSpinner extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
-      child: Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+      child: Center(child: AppLoader()),
     );
   }
 }

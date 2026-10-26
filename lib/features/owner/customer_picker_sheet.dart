@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import 'owner_members_screen.dart' show NurseryCustomer;
+import '../../core/widgets/app_loader.dart';
 
 /// Name, email or any part of the mobile number ("98111", "kiran").
 bool customerMatches(NurseryCustomer c, String query) {
@@ -144,9 +145,7 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
               Expanded(
                 child: _loading
                     ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primaryMain,
-                        ),
+                        child: AppLoader(),
                       )
                     : _error != null
                         ? Center(

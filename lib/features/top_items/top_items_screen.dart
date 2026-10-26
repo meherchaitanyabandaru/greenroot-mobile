@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../plants/plant_picker.dart';
 import '../plants/plants.dart';
 import 'top_items.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ class TopItemsScreen extends ConsumerWidget {
         ],
       ),
       body: state.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

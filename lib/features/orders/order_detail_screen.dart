@@ -36,6 +36,7 @@ import '../ratings/ratings.dart';
 import 'orders.dart';
 import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/live_activity_strip.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'order_detail_sheets.dart';
 part 'order_detail_items.dart';
@@ -73,7 +74,7 @@ class OrderDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -97,6 +97,7 @@ import '../../core/network/api_client.dart' show ApiClient, apiClientProvider;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Model ─────────────────────────────────────────────────────────────────────
 
@@ -262,7 +263,7 @@ class _BuyerPaymentsScreenState extends ConsumerState<BuyerPaymentsScreen> {
       body: _loading
           ? const Center(
               child:
-                  CircularProgressIndicator(color: AppColors.primaryMain),)
+                  AppLoader(),)
           : _error != null
               ? Center(
                   child: Column(

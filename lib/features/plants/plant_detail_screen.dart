@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import 'plants.dart';
+import '../../core/widgets/app_loader.dart';
 
 class PlantDetailScreen extends ConsumerWidget {
   final int plantId;
@@ -20,7 +21,7 @@ class PlantDetailScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: asyncPlant.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

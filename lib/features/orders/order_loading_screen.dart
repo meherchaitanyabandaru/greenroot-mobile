@@ -12,6 +12,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'orders.dart';
+import '../../core/widgets/app_loader.dart';
 
 /// Loaded-quantity saves still in flight. Typing a quantity and tapping
 /// Complete Loading straight away starts a save (tap outside the field) and
@@ -262,7 +263,7 @@ class _LoadingOrderList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.isLoading && state.orders.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryMain),
+        child: AppLoader(),
       );
     }
 

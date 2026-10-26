@@ -12,6 +12,7 @@ import '../../core/theme/app_typography.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'address_map_picker_screen.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'address_form_screen.dart';
 part 'my_addresses_data.dart';
@@ -159,7 +160,7 @@ class _MyAddressesScreenState extends ConsumerState<MyAddressesScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain),)
+              child: AppLoader(),)
           : _error != null
               ? _ErrorView(error: _error!, onRetry: _load)
               : _addresses.isEmpty

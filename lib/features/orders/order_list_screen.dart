@@ -13,6 +13,7 @@ import '../../core/widgets/status_badge.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'orders.dart';
+import '../../core/widgets/app_loader.dart';
 
 class OrderListScreen extends ConsumerStatefulWidget {
   final int? nurseryId;
@@ -131,8 +132,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
             if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primaryMain,),),
+                    child: AppLoader(),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -269,8 +269,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primaryMain,),),
+                        child: AppLoader(size: 28),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x3l)),

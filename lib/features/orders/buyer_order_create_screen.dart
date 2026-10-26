@@ -14,6 +14,7 @@ import '../../core/widgets/unsaved_changes_guard.dart';
 import '../profile/my_addresses_screen.dart';
 import 'orders.dart';
 import '../../core/utilities/money.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Buyer Order Create Screen ─────────────────────────────────────────────────
 // Customers use this to place a direct order with any active nursery.
@@ -771,7 +772,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
           const SizedBox(height: 8),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: AppLoader())
                 : _error != null
                     ? Center(
                         child: Text(_error!,
@@ -1054,7 +1055,7 @@ class _PlantPickerSheetState extends ConsumerState<_PlantPickerSheet> {
           const SizedBox(height: 8),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: AppLoader())
                 : _results.isEmpty
                     ? _searchCtrl.text.trim().length >= 2
                         ? PlantNotFound(query: _searchCtrl.text)

@@ -13,6 +13,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/universal_qr_screen.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'join_confirm.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Invite model ──────────────────────────────────────────────────────────────
 
@@ -246,7 +247,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     if (!isAuthenticated && sessionLoading && widget.preloadedUUID != null) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: AppLoader()),
       );
     }
 

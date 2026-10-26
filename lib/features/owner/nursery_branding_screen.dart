@@ -10,6 +10,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/nursery_branding_badge.dart';
 import '../../core/services/storage_service.dart';
 import '../../features/nurseries/nurseries.dart';
+import '../../core/widgets/app_loader.dart';
 
 // ── Brand palette (must match server-side validBrandColors) ──────────────────
 
@@ -96,7 +97,7 @@ class NurseryBrandingScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => Center(
           child: Text(err.toString(), style: AppTypography.body),
         ),

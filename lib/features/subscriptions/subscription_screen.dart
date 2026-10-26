@@ -17,6 +17,7 @@ import '../auth/presentation/providers/session_provider.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
 import '../../core/utilities/money.dart';
+import '../../core/widgets/app_loader.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -76,7 +77,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     // Owner (or pending/rejected) → full subscription screen
     final subAsync = ref.watch(subscriptionProvider);
     return subAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoader()),
       error: (e, _) => _ErrorBody(
         message: e is AppError ? e.message : e.toString(),
         onRetry: () => ref.invalidate(subscriptionProvider),

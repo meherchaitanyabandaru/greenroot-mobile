@@ -82,7 +82,7 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
             child: _loading
                 ? const Center(
                     child:
-                        CircularProgressIndicator(color: AppColors.primaryMain),)
+                        AppLoader(),)
                 : _error != null
                     ? Center(
                         child:

@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
+import '../../core/widgets/app_loader.dart';
 
 /// Shown when a driver enters a trip code — previews the trip and lets them accept.
 class TripPreviewScreen extends ConsumerStatefulWidget {
@@ -146,7 +147,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryMain),)
+              child: AppLoader(),)
           : _error != null
               ? _ErrorView(message: _error!, onRetry: _load)
               : _dispatch != null

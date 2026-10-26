@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/status_badge.dart';
 import 'dispatches.dart';
+import '../../core/widgets/app_loader.dart';
 
 class DispatchListScreen extends ConsumerStatefulWidget {
   final int? nurseryId;
@@ -93,8 +94,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
             if (paged.isLoading)
               const SliverFillRemaining(
                 child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primaryMain,),),
+                    child: AppLoader(),),
               )
             else if (paged.error != null && paged.items.isEmpty)
               SliverFillRemaining(
@@ -147,8 +147,7 @@ class _DispatchListScreenState extends ConsumerState<DispatchListScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.x2l),
                     child: Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primaryMain,),),
+                        child: AppLoader(size: 28),),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.x3l)),

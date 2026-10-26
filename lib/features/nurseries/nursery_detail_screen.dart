@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import 'nurseries.dart';
+import '../../core/widgets/app_loader.dart';
 
 class NurseryDetailScreen extends ConsumerWidget {
   final int nurseryId;
@@ -25,7 +26,7 @@ class NurseryDetailScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primaryMain)),
+            const Center(child: AppLoader()),
         error: (err, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

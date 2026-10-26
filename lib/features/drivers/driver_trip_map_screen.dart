@@ -25,6 +25,7 @@ import '../orders/orders.dart';
 import '../tracking/tracking.dart';
 import '../dispatches/delivery_confirmation.dart';
 import '../../core/feedback/app_haptics.dart';
+import '../../core/widgets/app_loader.dart';
 
 part 'driver_trip_map_actions.dart';
 part 'driver_trip_map_journey.dart';
@@ -62,7 +63,7 @@ class DriverTripMapScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryMain),),
+            child: AppLoader(),),
         error: (err, _) => _ErrorView(
           message: err.toString(),
           onRetry: () => ref.invalidate(dispatchDetailProvider(dispatchId)),

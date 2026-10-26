@@ -1,61 +1,75 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-class AppLoader extends StatelessWidget {
+/// GreenRoot's loading mark: a leaf that gently breathes inside a spinning
+/// ring. Use it wherever a page or section waits for data; small spinners
+/// inside buttons stay as they are. The leaf holds still when the phone asks
+/// for reduced motion (the ring is the system spinner).
+class AppLoader extends StatefulWidget {
   final double size;
-  final Color? color;
-  final double strokeWidth;
-
-  const AppLoader({
-    super.key,
-    this.size = 24,
-    this.color,
-    this.strokeWidth = 2.5,
-  });
-
-  const AppLoader.large({super.key})
-      : size = 40,
-        color = null,
-        strokeWidth = 3;
+  const AppLoader({super.key, this.size = 56});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CircularProgressIndicator(
-        strokeWidth: strokeWidth,
-        valueColor: AlwaysStoppedAnimation<Color>(
-          color ?? AppColors.primaryMain,
-        ),
-      ),
-    );
-  }
+  State<AppLoader> createState() => _AppLoaderState();
 }
 
-class FullScreenLoader extends StatelessWidget {
-  final String? message;
+class _AppLoaderState extends State<AppLoader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _breath = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
 
-  const FullScreenLoader({super.key, this.message});
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations) {
+      _breath.value = 1; // rest at full size
+    } else if (!_breath.isAnimating) {
+      _breath.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    final s = widget.size;
+    return Semantics(
+      label: 'Loading',
+      child: SizedBox.square(
+        dimension: s,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            const AppLoader.large(),
-            if (message != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                message!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            Container(
+              decoration: const BoxDecoration(
+                color: AppColors.forest100,
+                shape: BoxShape.circle,
               ),
-            ],
+            ),
+            SizedBox.square(
+              dimension: s,
+              child: CircularProgressIndicator(
+                strokeWidth: s / 18,
+                strokeCap: StrokeCap.round,
+                color: AppColors.primaryMain,
+              ),
+            ),
+            ScaleTransition(
+              scale: Tween(begin: 0.82, end: 1.0).animate(
+                CurvedAnimation(parent: _breath, curve: Curves.easeInOut),
+              ),
+              child: Icon(
+                Icons.eco_rounded,
+                size: s * 0.5,
+                color: AppColors.primaryMain,
+              ),
+            ),
           ],
         ),
       ),

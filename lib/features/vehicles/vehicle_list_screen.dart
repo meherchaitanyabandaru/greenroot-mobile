@@ -7,6 +7,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import 'vehicles.dart';
+import '../../core/widgets/app_loader.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({super.key});
@@ -103,7 +104,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   Widget _buildBody(PagedState<Vehicle> paged) {
     if (paged.isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMain),);
+          child: AppLoader(),);
     }
 
     if (paged.error != null && paged.items.isEmpty) {
