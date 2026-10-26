@@ -177,6 +177,24 @@ class _TripRatingScreenState extends ConsumerState<TripRatingScreen> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    // One rating per trip: show theirs so a second visit edits it.
+    ref
+        .read(ratingRepositoryProvider)
+        .getMyTripRating(widget.dispatchId)
+        .then((r) {
+      if (r == null || !mounted || _driverBehaviour != 0) return;
+      setState(() {
+        _driverBehaviour = r.driverBehaviourRating ?? 0;
+        _onTime = r.onTimeDeliveryRating ?? 0;
+        _plantCondition = r.plantConditionRating ?? 0;
+        _commentCtrl.text = r.comment ?? '';
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _commentCtrl.dispose();
     super.dispose();

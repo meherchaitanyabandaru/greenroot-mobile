@@ -850,7 +850,7 @@ class _DriverInfoCard extends StatelessWidget {
               ],
             ),
           ),
-          if (approxDistanceKm != null) ...[
+          if (approxDistanceKm != null && dispatch.status != 'DELIVERED') ...[
             const SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
