@@ -90,7 +90,9 @@ class ConnectionsScreen extends ConsumerWidget {
     final dashboard = ref.watch(ownerDashboardProvider);
     final session = ref.watch(sessionProvider);
     final nurseryId = session.nurseryId;
-    final nurseryName = session.capabilities.ownedNurseryName ?? 'My Nursery';
+    // A manager has no owned nursery: name the one they work for.
+    final nurseryName =
+        session.capabilities.primaryNurseryName ?? 'your nursery';
     final counts = dashboard.valueOrNull?.connections;
 
     return Scaffold(
@@ -149,7 +151,8 @@ class ConnectionsScreen extends ConsumerWidget {
               count: counts?.managers,
               actionLabel: 'Invite Gumastha',
               actionIcon: Icons.qr_code_rounded,
-              onAction: nurseryId != null
+              // Only the owner may add managers (the API refuses a manager).
+              onAction: nurseryId != null && session.capabilities.isNurseryOwner
                   ? () => _invite(
                         context, ref,
                         inviteType: 'MANAGER_INVITE',
