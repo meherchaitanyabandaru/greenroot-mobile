@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../auth/presentation/providers/session_provider.dart';
 import 'notifications.dart';
 import '../../core/widgets/app_loader.dart';
 
@@ -135,9 +137,15 @@ class _NotificationListScreenState
                 delegate: SliverChildBuilderDelegate(
                   (context, i) => _NotificationTile(
                     notification: paged.items[i],
-                    onTap: () => ref
-                        .read(notificationListProvider.notifier)
-                        .markRead(paged.items[i].id),
+                    onTap: () {
+                      final n = paged.items[i];
+                      if (n.isUnread) {
+                        ref.read(notificationListProvider.notifier).markRead(n.id);
+                      }
+                      final route = notificationRoute(
+                          n, ref.read(sessionProvider).capabilities,);
+                      if (route != null) context.push(route);
+                    },
                   ),
                   childCount: paged.items.length,
                 ),
@@ -173,7 +181,8 @@ class _NotificationTile extends StatelessWidget {
     final isUnread = notification.isUnread;
 
     return InkWell(
-      onTap: isUnread ? onTap : null,
+      // Unread: tap marks it read; linked ones also open their record.
+      onTap: isUnread || notification.entityId != null ? onTap : null,
       child: Container(
         color: isUnread
             ? AppColors.primaryLight.withValues(alpha: 0.4)
