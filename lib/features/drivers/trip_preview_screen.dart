@@ -63,6 +63,11 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       final d =
           await ref.read(dispatchRepositoryProvider).findByCode(widget.code);
       if (mounted) setState(() => _dispatch = d);
+    } on NotFoundError {
+      if (mounted) {
+        setState(() => _error =
+            'Check the trip code from the nursery. The trip number (DSP-…) does not work here.',);
+      }
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
