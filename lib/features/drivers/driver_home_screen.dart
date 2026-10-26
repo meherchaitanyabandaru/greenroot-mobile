@@ -58,7 +58,7 @@ final _driverDashboardProvider =
   ]);
 
   final dispatches = (results[0] as (List<Dispatch>, dynamic)).$1;
-  final notifications = (results[1] as (List<AppNotification>, dynamic)).$1;
+  final notifications = (results[1] as (List<AppNotification>, dynamic, int)).$1;
 
   const activeStatuses = {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT'};
   final active =

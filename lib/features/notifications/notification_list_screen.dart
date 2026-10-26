@@ -44,7 +44,8 @@ class _NotificationListScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(notificationListProvider);
     final paged = state.paged;
-    final hasUnread = paged.items.any((n) => n.isUnread);
+    // The server's total, so older unread ones (not loaded yet) still count.
+    final hasUnread = state.unreadCount > 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,

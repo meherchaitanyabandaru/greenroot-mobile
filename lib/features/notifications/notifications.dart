@@ -104,7 +104,9 @@ class NotificationRepository {
   final ApiClient _client;
   NotificationRepository(this._client);
 
-  Future<(List<AppNotification>, ApiPagination)> listNotifications({
+  /// A page of notifications and the user's whole unread total (from the API,
+  /// whatever the page or filter).
+  Future<(List<AppNotification>, ApiPagination, int)> listNotifications({
     int page = 1,
     int perPage = 20,
     bool? unreadOnly,
@@ -125,7 +127,9 @@ class NotificationRepository {
             .toList();
         final pagination =
             ApiPagination.fromJson(d['pagination'] as Map<String, dynamic>);
-        return (items, pagination);
+        final unread = (d['unread_count'] as num?)?.toInt() ??
+            items.where((n) => n.isUnread).length;
+        return (items, pagination, unread);
       },
     );
   }
@@ -187,14 +191,13 @@ class NotificationListNotifier
       paged: state.paged.copyWith(isLoading: true, clearError: true),
     );
     try {
-      final (items, pagination) = await _repo.listNotifications(
+      final (items, pagination, unreadCount) = await _repo.listNotifications(
         page: 1,
         unreadOnly: uo ? true : null,
       );
       _page = 1;
-      final unreadCount = items.where((n) => n.isUnread).length;
       state = state.copyWith(
-        unreadCount: uo ? items.length : unreadCount,
+        unreadCount: unreadCount,
         paged: PagedState(
           items: items,
           isLoading: false,
@@ -212,12 +215,13 @@ class NotificationListNotifier
     if (state.paged.isLoadingMore || !state.paged.hasMore) return;
     state = state.copyWith(paged: state.paged.copyWith(isLoadingMore: true));
     try {
-      final (items, pagination) = await _repo.listNotifications(
+      final (items, pagination, unreadCount) = await _repo.listNotifications(
         page: _page + 1,
         unreadOnly: state.unreadOnly ? true : null,
       );
       _page++;
       state = state.copyWith(
+        unreadCount: unreadCount,
         paged: state.paged.copyWith(
           items: [...state.paged.items, ...items],
           isLoadingMore: false,
@@ -236,9 +240,8 @@ class NotificationListNotifier
       final updatedItems = state.paged.items
           .map((n) => n.id == id ? n.asRead() : n)
           .toList();
-      final unreadCount = updatedItems.where((n) => n.isUnread).length;
       state = state.copyWith(
-        unreadCount: unreadCount,
+        unreadCount: _countWithout(id),
         paged: state.paged.copyWith(items: updatedItems),
       );
     } catch (_) {}
@@ -257,14 +260,20 @@ class NotificationListNotifier
     } catch (_) {}
   }
 
+  /// The unread total once [id] is read or gone (it counted only if unread).
+  int _countWithout(int id) {
+    final was = state.paged.items.where((n) => n.id == id).firstOrNull;
+    final count = state.unreadCount - (was != null && was.isUnread ? 1 : 0);
+    return count < 0 ? 0 : count;
+  }
+
   Future<void> deleteNotification(int id) async {
     try {
       await _repo.deleteNotification(id);
       final updatedItems =
           state.paged.items.where((n) => n.id != id).toList();
-      final unreadCount = updatedItems.where((n) => n.isUnread).length;
       state = state.copyWith(
-        unreadCount: unreadCount,
+        unreadCount: _countWithout(id),
         paged: state.paged.copyWith(items: updatedItems),
       );
     } catch (_) {}
