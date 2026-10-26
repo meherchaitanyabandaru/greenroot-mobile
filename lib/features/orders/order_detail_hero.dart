@@ -180,13 +180,13 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
         ref.invalidate(orderDetailProvider(widget.orderId));
         ref.invalidate(_orderDispatchesProvider(widget.orderId));
         context.push('/dispatches/${dispatch.id}');
-      } else if (mounted) {
+      } else if (mounted && dispatch.tripCode != null) {
         await QrShareSheet.show(
           context,
-          code: dispatch.dispatchCode,
+          code: dispatch.tripCode!,
           qrType: QrCodeType.tripQr,
           shareMessage:
-              'GreenRoot Trip QR — ${dispatch.dispatchCode}\n\nShare with your driver to start the trip.\nOrder: ${_order.orderNumber}',
+              'GreenRoot trip ${dispatch.dispatchCode} for order ${_order.orderNumber}.\n\nOpen GreenRoot and scan this QR, or paste this trip code under Join a Trip:\n${dispatch.tripCode}',
         );
         if (mounted) {
           ref.invalidate(orderDetailProvider(widget.orderId));

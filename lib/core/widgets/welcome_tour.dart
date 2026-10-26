@@ -76,8 +76,8 @@ const _cards = <TourRole, List<_Card>>{
     (
       icon: Icons.qr_code_scanner_rounded,
       title: 'Join a trip',
-      body: 'Tap Scan and scan the trip QR the nursery shows you (or type the '
-          'Trip ID), then tap Accept Trip.',
+      body: 'Tap Scan and scan the trip QR the nursery shows you (or paste the '
+          'trip code they send), then tap Accept Trip.',
     ),
     (
       icon: Icons.route_rounded,

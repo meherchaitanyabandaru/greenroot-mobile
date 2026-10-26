@@ -99,7 +99,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
 
       final accepted = await ref
           .read(dispatchRepositoryProvider)
-          .acceptDispatch(_dispatch!.id);
+          .acceptDispatch(_dispatch!.id, widget.code);
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

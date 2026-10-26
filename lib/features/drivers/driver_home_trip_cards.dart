@@ -30,7 +30,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
   void _joinTrip() {
     final code = _codeCtrl.text.trim();
     if (code.isEmpty) {
-      setState(() => _codeError = 'Please enter a Trip ID to continue');
+      setState(() => _codeError = 'Paste the trip code to continue');
       return;
     }
     FocusScope.of(context).unfocus();
@@ -118,7 +118,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
             const Text('Join a Trip', style: AppTypography.h4),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'To start a delivery, get the Trip ID from the nursery owner or manager.',
+              'To start a delivery, scan the trip QR or paste the trip code from the nursery.',
               style:
                   AppTypography.body.copyWith(color: AppColors.textSecondary),
             ),
@@ -191,7 +191,7 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
               textCapitalization: TextCapitalization.none,
               onSubmitted: (_) => _joinTrip(),
               decoration: InputDecoration(
-                hintText: 'e.g. DSP-20261025-0001',
+                hintText: 'Paste the trip code (TRIP-…)',
                 hintStyle: const TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 13,
@@ -826,7 +826,7 @@ class _HowItWorksCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Ask the nursery owner or manager for the Trip ID or scan the QR code provided for your trip.',
+                  'Ask the nursery owner or manager for the trip QR or trip code.',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,

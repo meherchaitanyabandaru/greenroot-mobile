@@ -396,7 +396,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .acceptDispatch(widget.dispatchId);
+          .acceptDispatch(widget.dispatchId, widget.dispatch.tripCode ?? '');
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(activeDriverTripProvider);
