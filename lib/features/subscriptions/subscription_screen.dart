@@ -565,7 +565,7 @@ class _FreeView extends StatelessWidget {
             (Icons.local_shipping_outlined, 'Accept & manage deliveries'),
             (Icons.qr_code_scanner_rounded, 'Scan & confirm pickups'),
             (Icons.route_outlined, 'Real-time trip tracking'),
-            (Icons.payments_outlined, 'Earnings per delivery'),
+            (Icons.verified_user_outlined, 'Deliver with the customer\'s code'),
             (Icons.history_rounded, 'Full delivery history'),
           ]
         : const [
