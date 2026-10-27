@@ -67,12 +67,13 @@ class SecureStorageService {
   }
 
   // ── Terms Agreement ─────────────────────────────────────────────────────────
+  // Stores the version agreed to, so updated terms are agreed to again.
   static Future<void> saveTermsAgreed() =>
-      _write(AppConstants.keyTermsAgreed, 'true');
+      _write(AppConstants.keyTermsAgreed, AppConstants.termsVersion);
 
   static Future<bool> hasAgreedToTerms() async {
     final val = await _read(AppConstants.keyTermsAgreed);
-    return val == 'true';
+    return val == AppConstants.termsVersion;
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_loader.dart';
+import 'markdown_view.dart';
 
 enum LegalDocumentType { privacyPolicy, termsOfService }
 
@@ -10,8 +13,12 @@ class LegalDocumentScreen extends StatelessWidget {
 
   const LegalDocumentScreen({super.key, required this.type});
 
+  /// The Terms & Conditions as published (also in greenroot-infra/docs/legal).
+  static const termsAsset = 'assets/legal/terms-and-conditions.md';
+
   @override
   Widget build(BuildContext context) {
+    if (type == LegalDocumentType.termsOfService) return const _TermsScreen();
     final document = _documentFor(type);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -64,11 +71,42 @@ class LegalDocumentScreen extends StatelessWidget {
     );
   }
 
-  static _LegalDocument _documentFor(LegalDocumentType type) {
-    return switch (type) {
-      LegalDocumentType.privacyPolicy => _privacyPolicy,
-      LegalDocumentType.termsOfService => _termsOfService,
-    };
+  static _LegalDocument _documentFor(LegalDocumentType type) => _privacyPolicy;
+}
+
+class _TermsScreen extends StatelessWidget {
+  const _TermsScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        title: const Text('Terms & Conditions', style: AppTypography.h3),
+      ),
+      body: FutureBuilder<String>(
+        future: rootBundle.loadString(LegalDocumentScreen.termsAsset),
+        builder: (context, snap) {
+          if (!snap.hasData) return const Center(child: AppLoader());
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: MarkdownView(source: snap.data!),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -184,50 +222,6 @@ const _privacyPolicy = _LegalDocument(
       title: 'Contact',
       items: [
         'For privacy questions, contact GreenRoot support from the Help & Support screen.',
-      ],
-    ),
-  ],
-);
-
-const _termsOfService = _LegalDocument(
-  title: 'Terms of Service',
-  summary:
-      'By using GreenRoot, users agree to use the platform responsibly for nursery, buying, quotation, order, dispatch, and account workflows.',
-  sections: [
-    _LegalSectionData(
-      title: 'Account Responsibilities',
-      items: [
-        'Users must provide accurate account, role, contact, nursery, and address information.',
-        'Users are responsible for activity performed through their account.',
-        'Owners must manage nursery members, assignments, quotations, orders, and dispatches according to business rules.',
-      ],
-    ),
-    _LegalSectionData(
-      title: 'Platform Use',
-      items: [
-        'GreenRoot must be used only for legitimate nursery, plant trade, quotation, order, payment, and delivery operations.',
-        'Users must not misuse access, expose private information, bypass role permissions, or interfere with platform security.',
-        'Quotations, orders, dispatches, and payments remain subject to GreenRoot workflow and audit rules.',
-      ],
-    ),
-    _LegalSectionData(
-      title: 'Business Records',
-      items: [
-        'Operational records such as quotations, orders, dispatches, trips, payments, PDFs, attachments, and audit logs may be preserved.',
-        'Business history is retained to support continuity, legal obligations, dispute resolution, and audit requirements.',
-      ],
-    ),
-    _LegalSectionData(
-      title: 'Service Changes',
-      items: [
-        'GreenRoot may improve, update, or restrict features to protect users, data, and business workflows.',
-        'Access may be limited when business rules, privacy rules, or security rules require it.',
-      ],
-    ),
-    _LegalSectionData(
-      title: 'Support',
-      items: [
-        'For service questions, contact GreenRoot support from the Help & Support screen.',
       ],
     ),
   ],

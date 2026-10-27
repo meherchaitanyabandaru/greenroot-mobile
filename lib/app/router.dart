@@ -185,7 +185,8 @@ String? _buyerGuard(BuildContext context, GoRouterState state) {
 }
 
 /// Paths that are accessible without authentication.
-const _publicPaths = {'/login', '/otp', '/'};
+// The legal pages are linked from sign-in, before anyone has an account.
+const _publicPaths = {'/login', '/otp', '/', '/terms-of-service', '/privacy-policy'};
 
 bool _isPublic(String path) =>
     _publicPaths.contains(path) ||

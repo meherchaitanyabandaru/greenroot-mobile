@@ -5,6 +5,8 @@ abstract class AppConstants {
   static const String keyUserId       = 'gr_user_id';
   static const String keyActiveRole   = 'gr_active_role';
   static const String keyTermsAgreed  = 'gr_terms_agreed';
+  /// Version of the Terms & Conditions; a new one asks everyone to agree again.
+  static const String termsVersion = '2026-10-27';
 
   // API timeouts
   static const int connectTimeoutMs = 15000;
