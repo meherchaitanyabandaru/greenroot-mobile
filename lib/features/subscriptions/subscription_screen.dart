@@ -1038,7 +1038,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         sub.summary?.isExpiringSoon == true ||
         sub.isExpired ||
         sub.isTrial ||
-        (sub.isActive && (sub.daysRemaining ?? 999) <= 30);
+        (sub.isActive && (sub.daysRemaining ?? 999) <= 7);
     // A cancelled subscription is renewed back to ACTIVE by the API, so the
     // owner must be offered that way back in.
     final showCta = (sub.capabilities?.canRenew ?? true) &&

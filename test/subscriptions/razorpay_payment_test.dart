@@ -27,13 +27,21 @@ void main() {
     final ds =
         makeTestContainer(fake.apiClient).read(subscriptionDataSourceProvider);
     final order = await ds.createPaymentOrder(
-        subscriptionId: kTestSubscriptionId, planId: 3, billingCycle: 'YEARLY',);
-    expect((order!.orderId, order.amountPaise, order.keyId),
-        ('order_1', 1000000, 'rzp_test_k'),);
+      subscriptionId: kTestSubscriptionId,
+      planId: 3,
+      billingCycle: 'YEARLY',
+    );
+    expect(
+      (order!.orderId, order.amountPaise, order.keyId),
+      ('order_1', 1000000, 'rzp_test_k'),
+    );
     final body = fake.calls.single.data as Map;
     expect(body['subscription_id'], kTestSubscriptionId);
-    expect(body.containsKey('amount'), isFalse,
-        reason: 'the API prices the order, never the app',);
+    expect(
+      body.containsKey('amount'),
+      isFalse,
+      reason: 'the API prices the order, never the app',
+    );
   });
 
   test('503 means online payments are off: fall back to mock', () async {
@@ -41,7 +49,9 @@ void main() {
     final ds =
         makeTestContainer(fake.apiClient).read(subscriptionDataSourceProvider);
     expect(
-        await ds.createPaymentOrder(billingCycle: 'YEARLY', planId: 3), isNull,);
+      await ds.createPaymentOrder(billingCycle: 'YEARLY', planId: 3),
+      isNull,
+    );
   });
 
   test('renew sends the checkout result for verification', () async {
@@ -66,9 +76,10 @@ void main() {
     final ds =
         makeTestContainer(fake.apiClient).read(subscriptionDataSourceProvider);
     await ds.renewSubscription(
-        subscriptionId: kTestSubscriptionId,
-        billingCycle: 'YEARLY',
-        paymentMethod: 'UPI',);
+      subscriptionId: kTestSubscriptionId,
+      billingCycle: 'YEARLY',
+      paymentMethod: 'UPI',
+    );
     expect((fake.calls.single.data as Map)['provider'], 'razorpay_mock');
   });
 }

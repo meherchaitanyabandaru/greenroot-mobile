@@ -112,7 +112,7 @@ class SubscriptionModel {
   bool get isPaused => status == 'PAUSED';
   bool get isExpiringSoon =>
       summary?.isExpiringSoon ??
-      (isActive && daysRemaining != null && daysRemaining! <= 30);
+      (isActive && daysRemaining != null && daysRemaining! <= 7);
 }
 
 class SubscriptionCapabilities {

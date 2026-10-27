@@ -21,19 +21,44 @@ class TrialExpiryBanner extends ConsumerWidget {
       data: (sub) {
         if (sub == null || sub.isCancelled) return const SizedBox.shrink();
         final days = sub.daysRemaining ?? 999;
-        if (sub.isActive && days > 30) return const SizedBox.shrink();
+        // Warn only in the last week: a monthly plan would otherwise show
+        // "expires" all month. A trial is shown throughout, calmly at first.
+        final soon = days <= 7;
+        if (sub.isActive && !sub.isTrial && !soon) {
+          return const SizedBox.shrink();
+        }
 
-        final isExpired = sub.isExpired || days == 0;
-        final bg =
-            isExpired ? const Color(0xFFFCE4EC) : const Color(0xFFFFF8E1);
-        final iconColor = isExpired ? AppColors.red600 : AppColors.amber600;
-        final icon =
-            isExpired ? Icons.error_outline_rounded : Icons.access_time_rounded;
+        final isExpired = sub.isExpired || days < 0;
+        final calm = sub.isTrial && !soon && !isExpired;
+        final bg = isExpired
+            ? const Color(0xFFFCE4EC)
+            : calm
+                ? AppColors.forest100
+                : const Color(0xFFFFF8E1);
+        final iconColor = isExpired
+            ? AppColors.red600
+            : calm
+                ? AppColors.primaryMain
+                : AppColors.amber600;
+        final icon = isExpired
+            ? Icons.error_outline_rounded
+            : calm
+                ? Icons.card_giftcard_rounded
+                : Icons.access_time_rounded;
+        final left =
+            days == 0 ? 'today' : 'in $days day${days == 1 ? '' : 's'}';
         final message = isExpired
-            ? 'Your subscription has expired. Renew now to keep access.'
-            : sub.isTrial
-                ? 'Free trial expires in $days day${days == 1 ? '' : 's'}. Upgrade to continue.'
-                : 'Subscription expires in $days day${days == 1 ? '' : 's'}.';
+            ? 'Your subscription has ended. Choose a plan to keep selling.'
+            : calm
+                ? 'Free trial: $days days left. Unlimited orders and quotations, on us.'
+                : sub.isTrial
+                    ? 'Your free trial ends $left. Choose a plan to keep selling.'
+                    : 'Your ${sub.planName} plan ends $left.';
+        final action = isExpired || !sub.isTrial
+            ? 'Renew'
+            : calm
+                ? 'See plans'
+                : 'Choose plan';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -69,7 +94,7 @@ class TrialExpiryBanner extends ConsumerWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  isExpired ? 'Renew' : 'Upgrade',
+                  action,
                   style: AppTypography.bodySmall.copyWith(
                     color: iconColor,
                     fontWeight: FontWeight.w700,

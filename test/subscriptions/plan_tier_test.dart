@@ -15,7 +15,11 @@ void main() {
   });
 
   testWidgets('the badge names the tier', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: TierBadge(tier: PlanTier.gold))));
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: TierBadge(tier: PlanTier.gold)),
+      ),
+    );
     expect(find.text('Gold member'), findsOneWidget);
     expect(find.byIcon(Icons.workspace_premium_rounded), findsOneWidget);
   });

@@ -20,7 +20,8 @@ void main() {
   });
 
   group('Subscription state sync on renew', () {
-    test('renew then re-read subscriptionProvider returns updated subscription', () async {
+    test('renew then re-read subscriptionProvider returns updated subscription',
+        () async {
       // Initial load
       fake.enqueue(response: subscriptionsListResponse(status: 'ACTIVE'));
       final container = makeTestContainer(fake.apiClient);
@@ -66,7 +67,11 @@ void main() {
       // subscriptionProvider was NOT invalidated — still returns prior value
       // (we do not re-read here because FutureProvider.autoDispose disposes
       // after first read; we just verify the exception was thrown above)
-      expect(true, isTrue, reason: 'Renew failure did not silently swallow error');
+      expect(
+        true,
+        isTrue,
+        reason: 'Renew failure did not silently swallow error',
+      );
     });
   });
 
@@ -85,7 +90,11 @@ void main() {
       expect(cancelled.isCancelled, isTrue);
 
       // After invalidating, provider returns the cancelled sub
-      fake.enqueue(response: {'subscriptions': [subscriptionJson(status: 'CANCELLED')]});
+      fake.enqueue(
+        response: {
+          'subscriptions': [subscriptionJson(status: 'CANCELLED')],
+        },
+      );
       container.invalidate(subscriptionProvider);
       final afterCancel = await container.read(subscriptionProvider.future);
       expect(afterCancel?.isCancelled, isTrue);
@@ -94,30 +103,35 @@ void main() {
 
   group('SubscriptionModel helper getters', () {
     test('isActive is true only for ACTIVE status', () {
-      final sub = SubscriptionModel.fromJson(subscriptionJson(status: 'ACTIVE'));
+      final sub =
+          SubscriptionModel.fromJson(subscriptionJson(status: 'ACTIVE'));
       expect(sub.isActive, isTrue);
       expect(sub.isExpired, isFalse);
       expect(sub.isCancelled, isFalse);
     });
 
     test('isExpired is true for EXPIRED status', () {
-      final sub = SubscriptionModel.fromJson(subscriptionJson(status: 'EXPIRED'));
+      final sub =
+          SubscriptionModel.fromJson(subscriptionJson(status: 'EXPIRED'));
       expect(sub.isExpired, isTrue);
       expect(sub.isActive, isFalse);
     });
 
     test('isCancelled is true for CANCELLED status', () {
-      final sub = SubscriptionModel.fromJson(subscriptionJson(status: 'CANCELLED'));
+      final sub =
+          SubscriptionModel.fromJson(subscriptionJson(status: 'CANCELLED'));
       expect(sub.isCancelled, isTrue);
     });
 
-    test('isExpiringSoon: active with <=30 days remaining', () {
-      final j = {
-        ...subscriptionJson(status: 'ACTIVE'),
-        'days_remaining': 25,
-      };
-      final sub = SubscriptionModel.fromJson(j);
-      expect(sub.isExpiringSoon, isTrue);
+    test(
+        'isExpiringSoon: the last week only (a monthly plan is not "expiring" all month)',
+        () {
+      SubscriptionModel left(int days) => SubscriptionModel.fromJson({
+            ...subscriptionJson(status: 'ACTIVE'),
+            'days_remaining': days,
+          });
+      expect(left(7).isExpiringSoon, isTrue);
+      expect(left(25).isExpiringSoon, isFalse);
     });
 
     test('isExpiringSoon: active with >30 days remaining', () {

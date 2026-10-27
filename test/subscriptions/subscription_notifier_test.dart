@@ -159,12 +159,14 @@ void main() {
       final container = makeTestContainer(fake.apiClient);
       final ds = container.read(subscriptionDataSourceProvider);
 
-      final sub = await ds.cancelSubscription(kTestSubscriptionId, 'Too expensive');
+      final sub =
+          await ds.cancelSubscription(kTestSubscriptionId, 'Too expensive');
 
       expect(sub.isCancelled, isTrue);
     });
 
-    test('cancel server error throws — subscription not falsely cancelled', () async {
+    test('cancel server error throws — subscription not falsely cancelled',
+        () async {
       fake.enqueue(type: FakeResponseType.serverError);
       final container = makeTestContainer(fake.apiClient);
       final ds = container.read(subscriptionDataSourceProvider);
