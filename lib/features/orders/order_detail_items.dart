@@ -228,6 +228,9 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
               children: [
                 ...preview.asMap().entries.map((entry) {
                   final item = entry.value;
+                  // A short load is billed on what was loaded (as the total is).
+                  final loaded = item.loadedQuantity;
+                  final short = loaded != null && loaded < item.quantity;
                   return Column(
                     children: [
                       if (entry.key > 0) const Divider(height: 1, indent: 16),
@@ -251,9 +254,15 @@ class _ItemsCardState extends ConsumerState<_ItemsCard> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(widget.fmt.format(item.totalPrice),
+                                Text(
+                                    widget.fmt.format(short
+                                        ? loaded * item.unitPrice
+                                        : item.totalPrice,),
                                     style: AppTypography.label,),
-                                Text('Qty: ${item.quantity.toInt()}',
+                                Text(
+                                    short
+                                        ? 'Loaded ${loaded.toInt()} of ${item.quantity.toInt()}'
+                                        : 'Qty: ${item.quantity.toInt()}',
                                     style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary,),),
                               ],

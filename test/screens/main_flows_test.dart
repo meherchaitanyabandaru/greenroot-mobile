@@ -78,6 +78,23 @@ void main() {
     expect(call.path, endsWith('/orders/${o['id']}/confirm'));
   });
 
+  testWidgets('a short-loaded item shows what was loaded and its price', (tester) async {
+    final o = (fixture('order_detail') as Map<String, dynamic>)['order'] as Map<String, dynamic>;
+    final item = (o['items'] as List).first as Map<String, dynamic>; // 50 × ₹60 = ₹3,000
+    item['loaded_quantity'] = 40;
+    fake
+      ..route('/orders/${o['id']}', {'order': o})
+      ..route('/dispatches', {'dispatches': []});
+
+    await tester.pumpWidget(_app(fake, 'buyer', OrderDetailScreen(orderId: o['id'] as int)));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.scrollUntilVisible(find.text('Loaded 40 of 50'), 300);
+    expect(find.text('Loaded 40 of 50'), findsOneWidget);
+    expect(find.textContaining('2,400'), findsWidgets);
+  });
+
   testWidgets('payment screen: three plans, four cycles, priced by the API; pays the chosen one', (tester) async {
     final subs = fixture('subscriptions_me') as Map<String, dynamic>;
     final sub = (subs['subscriptions'] as List).first as Map<String, dynamic>;
