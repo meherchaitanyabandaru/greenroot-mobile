@@ -30,7 +30,7 @@ Override signedInAs(String who) {
       'owner' => 'users_me_owner',
       'manager' => 'users_me_manager',
       _ => 'users_me',
-    }) as Map<String, dynamic>,
+    },) as Map<String, dynamic>,
   );
   final workspaces = (fixture('workspaces_$who') as List)
       .cast<Map<String, dynamic>>()
