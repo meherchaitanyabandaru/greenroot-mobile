@@ -906,6 +906,11 @@ class _DriverNotConnectedCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),),
             ),
           ),
+          // The owner can share the invite as a code too (by message).
+          TextButton(
+            onPressed: () => context.push('/invite/accept'),
+            child: const Text('Got a code instead? Enter it'),
+          ),
           const SizedBox(height: 12),
           Text(
             'Pull down to refresh once connected.',
