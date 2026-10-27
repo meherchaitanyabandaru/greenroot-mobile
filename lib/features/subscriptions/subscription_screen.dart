@@ -1120,7 +1120,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         if (sub.cancelRequestedAt != null && sub.endDate != null)
           _StatusBanner(
             text:
-                'Cancelled. ${sub.planName} stays active until ${DateFormat('d MMM yyyy').format(sub.endDate!)}. Renew any time to keep it.',
+                'Cancelled. ${sub.planName} stays active until ${DateFormat('d MMM yyyy').format(sub.endDate!)}. Choose a plan again whenever you want to continue.',
           ),
         if (canCancel && sub.cancelRequestedAt == null)
           Center(
@@ -1164,8 +1164,10 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel at period end',
-                style: TextStyle(color: AppColors.red600),),
+            child: const Text(
+              'Cancel at period end',
+              style: TextStyle(color: AppColors.red600),
+            ),
           ),
         ],
       ),
@@ -1180,8 +1182,10 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  'Cancelled. Your plan stays active until its end date.',),),
+            content: Text(
+              'Cancelled. Your plan stays active until its end date.',
+            ),
+          ),
         );
       }
     } on AppError catch (e) {
