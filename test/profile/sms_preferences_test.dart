@@ -26,8 +26,7 @@ void main() {
   setUp(() => fake = FakeApiClient());
 
   test('repository reads and updates promotional consent', () async {
-    final repo = makeTestContainer(fake.apiClient)
-        .read(smsPreferencesRepositoryProvider);
+    final repo = makeTestContainer(fake.apiClient).read(smsPreferencesRepositoryProvider);
 
     fake.enqueue(response: prefs(optIn: false));
     expect((await repo.get()).promotionalOptIn, isFalse);
@@ -43,8 +42,7 @@ void main() {
     ]);
   });
 
-  testWidgets('toggling offers saves consent; service SMS stay always on',
-      (tester) async {
+  testWidgets('toggling offers saves consent; service SMS stay always on', (tester) async {
     fake.enqueue(response: prefs(optIn: false));
     await tester.pumpWidget(
       ProviderScope(

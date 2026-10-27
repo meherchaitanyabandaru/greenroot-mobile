@@ -138,16 +138,10 @@ void main() {
       ]);
       await notifier.bootstrap();
 
-      expect(
-        notifier.state.capabilities.isManager,
-        isFalse,
-        reason: 'after leaving nursery, isManager must be false',
-      );
-      expect(
-        notifier.state.capabilities.primaryNurseryId,
-        isNull,
-        reason: 'no nursery should be associated after leaving',
-      );
+      expect(notifier.state.capabilities.isManager, isFalse,
+          reason: 'after leaving nursery, isManager must be false',);
+      expect(notifier.state.capabilities.primaryNurseryId, isNull,
+          reason: 'no nursery should be associated after leaving',);
     });
 
     test(
@@ -165,11 +159,8 @@ void main() {
       await notifier.bootstrap();
 
       expect(notifier.state.hasMultipleWorkspaces, isFalse);
-      expect(
-        notifier.state.mobileWorkspaces,
-        isEmpty,
-        reason: 'PERSONAL workspace is excluded from mobileWorkspaces',
-      );
+      expect(notifier.state.mobileWorkspaces, isEmpty,
+          reason: 'PERSONAL workspace is excluded from mobileWorkspaces',);
     });
   });
 
@@ -207,12 +198,9 @@ void main() {
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
 
-      expect(
-        notifier.state.status,
-        SessionStatus.unauthenticated,
-        reason:
-            'a deleted account with revoked sessions must not be re-authenticated',
-      );
+      expect(notifier.state.status, SessionStatus.unauthenticated,
+          reason:
+              'a deleted account with revoked sessions must not be re-authenticated',);
     });
   });
 
@@ -242,11 +230,8 @@ void main() {
       await notifier.bootstrap();
 
       expect(notifier.state.status, SessionStatus.authenticated);
-      expect(
-        notifier.state.user?.id,
-        200,
-        reason: 're-registered user must have a different user ID',
-      );
+      expect(notifier.state.user?.id, 200,
+          reason: 're-registered user must have a different user ID',);
       expect(notifier.state.capabilities.isManager, isFalse);
       expect(notifier.state.capabilities.isNurseryOwner, isFalse);
     });
@@ -263,11 +248,8 @@ void main() {
       final notifier = SessionNotifier(repo);
       await notifier.bootstrap();
 
-      expect(
-        notifier.state.capabilities.primaryNurseryId,
-        isNull,
-        reason: 'fresh account must have no nursery',
-      );
+      expect(notifier.state.capabilities.primaryNurseryId, isNull,
+          reason: 'fresh account must have no nursery',);
       expect(notifier.state.capabilities.canSell, isFalse);
     });
   });
