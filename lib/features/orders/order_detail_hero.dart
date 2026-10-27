@@ -127,9 +127,12 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
   }
 
   Future<void> _completeLoading() async {
-    await _doAction(() =>
-        ref.read(orderRepositoryProvider).completeLoading(widget.orderId),);
-    if (mounted) _snack('Loading completed', AppColors.primaryMain);
+    final done = await showLoadingDoneSheet(context, _order);
+    if (done == null || !mounted) return;
+    ref.invalidate(orderDetailProvider(widget.orderId));
+    ref.invalidate(orderListProvider);
+    ref.invalidate(buyingOrderListProvider);
+    _snack('Loading completed', AppColors.primaryMain);
   }
 
   // The Loading Workflow screen records loaded quantity per item (partial loads).

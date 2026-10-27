@@ -408,9 +408,15 @@ class OrderRepository {
     );
   }
 
-  Future<Order> completeLoading(int id) async {
+  /// The seller must have declared the vehicle carries no prohibited items
+  /// (see showLoadingDoneSheet); the API refuses the call otherwise.
+  Future<Order> completeLoading(
+    int id, {
+    required bool declaredNoProhibitedItems,
+  }) async {
     return _client.post(
       ApiConstants.orderCompleteLoading(id),
+      data: {'declared_no_prohibited_items': declaredNoProhibitedItems},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);

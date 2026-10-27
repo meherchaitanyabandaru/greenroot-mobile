@@ -11,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import 'loading_done_sheet.dart';
 import 'orders.dart';
 import '../../core/widgets/app_loader.dart';
 
@@ -143,6 +144,21 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
     }
   }
 
+  // Photos and the no-prohibited-items declaration are taken in the sheet.
+  Future<void> _completeLoading(Order order) async {
+    await Future.wait(_pendingLoadSaves.toList()); // quantities typed just now
+    if (!mounted) return;
+    if (await showLoadingDoneSheet(context, order) == null || !mounted) return;
+    ref.invalidate(orderDetailProvider(order.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Loading completed'),
+        backgroundColor: AppColors.primaryMain,
+      ),
+    );
+    await _loadAll();
+  }
+
   void _open(Order order) {
     if (order.id == widget.fromOrderId) {
       context.pop();
@@ -209,11 +225,7 @@ class _OrderLoadingScreenState extends ConsumerState<OrderLoadingScreen>
               onRefresh: () => _load('LOADING'),
               onOpen: _open,
               onStartLoading: null,
-              onCompleteLoading: (order) => _runAction(
-                order,
-                (repo) => repo.completeLoading(order.id),
-                'Loading completed',
-              ),
+              onCompleteLoading: _completeLoading,
             ),
             _LoadingOrderList(
               state: _states['LOADED']!,
