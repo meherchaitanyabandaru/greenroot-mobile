@@ -1077,7 +1077,14 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         const SizedBox(height: AppSpacing.lg),
 
         // ── What's included ────────────────────────────────────────────────
-        _IncludedCard(isTrial: sub.isTrial),
+        _IncludedCard(
+          isTrial: sub.isTrial,
+          plan: ref
+              .watch(subscriptionPlansProvider)
+              .valueOrNull
+              ?.where((p) => p.planCode == sub.planCode)
+              .firstOrNull,
+        ),
         const SizedBox(height: AppSpacing.lg),
 
         // ── CTA ───────────────────────────────────────────────────────────
@@ -1183,17 +1190,37 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
 
 class _IncludedCard extends StatelessWidget {
   final bool isTrial;
-  const _IncludedCard({required this.isTrial});
+  final SubscriptionPlan? plan; // the owner's plan, when loaded
+  const _IncludedCard({required this.isTrial, this.plan});
 
   @override
   Widget build(BuildContext context) {
-    const features = [
-      (Icons.receipt_long_outlined, 'Order Management'),
-      (Icons.request_quote_outlined, 'Quotations'),
+    final f = plan?.features ?? const <String, dynamic>{};
+    final managers = plan?.maxManagers;
+    final features = [
+      (
+        Icons.receipt_long_outlined,
+        f['unlimited_orders'] == true ? 'Unlimited orders' : 'Order Management',
+      ),
+      (
+        Icons.request_quote_outlined,
+        f['unlimited_quotations'] == true
+            ? 'Unlimited quotations'
+            : 'Quotations',
+      ),
+      (
+        Icons.storefront_outlined,
+        f['local_market_ads'] == true ? 'Local market ads' : 'Market Listings',
+      ),
+      if (managers != null)
+        (
+          Icons.people_outline_rounded,
+          managers == 1 ? '1 manager' : 'Up to $managers managers',
+        )
+      else
+        (Icons.people_outline_rounded, 'Team & Connections'),
       (Icons.local_shipping_outlined, 'Dispatch & Delivery'),
-      (Icons.storefront_outlined, 'Market Listings'),
       (Icons.star_outline_rounded, 'Top Items'),
-      (Icons.people_outline_rounded, 'Team & Connections'),
     ];
 
     return _Card(
