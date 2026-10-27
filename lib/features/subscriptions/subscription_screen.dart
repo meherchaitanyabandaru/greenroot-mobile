@@ -570,7 +570,7 @@ class _FreeView extends StatelessWidget {
           ]
         : const [
             (Icons.storefront_outlined, 'Browse nurseries & plants'),
-            (Icons.shopping_cart_outlined, 'Place and track orders'),
+            (Icons.shopping_cart_outlined, 'Accept quotations and track your orders'),
             (Icons.request_quote_outlined, 'Request quotes from nurseries'),
             (Icons.local_shipping_outlined, 'Track deliveries in real time'),
             (Icons.favorite_border_rounded, 'Save favourites'),
