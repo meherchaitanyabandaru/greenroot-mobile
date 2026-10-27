@@ -166,8 +166,9 @@ class _BuyerDeliveryCard extends StatelessWidget {
           ],
 
           // Track / View details footer
+          // Buyers have their own tracking page; /dispatches/:id is the seller's.
           GestureDetector(
-            onTap: () => context.push('/dispatches/${d.id}'),
+            onTap: () => context.push('/dispatches/${d.id}/buyer-track'),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
