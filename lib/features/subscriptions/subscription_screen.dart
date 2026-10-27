@@ -570,7 +570,10 @@ class _FreeView extends StatelessWidget {
           ]
         : const [
             (Icons.storefront_outlined, 'Browse nurseries & plants'),
-            (Icons.shopping_cart_outlined, 'Accept quotations and track your orders'),
+            (
+              Icons.shopping_cart_outlined,
+              'Accept quotations and track your orders'
+            ),
             (Icons.request_quote_outlined, 'Request quotes from nurseries'),
             (Icons.local_shipping_outlined, 'Track deliveries in real time'),
             (Icons.favorite_border_rounded, 'Save favourites'),
@@ -1114,7 +1117,12 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         const SizedBox(height: AppSpacing.x2l),
 
         // ── Cancel ────────────────────────────────────────────────────────
-        if (canCancel)
+        if (sub.cancelRequestedAt != null && sub.endDate != null)
+          _StatusBanner(
+            text:
+                'Cancelled. ${sub.planName} stays active until ${DateFormat('d MMM yyyy').format(sub.endDate!)}. Renew any time to keep it.',
+          ),
+        if (canCancel && sub.cancelRequestedAt == null)
           Center(
             child: TextButton(
               onPressed: _cancelling ? null : () => _confirmCancel(context),
@@ -1142,9 +1150,12 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Cancel Subscription?'),
-        content: const Text(
-          'Your access ends immediately for you and your managers. You can subscribe again any time.',
+        title: const Text('Cancel subscription?'),
+        content: Text(
+          widget.sub.endDate == null
+              ? 'Your plan ends now for you and your managers. You can subscribe again any time.'
+              : 'You keep ${widget.sub.planName} until ${DateFormat('d MMM yyyy').format(widget.sub.endDate!)}. '
+                  'Nothing more is charged. After that, you and your managers can no longer sell until you choose a plan again.',
         ),
         actions: [
           TextButton(
@@ -1153,8 +1164,8 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Cancel', style: TextStyle(color: AppColors.red600)),
+            child: const Text('Cancel at period end',
+                style: TextStyle(color: AppColors.red600),),
           ),
         ],
       ),
@@ -1168,7 +1179,9 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
       if (context.mounted) {
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Subscription cancelled.')),
+          const SnackBar(
+              content: Text(
+                  'Cancelled. Your plan stays active until its end date.',),),
         );
       }
     } on AppError catch (e) {

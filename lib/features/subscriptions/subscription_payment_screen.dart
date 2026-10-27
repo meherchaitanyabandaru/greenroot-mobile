@@ -92,8 +92,7 @@ class _SubscriptionPaymentScreenState
         setState(() {
           _promoValid = true;
           _promoSavings = savings;
-          _promoMessage =
-              'Code applied! You save ₹${savings.toStringAsFixed(0)}';
+          _promoMessage = 'Code applied! You save ${inr(savings)}';
         });
       } else {
         setState(() {

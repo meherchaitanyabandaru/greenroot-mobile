@@ -54,6 +54,9 @@ class SubscriptionModel {
   final SubscriptionCapabilities? capabilities;
   final SubscriptionSummary? summary;
 
+  /// The owner cancelled: the plan stays usable until [endDate], then ends.
+  final DateTime? cancelRequestedAt;
+
   const SubscriptionModel({
     required this.id,
     required this.subscriptionCode,
@@ -69,11 +72,14 @@ class SubscriptionModel {
     this.lifecycle,
     this.capabilities,
     this.summary,
+    this.cancelRequestedAt,
   });
 
   factory SubscriptionModel.fromJson(Map<String, dynamic> j) =>
       SubscriptionModel(
         id: (j['id'] as num).toInt(),
+        cancelRequestedAt:
+            DateTime.tryParse(j['cancel_requested_at'] as String? ?? ''),
         subscriptionCode: j['subscription_code'] as String,
         planId: j['plan_id'] != null ? (j['plan_id'] as num).toInt() : null,
         planCode: j['plan_code'] as String? ?? '',

@@ -138,7 +138,8 @@ class SubscriptionRemoteDataSource {
     String? reason,
   ) async {
     final body = <String, dynamic>{
-      'cancel_immediately': true,
+      // At the end of the paid period: what was paid for is kept.
+      'cancel_immediately': false,
       if (reason != null && reason.isNotEmpty) 'reason': reason,
     };
     final res = await _client.post(
