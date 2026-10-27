@@ -13,8 +13,8 @@ void main() {
   testWidgets('paused nursery plan reads as on hold for its manager',
       (tester) async {
     final fake = FakeApiClient()..reset();
-    fake.route(
-        '/me/workspaces', fixture('workspaces_manager')); // reloaded on open
+    // The screen reloads the workspaces on open.
+    fake.route('/me/workspaces', fixture('workspaces_manager'));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -30,8 +30,11 @@ void main() {
     expect(find.text('ON HOLD'), findsOneWidget);
     expect(find.text('ACTIVE'), findsNothing);
     final line = find.text('Plan not active — owner must renew');
-    await tester.scrollUntilVisible(line, 200,
-        scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      line,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(line, findsOneWidget);
   });
 
