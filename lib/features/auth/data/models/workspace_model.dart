@@ -6,11 +6,16 @@ class Workspace {
   final String? nurseryName;
   final String? nurseryStatus;
 
+  /// Manager workspaces: whether the owner's plan lets the nursery work today
+  /// (null from an older API: assume it does).
+  final bool? subscriptionActive;
+
   const Workspace({
     required this.type,
     this.nurseryId,
     this.nurseryName,
     this.nurseryStatus,
+    this.subscriptionActive,
   });
 
   factory Workspace.fromJson(Map<String, dynamic> json) => Workspace(
@@ -18,6 +23,7 @@ class Workspace {
         nurseryId: (json['nursery_id'] as num?)?.toInt(),
         nurseryName: json['nursery_name'] as String?,
         nurseryStatus: json['nursery_status'] as String?,
+        subscriptionActive: json['subscription_active'] as bool?,
       );
 
   bool get isBusinessWorkspace => type != 'PERSONAL';

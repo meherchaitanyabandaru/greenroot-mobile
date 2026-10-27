@@ -1,0 +1,13 @@
+[
+  {
+    "type": "PERSONAL",
+    "role": "CUSTOMER"
+  },
+  {
+    "type": "MANAGER_NURSERY",
+    "role": "MANAGER",
+    "nursery_id": 224,
+    "nursery_name": "Lakshmi Gardens",
+    "subscription_active": false
+  }
+]

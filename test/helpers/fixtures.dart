@@ -22,21 +22,29 @@ class _SignedIn extends SessionNotifier {
   }
 }
 
-/// Signed in as the dev cast's nursery owner ('owner') or customer ('buyer').
+/// Signed in as the dev cast's nursery owner ('owner'), manager ('manager')
+/// or customer ('buyer').
 Override signedInAs(String who) {
   final user = UserProfile.fromJson(
-    fixture(who == 'owner' ? 'users_me_owner' : 'users_me') as Map<String, dynamic>,
+    fixture(switch (who) {
+      'owner' => 'users_me_owner',
+      'manager' => 'users_me_manager',
+      _ => 'users_me',
+    }) as Map<String, dynamic>,
   );
   final workspaces = (fixture('workspaces_$who') as List)
       .cast<Map<String, dynamic>>()
       .map(Workspace.fromJson)
       .toList();
   return sessionProvider.overrideWith(
-    (ref) => _SignedIn(SessionState(
-      status: SessionStatus.authenticated,
-      user: user,
-      workspaces: workspaces,
-      nurseryId: workspaces.map((w) => w.nurseryId).whereType<int>().firstOrNull,
-    ),),
+    (ref) => _SignedIn(
+      SessionState(
+        status: SessionStatus.authenticated,
+        user: user,
+        workspaces: workspaces,
+        nurseryId:
+            workspaces.map((w) => w.nurseryId).whereType<int>().firstOrNull,
+      ),
+    ),
   );
 }

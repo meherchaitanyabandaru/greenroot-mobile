@@ -726,6 +726,8 @@ class _ManagerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nurseries = caps.managedNurseries;
+    // The owner's plan, as the API reports it (older API: assume active).
+    final active = nurseries.every((n) => n.subscriptionActive ?? true);
 
     return ListView(
       key: const ValueKey('subscription_manager_access'),
@@ -783,12 +785,13 @@ class _ManagerView extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF43A047),
+                      color:
+                          active ? const Color(0xFF43A047) : AppColors.amber600,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'ACTIVE',
-                      style: TextStyle(
+                    child: Text(
+                      active ? 'ACTIVE' : 'ON HOLD',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -809,9 +812,11 @@ class _ManagerView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Your access is provided through the nursery subscription. Contact your nursery owner for billing details.',
-                style: TextStyle(
+              Text(
+                active
+                    ? 'Your access is provided through the nursery subscription. Contact your nursery owner for billing details.'
+                    : "The nursery's plan is not active right now, so new orders and quotations are on hold. Ask your nursery owner to renew it.",
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
                   height: 1.5,
@@ -861,19 +866,27 @@ class _ManagerView extends StatelessWidget {
                                   .copyWith(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              'Subscription active',
+                              (n.subscriptionActive ?? true)
+                                  ? 'Subscription active'
+                                  : 'Plan not active — owner must renew',
                               style: AppTypography.caption.copyWith(
-                                color: AppColors.primaryMain,
+                                color: (n.subscriptionActive ?? true)
+                                    ? AppColors.primaryMain
+                                    : AppColors.amber600,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
-                        Icons.check_circle_rounded,
+                      Icon(
+                        (n.subscriptionActive ?? true)
+                            ? Icons.check_circle_rounded
+                            : Icons.pause_circle_rounded,
                         size: 18,
-                        color: AppColors.primaryMain,
+                        color: (n.subscriptionActive ?? true)
+                            ? AppColors.primaryMain
+                            : AppColors.amber600,
                       ),
                     ],
                   ),
