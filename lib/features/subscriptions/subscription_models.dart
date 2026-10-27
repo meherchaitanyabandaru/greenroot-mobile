@@ -5,7 +5,8 @@ import '../../core/domain/lifecycle_models.dart';
 class SubscriptionPayment {
   final int id;
   final String? paymentCode;
-  final double amount;
+  final double amount; // charged, GST included
+  final double? gstAmount; // null for payments before GST
   final String paymentMethod;
   final String status;
   final DateTime? paymentDate;
@@ -16,6 +17,7 @@ class SubscriptionPayment {
     required this.id,
     this.paymentCode,
     required this.amount,
+    this.gstAmount,
     required this.paymentMethod,
     required this.status,
     this.paymentDate,
@@ -28,6 +30,7 @@ class SubscriptionPayment {
         id: (j['id'] as num).toInt(),
         paymentCode: j['payment_code'] as String?,
         amount: (j['amount'] as num?)?.toDouble() ?? 0.0,
+        gstAmount: (j['gst_amount'] as num?)?.toDouble(),
         paymentMethod: j['payment_method'] as String? ?? '',
         status: j['payment_status'] as String? ?? j['status'] as String? ?? '',
         paymentDate: j['payment_date'] != null
@@ -177,8 +180,10 @@ class CyclePrice {
   final int months;
   final int discountPercent;
   final double listAmount; // monthly × months, before the discount
-  final double amount; // what is charged
-  final double perMonth;
+  final double amount; // after the discount, before GST
+  final double perMonth; // before GST
+  final double gstAmount; // 18% on top
+  final double totalAmount; // what is charged
 
   const CyclePrice({
     required this.billingCycle,
@@ -187,7 +192,9 @@ class CyclePrice {
     required this.listAmount,
     required this.amount,
     required this.perMonth,
-  });
+    this.gstAmount = 0,
+    double? totalAmount,
+  }) : totalAmount = totalAmount ?? amount;
 
   factory CyclePrice.fromJson(Map<String, dynamic> j) => CyclePrice(
         billingCycle: j['billing_cycle'] as String,
@@ -196,6 +203,8 @@ class CyclePrice {
         listAmount: (j['list_amount'] as num).toDouble(),
         amount: (j['amount'] as num).toDouble(),
         perMonth: (j['per_month'] as num).toDouble(),
+        gstAmount: (j['gst_amount'] as num?)?.toDouble() ?? 0,
+        totalAmount: (j['total_amount'] as num?)?.toDouble(),
       );
 
   String get label => switch (billingCycle) {

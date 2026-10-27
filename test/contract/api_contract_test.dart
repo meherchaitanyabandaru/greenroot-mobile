@@ -127,6 +127,8 @@ void main() {
       final plans = list(fixture('subscription_plans'), 'plans').map(SubscriptionPlan.fromJson).toList();
       final growth = plans.firstWhere((p) => p.planCode == 'GROWTH');
       expect(growth.monthlyPrice, 499);
+      final q = growth.cyclePrices[1];
+      expect((q.amount, q.gstAmount, q.totalAmount), (1422.15, 255.99, 1678.14), reason: '18% GST on top');
       expect([for (final c in growth.cyclePrices) (c.billingCycle, c.months, c.discountPercent, c.amount)], [
         ('MONTHLY', 1, 0, 499.0),
         ('QUARTERLY', 3, 5, 1422.15),

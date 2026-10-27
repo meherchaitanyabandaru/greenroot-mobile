@@ -34,6 +34,8 @@ class _SubscriptionPaymentScreenState
   final _promoController = TextEditingController();
   bool _validatingPromo = false;
   double? _promoSavings;
+  double? _promoGst; // GST and total after the promo, from the API
+  double? _promoTotal;
   String? _promoMessage;
   bool _promoValid = false;
 
@@ -62,13 +64,19 @@ class _SubscriptionPaymentScreenState
   void _resetPromo() {
     _promoValid = false;
     _promoSavings = null;
+    _promoGst = null;
+    _promoTotal = null;
     _promoMessage = null;
   }
 
-  double _total(SubscriptionPlan? plan) {
-    final base = _basePrice(plan) - (_promoSavings ?? 0);
-    return base.clamp(0, double.infinity);
-  }
+  // What is charged and the GST in it: priced by the API, promo included.
+  double _gst(SubscriptionPlan? plan) => _promoValid && _promoGst != null
+      ? _promoGst!
+      : plan?.priceFor(_billingCycle)?.gstAmount ?? 0;
+
+  double _total(SubscriptionPlan? plan) => _promoValid && _promoTotal != null
+      ? _promoTotal!
+      : plan?.priceFor(_billingCycle)?.totalAmount ?? 0;
 
   Future<void> _applyPromo(SubscriptionPlan? plan) async {
     final code = _promoController.text.trim().toUpperCase();
@@ -92,6 +100,8 @@ class _SubscriptionPaymentScreenState
         setState(() {
           _promoValid = true;
           _promoSavings = savings;
+          _promoGst = (result['gst_amount'] as num?)?.toDouble();
+          _promoTotal = (result['total_price'] as num?)?.toDouble();
           _promoMessage = 'Code applied! You save ${inr(savings)}';
         });
       } else {
@@ -141,6 +151,7 @@ class _SubscriptionPaymentScreenState
             paymentMethod: _paymentMethod,
             basePrice: _basePrice(plan),
             promoSavings: _promoSavings,
+            gst: _gst(plan),
             total: _total(plan),
             paying: _paying,
             promoController: _promoController,
@@ -263,6 +274,7 @@ class _PaymentBody extends StatelessWidget {
   final String paymentMethod;
   final double basePrice;
   final double? promoSavings;
+  final double gst;
   final double total;
   final bool paying;
   final TextEditingController promoController;
@@ -282,6 +294,7 @@ class _PaymentBody extends StatelessWidget {
     required this.paymentMethod,
     required this.basePrice,
     this.promoSavings,
+    required this.gst,
     required this.total,
     required this.paying,
     required this.promoController,
@@ -370,7 +383,7 @@ class _PaymentBody extends StatelessWidget {
         const Text('Pay for', style: AppTypography.h4),
         const SizedBox(height: 2),
         Text(
-          'Pay ahead and save up to 15%.',
+          'Pay ahead and save up to 15%. Prices are before 18% GST.',
           style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -552,12 +565,14 @@ class _PaymentBody extends StatelessWidget {
                   highlight: true,
                 ),
               ],
+              const SizedBox(height: 8),
+              _PriceLine(label: 'GST (18%)', value: '+${inr(gst)}'),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Divider(color: AppColors.border, height: 1),
               ),
               _PriceLine(
-                label: 'Total',
+                label: 'Total (incl. GST)',
                 value: inr(total),
                 bold: true,
               ),
@@ -873,7 +888,7 @@ class _CycleTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                inr(price.amount),
+                '${inr(price.amount)} + GST',
                 style: AppTypography.bodySmall
                     .copyWith(fontWeight: FontWeight.w700),
               ),

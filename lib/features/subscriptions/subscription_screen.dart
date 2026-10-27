@@ -1434,6 +1434,12 @@ class _PaymentRow extends StatelessWidget {
                 style: AppTypography.bodySmall
                     .copyWith(fontWeight: FontWeight.w700),
               ),
+              if (payment.gstAmount != null)
+                Text(
+                  'incl. ${inr(payment.gstAmount!)} GST',
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textSecondary, fontSize: 10),
+                ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(

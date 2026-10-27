@@ -116,21 +116,23 @@ void main() {
     await tester.pumpAndSettle();
 
     // Growth, monthly by default.
-    await payShows('Pay ₹499.00 Securely');
+    await payShows('Pay ₹588.82 Securely'); // ₹499 + 18% GST
     // Quarterly: 5% off, and the saving is spelled out.
     await tester.ensureVisible(find.text('Quarterly'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Quarterly'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Quarterly saving (5%)'), 300, scrollable: scroll);
+    await tester.scrollUntilVisible(find.text('GST (18%)'), 300, scrollable: scroll);
+    expect(find.text('+₹255.99'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Quarterly saving (5%)'), -300, scrollable: scroll);
     expect(find.text('Quarterly saving (5%)'), findsOneWidget);
-    await payShows('Pay ₹1,422.15 Securely');
+    await payShows('Pay ₹1,678.14 Securely'); // ₹1,422.15 + GST
     // Basic, still quarterly.
     await tester.ensureVisible(find.text('Silver'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Silver'));
     await tester.pumpAndSettle();
-    await payShows('Pay ₹852.15 Securely');
+    await payShows('Pay ₹1,005.54 Securely'); // ₹852.15 + GST
 
     // Pay (no gateway: mock mode). The chosen plan and cycle go to the API.
     fake.enqueue(type: FakeResponseType.serviceUnavailable); // payment-order: payments off
