@@ -134,14 +134,18 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () => context.push('/nursery/addresses',
                       extra: caps.ownedNurseryId,),
                 ),
-              // Subscription is only relevant for nursery roles.
-              if (caps.canSell)
-                _SettingsTile(
-                  icon: Icons.workspace_premium_rounded,
-                  label: 'Subscription',
-                  subtitle: 'Plan, status, billing',
-                  onTap: () => context.push('/subscription'),
-                ),
+              // Owners pay; managers use the owner's plan; customers and
+              // drivers are free (their screen says so).
+              _SettingsTile(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Subscription',
+                subtitle: caps.isNurseryOwner
+                    ? 'Plan, status, billing'
+                    : caps.canSell
+                        ? "Your nursery's plan"
+                        : 'Free — no charges, ever',
+                onTap: () => context.push('/subscription'),
+              ),
               _SettingsTile(
                 icon: Icons.insert_chart_outlined_rounded,
                 label: 'Reports',
