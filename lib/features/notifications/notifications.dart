@@ -94,6 +94,7 @@ String? notificationRoute(AppNotification n, UserCapabilities caps) {
         : caps.canSell
             ? '/dispatches/$id'
             : '/dispatches/$id/buyer-track',
+    'subscription' => '/subscription', // e.g. "your free trial is ending"
     _ => null,
   };
 }

@@ -33,6 +33,7 @@ void main() {
     expect(notificationRoute(trip, driver), '/driver/trip/22');
     expect(notificationRoute(trip, owner), '/dispatches/22');
     expect(notificationRoute(trip, customer), '/dispatches/22/buyer-track');
+    expect(notificationRoute(n('{"entity":"subscription","id":9}'), owner), '/subscription');
     expect(notificationRoute(n('{}'), owner), isNull);
   });
 }

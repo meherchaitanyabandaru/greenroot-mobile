@@ -126,8 +126,15 @@ void main() {
       expect(s.endDate, isNotNull);
       final plans = list(fixture('subscription_plans'), 'plans').map(SubscriptionPlan.fromJson).toList();
       final growth = plans.firstWhere((p) => p.planCode == 'GROWTH');
-      expect(growth.sixMonthPrice, greaterThan(0), reason: 'the payment screen prices from this');
-      expect(growth.yearlyPrice, greaterThan(0));
+      expect(growth.monthlyPrice, 499);
+      expect([for (final c in growth.cyclePrices) (c.billingCycle, c.months, c.discountPercent, c.amount)], [
+        ('MONTHLY', 1, 0, 499.0),
+        ('QUARTERLY', 3, 5, 1422.15),
+        ('SIX_MONTH', 6, 10, 2694.6),
+        ('YEARLY', 12, 15, 5089.8),
+      ], reason: 'the payment screen prices from this',);
+      expect(plans.where((p) => p.isPaid).map((p) => p.planCode), containsAll(['BASIC', 'GROWTH', 'ENTERPRISE']));
+      expect(plans.firstWhere((p) => p.planCode == 'TRIAL').isPaid, isFalse);
       final pays = list(fixture('subscription_payments'), 'payments').map(SubscriptionPayment.fromJson);
       expect(pays.first.amount, greaterThan(0));
       expect(pays.first.status, isNotEmpty);

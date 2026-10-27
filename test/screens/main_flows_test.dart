@@ -76,35 +76,66 @@ void main() {
     expect(call.path, endsWith('/orders/${o['id']}/confirm'));
   });
 
-  testWidgets('payment screen prices the plan from the API, per billing cycle', (tester) async {
+  testWidgets('payment screen: three plans, four cycles, priced by the API; pays the chosen one', (tester) async {
     final subs = fixture('subscriptions_me') as Map<String, dynamic>;
     final sub = (subs['subscriptions'] as List).first as Map<String, dynamic>;
+    final plans = ((fixture('subscription_plans') as Map)['plans'] as List).cast<Map<String, dynamic>>();
+    final basic = plans.firstWhere((p) => p['plan_code'] == 'BASIC');
     fake
       ..route('/subscription-plans', fixture('subscription_plans'))
       ..route('/subscriptions/me', subs);
-    final growth = ((fixture('subscription_plans') as Map)['plans'] as List)
-        .cast<Map<String, dynamic>>()
-        .firstWhere((p) => p['plan_code'] == 'GROWTH');
 
     await tester.pumpWidget(_app(fake, 'owner', SubscriptionPaymentScreen(subscriptionId: sub['id'] as int)));
     await tester.pumpAndSettle();
 
-    String rupees(num v) => '₹${v.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},')}';
-    final sixMonth = growth['six_month_price'] as num;
-    final yearly = growth['yearly_price'] as num;
-    // Both cycles are priced from the API's plan.
-    expect(find.text('${rupees(sixMonth)} / 6 months'), findsOneWidget);
-    expect(find.text('${rupees(yearly)} / year'), findsOneWidget);
+    // Only the paid plans, each with its team size and monthly price.
+    expect(find.text('Basic'), findsOneWidget);
+    expect(find.text('Growth'), findsOneWidget);
+    expect(find.text('Enterprise'), findsOneWidget);
+    expect(find.text('Free'), findsNothing);
+    expect(find.text('Up to 10 managers'), findsOneWidget);
+    expect(find.text('MOST POPULAR'), findsOneWidget);
 
-    // 6 months is preselected; switching cycles reprices the Pay button.
+    final scroll = find.byType(Scrollable).first;
     final pay = find.textContaining('Securely');
-    await tester.scrollUntilVisible(pay, 300, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Pay ${rupees(sixMonth)}.00 Securely'), findsOneWidget);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000)); // back to the top
+    Future<void> payShows(String text) async {
+      await tester.scrollUntilVisible(pay, 300, scrollable: scroll);
+      expect(find.text(text), findsOneWidget);
+      await tester.drag(scroll, const Offset(0, 3000)); // back to the top
+      await tester.pumpAndSettle();
+    }
+
+    // Growth, monthly by default.
+    await payShows('Pay ₹499.00 Securely');
+    // Quarterly: 5% off, and the saving is spelled out.
+    await tester.ensureVisible(find.text('Quarterly'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Yearly'));
+    await tester.tap(find.text('Quarterly'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(pay, 300, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Pay ${rupees(yearly)}.00 Securely'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Quarterly saving (5%)'), 300, scrollable: scroll);
+    expect(find.text('Quarterly saving (5%)'), findsOneWidget);
+    await payShows('Pay ₹1,422.15 Securely');
+    // Basic, still quarterly.
+    await tester.ensureVisible(find.text('Basic'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Basic'));
+    await tester.pumpAndSettle();
+    await payShows('Pay ₹852.15 Securely');
+
+    // Pay (no gateway: mock mode). The chosen plan and cycle go to the API.
+    fake.enqueue(type: FakeResponseType.serviceUnavailable); // payment-order: payments off
+    fake.enqueue(response: {'subscription': {...sub, 'plan_code': 'BASIC', 'plan_name': 'Basic'}});
+    await tester.scrollUntilVisible(pay, 300, scrollable: scroll);
+    await tester.ensureVisible(pay);
+    await tester.pumpAndSettle();
+    await tester.tap(pay);
+    await tester.pumpAndSettle();
+    final order = fake.calls.lastWhere((c) => c.path.endsWith('/payment-order'));
+    final renew = fake.calls.lastWhere((c) => c.path.endsWith('/renew'));
+    for (final c in [order, renew]) {
+      expect((c.data as Map)['plan_id'], basic['id']);
+      expect((c.data as Map)['billing_cycle'], 'QUARTERLY');
+    }
+    expect(find.text('Payment Successful!'), findsOneWidget);
   });
 }

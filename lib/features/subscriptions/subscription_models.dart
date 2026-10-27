@@ -165,15 +165,51 @@ class SubscriptionSummary {
       );
 }
 
+/// One billing option of a paid plan, priced by the API.
+class CyclePrice {
+  final String billingCycle; // MONTHLY | QUARTERLY | SIX_MONTH | YEARLY
+  final int months;
+  final int discountPercent;
+  final double listAmount; // monthly × months, before the discount
+  final double amount; // what is charged
+  final double perMonth;
+
+  const CyclePrice({
+    required this.billingCycle,
+    required this.months,
+    required this.discountPercent,
+    required this.listAmount,
+    required this.amount,
+    required this.perMonth,
+  });
+
+  factory CyclePrice.fromJson(Map<String, dynamic> j) => CyclePrice(
+        billingCycle: j['billing_cycle'] as String,
+        months: (j['months'] as num).toInt(),
+        discountPercent: (j['discount_percent'] as num?)?.toInt() ?? 0,
+        listAmount: (j['list_amount'] as num).toDouble(),
+        amount: (j['amount'] as num).toDouble(),
+        perMonth: (j['per_month'] as num).toDouble(),
+      );
+
+  String get label => switch (billingCycle) {
+        'MONTHLY' => 'Monthly',
+        'QUARTERLY' => 'Quarterly',
+        'SIX_MONTH' => 'Half-yearly',
+        'YEARLY' => 'Yearly',
+        _ => billingCycle,
+      };
+}
+
 class SubscriptionPlan {
   final int id;
   final String planCode;
   final String planName;
   final String? description;
+  final double? monthlyPrice;
   final double? sixMonthPrice;
   final double? yearlyPrice;
-  final double? mrpSixMonthPrice;
-  final double? mrpYearlyPrice;
+  final List<CyclePrice> cyclePrices;
   final int? maxManagers;
   final Map<String, dynamic>? features;
   final bool isActive;
@@ -183,10 +219,10 @@ class SubscriptionPlan {
     required this.planCode,
     required this.planName,
     this.description,
+    this.monthlyPrice,
     this.sixMonthPrice,
     this.yearlyPrice,
-    this.mrpSixMonthPrice,
-    this.mrpYearlyPrice,
+    this.cyclePrices = const [],
     this.maxManagers,
     this.features,
     required this.isActive,
@@ -199,32 +235,22 @@ class SubscriptionPlan {
       planCode: j['plan_code'] as String,
       planName: j['plan_name'] as String,
       description: j['description'] as String?,
+      monthlyPrice: (j['monthly_price'] as num?)?.toDouble(),
       sixMonthPrice: (j['six_month_price'] as num?)?.toDouble(),
       yearlyPrice: (j['yearly_price'] as num?)?.toDouble(),
-      mrpSixMonthPrice: (features?['mrp_six_month'] as num?)?.toDouble(),
-      mrpYearlyPrice: (features?['mrp_yearly'] as num?)?.toDouble(),
+      cyclePrices: [
+        for (final c in (j['cycle_prices'] as List? ?? const []))
+          CyclePrice.fromJson((c as Map).cast<String, dynamic>()),
+      ],
       maxManagers: (j['max_managers'] as num?)?.toInt(),
       features: features,
       isActive: j['is_active'] as bool? ?? true,
     );
   }
 
-  int get sixMonthDiscountPct {
-    if (sixMonthPrice == null ||
-        mrpSixMonthPrice == null ||
-        mrpSixMonthPrice! <= 0) {
-      return 0;
-    }
-    if (sixMonthPrice! >= mrpSixMonthPrice!) return 0;
-    return ((mrpSixMonthPrice! - sixMonthPrice!) / mrpSixMonthPrice! * 100)
-        .round();
-  }
+  /// A plan an owner can buy (the free and trial plans list no prices).
+  bool get isPaid => cyclePrices.isNotEmpty;
 
-  int get yearlyDiscountPct {
-    if (yearlyPrice == null || mrpYearlyPrice == null || mrpYearlyPrice! <= 0) {
-      return 0;
-    }
-    if (yearlyPrice! >= mrpYearlyPrice!) return 0;
-    return ((mrpYearlyPrice! - yearlyPrice!) / mrpYearlyPrice! * 100).round();
-  }
+  CyclePrice? priceFor(String cycle) =>
+      cyclePrices.where((c) => c.billingCycle == cycle).firstOrNull;
 }

@@ -17,17 +17,17 @@
       "id": 1,
       "is_active": true,
       "max_managers": 0,
+      "monthly_price": 0,
       "plan_code": "FREE",
       "plan_id": 1,
       "plan_name": "Free",
       "plan_type": "FREE",
-      "six_month_price": 0,
       "updated_at": "2026-10-23T16:48:46.608086Z",
       "yearly_price": 0
     },
     {
       "created_at": "2026-10-23T16:48:46.608086Z",
-      "description": "6-month free trial for new approved nurseries.",
+      "description": "1-month free trial for new approved nurseries.",
       "features": {
         "analytics": "basic",
         "billing_cycles": [
@@ -42,68 +42,208 @@
       "id": 2,
       "is_active": true,
       "max_managers": 1,
+      "monthly_price": 0,
       "plan_code": "TRIAL",
       "plan_id": 2,
       "plan_name": "Community Trial",
       "plan_type": "TRIAL",
-      "six_month_price": 0,
-      "updated_at": "2026-10-23T16:48:46.608086Z",
+      "updated_at": "2026-10-26T19:23:06.554017Z",
       "yearly_price": 0
     },
     {
+      "created_at": "2026-10-26T19:23:06.554017Z",
+      "cycle_prices": [
+        {
+          "amount": 299,
+          "billing_cycle": "MONTHLY",
+          "discount_percent": 0,
+          "list_amount": 299,
+          "months": 1,
+          "per_month": 299
+        },
+        {
+          "amount": 852.15,
+          "billing_cycle": "QUARTERLY",
+          "discount_percent": 5,
+          "list_amount": 897,
+          "months": 3,
+          "per_month": 284.05
+        },
+        {
+          "amount": 1614.6,
+          "billing_cycle": "SIX_MONTH",
+          "discount_percent": 10,
+          "list_amount": 1794,
+          "months": 6,
+          "per_month": 269.1
+        },
+        {
+          "amount": 3049.8,
+          "billing_cycle": "YEARLY",
+          "discount_percent": 15,
+          "list_amount": 3588,
+          "months": 12,
+          "per_month": 254.15
+        }
+      ],
+      "description": "For small nurseries getting started.",
+      "features": {
+        "analytics": "basic",
+        "billing_cycles": [
+          "MONTHLY",
+          "QUARTERLY",
+          "SIX_MONTH",
+          "YEARLY"
+        ],
+        "market_posts_per_day": 3,
+        "max_managers": 5,
+        "support": "community",
+        "unlimited_customers": true,
+        "unlimited_orders": true,
+        "unlimited_quotations": true,
+        "unlimited_trips": true
+      },
+      "id": 5,
+      "is_active": true,
+      "max_managers": 5,
+      "monthly_price": 299,
+      "plan_code": "BASIC",
+      "plan_id": 5,
+      "plan_name": "Basic",
+      "plan_type": "BASIC",
+      "six_month_price": 1614.6,
+      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "yearly_price": 3049.8
+    },
+    {
       "created_at": "2026-10-23T16:48:46.608086Z",
+      "cycle_prices": [
+        {
+          "amount": 499,
+          "billing_cycle": "MONTHLY",
+          "discount_percent": 0,
+          "list_amount": 499,
+          "months": 1,
+          "per_month": 499
+        },
+        {
+          "amount": 1422.15,
+          "billing_cycle": "QUARTERLY",
+          "discount_percent": 5,
+          "list_amount": 1497,
+          "months": 3,
+          "per_month": 474.05
+        },
+        {
+          "amount": 2694.6,
+          "billing_cycle": "SIX_MONTH",
+          "discount_percent": 10,
+          "list_amount": 2994,
+          "months": 6,
+          "per_month": 449.1
+        },
+        {
+          "amount": 5089.8,
+          "billing_cycle": "YEARLY",
+          "discount_percent": 15,
+          "list_amount": 5988,
+          "months": 12,
+          "per_month": 424.15
+        }
+      ],
       "description": "For growing nurseries with more managers and market activity.",
       "features": {
         "analytics": "full",
         "billing_cycles": [
+          "MONTHLY",
+          "QUARTERLY",
           "SIX_MONTH",
           "YEARLY"
         ],
         "market_posts_per_day": 5,
-        "max_managers": 5,
-        "mrp_six_month": 4999,
-        "mrp_yearly": 19999,
+        "max_managers": 10,
         "support": "email",
+        "unlimited_customers": true,
         "unlimited_orders": true,
-        "unlimited_quotations": true
+        "unlimited_quotations": true,
+        "unlimited_trips": true
       },
       "id": 3,
       "is_active": true,
-      "max_managers": 5,
+      "max_managers": 10,
+      "monthly_price": 499,
       "plan_code": "GROWTH",
       "plan_id": 3,
       "plan_name": "Growth",
       "plan_type": "GROWTH",
-      "six_month_price": 2499,
-      "updated_at": "2026-10-23T16:48:46.608086Z",
-      "yearly_price": 3999
+      "six_month_price": 2694.6,
+      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "yearly_price": 5089.8
     },
     {
       "created_at": "2026-10-23T16:48:46.608086Z",
+      "cycle_prices": [
+        {
+          "amount": 999,
+          "billing_cycle": "MONTHLY",
+          "discount_percent": 0,
+          "list_amount": 999,
+          "months": 1,
+          "per_month": 999
+        },
+        {
+          "amount": 2847.15,
+          "billing_cycle": "QUARTERLY",
+          "discount_percent": 5,
+          "list_amount": 2997,
+          "months": 3,
+          "per_month": 949.05
+        },
+        {
+          "amount": 5394.6,
+          "billing_cycle": "SIX_MONTH",
+          "discount_percent": 10,
+          "list_amount": 5994,
+          "months": 6,
+          "per_month": 899.1
+        },
+        {
+          "amount": 10189.8,
+          "billing_cycle": "YEARLY",
+          "discount_percent": 15,
+          "list_amount": 11988,
+          "months": 12,
+          "per_month": 849.15
+        }
+      ],
       "description": "For large nursery operations with priority support.",
       "features": {
         "analytics": "advanced",
         "billing_cycles": [
+          "MONTHLY",
+          "QUARTERLY",
           "SIX_MONTH",
           "YEARLY"
         ],
         "market_posts_per_day": null,
-        "max_managers": null,
-        "mrp_six_month": 14999,
-        "mrp_yearly": 59999,
+        "max_managers": 20,
         "support": "priority",
+        "unlimited_customers": true,
         "unlimited_orders": true,
-        "unlimited_quotations": true
+        "unlimited_quotations": true,
+        "unlimited_trips": true
       },
       "id": 4,
       "is_active": true,
+      "max_managers": 20,
+      "monthly_price": 999,
       "plan_code": "ENTERPRISE",
       "plan_id": 4,
       "plan_name": "Enterprise",
       "plan_type": "ENTERPRISE",
-      "six_month_price": 7499,
-      "updated_at": "2026-10-23T16:48:46.608086Z",
-      "yearly_price": 11999
+      "six_month_price": 5394.6,
+      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "yearly_price": 10189.8
     }
   ]
 }

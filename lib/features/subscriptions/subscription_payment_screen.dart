@@ -25,7 +25,8 @@ class SubscriptionPaymentScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionPaymentScreenState
     extends ConsumerState<SubscriptionPaymentScreen> {
-  String _billingCycle = 'SIX_MONTH';
+  String? _planCode; // null: the current paid plan, else Growth
+  String _billingCycle = 'MONTHLY';
   String _paymentMethod = 'UPI';
   bool _paying = false;
 
@@ -41,10 +42,26 @@ class _SubscriptionPaymentScreenState
     super.dispose();
   }
 
-  double _basePrice(SubscriptionPlan? plan) {
-    if (plan == null) return 0;
-    if (_billingCycle == 'YEARLY') return plan.yearlyPrice ?? 0;
-    return plan.sixMonthPrice ?? 0;
+  /// Paid plans, cheapest first.
+  List<SubscriptionPlan> _paidPlans(List<SubscriptionPlan> plans) =>
+      plans.where((p) => p.isActive && p.isPaid).toList()
+        ..sort((a, b) => (a.monthlyPrice ?? 0).compareTo(b.monthlyPrice ?? 0));
+
+  SubscriptionPlan? _selected(List<SubscriptionPlan> paid) {
+    final current = ref.read(subscriptionProvider).valueOrNull?.planCode;
+    final code = _planCode ?? current;
+    return paid.where((p) => p.planCode == code).firstOrNull ??
+        paid.where((p) => p.planCode == 'GROWTH').firstOrNull ??
+        paid.firstOrNull;
+  }
+
+  double _basePrice(SubscriptionPlan? plan) =>
+      plan?.priceFor(_billingCycle)?.amount ?? 0;
+
+  void _resetPromo() {
+    _promoValid = false;
+    _promoSavings = null;
+    _promoMessage = null;
   }
 
   double _total(SubscriptionPlan? plan) {
@@ -115,10 +132,10 @@ class _SubscriptionPaymentScreenState
         error: (e, _) =>
             Center(child: Text(e is AppError ? e.message : e.toString())),
         data: (plans) {
-          final plan = plans
-              .where((p) => p.planCode == 'GROWTH' && p.isActive)
-              .firstOrNull;
+          final paid = _paidPlans(plans);
+          final plan = _selected(paid);
           return _PaymentBody(
+            plans: paid,
             plan: plan,
             billingCycle: _billingCycle,
             paymentMethod: _paymentMethod,
@@ -130,11 +147,13 @@ class _SubscriptionPaymentScreenState
             promoValid: _promoValid,
             promoMessage: _promoMessage,
             validatingPromo: _validatingPromo,
+            onPlanChanged: (code) => setState(() {
+              _planCode = code;
+              _resetPromo(); // a promo may apply to one plan only
+            }),
             onCycleChanged: (v) => setState(() {
               _billingCycle = v;
-              _promoValid = false;
-              _promoSavings = null;
-              _promoMessage = null;
+              _resetPromo();
             }),
             onMethodChanged: (v) => setState(() => _paymentMethod = v),
             onApplyPromo: () => _applyPromo(plan),
@@ -219,6 +238,8 @@ class _SubscriptionPaymentScreenState
     showModalBottomSheet<void>(
       context: context,
       isDismissible: false,
+      isScrollControlled: true, // taller than the default 9/16 on small phones
+
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -236,6 +257,7 @@ class _SubscriptionPaymentScreenState
 // ── Payment body ──────────────────────────────────────────────────────────────
 
 class _PaymentBody extends StatelessWidget {
+  final List<SubscriptionPlan> plans;
   final SubscriptionPlan? plan;
   final String billingCycle;
   final String paymentMethod;
@@ -247,12 +269,14 @@ class _PaymentBody extends StatelessWidget {
   final bool promoValid;
   final String? promoMessage;
   final bool validatingPromo;
+  final ValueChanged<String> onPlanChanged;
   final ValueChanged<String> onCycleChanged;
   final ValueChanged<String> onMethodChanged;
   final VoidCallback onApplyPromo;
   final VoidCallback onPay;
 
   const _PaymentBody({
+    required this.plans,
     required this.plan,
     required this.billingCycle,
     required this.paymentMethod,
@@ -264,106 +288,81 @@ class _PaymentBody extends StatelessWidget {
     required this.promoValid,
     this.promoMessage,
     required this.validatingPromo,
+    required this.onPlanChanged,
     required this.onCycleChanged,
     required this.onMethodChanged,
     required this.onApplyPromo,
     required this.onPay,
   });
 
-  String _formatPrice(double? value) {
-    if (value == null || value == 0) return '₹0';
-    final formatter = NumberFormat('#,##,###', 'en_IN');
-    return '₹${formatter.format(value.round())}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final sixDiscPct = plan?.sixMonthDiscountPct ?? 0;
-    final yearDiscPct = plan?.yearlyDiscountPct ?? 0;
-    final sixLabel = plan?.sixMonthPrice != null
-        ? '${_formatPrice(plan!.sixMonthPrice)} / 6 months'
-        : '...';
-    final yearLabel = plan?.yearlyPrice != null
-        ? '${_formatPrice(plan!.yearlyPrice)} / year'
-        : '...';
-    final sixMrpLabel = plan?.mrpSixMonthPrice != null
-        ? _formatPrice(plan!.mrpSixMonthPrice)
-        : null;
-    final yearMrpLabel = plan?.mrpYearlyPrice != null
-        ? _formatPrice(plan!.mrpYearlyPrice)
-        : null;
+    final cycle = plan?.priceFor(billingCycle);
+    final cycleSaving = cycle == null ? 0.0 : cycle.listAmount - cycle.amount;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        // ── Plan info ────────────────────────────────────────────────────────
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      plan?.planCode ?? 'GROWTH',
-                      style: const TextStyle(
-                        color: AppColors.primaryMain,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(plan?.planName ?? 'Growth Plan', style: AppTypography.h3),
-              const SizedBox(height: 4),
-              Text(
-                plan?.description ??
-                    'Unlimited orders, quotations & up to 5 managers per nursery.',
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
-              ),
-              if (plan?.features != null) ...[
-                const SizedBox(height: 12),
-                _FeatureChips(features: plan!.features!),
-              ],
-            ],
-          ),
+        // ── Why pay ─────────────────────────────────────────────────────────
+        const Text('Choose your plan', style: AppTypography.h2),
+        const SizedBox(height: 4),
+        Text(
+          'Every plan has unlimited quotations, orders, customers and trips. '
+          'Pick by the size of your team.',
+          style:
+              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Billing cycle ────────────────────────────────────────────────────
-        const Text('Billing Cycle', style: AppTypography.h4),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            _CycleChip(
-              label: '6 Months',
-              sublabel: sixLabel,
-              mrpLabel: sixMrpLabel,
-              badge: sixDiscPct > 0 ? '$sixDiscPct% OFF' : null,
-              selected: billingCycle == 'SIX_MONTH',
-              onTap: () => onCycleChanged('SIX_MONTH'),
+        // ── Plans ───────────────────────────────────────────────────────────
+        if (plans.isEmpty)
+          const _SectionCard(
+            child: Text(
+              'Plans are not available right now. Please try again later.',
             ),
-            const SizedBox(width: 12),
-            _CycleChip(
-              label: 'Yearly',
-              sublabel: yearLabel,
-              mrpLabel: yearMrpLabel,
-              badge: yearDiscPct > 0 ? '$yearDiscPct% OFF' : null,
-              selected: billingCycle == 'YEARLY',
-              onTap: () => onCycleChanged('YEARLY'),
+          )
+        else
+          for (final p in plans) ...[
+            _PlanCard(
+              plan: p,
+              cycle: p.priceFor(billingCycle),
+              selected: p.planCode == plan?.planCode,
+              popular: p.planCode == 'GROWTH',
+              onTap: () => onPlanChanged(p.planCode),
             ),
+            const SizedBox(height: 10),
           ],
+        if (plan?.features != null) ...[
+          const SizedBox(height: 4),
+          _FeatureChips(features: plan!.features!),
+        ],
+        const SizedBox(height: AppSpacing.x2l),
+
+        // ── Billing cycle ────────────────────────────────────────────────────
+        const Text('Pay for', style: AppTypography.h4),
+        const SizedBox(height: 2),
+        Text(
+          'Pay ahead and save up to 15%.',
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
+        const SizedBox(height: AppSpacing.sm),
+        if (plan != null)
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.7,
+            children: [
+              for (final c in plan!.cyclePrices)
+                _CycleTile(
+                  price: c,
+                  selected: c.billingCycle == billingCycle,
+                  onTap: () => onCycleChanged(c.billingCycle),
+                ),
+            ],
+          ),
         const SizedBox(height: AppSpacing.x2l),
 
         // ── Payment method ───────────────────────────────────────────────────
@@ -501,9 +500,19 @@ class _PaymentBody extends StatelessWidget {
           child: Column(
             children: [
               _PriceLine(
-                label: 'Base Price',
-                value: inr(basePrice),
+                label: cycle == null
+                    ? 'Plan price'
+                    : '${plan!.planName} × ${cycle.months} month${cycle.months == 1 ? '' : 's'}',
+                value: inr(cycle?.listAmount ?? basePrice),
               ),
+              if (cycle != null && cycleSaving > 0) ...[
+                const SizedBox(height: 8),
+                _PriceLine(
+                  label: '${cycle.label} saving (${cycle.discountPercent}%)',
+                  value: '−${inr(cycleSaving)}',
+                  highlight: true,
+                ),
+              ],
               if (promoSavings != null && promoSavings! > 0) ...[
                 const SizedBox(height: 8),
                 _PriceLine(
@@ -564,70 +573,206 @@ class _FeatureChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = <String>[];
-    if (features['unlimited_orders'] == true) chips.add('Unlimited Orders');
-    if (features['unlimited_quotations'] == true) {
-      chips.add('Unlimited Quotations');
-    }
-    final maxMgr = features['max_managers'];
-    if (maxMgr != null) chips.add('Up to $maxMgr Managers');
-    final support = features['support'];
-    if (support != null) chips.add('${_cap(support.toString())} Support');
-
+    final chips = <String>[
+      if (features['unlimited_quotations'] == true) 'Unlimited quotations',
+      if (features['unlimited_orders'] == true) 'Unlimited orders',
+      if (features['unlimited_customers'] == true) 'Unlimited customers',
+      if (features['unlimited_trips'] == true) 'Unlimited trips',
+      if (features['support'] != null)
+        '${_cap(features['support'].toString())} support',
+    ];
     if (chips.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: 6,
-      runSpacing: 4,
-      children: chips
-          .map(
-            (c) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.forest100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                c,
-                style: const TextStyle(
-                  color: AppColors.primaryMain,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+      runSpacing: 6,
+      children: [
+        for (final c in chips)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.forest100,
+              borderRadius: BorderRadius.circular(20),
             ),
-          )
-          .toList(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_rounded,
+                  size: 12,
+                  color: AppColors.primaryMain,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  c,
+                  style: const TextStyle(
+                    color: AppColors.primaryMain,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
   String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
-class _CycleChip extends StatelessWidget {
-  final String label;
-  final String sublabel;
-  final String? mrpLabel;
-  final String? badge;
+/// A plan to pick: team size and its price per month for the chosen cycle.
+class _PlanCard extends StatelessWidget {
+  final SubscriptionPlan plan;
+  final CyclePrice? cycle;
+  final bool selected;
+  final bool popular;
+  final VoidCallback onTap;
+
+  const _PlanCard({
+    required this.plan,
+    required this.cycle,
+    required this.selected,
+    required this.popular,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final perMonth = cycle?.perMonth ?? plan.monthlyPrice ?? 0;
+    final discounted = cycle != null && cycle!.discountPercent > 0;
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: '${plan.planName}, ${inr(perMonth, paise: false)} a month',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryLight : AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? AppColors.primaryMain : AppColors.border,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: selected ? AppColors.primaryMain : AppColors.textMuted,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(plan.planName, style: AppTypography.h4),
+                        if (popular)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.amber600,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'MOST POPULAR',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      plan.maxManagers == null
+                          ? 'Unlimited managers'
+                          : 'Up to ${plan.maxManagers} managers',
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (discounted)
+                    Text(
+                      inr(plan.monthlyPrice ?? 0, paise: false),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textMuted,
+                        decoration: TextDecoration.lineThrough,
+                        decorationColor: AppColors.textMuted,
+                      ),
+                    ),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: inr(perMonth, paise: false),
+                          style: AppTypography.h3.copyWith(
+                            color: selected
+                                ? AppColors.primaryMain
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '/mo',
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// How long to pay for: the total, its monthly cost and the saving.
+class _CycleTile extends StatelessWidget {
+  final CyclePrice price;
   final bool selected;
   final VoidCallback onTap;
 
-  const _CycleChip({
-    required this.label,
-    required this.sublabel,
-    this.mrpLabel,
-    this.badge,
+  const _CycleTile({
+    required this.price,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: selected ? AppColors.primaryLight : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
@@ -638,15 +783,15 @@ class _CycleChip extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Wraps: on a narrow phone or large text the badge drops below.
               Wrap(
                 spacing: 6,
-                runSpacing: 4,
+                runSpacing: 2,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
-                    label,
+                    price.label,
                     style: TextStyle(
                       color: selected
                           ? AppColors.primaryMain
@@ -655,18 +800,18 @@ class _CycleChip extends StatelessWidget {
                       fontSize: 14,
                     ),
                   ),
-                  if (badge != null) ...[
+                  if (price.discountPercent > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFdc2626),
+                        color: const Color(0xFF16a34a),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        badge!,
+                        'SAVE ${price.discountPercent}%',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
@@ -674,27 +819,20 @@ class _CycleChip extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ],
                 ],
               ),
               const SizedBox(height: 2),
-              if (mrpLabel != null)
-                Text(
-                  mrpLabel!,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textMuted,
-                    decoration: TextDecoration.lineThrough,
-                    decorationColor: AppColors.textMuted,
-                  ),
-                ),
               Text(
-                sublabel,
-                style: AppTypography.caption.copyWith(
-                  color: selected
-                      ? AppColors.primaryMain
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                ),
+                inr(price.amount),
+                style: AppTypography.bodySmall
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                price.months == 1
+                    ? 'billed monthly'
+                    : '${inr(price.perMonth, paise: false)}/mo',
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -768,7 +906,7 @@ class _SuccessSheet extends StatelessWidget {
     final fmt = DateFormat('d MMM yyyy');
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.x2l),
         child: Column(
           mainAxisSize: MainAxisSize.min,
