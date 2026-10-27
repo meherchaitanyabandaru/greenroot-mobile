@@ -12,7 +12,8 @@ class TrialExpiryBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOwner = ref.watch(
-        sessionProvider.select((s) => s.capabilities.isNurseryOwner),);
+      sessionProvider.select((s) => s.capabilities.isNurseryOwner),
+    );
     if (!isOwner) return const SizedBox.shrink();
 
     final subAsync = ref.watch(subscriptionProvider);
@@ -23,11 +24,11 @@ class TrialExpiryBanner extends ConsumerWidget {
         if (sub.isActive && days > 30) return const SizedBox.shrink();
 
         final isExpired = sub.isExpired || days == 0;
-        final bg = isExpired ? const Color(0xFFFCE4EC) : const Color(0xFFFFF8E1);
+        final bg =
+            isExpired ? const Color(0xFFFCE4EC) : const Color(0xFFFFF8E1);
         final iconColor = isExpired ? AppColors.red600 : AppColors.amber600;
-        final icon = isExpired
-            ? Icons.error_outline_rounded
-            : Icons.access_time_rounded;
+        final icon =
+            isExpired ? Icons.error_outline_rounded : Icons.access_time_rounded;
         final message = isExpired
             ? 'Your subscription has expired. Renew now to keep access.'
             : sub.isTrial
@@ -59,7 +60,8 @@ class TrialExpiryBanner extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => context.push(
-                    '/subscription/payment?subId=${sub.id}',),
+                  '/subscription/payment?subId=${sub.id}',
+                ),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

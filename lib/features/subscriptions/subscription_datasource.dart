@@ -44,7 +44,8 @@ class SubscriptionRemoteDataSource {
         },
       );
       return PaymentOrder.fromJson(
-          res['payment_order'] as Map<String, dynamic>,);
+        res['payment_order'] as Map<String, dynamic>,
+      );
     } on ServerError catch (e) {
       if (e.statusCode == 503) return null;
       rethrow;

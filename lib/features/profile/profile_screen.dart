@@ -15,6 +15,7 @@ import '../../core/widgets/user_avatar.dart';
 import '../auth/domain/rbac/roles.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../nurseries/nurseries.dart' show nurseryDetailProvider;
+import '../subscriptions/plan_tier.dart';
 
 
 class ProfileScreen extends ConsumerWidget {
@@ -63,6 +64,9 @@ class ProfileScreen extends ConsumerWidget {
             roleLabel: roleLabel,
             userCode: user?.userCode,
             mobile: user?.mobile,
+            // Owners on a paid plan wear its badge.
+            tier: caps.isNurseryOwner ? ref.watch(ownerTierProvider) : null,
+            onTier: () => context.push('/subscription'),
             onEdit: () => context.push('/edit-profile'),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -515,6 +519,8 @@ class _ProfileHeaderCard extends StatelessWidget {
   final String roleLabel;
   final String? userCode;
   final String? mobile;
+  final PlanTier? tier;
+  final VoidCallback onTier;
   final VoidCallback onEdit;
 
   const _ProfileHeaderCard({
@@ -522,6 +528,8 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.roleLabel,
     required this.userCode,
     required this.mobile,
+    required this.tier,
+    required this.onTier,
     required this.onEdit,
   });
 
@@ -549,8 +557,16 @@ class _ProfileHeaderCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
+            clipBehavior: Clip.none,
             children: [
-              const UserAvatar(size: 72, borderWidth: 0),
+              Container(
+                // A ring in the plan's metal around a paid owner's photo.
+                padding: EdgeInsets.all(tier == null ? 0 : 3),
+                decoration: BoxDecoration(shape: BoxShape.circle, gradient: tier?.gradient),
+                child: const UserAvatar(size: 72, borderWidth: 0),
+              ),
+              if (tier != null)
+                Positioned(top: -4, left: -4, child: TierMedal(tier: tier!, size: 28)),
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -573,6 +589,10 @@ class _ProfileHeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(name, style: AppTypography.h3, textAlign: TextAlign.center),
+          if (tier != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            GestureDetector(onTap: onTier, child: TierBadge(tier: tier!)),
+          ],
           const SizedBox(height: AppSpacing.xs),
           Container(
             padding: const EdgeInsets.symmetric(

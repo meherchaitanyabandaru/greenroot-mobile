@@ -15,6 +15,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../auth/data/models/capabilities_model.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'subscription_models.dart';
+import 'plan_tier.dart';
 import 'subscription_provider.dart';
 import '../../core/utilities/money.dart';
 import '../../core/widgets/app_loader.dart';
@@ -101,8 +102,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 class _MembershipCard extends ConsumerStatefulWidget {
   final String planLabel;
   final String? validUntil; // null → shows 'Lifetime'
+  final PlanTier? tier; // paid plans wear their metal
 
-  const _MembershipCard({required this.planLabel, this.validUntil});
+  const _MembershipCard({required this.planLabel, this.validUntil, this.tier});
 
   @override
   ConsumerState<_MembershipCard> createState() => _MembershipCardState();
@@ -354,17 +356,25 @@ class _MembershipCardState extends ConsumerState<_MembershipCard> {
                                               vertical: 5,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF2E7D32),
+                                              color: widget.tier == null
+                                                  ? const Color(0xFF2E7D32)
+                                                  : null,
+                                              gradient: widget.tier?.gradient,
                                               borderRadius:
                                                   BorderRadius.circular(20),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                const Icon(
-                                                  Icons.verified_rounded,
+                                                Icon(
+                                                  widget.tier == null
+                                                      ? Icons.verified_rounded
+                                                      : Icons
+                                                          .workspace_premium_rounded,
                                                   size: 12,
-                                                  color: Color(0xFF76E07A),
+                                                  color: widget.tier == null
+                                                      ? const Color(0xFF76E07A)
+                                                      : Colors.white,
                                                 ),
                                                 const SizedBox(width: 5),
                                                 Flexible(
@@ -1062,6 +1072,7 @@ class _SubscriptionBodyState extends ConsumerState<_SubscriptionBody> {
         _MembershipCard(
           planLabel: sub.planName,
           validUntil: cardValidUntil,
+          tier: PlanTier.fromCode(sub.planCode),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -1226,7 +1237,7 @@ class _IncludedCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Upgrade to a paid plan for unlimited access after the trial.',
+                  'Choose Silver, Gold or Platinum before your trial ends to keep selling.',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.amber600,
                     fontWeight: FontWeight.w600,

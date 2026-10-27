@@ -8,13 +8,16 @@ final subscriptionDataSourceProvider = Provider<SubscriptionRemoteDataSource>(
 );
 
 /// Current user's active subscription (null if none).
-final subscriptionProvider = FutureProvider.autoDispose<SubscriptionModel?>((ref) async {
+final subscriptionProvider =
+    FutureProvider.autoDispose<SubscriptionModel?>((ref) async {
   final ds = ref.watch(subscriptionDataSourceProvider);
   final list = await ds.fetchMySubscriptions();
   if (list.isEmpty) return null;
   final active = list.where((s) => s.isActive).toList();
   if (active.isNotEmpty) return active.first;
-  list.sort((a, b) => (b.endDate ?? DateTime(0)).compareTo(a.endDate ?? DateTime(0)));
+  list.sort(
+    (a, b) => (b.endDate ?? DateTime(0)).compareTo(a.endDate ?? DateTime(0)),
+  );
   return list.first;
 });
 
@@ -25,8 +28,9 @@ final subscriptionPlansProvider =
 });
 
 /// Payment history for a subscription.
-final subscriptionPaymentsProvider =
-    FutureProvider.autoDispose.family<List<SubscriptionPayment>, int>(
-        (ref, subscriptionId) {
-  return ref.watch(subscriptionDataSourceProvider).fetchPayments(subscriptionId);
+final subscriptionPaymentsProvider = FutureProvider.autoDispose
+    .family<List<SubscriptionPayment>, int>((ref, subscriptionId) {
+  return ref
+      .watch(subscriptionDataSourceProvider)
+      .fetchPayments(subscriptionId);
 });

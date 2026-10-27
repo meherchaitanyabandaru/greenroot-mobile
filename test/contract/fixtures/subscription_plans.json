@@ -33,6 +33,7 @@
         "billing_cycles": [
           "TRIAL"
         ],
+        "local_market_ads": true,
         "market_posts_per_day": 3,
         "max_managers": 1,
         "support": "community",
@@ -47,7 +48,7 @@
       "plan_id": 2,
       "plan_name": "Community Trial",
       "plan_type": "TRIAL",
-      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "updated_at": "2026-10-27T03:32:17.104566Z",
       "yearly_price": 0
     },
     {
@@ -86,7 +87,7 @@
           "per_month": 254.15
         }
       ],
-      "description": "For small nurseries getting started.",
+      "description": "For small nurseries run by the owner and one manager.",
       "features": {
         "analytics": "basic",
         "billing_cycles": [
@@ -95,24 +96,24 @@
           "SIX_MONTH",
           "YEARLY"
         ],
+        "local_market_ads": true,
         "market_posts_per_day": 3,
-        "max_managers": 5,
+        "max_managers": 1,
         "support": "community",
-        "unlimited_customers": true,
+        "tier": "SILVER",
         "unlimited_orders": true,
-        "unlimited_quotations": true,
-        "unlimited_trips": true
+        "unlimited_quotations": true
       },
       "id": 5,
       "is_active": true,
-      "max_managers": 5,
+      "max_managers": 1,
       "monthly_price": 299,
       "plan_code": "BASIC",
       "plan_id": 5,
-      "plan_name": "Basic",
+      "plan_name": "Silver",
       "plan_type": "BASIC",
       "six_month_price": 1614.6,
-      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "updated_at": "2026-10-27T03:32:17.104566Z",
       "yearly_price": 3049.8
     },
     {
@@ -151,7 +152,7 @@
           "per_month": 424.15
         }
       ],
-      "description": "For growing nurseries with more managers and market activity.",
+      "description": "For growing nurseries with a team of managers.",
       "features": {
         "analytics": "full",
         "billing_cycles": [
@@ -160,24 +161,24 @@
           "SIX_MONTH",
           "YEARLY"
         ],
+        "local_market_ads": true,
         "market_posts_per_day": 5,
-        "max_managers": 10,
+        "max_managers": 5,
         "support": "email",
-        "unlimited_customers": true,
+        "tier": "GOLD",
         "unlimited_orders": true,
-        "unlimited_quotations": true,
-        "unlimited_trips": true
+        "unlimited_quotations": true
       },
       "id": 3,
       "is_active": true,
-      "max_managers": 10,
+      "max_managers": 5,
       "monthly_price": 499,
       "plan_code": "GROWTH",
       "plan_id": 3,
-      "plan_name": "Growth",
+      "plan_name": "Gold",
       "plan_type": "GROWTH",
       "six_month_price": 2694.6,
-      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "updated_at": "2026-10-27T03:32:17.104566Z",
       "yearly_price": 5089.8
     },
     {
@@ -216,7 +217,7 @@
           "per_month": 849.15
         }
       ],
-      "description": "For large nursery operations with priority support.",
+      "description": "For large nursery operations, with priority support.",
       "features": {
         "analytics": "advanced",
         "billing_cycles": [
@@ -225,24 +226,24 @@
           "SIX_MONTH",
           "YEARLY"
         ],
+        "local_market_ads": true,
         "market_posts_per_day": null,
-        "max_managers": 20,
+        "max_managers": 10,
         "support": "priority",
-        "unlimited_customers": true,
+        "tier": "PLATINUM",
         "unlimited_orders": true,
-        "unlimited_quotations": true,
-        "unlimited_trips": true
+        "unlimited_quotations": true
       },
       "id": 4,
       "is_active": true,
-      "max_managers": 20,
+      "max_managers": 10,
       "monthly_price": 999,
       "plan_code": "ENTERPRISE",
       "plan_id": 4,
-      "plan_name": "Enterprise",
+      "plan_name": "Platinum",
       "plan_type": "ENTERPRISE",
       "six_month_price": 5394.6,
-      "updated_at": "2026-10-26T19:23:06.554017Z",
+      "updated_at": "2026-10-27T03:32:17.104566Z",
       "yearly_price": 10189.8
     }
   ]

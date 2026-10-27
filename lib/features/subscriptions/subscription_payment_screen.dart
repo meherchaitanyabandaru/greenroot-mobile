@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../auth/presentation/providers/session_provider.dart';
+import 'plan_tier.dart';
 import 'razorpay_checkout.dart';
 import 'subscription_models.dart';
 import 'subscription_provider.dart';
@@ -304,13 +305,41 @@ class _PaymentBody extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // ── Why pay ─────────────────────────────────────────────────────────
-        const Text('Choose your plan', style: AppTypography.h2),
-        const SizedBox(height: 4),
-        Text(
-          'Every plan has unlimited quotations, orders, customers and trips. '
-          'Pick by the size of your team.',
-          style:
-              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF14532D), Color(0xFF15803D)],
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.eco_rounded, color: Colors.white, size: 36),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose your plan',
+                      style: AppTypography.h3.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Every plan: unlimited orders and quotations, and local market ads. '
+                      'Pick by the size of your team.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -577,10 +606,9 @@ class _FeatureChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = <String>[
-      if (features['unlimited_quotations'] == true) 'Unlimited quotations',
       if (features['unlimited_orders'] == true) 'Unlimited orders',
-      if (features['unlimited_customers'] == true) 'Unlimited customers',
-      if (features['unlimited_trips'] == true) 'Unlimited trips',
+      if (features['unlimited_quotations'] == true) 'Unlimited quotations',
+      if (features['local_market_ads'] == true) 'Local market ads',
       if (features['support'] != null)
         '${_cap(features['support'].toString())} support',
     ];
@@ -643,6 +671,9 @@ class _PlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final perMonth = cycle?.perMonth ?? plan.monthlyPrice ?? 0;
     final discounted = cycle != null && cycle!.discountPercent > 0;
+    final tier = PlanTier.fromCode(plan.planCode);
+    final accent = tier?.dark ?? AppColors.primaryMain;
+    final managers = plan.maxManagers;
     return Semantics(
       selected: selected,
       button: true,
@@ -654,21 +685,36 @@ class _PlanCard extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.surface,
+            color: selected
+                ? (tier?.light.withValues(alpha: 0.35) ??
+                    AppColors.primaryLight)
+                : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? AppColors.primaryMain : AppColors.border,
+              color: selected ? accent : AppColors.border,
               width: selected ? 2 : 1,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
-              Icon(
-                selected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                color: selected ? AppColors.primaryMain : AppColors.textMuted,
-              ),
+              if (tier != null)
+                TierMedal(tier: tier, size: 40)
+              else
+                Icon(
+                  selected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  color: selected ? AppColors.primaryMain : AppColors.textMuted,
+                ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -703,9 +749,11 @@ class _PlanCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      plan.maxManagers == null
+                      managers == null
                           ? 'Unlimited managers'
-                          : 'Up to ${plan.maxManagers} managers',
+                          : managers == 1
+                              ? 'Owner + 1 manager'
+                              : 'Owner + up to $managers managers',
                       style: AppTypography.caption
                           .copyWith(color: AppColors.textSecondary),
                     ),
@@ -731,7 +779,7 @@ class _PlanCard extends StatelessWidget {
                           text: inr(perMonth, paise: false),
                           style: AppTypography.h3.copyWith(
                             color: selected
-                                ? AppColors.primaryMain
+                                ? (tier?.ink ?? AppColors.primaryMain)
                                 : AppColors.textPrimary,
                           ),
                         ),

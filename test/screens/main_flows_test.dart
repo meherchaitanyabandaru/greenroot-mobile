@@ -91,11 +91,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Only the paid plans, each with its team size and monthly price.
-    expect(find.text('Basic'), findsOneWidget);
-    expect(find.text('Growth'), findsOneWidget);
-    expect(find.text('Enterprise'), findsOneWidget);
+    expect(find.text('Silver'), findsOneWidget);
+    expect(find.text('Gold'), findsOneWidget);
+    expect(find.text('Platinum'), findsOneWidget);
     expect(find.text('Free'), findsNothing);
-    expect(find.text('Up to 10 managers'), findsOneWidget);
+    expect(find.text('Owner + 1 manager'), findsOneWidget);
+    expect(find.text('Owner + up to 10 managers'), findsOneWidget);
     expect(find.text('MOST POPULAR'), findsOneWidget);
 
     final scroll = find.byType(Scrollable).first;
@@ -125,15 +126,15 @@ void main() {
     expect(find.text('Quarterly saving (5%)'), findsOneWidget);
     await payShows('Pay ₹1,422.15 Securely');
     // Basic, still quarterly.
-    await tester.ensureVisible(find.text('Basic'));
+    await tester.ensureVisible(find.text('Silver'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Basic'));
+    await tester.tap(find.text('Silver'));
     await tester.pumpAndSettle();
     await payShows('Pay ₹852.15 Securely');
 
     // Pay (no gateway: mock mode). The chosen plan and cycle go to the API.
     fake.enqueue(type: FakeResponseType.serviceUnavailable); // payment-order: payments off
-    fake.enqueue(response: {'subscription': {...sub, 'plan_code': 'BASIC', 'plan_name': 'Basic'}});
+    fake.enqueue(response: {'subscription': {...sub, 'plan_code': 'BASIC', 'plan_name': 'Silver'}});
     await tester.scrollUntilVisible(pay, 300, scrollable: scroll);
     await tester.ensureVisible(pay);
     await tester.pumpAndSettle();
