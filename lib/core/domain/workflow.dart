@@ -32,12 +32,15 @@ class WorkflowStep {
   final String? subtitle;
   final WorkflowStepState state;
   final IconData icon;
+  /// The "loading done" step: the timeline offers its photos and truck.
+  final bool hasLoadingProof;
 
   const WorkflowStep({
     required this.title,
     this.subtitle,
     required this.state,
     required this.icon,
+    this.hasLoadingProof = false,
   });
 }
 
@@ -211,6 +214,7 @@ class OrderWorkflow {
                 ? WorkflowStepState.completed
                 : (loadingDone ? WorkflowStepState.current : WorkflowStepState.pending)),
         icon: Icons.done_all_rounded,
+        hasLoadingProof: loadingDone,
       ),
       WorkflowStep(
         title: 'Delivered',

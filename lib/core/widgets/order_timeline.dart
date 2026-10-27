@@ -17,17 +17,20 @@ export '../domain/workflow.dart' show OrderTimelineRole;
 class OrderTimeline extends StatelessWidget {
   final Order order;
   final OrderTimelineRole role;
+  /// Opens the loading photos and truck, from the "loading done" step.
+  final VoidCallback? onLoadingProof;
 
   const OrderTimeline({
     super.key,
     required this.order,
     this.role = OrderTimelineRole.seller,
+    this.onLoadingProof,
   });
 
   @override
   Widget build(BuildContext context) {
     final steps = OrderWorkflow.stepsFor(order, role);
-    return WorkflowTimeline(steps: steps);
+    return WorkflowTimeline(steps: steps, onLoadingProof: onLoadingProof);
   }
 }
 
@@ -56,8 +59,9 @@ class QuotationTimeline extends StatelessWidget {
 /// distracting, so it only plays once per mount, not on every status poll.
 class WorkflowTimeline extends StatefulWidget {
   final List<WorkflowStep> steps;
+  final VoidCallback? onLoadingProof;
 
-  const WorkflowTimeline({super.key, required this.steps});
+  const WorkflowTimeline({super.key, required this.steps, this.onLoadingProof});
 
   @override
   State<WorkflowTimeline> createState() => _WorkflowTimelineState();
@@ -114,6 +118,7 @@ class _WorkflowTimelineState extends State<WorkflowTimeline>
             child: _TimelineRow(
               step: widget.steps[i],
               isLast: i == widget.steps.length - 1,
+              onLoadingProof: widget.onLoadingProof,
             ),
           ),
       ],
@@ -126,8 +131,13 @@ class _WorkflowTimelineState extends State<WorkflowTimeline>
 class _TimelineRow extends StatelessWidget {
   final WorkflowStep step;
   final bool isLast;
+  final VoidCallback? onLoadingProof;
 
-  const _TimelineRow({required this.step, required this.isLast});
+  const _TimelineRow({
+    required this.step,
+    required this.isLast,
+    this.onLoadingProof,
+  });
 
   Color get _dotBg {
     switch (step.state) {
@@ -222,7 +232,41 @@ class _TimelineRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(step.title, style: _titleStyle),
+                Row(
+                  children: [
+                    Flexible(child: Text(step.title, style: _titleStyle)),
+                    if (step.hasLoadingProof && onLoadingProof != null)
+                      Semantics(
+                        button: true,
+                        label: 'Loading photos and truck',
+                        child: InkWell(
+                          onTap: onLoadingProof,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            margin: const EdgeInsets.only(left: AppSpacing.sm),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryMain.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.photo_library_outlined,
+                                    size: 14, color: AppColors.primaryMain,),
+                                SizedBox(width: 4),
+                                Icon(Icons.local_shipping_outlined,
+                                    size: 14, color: AppColors.primaryMain,),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 if (step.subtitle?.isNotEmpty == true) ...[
                   const SizedBox(height: 2),
                   Text(

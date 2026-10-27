@@ -54,6 +54,7 @@ abstract class ApiConstants {
   static String orderStatus(int id) => '$v1/orders/$id/status';
   static String orderDelivery(int id) => '$v1/orders/$id/delivery';
   static String orderStartLoading(int id) => '$v1/orders/$id/start-loading';
+  static String orderLoadingProof(int id) => '$v1/orders/$id/loading-proof';
   static String orderCompleteLoading(int id) =>
       '$v1/orders/$id/complete-loading';
   static String orderCancel(int id) => '$v1/orders/$id/cancel';

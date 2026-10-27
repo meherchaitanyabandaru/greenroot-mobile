@@ -34,6 +34,7 @@ import '../plants/plant_picker.dart';
 import '../profile/address_map_picker_screen.dart';
 import '../ratings/ratings.dart';
 import 'loading_done_sheet.dart';
+import 'loading_proof_screen.dart';
 import 'orders.dart';
 import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/live_activity_strip.dart';
@@ -169,6 +170,11 @@ class _OrderDetailBody extends StatelessWidget {
           // ── BUYER VIEW ───────────────────────────────────────────────────
           // No operational timeline — buyers don't care about loading steps.
           // Just: delivery tracking (if a dispatch exists) → info → items.
+          if (const {'LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED'}
+              .contains(order.status)) ...[
+            LoadingProofTile(order: order),
+            const SizedBox(height: AppSpacing.md),
+          ],
           _BuyerDeliverySection(orderId: orderId),
           const SizedBox(height: AppSpacing.x2l),
         ] else ...[
@@ -176,7 +182,12 @@ class _OrderDetailBody extends StatelessWidget {
           // Operational timeline (loading steps matter here).
           _SectionCard(
             title: 'Order Timeline',
-            child: OrderTimeline(order: order, role: OrderTimelineRole.seller),
+            child: OrderTimeline(
+              order: order,
+              role: OrderTimelineRole.seller,
+              onLoadingProof: () =>
+                  openLoadingProof(context, order.id, order.orderCode),
+            ),
           ),
           const SizedBox(height: AppSpacing.x2l),
 
