@@ -13,6 +13,8 @@ void main() {
   testWidgets('paused nursery plan reads as on hold for its manager',
       (tester) async {
     final fake = FakeApiClient()..reset();
+    fake.route(
+        '/me/workspaces', fixture('workspaces_manager')); // reloaded on open
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -22,11 +24,37 @@ void main() {
         child: const MaterialApp(home: SubscriptionScreen()),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 300));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.text('ON HOLD'), findsOneWidget);
     expect(find.text('ACTIVE'), findsNothing);
     final line = find.text('Plan not active — owner must renew');
-    await tester.scrollUntilVisible(line, 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(line, 200,
+        scrollable: find.byType(Scrollable).first);
     expect(line, findsOneWidget);
+  });
+
+  testWidgets('a plan resumed since sign-in shows as active (reloaded on open)',
+      (tester) async {
+    final fake = FakeApiClient()..reset();
+    final ws =
+        (fixture('workspaces_manager') as List).cast<Map<String, dynamic>>();
+    ws.last['subscription_active'] = true; // resumed after this session began
+    fake.route('/me/workspaces', ws);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(fake.apiClient),
+          signedInAs('manager'), // the session still says paused
+        ],
+        child: const MaterialApp(home: SubscriptionScreen()),
+      ),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(find.text('ON HOLD'), findsNothing);
   });
 }

@@ -13,6 +13,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/card_downloader.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../auth/data/models/capabilities_model.dart';
+import '../auth/data/models/workspace_model.dart';
+import '../auth/presentation/providers/auth_provider.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import 'subscription_models.dart';
 import 'plan_tier.dart';
@@ -26,6 +28,14 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
+
+/// A manager's nurseries as they are now (the owner may have paused or
+/// renewed since sign-in); reloaded every time the screen opens.
+final _managedNurseriesProvider =
+    FutureProvider.autoDispose<List<Workspace>>((ref) async {
+  final all = await ref.watch(authRepositoryProvider).getWorkspaces();
+  return all.where((w) => w.type == 'MANAGER_NURSERY').toList();
+});
 
 class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   @override
@@ -72,7 +82,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
     // Manager (not an owner) → managed workspace view
     if (caps.isManager && !caps.isNurseryOwner) {
-      return _ManagerView(caps: caps);
+      // Fresh from the API; the sign-in copy until it arrives (or if it fails).
+      final fresh = ref.watch(_managedNurseriesProvider).valueOrNull;
+      return _ManagerView(nurseries: fresh ?? caps.managedNurseries);
     }
 
     // Owner (or pending/rejected) → full subscription screen
@@ -720,12 +732,11 @@ class _FreeView extends StatelessWidget {
 // ── Manager workspace view ────────────────────────────────────────────────────
 
 class _ManagerView extends StatelessWidget {
-  final UserCapabilities caps;
-  const _ManagerView({required this.caps});
+  final List<Workspace> nurseries;
+  const _ManagerView({required this.nurseries});
 
   @override
   Widget build(BuildContext context) {
-    final nurseries = caps.managedNurseries;
     // The owner's plan, as the API reports it (older API: assume active).
     final active = nurseries.every((n) => n.subscriptionActive ?? true);
 
