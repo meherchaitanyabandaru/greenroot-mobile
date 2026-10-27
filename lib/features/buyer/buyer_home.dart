@@ -153,7 +153,7 @@ class BuyerHome extends ConsumerWidget {
           totalCount: data.orders.length,
           activeCount: active.length,
           completedCount: data.completedCount,
-          onTap: goToBuying,
+          onTap: () => goToBuyingTab(1), // they count orders
         ),
         const SizedBox(height: 22),
         // Quick actions
