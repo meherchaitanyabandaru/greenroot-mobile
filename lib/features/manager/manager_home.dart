@@ -181,6 +181,12 @@ class _ManagerHomeData {
           {'CONFIRMED', 'LOADING'}.contains(o.status.toUpperCase()),)
       .length;
 
+  /// The orders tab to open for them: still to start, else being loaded.
+  String get awaitingLoadingStatus =>
+      orders.any((o) => o.status.toUpperCase() == 'CONFIRMED')
+          ? 'CONFIRMED'
+          : 'LOADING';
+
   int get driversWaitingToDispatchCount =>
       dispatches.where((d) => d.status.toUpperCase() == 'ACCEPTED').length;
 
@@ -234,7 +240,8 @@ class ManagerHome extends ConsumerWidget {
                   label: '${data.ordersAwaitingLoadingCount} order'
                       '${data.ordersAwaitingLoadingCount == 1 ? '' : 's'} '
                       'waiting for loading',
-                  onTap: () => context.push('/orders?status=CONFIRMED'),
+                  onTap: () => context
+                      .push('/orders?status=${data.awaitingLoadingStatus}'),
                 ),
               if (data.pendingQuotations.isNotEmpty)
                 _ManagerAttentionRow(
