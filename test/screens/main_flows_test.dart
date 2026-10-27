@@ -8,6 +8,8 @@ import 'package:greenroot_mobile/features/buyer/buyer_tab.dart';
 import 'package:greenroot_mobile/features/orders/order_detail_screen.dart';
 import 'package:greenroot_mobile/features/subscriptions/subscription_payment_screen.dart';
 
+import 'package:greenroot_mobile/core/theme/app_theme.dart';
+
 import '../helpers/fake_api_client.dart';
 import '../helpers/fixtures.dart';
 
@@ -15,7 +17,7 @@ const _page = {'page': 1, 'per_page': 20, 'total': 1, 'total_pages': 1};
 
 Widget _app(FakeApiClient fake, String who, Widget home) => ProviderScope(
       overrides: [apiClientProvider.overrideWithValue(fake.apiClient), signedInAs(who)],
-      child: MaterialApp(home: home),
+      child: MaterialApp(theme: AppTheme.light, home: home), // the real theme: its button sizes matter
     );
 
 void main() {
@@ -104,6 +106,13 @@ void main() {
       await tester.drag(scroll, const Offset(0, 3000)); // back to the top
       await tester.pumpAndSettle();
     }
+
+    // The promo code field shows (the app theme once squeezed it out).
+    await tester.scrollUntilVisible(find.text('Apply'), 300, scrollable: scroll);
+    expect(find.text('Apply'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'e.g. DIWALI2026'), findsOneWidget);
+    await tester.drag(scroll, const Offset(0, 3000));
+    await tester.pumpAndSettle();
 
     // Growth, monthly by default.
     await payShows('Pay ₹499.00 Securely');

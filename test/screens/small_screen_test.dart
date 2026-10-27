@@ -16,6 +16,8 @@ import 'package:greenroot_mobile/features/profile/profile_screen.dart';
 import 'package:greenroot_mobile/features/quotations/quotation_detail_screen.dart';
 import 'package:greenroot_mobile/features/subscriptions/subscription_payment_screen.dart';
 
+import 'package:greenroot_mobile/core/theme/app_theme.dart';
+
 import '../helpers/fake_api_client.dart';
 import '../helpers/fixtures.dart';
 
@@ -67,6 +69,7 @@ void main() {
         await tester.pumpWidget(ProviderScope(
           overrides: [apiClientProvider.overrideWithValue(fake.apiClient), signedInAs(entry.value.$1)],
           child: MaterialApp(
+            theme: AppTheme.light, // the real theme: its button sizes matter
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
               child: child!,

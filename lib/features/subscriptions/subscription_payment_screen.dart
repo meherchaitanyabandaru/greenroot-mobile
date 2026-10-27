@@ -428,6 +428,9 @@ class _PaymentBody extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: validatingPromo ? null : onApplyPromo,
                 style: ElevatedButton.styleFrom(
+                  // The app theme makes buttons full-width; in this Row that
+                  // left no room, and the promo field never showed.
+                  minimumSize: const Size(88, 46),
                   backgroundColor: AppColors.primaryMain,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
