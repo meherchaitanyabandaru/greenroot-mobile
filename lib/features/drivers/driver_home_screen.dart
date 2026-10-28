@@ -129,10 +129,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         color: AppColors.primaryMain,
         displacement: 20,
         onRefresh: () async {
-          // A nursery connection lives in the session, so reload it until connected.
-          if (ref.read(sessionProvider).capabilities.driverNurseryId == null) {
-            await ref.read(sessionProvider.notifier).bootstrap();
-          }
           ref.invalidate(_driverDashboardProvider);
           await ref.read(notificationListProvider.notifier).load();
         },
@@ -164,7 +160,6 @@ class _DashboardBody extends ConsumerWidget {
         : hour < 17
             ? 'Good afternoon'
             : 'Good evening';
-    final isConnected = session.capabilities.driverNurseryId != null;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -181,7 +176,7 @@ class _DashboardBody extends ConsumerWidget {
         ),
         Text(firstName, style: AppTypography.h2),
         const SizedBox(height: AppSpacing.md),
-        // Active trip always takes priority over connection state.
+        // Active trip always takes priority.
         if (trip != null) ...[
           if (trip.status == 'ACCEPTED' || trip.status == 'DISPATCHED') ...[
             _ReadyToDepartCard(trip: trip),
@@ -194,9 +189,7 @@ class _DashboardBody extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _ActiveTripTip(),
           ],
-        ] else if (!isConnected)
-          const _DriverNotConnectedCard()
-        else ...[
+        ] else ...[
           const _NoTripCard(),
           const SizedBox(height: AppSpacing.md),
           const _HowItWorksCard(),

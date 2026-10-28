@@ -145,18 +145,42 @@ class _DriversTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
-          AppButton(
-            label: 'Invite Driver',
-            leadingIcon: Icons.local_shipping_rounded,
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => _InviteSheet(
-                nurseryId: nurseryId,
-                nurseryName: nurseryName,
-                inviteType: 'DRIVER_INVITE',
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primaryMain.withValues(alpha: 0.2),
               ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.primaryMain,
+                  size: 22,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Direct Trip Invitations',
+                        style: AppTypography.label,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Lorry drivers are independent delivery partners. To assign a driver, create a dispatch for an order and share the trip QR code with any eligible driver.',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),
@@ -165,9 +189,9 @@ class _DriversTab extends ConsumerWidget {
           if (drivers.isEmpty)
             const EmptyState(
               icon: Icons.local_shipping_outlined,
-              title: 'No drivers connected',
+              title: 'No drivers yet',
               subtitle:
-                  'Invite a registered driver. They accept by scanning the invite QR.',
+                  'Drivers who complete dispatches for your nursery will appear here.',
             )
           else
             Container(

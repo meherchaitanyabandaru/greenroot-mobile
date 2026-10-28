@@ -233,7 +233,41 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         _ => _updateStatus(s),
       },
       onAckDeliveryUpdate: _ackDeliveryUpdate,
+      onRenewInvite: _renewInvite,
     );
+  }
+
+  Future<void> _renewInvite() async {
+    setState(() => _busy = true);
+    try {
+      final updated = await ref
+          .read(dispatchRepositoryProvider)
+          .renewInvite(widget.dispatchId);
+      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+      if (mounted && updated.tripCode != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trip QR renewed. Share the new QR with a driver.'),
+            backgroundColor: AppColors.primaryMain,
+          ),
+        );
+        await QrShareSheet.show(
+          context,
+          code: updated.tripCode!,
+          qrType: QrCodeType.tripQr,
+          shareMessage:
+              'GreenRoot trip ${updated.dispatchCode} for order ${updated.orderNumber ?? '-'}.\n\nOpen GreenRoot and scan this QR, or paste this trip code under Join a Trip:\n${updated.tripCode}',
+        );
+      }
+    } on AppError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red600),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 }
 
@@ -246,6 +280,7 @@ class _DetailContent extends StatelessWidget {
   final bool busy;
   final void Function(String) onUpdateStatus;
   final VoidCallback onAckDeliveryUpdate;
+  final VoidCallback? onRenewInvite;
 
   const _DetailContent({
     required this.dispatch,
@@ -255,6 +290,7 @@ class _DetailContent extends StatelessWidget {
     required this.busy,
     required this.onUpdateStatus,
     required this.onAckDeliveryUpdate,
+    this.onRenewInvite,
   });
 
   @override
@@ -754,6 +790,21 @@ class _DetailContent extends StatelessWidget {
                 label: const Text('Share Dispatch QR', style: AppTypography.buttonLabel),
               ),
             ),
+          if (isSeller &&
+              dispatch.capabilities?.canRenewInvite == true &&
+              dispatch.status == 'PENDING' &&
+              onRenewInvite != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton.icon(
+                onPressed: busy ? null : onRenewInvite,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Generate New Trip QR'),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           // An outside lorry has no app, so no GPS to track.
           if (dispatch.capabilities?.canViewTracking == true &&

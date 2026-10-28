@@ -361,5 +361,25 @@ void main() {
       expect(d.items[1].plantName, 'Mango');
       // No price fields on items — verified by DispatchItem model
     });
+
+    test('parses required_vehicle_type and invite_expires_at', () {
+      final json = {
+        'id': 7,
+        'dispatch_code': 'DSP-20250007',
+        'order_id': 1,
+        'dispatch_status': 'PENDING',
+        'required_vehicle_type': 'TRUCK',
+        'invite_expires_at': '2026-10-31T12:00:00Z',
+        'created_at': '2025-01-01T00:00:00Z',
+        'capabilities': {
+          'can_renew_invite': true,
+        },
+      };
+
+      final d = Dispatch.fromJson(json);
+      expect(d.requiredVehicleType, 'TRUCK');
+      expect(d.inviteExpiresAt, '2026-10-31T12:00:00Z');
+      expect(d.capabilities?.canRenewInvite, isTrue);
+    });
   });
 }

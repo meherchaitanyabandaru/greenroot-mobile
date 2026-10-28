@@ -125,6 +125,7 @@ class _AssignManagerSheet extends StatelessWidget {
 typedef _DispatchInput = ({
   String? dest,
   String? notes,
+  String? requiredVehicleType,
   // Set for an outside lorry (driver without the app).
   String? outsideVehicle,
   String? outsideDriverName,
@@ -146,6 +147,7 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
   final _vehicleCtrl = TextEditingController();
   final _driverNameCtrl = TextEditingController();
   final _driverMobileCtrl = TextEditingController();
+  String? _requiredVehicleType;
   bool _outside = false;
 
   @override
@@ -203,10 +205,29 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
           Text(
             _outside
                 ? "For a lorry whose driver doesn't use GreenRoot. No tracking: you mark it dispatched, and confirm delivery with the customer's code."
-                : 'After creating, share the trip QR with your driver.',
+                : 'After creating, share the trip QR with an eligible lorry driver. Any approved driver can accept.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
+          if (!_outside) ...[
+            DropdownButtonFormField<String?>(
+              initialValue: _requiredVehicleType,
+              decoration: const InputDecoration(
+                labelText: 'Required Lorry Type',
+                prefixIcon: Icon(Icons.local_shipping_outlined),
+                helperText: 'Select required lorry or leave as Any Vehicle',
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('Any Vehicle / Lorry')),
+                DropdownMenuItem(value: 'TRUCK', child: Text('Truck')),
+                DropdownMenuItem(value: 'VAN', child: Text('Van')),
+                DropdownMenuItem(value: 'PICKUP', child: Text('Pickup')),
+                DropdownMenuItem(value: 'AUTO', child: Text('Auto')),
+              ],
+              onChanged: (v) => setState(() => _requiredVehicleType = v),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           if (_outside) ...[
             TextField(
               key: const Key('dispatchOutsideVehicle'),
@@ -268,6 +289,8 @@ class _CreateDispatchSheetState extends State<_CreateDispatchSheet> {
                   : () => widget.onSubmit((
                         dest: _text(_destCtrl),
                         notes: _text(_notesCtrl),
+                        requiredVehicleType:
+                            _outside ? null : _requiredVehicleType,
                         outsideVehicle: _outside ? _text(_vehicleCtrl) : null,
                         outsideDriverName:
                             _outside ? _text(_driverNameCtrl) : null,

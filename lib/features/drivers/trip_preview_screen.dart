@@ -26,7 +26,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
   bool _loading = true;
   bool _accepting = false;
   String? _error;
-  bool _notConnected = false;
+  String? _errorTitle;
 
   @override
   void initState() {
@@ -59,7 +59,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      _notConnected = false;
+      _errorTitle = null;
     });
     try {
       final d =
@@ -67,23 +67,32 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       if (mounted) setState(() => _dispatch = d);
     } on NotFoundError {
       if (mounted) {
-        setState(() => _error =
-            'Check the trip code from the nursery. The trip number (DSP-…) does not work here.',);
+        setState(() {
+          _errorTitle = 'Trip Not Found';
+          _error =
+              'Check the trip code from the nursery. The trip number (DSP-…) does not work here.';
+        });
       }
     } on ForbiddenError catch (e) {
-      // The trip exists, but this driver has not joined its nursery yet.
       if (mounted) {
         setState(() {
+          _errorTitle = 'Cannot Access Trip';
           _error = e.message;
-          _notConnected = true;
         });
       }
     } on AppError catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) {
+        setState(() {
+          _errorTitle = 'Trip Unavailable';
+          _error = e.message;
+        });
+      }
     } catch (e) {
       if (mounted) {
-        setState(
-            () => _error = 'Trip not found. Check the code and try again.',);
+        setState(() {
+          _errorTitle = 'Trip Not Found';
+          _error = 'Trip not found. Check the code and try again.';
+        });
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -129,11 +138,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e is ServerError && e.statusCode == 409
-                  ? 'You already have an active trip.'
-                  : e.message,
-            ),
+            content: Text(e.message),
             backgroundColor: AppColors.red600,
           ),
         );
@@ -165,9 +170,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
               child: AppLoader(),)
           : _error != null
               ? _ErrorView(
-                  title: _notConnected
-                      ? 'Not connected to this nursery'
-                      : 'Trip Not Found',
+                  title: _errorTitle ?? 'Trip Unavailable',
                   message: _error!,
                   onRetry: _load,
                 )
@@ -397,6 +400,16 @@ class _TripDetails extends StatelessWidget {
                     ? '${dispatch.items.length} item types'
                     : 'See order details',
               ),
+              if (dispatch.requiredVehicleType != null) ...[
+                const Divider(height: 1, indent: 56),
+                _InfoRow(
+                  icon: Icons.local_shipping_outlined,
+                  iconBg: AppColors.forest100,
+                  iconColor: AppColors.primaryMain,
+                  label: 'Required Lorry',
+                  value: dispatch.requiredVehicleType!,
+                ),
+              ],
               if (dispatch.vehicleNumber != null) ...[
                 const Divider(height: 1, indent: 56),
                 _InfoRow(

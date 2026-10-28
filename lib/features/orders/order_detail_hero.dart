@@ -170,6 +170,7 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
                 widget.orderId,
                 destinationAddress: input.dest,
                 notes: input.notes,
+                requiredVehicleType: input.requiredVehicleType,
                 outsideVehicleNumber: input.outsideVehicle,
                 outsideDriverName: input.outsideDriverName,
                 outsideDriverMobile: input.outsideDriverMobile,
@@ -184,12 +185,15 @@ class _HeroCardState extends ConsumerState<_HeroCard> {
         ref.invalidate(_orderDispatchesProvider(widget.orderId));
         context.push('/dispatches/${dispatch.id}');
       } else if (mounted && dispatch.tripCode != null) {
+        final lorryReq = dispatch.requiredVehicleType != null
+            ? ' (${dispatch.requiredVehicleType} required)'
+            : '';
         await QrShareSheet.show(
           context,
           code: dispatch.tripCode!,
           qrType: QrCodeType.tripQr,
           shareMessage:
-              'GreenRoot trip ${dispatch.dispatchCode} for order ${_order.orderNumber}.\n\nOpen GreenRoot and scan this QR, or paste this trip code under Join a Trip:\n${dispatch.tripCode}',
+              'GreenRoot trip ${dispatch.dispatchCode}$lorryReq for order ${_order.orderNumber}.\n\nOpen GreenRoot and scan this QR, or paste this trip code under Join a Trip:\n${dispatch.tripCode}',
         );
         if (mounted) {
           ref.invalidate(orderDetailProvider(widget.orderId));

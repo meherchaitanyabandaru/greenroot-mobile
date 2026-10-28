@@ -63,6 +63,7 @@ class DispatchCapabilities {
   final bool canOverrideDelivery;
   final bool canConfirmReceipt;
   final bool canReportIssue;
+  final bool canRenewInvite;
 
   const DispatchCapabilities({
     this.canAccept = false,
@@ -76,6 +77,7 @@ class DispatchCapabilities {
     this.canOverrideDelivery = false,
     this.canConfirmReceipt = false,
     this.canReportIssue = false,
+    this.canRenewInvite = false,
   });
 
   factory DispatchCapabilities.fromJson(Map<String, dynamic> j) =>
@@ -91,6 +93,7 @@ class DispatchCapabilities {
         canOverrideDelivery: j['can_override_delivery'] == true,
         canConfirmReceipt: j['can_confirm_receipt'] == true,
         canReportIssue: j['can_report_issue'] == true,
+        canRenewInvite: j['can_renew_invite'] == true,
       );
 }
 
@@ -132,6 +135,9 @@ class Dispatch {
   final String? outsideVehicleNumber;
   final String? outsideDriverName;
   final String? outsideDriverMobile;
+  // Lorry driver requirements and invitation validity.
+  final String? requiredVehicleType;
+  final String? inviteExpiresAt;
   // CUSTOMER_CODE, CUSTOMER_APP or UNCONFIRMED (nursery override).
   final String? deliveryConfirmation;
   final String? deliveryOverrideReason;
@@ -176,6 +182,8 @@ class Dispatch {
     this.outsideVehicleNumber,
     this.outsideDriverName,
     this.outsideDriverMobile,
+    this.requiredVehicleType,
+    this.inviteExpiresAt,
     this.deliveryConfirmation,
     this.deliveryOverrideReason,
     this.deliveryIssue,
@@ -232,6 +240,8 @@ class Dispatch {
         outsideVehicleNumber: j['outside_vehicle_number'] as String?,
         outsideDriverName: j['outside_driver_name'] as String?,
         outsideDriverMobile: j['outside_driver_mobile'] as String?,
+        requiredVehicleType: j['required_vehicle_type'] as String?,
+        inviteExpiresAt: j['invite_expires_at'] as String?,
         deliveryConfirmation: j['delivery_confirmation'] as String?,
         deliveryOverrideReason: j['delivery_override_reason'] as String?,
         deliveryIssue: j['delivery_issue'] as String?,
@@ -450,6 +460,7 @@ class DispatchRepository {
     int orderId, {
     String? destinationAddress,
     String? notes,
+    String? requiredVehicleType,
     // Outside lorry (driver without the app): vehicle number required.
     String? outsideVehicleNumber,
     String? outsideDriverName,
@@ -462,6 +473,8 @@ class DispatchRepository {
         if (destinationAddress?.isNotEmpty == true)
           'destination_address': destinationAddress,
         if (notes?.isNotEmpty == true) 'notes': notes,
+        if (requiredVehicleType?.isNotEmpty == true)
+          'required_vehicle_type': requiredVehicleType,
         if (outsideVehicleNumber != null) ...{
           'is_outside_transport': true,
           'outside_vehicle_number': outsideVehicleNumber,
@@ -471,6 +484,16 @@ class DispatchRepository {
             'outside_driver_mobile': outsideDriverMobile,
         },
       },
+      fromJson: (data) {
+        final d = data as Map<String, dynamic>;
+        return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
+      },
+    );
+  }
+
+  Future<Dispatch> renewInvite(int dispatchId) async {
+    return _client.post(
+      '${ApiConstants.dispatches}/$dispatchId/new-invite',
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);

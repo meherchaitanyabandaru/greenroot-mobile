@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1001020207670",
+    "project_id": "them87-greenroot",
+    "storage_bucket": "them87-greenroot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1001020207670:android:6bc79096a7e4fee90dde97",
+        "android_client_info": {
+          "package_name": "in.greenroot.greenroot_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkWGcLDSuE1D3qwWfYOROAGM0AeBsk1-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
