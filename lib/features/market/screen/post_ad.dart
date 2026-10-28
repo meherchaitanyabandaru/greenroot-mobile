@@ -221,7 +221,9 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
               sizeDescription:
                   _sizeCtrl.text.trim().isEmpty ? null : _sizeCtrl.text.trim(),
               photos: photos,
-              extra: widget.editingAd != null
+              // A live ad keeps where it was posted; a draft is placed now.
+              extra: widget.editingAd != null &&
+                      widget.editingAd!.status != 'DRAFT'
                   ? _accessJson
                   : {..._accessJson, ...await _gpsPickup(ref)},
             );

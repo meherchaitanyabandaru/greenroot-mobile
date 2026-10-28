@@ -101,112 +101,128 @@ class _NurseryPendingScreenState extends ConsumerState<NurseryPendingScreen> {
           ),
         ],
       ),
+      // Scrolls on small phones (the steps overflowed); on tall ones the
+      // spacers still centre it.
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          child: Column(
-            children: [
-              const Spacer(),
-              // Status icon
-              Container(
-                width: 88,
-                height: 88,
-                decoration: const BoxDecoration(
-                  color: AppColors.amber100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.hourglass_empty_rounded,
-                  color: AppColors.amber600,
-                  size: 44,
-                ),
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: box.maxHeight - 2 * AppSpacing.screenPadding,
               ),
-              const SizedBox(height: AppSpacing.x2l),
-              const Text(
-                'Application Under Review',
-                style: AppTypography.h2,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Your nursery registration is being reviewed by the GreenRoot team. You\'ll be notified once a decision is made.',
-                style:
-                    AppTypography.body.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    // Status icon
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: const BoxDecoration(
+                        color: AppColors.amber100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.hourglass_empty_rounded,
+                        color: AppColors.amber600,
+                        size: 44,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.x2l),
+                    const Text(
+                      'Application Under Review',
+                      style: AppTypography.h2,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Your nursery registration is being reviewed by the GreenRoot team. You\'ll be notified once a decision is made.',
+                      style: AppTypography.body
+                          .copyWith(color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
 
-              if (_submittedAt != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 14, color: AppColors.textMuted,),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Submitted on ${_formatDate(_submittedAt!)}',
-                        style: AppTypography.caption
-                            .copyWith(color: AppColors.textSecondary),
+                    if (_submittedAt != null) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 14,
+                              color: AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Submitted on ${_formatDate(_submittedAt!)}',
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
+
+                    const SizedBox(height: AppSpacing.x3l),
+
+                    // Steps
+                    _StatusStep(
+                      icon: Icons.check_circle_rounded,
+                      iconColor: AppColors.primaryMain,
+                      title: 'Application Submitted',
+                      subtitle: _submittedAt != null
+                          ? 'Received on ${_formatDate(_submittedAt!)}'
+                          : 'Your nursery details have been received.',
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _StatusStep(
+                      icon: Icons.pending_rounded,
+                      iconColor: AppColors.amber600,
+                      title: 'Under Review',
+                      subtitle: 'GreenRoot is reviewing your application.',
+                      isActive: true,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _StatusStep(
+                      icon: Icons.circle_outlined,
+                      iconColor: AppColors.textMuted,
+                      title: 'Approval Decision',
+                      subtitle: 'You will be notified when approved.',
+                    ),
+
+                    const Spacer(),
+
+                    AppButton(
+                      label: 'Check Status',
+                      onPressed: _refreshing ? null : _refresh,
+                      isLoading: _refreshing,
+                      leadingIcon: Icons.refresh_rounded,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextButton(
+                      onPressed: _logout,
+                      child: Text(
+                        'Sign Out',
+                        style: AppTypography.button
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                 ),
-              ],
-
-              const SizedBox(height: AppSpacing.x3l),
-
-              // Steps
-              _StatusStep(
-                icon: Icons.check_circle_rounded,
-                iconColor: AppColors.primaryMain,
-                title: 'Application Submitted',
-                subtitle: _submittedAt != null
-                    ? 'Received on ${_formatDate(_submittedAt!)}'
-                    : 'Your nursery details have been received.',
               ),
-              const SizedBox(height: AppSpacing.md),
-              const _StatusStep(
-                icon: Icons.pending_rounded,
-                iconColor: AppColors.amber600,
-                title: 'Under Review',
-                subtitle: 'GreenRoot is reviewing your application.',
-                isActive: true,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const _StatusStep(
-                icon: Icons.circle_outlined,
-                iconColor: AppColors.textMuted,
-                title: 'Approval Decision',
-                subtitle: 'You will be notified when approved.',
-              ),
-
-              const Spacer(),
-
-              AppButton(
-                label: 'Check Status',
-                onPressed: _refreshing ? null : _refresh,
-                isLoading: _refreshing,
-                leadingIcon: Icons.refresh_rounded,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextButton(
-                onPressed: _logout,
-                child: Text(
-                  'Sign Out',
-                  style: AppTypography.button
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+            ),
           ),
         ),
       ),

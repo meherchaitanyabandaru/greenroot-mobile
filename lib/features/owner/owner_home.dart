@@ -23,6 +23,7 @@ import '../dispatches/dispatches.dart';
 import '../market/local_market_providers.dart' show receivedEnquiriesProvider;
 import '../orders/orders.dart';
 import '../quotations/quotations.dart';
+import '../quotations/quotations_to_review.dart';
 import 'nursery_setup_prompt.dart';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -36,6 +37,8 @@ final ownerHomeProvider =
   var dispatches = <Dispatch>[];
   var pendingQuotations = <Quotation>[];
   var newEnquiriesCount = 0;
+  // Owners buy from other nurseries too: their quotations wait here.
+  final toReview = await loadQuotationsToReview(quotationRepo);
   try {
     final (items, _) = await orderRepo.listOrders(page: 1, perPage: 30);
     orders = items;
@@ -65,6 +68,7 @@ final ownerHomeProvider =
     dispatches: dispatches,
     pendingQuotations: pendingQuotations,
     newEnquiriesCount: newEnquiriesCount,
+    toReview: toReview,
   );
 });
 
@@ -73,12 +77,14 @@ class _OwnerHomeData {
   final List<Dispatch> dispatches;
   final List<Quotation> pendingQuotations;
   final int newEnquiriesCount;
+  final List<Quotation> toReview;
 
   const _OwnerHomeData({
     required this.orders,
     this.dispatches = const [],
     required this.pendingQuotations,
     this.newEnquiriesCount = 0,
+    this.toReview = const [],
   });
 
   List<Order> get activeOrders => orders
@@ -106,7 +112,10 @@ class _OwnerHomeData {
           : 'LOADING';
 
   bool get hasAnything =>
-      orders.isNotEmpty || pendingQuotations.isNotEmpty || newEnquiriesCount > 0;
+      orders.isNotEmpty ||
+      pendingQuotations.isNotEmpty ||
+      newEnquiriesCount > 0 ||
+      toReview.isNotEmpty;
 
   Dispatch? dispatchForOrder(int orderId) =>
       LifecyclePresenter.activeDispatchForOrder(dispatches, orderId);
@@ -211,6 +220,10 @@ class OwnerHome extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (data.toReview.isNotEmpty) ...[
+                  section(QuotationsToReviewCard(quotations: data.toReview)),
+                  const SizedBox(height: AppSpacing.x2l),
+                ],
                 if (attentionRows.isNotEmpty) ...[
                   section(_NeedsAttentionCard(rows: attentionRows)),
                   const SizedBox(height: AppSpacing.x2l),

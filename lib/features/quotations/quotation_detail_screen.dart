@@ -1,3 +1,4 @@
+import 'delivery_address_picker.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart' show Options, ResponseType;
@@ -21,7 +22,6 @@ import '../../core/widgets/nursery_branding_badge.dart';
 import '../../core/widgets/order_timeline.dart' show QuotationTimeline;
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
-import '../profile/my_addresses_screen.dart';
 import 'accept_confirm.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
@@ -51,59 +51,9 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   bool _converting = false;
   bool _assigning = false;
 
-  Future<bool> _ensureDeliveryAddress() async {
-    final userId = ref.read(sessionProvider).user?.id;
-    if (userId == null) return false;
-    final List<UserAddress> addresses;
-    try {
-      addresses =
-          await ref.read(userAddressRepositoryProvider).listAddresses(userId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not check delivery addresses: $e'),
-            backgroundColor: AppColors.red600,
-          ),
-        );
-      }
-      return false;
-    }
-    if (addresses.isNotEmpty) return true;
-    if (!mounted) return false;
-    final add = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delivery address required'),
-        content: const Text(
-          'Add a delivery address before accepting this quotation. The nursery needs it before confirming your order.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryMain,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Add Address'),
-          ),
-        ],
-      ),
-    );
-    if (add == true && mounted) {
-      await context.push('/my-addresses');
-    }
-    return false;
-  }
-
   Future<void> _buyerAccept(Quotation q) async {
     if (!await confirmAcceptQuotation(context, q) || !mounted) return;
-    final hasDeliveryAddress = await _ensureDeliveryAddress();
+    final hasDeliveryAddress = await pickDeliveryAddress(context, ref, q);
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _buyerActing = true);
     try {

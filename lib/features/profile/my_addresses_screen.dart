@@ -269,7 +269,12 @@ class _OwnerAddressHint extends ConsumerWidget {
                 style: AppTypography.bodySmall
                     .copyWith(color: AppColors.textSecondary),
                 children: const [
-                  TextSpan(text: 'Looking for your nursery address? '),
+                  // Owners mixed the two up and could not accept a quotation.
+                  TextSpan(
+                    text: 'Buying for your nursery? Add its address here as a '
+                        'delivery address. Nursery addresses are only where '
+                        'your plants are picked up. ',
+                  ),
                   TextSpan(
                     text: 'Open nursery addresses ›',
                     style: TextStyle(

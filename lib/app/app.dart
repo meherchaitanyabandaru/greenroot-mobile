@@ -67,6 +67,8 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
       final session = ref.read(sessionProvider);
       if (session.isAuthenticated) {
         ref.read(sessionProvider.notifier).bootstrap();
+        // Pushes may be off or missed: recount the bell when the user is back.
+        ref.read(notificationListProvider.notifier).load();
       }
     }
   }

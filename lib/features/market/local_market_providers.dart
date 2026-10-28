@@ -681,9 +681,14 @@ class MarketRepository {
         },
       );
 
-  Future<void> performAdAction(int adId, String action) =>
+  Future<void> performAdAction(
+    int adId,
+    String action, {
+    Map<String, dynamic>? data,
+  }) =>
       _client.post<Map<String, dynamic>>(
         ApiConstants.marketAdAction(adId, action),
+        data: data,
       );
 
   Future<Map<String, dynamic>> presignUpload({
@@ -1478,13 +1483,17 @@ class _AdActionNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref _ref;
   _AdActionNotifier(this._ref) : super(const AsyncValue.data(null));
 
-  Future<void> perform(int adId, String action) async {
+  Future<void> perform(
+    int adId,
+    String action, {
+    Map<String, dynamic>? data,
+  }) async {
     state = const AsyncValue.loading();
     try {
       final repo = _ref.read(marketRepositoryProvider);
       await (action == 'delete'
           ? repo.deleteAd(adId)
-          : repo.performAdAction(adId, action));
+          : repo.performAdAction(adId, action, data: data));
       _ref.invalidate(myAdsProvider);
       _ref.invalidate(latestAdsProvider);
       _ref.invalidate(latestWantsProvider);

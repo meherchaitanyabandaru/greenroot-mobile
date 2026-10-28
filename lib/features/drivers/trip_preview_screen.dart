@@ -26,6 +26,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
   bool _loading = true;
   bool _accepting = false;
   String? _error;
+  bool _notConnected = false;
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _notConnected = false;
     });
     try {
       final d =
@@ -67,6 +69,14 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
       if (mounted) {
         setState(() => _error =
             'Check the trip code from the nursery. The trip number (DSP-…) does not work here.',);
+      }
+    } on ForbiddenError catch (e) {
+      // The trip exists, but this driver has not joined its nursery yet.
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+          _notConnected = true;
+        });
       }
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -154,7 +164,13 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
           ? const Center(
               child: AppLoader(),)
           : _error != null
-              ? _ErrorView(message: _error!, onRetry: _load)
+              ? _ErrorView(
+                  title: _notConnected
+                      ? 'Not connected to this nursery'
+                      : 'Trip Not Found',
+                  message: _error!,
+                  onRetry: _load,
+                )
               : _dispatch != null
                   ? _TripDetails(
                       dispatch: _dispatch!,
@@ -169,9 +185,14 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
 }
 
 class _ErrorView extends StatelessWidget {
+  final String title;
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
+  const _ErrorView({
+    required this.title,
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +213,7 @@ class _ErrorView extends StatelessWidget {
                   color: AppColors.red600, size: 36,),
             ),
             const SizedBox(height: AppSpacing.x2l),
-            const Text('Trip Not Found', style: AppTypography.h3),
+            Text(title, style: AppTypography.h3),
             const SizedBox(height: AppSpacing.sm),
             Text(
               message,

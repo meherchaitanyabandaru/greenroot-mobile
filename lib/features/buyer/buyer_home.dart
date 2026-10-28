@@ -84,6 +84,8 @@ import '../../core/widgets/universal_qr_screen.dart';
 import '../dispatches/dispatches.dart';
 import 'buyer_tab.dart';
 import '../orders/orders.dart';
+import '../quotations/quotations.dart';
+import '../quotations/quotations_to_review.dart';
 
 /// Fetches buyer home data: orders scoped to the current buyer.
 /// Public so that HomeScreen can invalidate it on pull-to-refresh.
@@ -102,14 +104,25 @@ final buyerHomeProvider =
         await dispatchRepo.listBuyingDispatches(page: 1, perPage: 50);
     dispatches = items;
   } catch (_) {}
-  return _BuyerHomeData(orders: orders, dispatches: dispatches);
+  final toReview =
+      await loadQuotationsToReview(ref.watch(quotationRepositoryProvider));
+  return _BuyerHomeData(
+    orders: orders,
+    dispatches: dispatches,
+    toReview: toReview,
+  );
 });
 
 class _BuyerHomeData {
   final List<Order> orders;
   final List<Dispatch> dispatches;
+  final List<Quotation> toReview;
 
-  const _BuyerHomeData({required this.orders, this.dispatches = const []});
+  const _BuyerHomeData({
+    required this.orders,
+    this.dispatches = const [],
+    this.toReview = const [],
+  });
 
   List<Order> get activeOrders => orders
       .where(
@@ -142,7 +155,7 @@ class BuyerHome extends ConsumerWidget {
     final data = ref.watch(buyerHomeProvider).valueOrNull ??
         const _BuyerHomeData(orders: []);
     final active = data.activeOrders;
-    final isEmpty = data.orders.isEmpty;
+    final isEmpty = data.orders.isEmpty && data.toReview.isEmpty;
 
     void goToBuying() => ref.read(mainTabIndexProvider.notifier).state = 1;
     void goToBuyingTab(int tab) {
@@ -153,6 +166,10 @@ class BuyerHome extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (data.toReview.isNotEmpty) ...[
+          QuotationsToReviewCard(quotations: data.toReview),
+          const SizedBox(height: 12),
+        ],
         for (final d in data.onTheWay) ...[
           _OnTheWayCard(
             dispatch: d,

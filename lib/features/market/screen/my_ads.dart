@@ -150,12 +150,31 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
 
 
   Future<void> _doAdAction(String action) async {
-    if (action == 'delete' && !await _confirmDeleteAd(context, widget.ad)) {
+    // Closing ends every chat on the ad; the reason is shown to them.
+    String? closeReason;
+    if (action == 'archive') {
+      closeReason = await _askCloseReason(context, widget.ad);
+      if (closeReason == null) return;
+    } else if (action == 'delete' &&
+        !await _confirmDeleteAd(context, widget.ad)) {
       return;
     }
     setState(() => _actioning = true);
     try {
-      await ref.read(adActionProvider.notifier).perform(widget.ad.id, action);
+      // A draft saved with location off has no place; publishing needs one.
+      if (action == 'publish' && widget.ad.status == 'DRAFT') {
+        final gps = await _gpsPickup(ref);
+        if (gps.isNotEmpty) {
+          await ref
+              .read(postAdProvider.notifier)
+              .update(widget.ad.id, extra: gps);
+        }
+      }
+      await ref.read(adActionProvider.notifier).perform(
+            widget.ad.id,
+            action,
+            data: closeReason == null ? null : {'reason': closeReason},
+          );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -184,7 +203,7 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
         if (caps.canRenew) ('renew', 'Renew', Icons.refresh_rounded),
         // A draft is deleted, not archived.
         if (caps.canArchive && !(caps.canDelete && widget.ad.status == 'DRAFT'))
-          ('archive', 'Archive', Icons.archive_outlined),
+          ('archive', 'Close', Icons.archive_outlined),
         if (caps.canDelete) ('delete', 'Delete', Icons.delete_outline_rounded),
       ];
     }
@@ -197,16 +216,16 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
       'PUBLISHED' => [
           ('edit', 'Edit', Icons.edit_outlined),
           ('pause', 'Pause', Icons.pause_circle_outline_rounded),
-          ('archive', 'Archive', Icons.archive_outlined),
+          ('archive', 'Close', Icons.archive_outlined),
         ],
       'PAUSED' => [
           ('edit', 'Edit', Icons.edit_outlined),
           ('resume', 'Resume', Icons.play_circle_outline_rounded),
-          ('archive', 'Archive', Icons.archive_outlined),
+          ('archive', 'Close', Icons.archive_outlined),
         ],
       'EXPIRED' => [
           ('renew', 'Renew', Icons.refresh_rounded),
-          ('archive', 'Archive', Icons.archive_outlined),
+          ('archive', 'Close', Icons.archive_outlined),
         ],
       _ => <(String, String, IconData)>[],
     };
@@ -443,3 +462,32 @@ class _MyAdCardState extends ConsumerState<_MyAdCard> {
 // ══════════════════════════════════════════════════════════════════════════════
 // 5. AD DETAIL SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
+
+/// Why the ad is closing; null when the user backs out.
+Future<String?> _askCloseReason(BuildContext context, MarketAd ad) =>
+    showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(ad.isWant ? 'Close this need?' : 'Close this ad?'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text(
+              'It leaves the market and its chats end. They will see why.',
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'SOLD_OUT'),
+            child: Text(ad.isWant ? 'I found the plants' : 'Sold out'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'NO_LONGER_AVAILABLE'),
+            child: Text(ad.isWant ? 'No longer needed' : 'No longer available'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );

@@ -53,6 +53,9 @@ class Quotation {
   final String? nurseryName;
   final String? nurseryPhone;
   final String? nurseryBrandColor;
+  // The nursery's pickup point: the buyer sees roughly how far delivery is.
+  final double? nurseryLatitude;
+  final double? nurseryLongitude;
   final int? assignedManagerUserId;
   final String? assignedManagerName;
   final int? convertedOrderId;
@@ -84,6 +87,8 @@ class Quotation {
     this.nurseryName,
     this.nurseryPhone,
     this.nurseryBrandColor,
+    this.nurseryLatitude,
+    this.nurseryLongitude,
     this.assignedManagerUserId,
     this.assignedManagerName,
     this.convertedOrderId,
@@ -127,6 +132,8 @@ class Quotation {
         nurseryName: j['nursery_name'] as String?,
         nurseryPhone: j['nursery_phone'] as String?,
         nurseryBrandColor: j['nursery_brand_color'] as String?,
+        nurseryLatitude: (j['nursery_latitude'] as num?)?.toDouble(),
+        nurseryLongitude: (j['nursery_longitude'] as num?)?.toDouble(),
         assignedManagerUserId: j['assigned_manager_user_id'] != null
             ? (j['assigned_manager_user_id'] as num).toInt()
             : null,

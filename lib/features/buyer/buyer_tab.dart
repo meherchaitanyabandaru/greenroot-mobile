@@ -6,6 +6,7 @@
 // ║  Dispatch info is shown inside the Order Detail screen, not as a tab.       ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
+import '../quotations/delivery_address_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,10 +21,8 @@ import '../../core/widgets/green_root_app_bar.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/trade_status_chip.dart';
-import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
-import '../profile/my_addresses_screen.dart';
 import '../quotations/accept_confirm.dart';
 import '../quotations/quotations.dart';
 import '../../core/feedback/app_haptics.dart';
@@ -241,56 +240,11 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
   bool get _canRespond =>
       widget.quotation.status == 'CUSTOMER_SENT' && !widget.quotation.isExpired;
 
-  Future<bool> _ensureDeliveryAddress() async {
-    final userId = ref.read(sessionProvider).user?.id;
-    if (userId == null) return false;
-    final List<UserAddress> addresses;
-    try {
-      addresses =
-          await ref.read(userAddressRepositoryProvider).listAddresses(userId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not check delivery addresses: $e'),
-            backgroundColor: AppColors.red600,
-          ),
-        );
-      }
-      return false;
-    }
-    if (addresses.isNotEmpty) return true;
-    if (!mounted) return false;
-    final add = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delivery address required'),
-        content: const Text(
-          'Add a delivery address before accepting this quotation. The nursery needs it before confirming your order.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Add Address'),
-          ),
-        ],
-      ),
-    );
-    if (add == true && mounted) {
-      await context.push('/my-addresses');
-    }
-    return false;
-  }
-
   Future<void> _accept() async {
     if (!await confirmAcceptQuotation(context, widget.quotation) || !mounted) {
       return;
     }
-    final hasDeliveryAddress = await _ensureDeliveryAddress();
+    final hasDeliveryAddress = await pickDeliveryAddress(context, ref, widget.quotation);
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _acting = true);
     try {

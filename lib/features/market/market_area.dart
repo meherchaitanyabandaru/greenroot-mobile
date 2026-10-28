@@ -1,6 +1,8 @@
 // Where the Local Market looks: the phone's position (when the user allows
 // it) and how far around it. The market is local -- 60 km by default, never
 // past 100 km. With no phone position the server uses the nursery's address.
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,12 +57,23 @@ final marketPositionProvider = FutureProvider<Position?>((ref) async {
         perm == LocationPermission.deniedForever) {
       return null;
     }
-    return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.low,
-        timeLimit: Duration(seconds: 10),
-      ),
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } on TimeoutException {
+      // Low power is Wi-Fi/cell only; without that signal, as on a farm,
+      // use the GPS chip rather than show no ads or post one with no place.
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    }
   } catch (_) {
     try {
       return await Geolocator.getLastKnownPosition();
