@@ -47,7 +47,10 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
   }
 
   void _addItem() {
-    setState(() => _items.add(_ItemRow()));
+    setState(() {
+      _items.add(_ItemRow());
+      _error = null; // "Add at least one item" stayed up after adding one
+    });
   }
 
   void _removeItem(int index) {

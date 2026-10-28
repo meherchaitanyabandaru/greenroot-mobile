@@ -245,7 +245,34 @@ class _TripDetails extends StatelessWidget {
     final alreadyAccepted =
         dispatch.status != 'PENDING' || myTrip || takenByOther;
 
-    return ListView(
+    // Accept is pinned under the list: on small phones it was below the fold.
+    final acceptButton = SizedBox(
+      width: double.infinity,
+      height: AppSpacing.buttonHeight,
+      child: ElevatedButton.icon(
+        onPressed: accepting ? null : onAccept,
+        icon: accepting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white,),)
+            : const Icon(Icons.check_circle_outline_rounded),
+        label: Text(accepting ? 'Accepting...' : 'Accept Trip'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryMain,
+          foregroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+              borderRadius: AppRadius.buttonRadius,),
+          elevation: 0,
+        ),
+      ),
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         // Trip ID card
@@ -402,29 +429,6 @@ class _TripDetails extends StatelessWidget {
 
         // Accept / Reject buttons
         if (!alreadyAccepted) ...[
-          SizedBox(
-            width: double.infinity,
-            height: AppSpacing.buttonHeight,
-            child: ElevatedButton.icon(
-              onPressed: accepting ? null : onAccept,
-              icon: accepting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white,),)
-                  : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(accepting ? 'Accepting...' : 'Accept Trip'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
-                foregroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(
-                    borderRadius: AppRadius.buttonRadius,),
-                elevation: 0,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
           // Reject — backend gap: no reject endpoint exists.
           SizedBox(
             width: double.infinity,
@@ -531,6 +535,22 @@ class _TripDetails extends StatelessWidget {
         ],
 
         const SizedBox(height: AppSpacing.x2l),
+      ],
+          ),
+        ),
+        if (!alreadyAccepted)
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+              ),
+              child: acceptButton,
+            ),
+          ),
       ],
     );
   }
