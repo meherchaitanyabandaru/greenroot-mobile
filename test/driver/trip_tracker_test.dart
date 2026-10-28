@@ -74,5 +74,9 @@ void main() {
     await tracker.add(_fix(17.40, DateTime.utc(2026, 10, 28, 9)));
     expect(tracker.dispatchId, isNull);
     expect(tracker.heldCount, 0);
+
+    // An open trip map ticks start() every 30 s: an ended trip must stay ended.
+    await tracker.start(22, TrackingRepository(fake.apiClient));
+    expect(tracker.dispatchId, isNull);
   });
 }

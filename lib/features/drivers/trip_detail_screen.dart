@@ -122,7 +122,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     // The customer's code confirms delivery (see delivery_confirmation.dart).
     final done = await showDeliverSheet(context, ref, widget.dispatch);
     if (done == null || !mounted) return;
-    unawaited(TripTracker.instance.stop());
+    unawaited(TripTracker.instance.end(widget.dispatchId));
     ref.invalidate(dispatchDetailProvider(widget.dispatchId));
     ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
     ref.invalidate(orderListProvider);

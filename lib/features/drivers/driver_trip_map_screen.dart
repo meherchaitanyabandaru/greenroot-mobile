@@ -430,7 +430,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     final done = await showDeliverSheet(context, ref, widget.dispatch);
     if (done == null || !mounted) return;
     _gpsTimer?.cancel();
-    await TripTracker.instance.stop();
+    await TripTracker.instance.end(widget.dispatchId);
     ref.invalidate(dispatchDetailProvider(widget.dispatchId));
     ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
     ref.invalidate(orderListProvider);

@@ -68,10 +68,11 @@ final _driverDashboardProvider =
   final active =
       dispatches.where((d) => activeStatuses.contains(d.status)).toList();
 
-  // Delivered or cancelled elsewhere: stop sharing the location now.
-  if (TripTracker.instance.dispatchId != null &&
-      !active.any((d) => d.status == 'IN_TRANSIT')) {
-    unawaited(TripTracker.instance.stop());
+  // The tracked trip left the active list (delivered or cancelled): stop now.
+  // A trip only just started is still active here, so it is not stopped.
+  final tracked = TripTracker.instance.dispatchId;
+  if (tracked != null && !active.any((d) => d.id == tracked)) {
+    unawaited(TripTracker.instance.end(tracked));
   }
 
   ActiveTripState tripState;

@@ -22,6 +22,8 @@ class TripTracker {
   TrackingRepository? _repo;
   StreamSubscription<Position>? _sub;
   final _held = <Position>[];
+  // Trips that are over (refused with 409/403, or delivered): never restarted.
+  final _ended = <int>{};
   DateTime? _lastTaken;
   bool _sending = false;
 
@@ -31,6 +33,7 @@ class TripTracker {
 
   /// Starts (or keeps) tracking [dispatchId]. Safe to call on every screen open.
   Future<void> start(int dispatchId, TrackingRepository repo) async {
+    if (_ended.contains(dispatchId)) return;
     if (_dispatchId == dispatchId && _sub != null) return;
     await stop();
     _dispatchId = dispatchId;
@@ -67,6 +70,12 @@ class TripTracker {
   /// Tests: the next fix is taken even if one came in under [interval].
   @visibleForTesting
   void debugSkipThrottle() => _lastTaken = null;
+
+  /// The trip is delivered or cancelled: stop and never restart it.
+  Future<void> end(int dispatchId) async {
+    _ended.add(dispatchId);
+    if (_dispatchId == dispatchId) await stop();
+  }
 
   Future<void> stop() async {
     await _sub?.cancel();
@@ -121,6 +130,7 @@ class TripTracker {
       // same
     } on AppError {
       // 409 not in transit any more / 403: the trip is over for this phone
+      _ended.add(id);
       await stop();
     } catch (_) {
       // unexpected: keep the points, the next fix retries
