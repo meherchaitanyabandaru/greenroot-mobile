@@ -124,6 +124,11 @@ class _BuyerHomeData {
 
   Dispatch? dispatchForOrder(int orderId) =>
       LifecyclePresenter.activeDispatchForOrder(dispatches, orderId);
+
+  // Trucks on their way to this buyer (the code is shown only then).
+  List<Dispatch> get onTheWay => dispatches
+      .where((d) => {'DISPATCHED', 'IN_TRANSIT'}.contains(d.status))
+      .toList();
 }
 
 // ── Root widget ───────────────────────────────────────────────────────────────
@@ -148,6 +153,13 @@ class BuyerHome extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        for (final d in data.onTheWay) ...[
+          _OnTheWayCard(
+            dispatch: d,
+            onTap: () => context.push('/dispatches/${d.id}/buyer-track'),
+          ),
+          const SizedBox(height: 12),
+        ],
         // KPI summary row
         _BuyerSummaryRow(
           totalCount: data.orders.length,
@@ -340,6 +352,60 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ── Order card ────────────────────────────────────────────────────────────────
+
+// ── On the way: the next thing the buyer needs is the delivery code ─────────
+
+class _OnTheWayCard extends StatelessWidget {
+  final Dispatch dispatch;
+  final VoidCallback onTap;
+
+  const _OnTheWayCard({required this.dispatch, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final code = dispatch.deliveryCode;
+    return InkWell(
+      key: Key('buyerOnTheWay_${dispatch.id}'),
+      onTap: onTap,
+      borderRadius: AppRadius.cardRadius,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.forest100,
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(color: AppColors.primaryMain.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.local_shipping_rounded,
+                color: AppColors.primaryMain, size: 28,),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your plants are on the way',
+                      style: AppTypography.h4
+                          .copyWith(color: AppColors.primaryMain),),
+                  const SizedBox(height: 2),
+                  Text(
+                    code == null
+                        ? '${dispatch.dispatchCode} · Tap to track'
+                        : 'Delivery code $code · give it after you check the plants',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.primaryMain,),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _BuyerOrderCard extends StatelessWidget {
   final Order order;

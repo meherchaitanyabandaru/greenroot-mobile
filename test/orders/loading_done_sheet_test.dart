@@ -9,7 +9,7 @@ import '../helpers/test_data.dart';
 
 void main() {
   testWidgets(
-      'loading completes only after the no-prohibited-items declaration',
+      'one "I confirm" tap declares no prohibited items and completes loading',
       (tester) async {
     final fake = FakeApiClient()
       ..enqueue(response: orderDetailResponse(status: 'LOADED'));
@@ -37,12 +37,10 @@ void main() {
 
     expect(find.text('Optional · up to 3 · 0/3 added'), findsOneWidget);
     expect(find.bySemanticsLabel('Take photo'), findsNWidgets(3));
-    final button = find.widgetWithText(FilledButton, 'Complete Loading');
-    expect(tester.widget<FilledButton>(button).onPressed, isNull);
-
-    await tester.tap(find.text(loadingDeclaration));
-    await tester.pump();
-    await tester.tap(button);
+    // The statement is shown in full; the button that says "I confirm" sends it.
+    expect(find.text(loadingDeclaration), findsOneWidget);
+    await tester.tap(
+        find.widgetWithText(FilledButton, 'I confirm · Complete Loading'),);
     await tester.pumpAndSettle();
 
     expect(fake.calls.single.path, endsWith('/complete-loading'));

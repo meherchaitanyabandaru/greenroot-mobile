@@ -187,9 +187,6 @@ class _ManagerHomeData {
           ? 'CONFIRMED'
           : 'LOADING';
 
-  int get driversWaitingToDispatchCount =>
-      dispatches.where((d) => d.status.toUpperCase() == 'ACCEPTED').length;
-
   bool get hasAnything => orders.isNotEmpty || pendingQuotations.isNotEmpty;
 
   Dispatch? dispatchForOrder(int orderId) =>
@@ -252,15 +249,6 @@ class ManagerHome extends ConsumerWidget {
                       'need${data.pendingQuotations.length == 1 ? 's' : ''} '
                       'your action',
                   onTap: () => context.push('/quotations'),
-                ),
-              if (data.driversWaitingToDispatchCount > 0)
-                _ManagerAttentionRow(
-                  icon: Icons.local_shipping_outlined,
-                  color: AppColors.teal700,
-                  label: '${data.driversWaitingToDispatchCount} driver'
-                      '${data.driversWaitingToDispatchCount == 1 ? '' : 's'} '
-                      'waiting to dispatch',
-                  onTap: () => context.push('/dispatches'),
                 ),
             ];
 

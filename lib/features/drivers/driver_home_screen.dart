@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +16,8 @@ import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../notifications/notifications.dart';
+import '../tracking/tracking.dart';
+import 'trip_tracker.dart';
 
 part 'driver_home_active_trip.dart';
 part 'driver_home_trip_cards.dart';
@@ -64,6 +68,12 @@ final _driverDashboardProvider =
   final active =
       dispatches.where((d) => activeStatuses.contains(d.status)).toList();
 
+  // Delivered or cancelled elsewhere: stop sharing the location now.
+  if (TripTracker.instance.dispatchId != null &&
+      !active.any((d) => d.status == 'IN_TRANSIT')) {
+    unawaited(TripTracker.instance.stop());
+  }
+
   ActiveTripState tripState;
   if (active.length > 1) {
     tripState = const ActiveTripState(
@@ -71,6 +81,11 @@ final _driverDashboardProvider =
   } else if (active.isNotEmpty) {
     tripState =
         ActiveTripState(trip: active.first, result: ActiveTripResult.found);
+    // App reopened mid-trip: keep sharing the location.
+    if (active.first.status == 'IN_TRANSIT') {
+      unawaited(TripTracker.instance
+          .start(active.first.id, ref.read(trackingRepositoryProvider)),);
+    }
   } else {
     tripState =
         const ActiveTripState(trip: null, result: ActiveTripResult.none);
@@ -167,11 +182,7 @@ class _DashboardBody extends ConsumerWidget {
         const SizedBox(height: AppSpacing.md),
         // Active trip always takes priority over connection state.
         if (trip != null) ...[
-          if (trip.status == 'ACCEPTED') ...[
-            _WaitingForLoadingCard(trip: trip),
-            const SizedBox(height: AppSpacing.md),
-            const _WaitingTip(),
-          ] else if (trip.status == 'DISPATCHED') ...[
+          if (trip.status == 'ACCEPTED' || trip.status == 'DISPATCHED') ...[
             _ReadyToDepartCard(trip: trip),
             const SizedBox(height: AppSpacing.md),
             const _DepartTip(),

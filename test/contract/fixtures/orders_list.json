@@ -25,9 +25,9 @@
       "id": 22,
       "lifecycle": {
         "customer": {
-          "label": "Out for Delivery",
-          "subtitle": "Your order has left the nursery.",
-          "title": "Out for Delivery",
+          "label": "On the Way",
+          "subtitle": "Your plants are on the way.",
+          "title": "On the Way",
           "variant": "info"
         },
         "driver": {

@@ -105,9 +105,6 @@ class _OwnerHomeData {
           ? 'CONFIRMED'
           : 'LOADING';
 
-  int get driversWaitingToDispatchCount =>
-      dispatches.where((d) => d.status.toUpperCase() == 'ACCEPTED').length;
-
   bool get hasAnything =>
       orders.isNotEmpty || pendingQuotations.isNotEmpty || newEnquiriesCount > 0;
 
@@ -163,6 +160,14 @@ class OwnerHome extends ConsumerWidget {
               );
             }
             final attentionRows = <_AttentionRowData>[
+              if (data.pendingCount > 0)
+                _AttentionRowData(
+                  icon: Icons.fiber_new_outlined,
+                  color: AppColors.amber600,
+                  label: '${data.pendingCount} new order'
+                      '${data.pendingCount == 1 ? '' : 's'} to confirm',
+                  onTap: () => context.push('/orders?status=PENDING'),
+                ),
               if (data.ordersAwaitingLoadingCount > 0)
                 _AttentionRowData(
                   icon: Icons.inventory_2_outlined,
@@ -182,15 +187,6 @@ class OwnerHome extends ConsumerWidget {
                       'need${data.pendingQuotations.length == 1 ? 's' : ''} '
                       'your action',
                   onTap: () => context.push('/quotations'),
-                ),
-              if (data.driversWaitingToDispatchCount > 0)
-                _AttentionRowData(
-                  icon: Icons.local_shipping_outlined,
-                  color: AppColors.teal700,
-                  label: '${data.driversWaitingToDispatchCount} driver'
-                      '${data.driversWaitingToDispatchCount == 1 ? '' : 's'} '
-                      'waiting to dispatch',
-                  onTap: () => context.push('/dispatches'),
                 ),
               if (data.newEnquiriesCount > 0)
                 _AttentionRowData(

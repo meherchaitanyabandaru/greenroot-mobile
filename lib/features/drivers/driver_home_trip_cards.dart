@@ -189,7 +189,15 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
             TextField(
               controller: _codeCtrl,
               textCapitalization: TextCapitalization.none,
+              textInputAction: TextInputAction.go,
               onSubmitted: (_) => _joinTrip(),
+              // A pasted full code opens the trip at once (the Join button sits under the keyboard on small phones).
+              onChanged: (v) {
+                if (RegExp(r'^TRIP-[0-9a-f-]{36}$', caseSensitive: false)
+                    .hasMatch(v.trim())) {
+                  _joinTrip();
+                }
+              },
               decoration: InputDecoration(
                 hintText: 'Paste the trip code (TRIP-…)',
                 hintStyle: const TextStyle(
@@ -270,243 +278,6 @@ class _NoTripCardState extends ConsumerState<_NoTripCard> {
 
 // ── ACCEPTED: Waiting for nursery loading ─────────────────────────────────────
 
-class _WaitingForLoadingCard extends ConsumerStatefulWidget {
-  final Dispatch trip;
-  const _WaitingForLoadingCard({required this.trip});
-
-  @override
-  ConsumerState<_WaitingForLoadingCard> createState() =>
-      _WaitingForLoadingCardState();
-}
-
-class _WaitingForLoadingCardState
-    extends ConsumerState<_WaitingForLoadingCard> {
-  bool _refreshing = false;
-
-  Future<void> _refresh() async {
-    setState(() => _refreshing = true);
-    ref.invalidate(_driverDashboardProvider);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) setState(() => _refreshing = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final trip = widget.trip;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.cardRadius,
-        border: Border.all(
-          color: AppColors.amber600.withValues(alpha: 0.35),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.amber600.withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppColors.amber100,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.schedule_rounded,
-                    color: AppColors.amber600,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Trip Accepted ✓', style: AppTypography.h4),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Waiting for Nursery Loading',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.amber600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.amber100,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppColors.amber600,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Waiting',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.amber600,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: AppSpacing.md),
-
-            // Trip code + order
-            Text(
-              trip.dispatchCode,
-              style: AppTypography.h3.copyWith(letterSpacing: 0.4),
-            ),
-            if (trip.orderNumber?.isNotEmpty == true) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Order: ${trip.orderNumber}',
-                style: AppTypography.caption
-                    .copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-            if (trip.destinationAddress?.isNotEmpty == true) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_rounded,
-                      size: 13, color: AppColors.textMuted,),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      trip.destinationAddress!,
-                      style: AppTypography.caption
-                          .copyWith(color: AppColors.textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Message box
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.amber100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: AppColors.amber600, size: 16,),
-                  SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Your trip has been accepted. The nursery is preparing the plants. You will receive a notification once loading is completed.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.amber600,
-                        fontFamily: 'Inter',
-                        height: 1.4,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Actions
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: AppSpacing.buttonHeight,
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push('/driver/trip/${trip.id}'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryMain,
-                        side: const BorderSide(color: AppColors.primaryMain),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadius.buttonRadius,
-                        ),
-                      ),
-                      icon: const Icon(Icons.visibility_outlined, size: 18),
-                      label: const Text('View Trip'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: SizedBox(
-                    height: AppSpacing.buttonHeight,
-                    child: OutlinedButton.icon(
-                      onPressed: _refreshing ? null : _refresh,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadius.buttonRadius,
-                        ),
-                      ),
-                      icon: _refreshing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: AppColors.textMuted,),
-                            )
-                          : const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Refresh'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── DISPATCHED: Ready to depart ────────────────────────────────────────────────
-
 class _ReadyToDepartCard extends ConsumerStatefulWidget {
   final Dispatch trip;
   const _ReadyToDepartCard({required this.trip});
@@ -525,14 +296,8 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
           .read(dispatchRepositoryProvider)
           .updateStatus(widget.trip.id, 'IN_TRANSIT');
       ref.invalidate(_driverDashboardProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Journey started! GPS tracking is now active.'),
-            backgroundColor: AppColors.primaryMain,
-          ),
-        );
-      }
+      // The trip map sends the GPS points: open it, or the buyer sees no truck.
+      if (mounted) context.push('/driver/trip/${widget.trip.id}');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -714,35 +479,6 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
 }
 
 // ── Tip: who is responsible ───────────────────────────────────────────────────
-
-class _WaitingTip extends StatelessWidget {
-  const _WaitingTip();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: const BoxDecoration(
-        color: AppColors.amber100,
-        borderRadius: AppRadius.cardRadius,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.manage_accounts_rounded,
-              size: 16, color: AppColors.amber600,),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              'Manager / Owner is currently loading plants. You will be notified when it\'s your turn to depart.',
-              style: AppTypography.caption.copyWith(color: AppColors.amber600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _DepartTip extends StatelessWidget {
   const _DepartTip();

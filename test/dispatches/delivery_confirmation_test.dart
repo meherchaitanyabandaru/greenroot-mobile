@@ -51,9 +51,8 @@ void main() {
     expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
     expect(find.text("Customer can't give the code?"), findsNothing);
 
+    // The 4th digit sends the code by itself.
     await tester.enterText(find.byKey(const Key('deliveryCodeField')), '4821');
-    await tester.pump();
-    await tester.tap(confirm);
     await tester.pumpAndSettle();
 
     final call = fake.calls.single;

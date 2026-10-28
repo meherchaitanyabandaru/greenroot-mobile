@@ -120,7 +120,11 @@ class _DeliverSheetState extends ConsumerState<_DeliverSheet> {
                   counterText: '',
                   border: OutlineInputBorder(),
                 ),
-                onChanged: (_) => setState(() {}),
+                // The 4th digit sends it: no extra Confirm tap.
+                onChanged: (v) {
+                  setState(() {});
+                  if (v.length == 4 && !_busy) _submit();
+                },
                 onSubmitted: (_) => ready && !_busy ? _submit() : null,
               )
             else

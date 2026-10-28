@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,8 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
+import '../tracking/tracking.dart';
+import 'trip_tracker.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
@@ -75,7 +79,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
   bool _busy = false;
 
   Future<void> _startTrip() async {
-    if (widget.dispatch.status != 'DISPATCHED') {
+    if (!{'ACCEPTED', 'DISPATCHED'}.contains(widget.dispatch.status)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -90,6 +94,8 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
       await ref
           .read(dispatchRepositoryProvider)
           .updateStatus(widget.dispatchId, 'IN_TRANSIT');
+      await TripTracker.instance
+          .start(widget.dispatchId, ref.read(trackingRepositoryProvider));
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(activeDriverTripProvider);
@@ -116,6 +122,7 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     // The customer's code confirms delivery (see delivery_confirmation.dart).
     final done = await showDeliverSheet(context, ref, widget.dispatch);
     if (done == null || !mounted) return;
+    unawaited(TripTracker.instance.stop());
     ref.invalidate(dispatchDetailProvider(widget.dispatchId));
     ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
     ref.invalidate(orderListProvider);
@@ -507,79 +514,8 @@ class _ContextualActions extends StatelessWidget {
           ),
         ],
 
-        // ACCEPTED: nursery is loading — driver cannot start yet
-        if (status == 'ACCEPTED') ...[
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.cardPadding),
-            decoration: BoxDecoration(
-              color: AppColors.amber100,
-              borderRadius: AppRadius.cardRadius,
-              border: Border.all(
-                color: AppColors.amber600.withValues(alpha: 0.30),
-              ),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.schedule_rounded,
-                        color: AppColors.amber600, size: 18,),
-                    SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Waiting for Nursery Loading',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.amber600,
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppSpacing.sm),
-                Text(
-                  'The nursery is preparing your plants. You cannot start the journey until loading is completed and the trip is dispatched.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.amber600,
-                    fontFamily: 'Inter',
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            height: AppSpacing.buttonHeight,
-            child: OutlinedButton.icon(
-              onPressed: busy ? null : onRefresh,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.border),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppRadius.buttonRadius,
-                ),
-              ),
-              icon: busy
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.textMuted,
-                      ),
-                    )
-                  : const Icon(Icons.refresh_rounded),
-              label: const Text('Refresh Status'),
-            ),
-          ),
-        ],
-
-        // DISPATCHED: loading done, driver starts journey
-        if (status == 'DISPATCHED') ...[
+        // Trips exist only for loaded orders: the driver starts once accepted.
+        if (status == 'ACCEPTED' || status == 'DISPATCHED') ...[
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,

@@ -27,15 +27,15 @@
     "is_outside_transport": true,
     "lifecycle": {
       "customer": {
-        "label": "Out for Delivery",
-        "subtitle": "Your order has left the nursery.",
-        "title": "Out for Delivery",
+        "label": "On the Way",
+        "subtitle": "Your plants are on the way.",
+        "title": "On the Way",
         "variant": "info"
       },
       "driver": {
-        "label": "Dispatched",
-        "subtitle": "Order has left the nursery.",
-        "title": "Out for Delivery",
+        "label": "On the Way",
+        "subtitle": "The plants are on the way.",
+        "title": "On the Way",
         "variant": "info"
       },
       "next_actions": {
@@ -50,9 +50,9 @@
         ]
       },
       "operator": {
-        "label": "Dispatched",
-        "subtitle": "Order has left the nursery.",
-        "title": "Out for Delivery",
+        "label": "On the Way",
+        "subtitle": "The plants are on the way.",
+        "title": "On the Way",
         "variant": "info"
       }
     },

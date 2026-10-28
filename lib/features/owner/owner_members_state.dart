@@ -21,8 +21,10 @@ class NurseryDriver {
       driverUserId: (json['driver_user_id'] as num?)?.toInt() ??
           (json['user_id'] as num?)?.toInt() ??
           0,
-      name: json['name'] as String? ?? json['full_name'] as String?,
-      mobile: json['mobile'] as String?,
+      name: json['driver_name'] as String? ??
+          json['name'] as String? ??
+          json['full_name'] as String?,
+      mobile: json['driver_mobile'] as String? ?? json['mobile'] as String?,
       connectionStatus: json['connection_status'] as String? ?? 'CONNECTED',
     );
   }

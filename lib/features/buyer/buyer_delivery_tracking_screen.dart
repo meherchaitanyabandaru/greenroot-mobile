@@ -580,7 +580,7 @@ class _StatusChipRow extends StatelessWidget {
     }
     if (s == 'DISPATCHED') {
       return const MapTextChip(
-          label: 'Out for Delivery', color: AppColors.blue600,);
+          label: 'On the Way', color: AppColors.blue600,);
     }
     return const SizedBox.shrink();
   }

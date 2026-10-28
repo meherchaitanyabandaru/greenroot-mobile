@@ -61,22 +61,6 @@ class _BottomActionBar extends StatelessWidget {
         );
 
       case 'ACCEPTED':
-        return SizedBox(
-          width: double.infinity,
-          height: AppSpacing.buttonHeight,
-          child: OutlinedButton.icon(
-            onPressed: busy ? null : onRefresh,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              side: const BorderSide(color: AppColors.border),
-              shape:
-                  const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
-            ),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Refresh Status'),
-          ),
-        );
-
       case 'DISPATCHED':
         return Row(
           children: [

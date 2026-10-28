@@ -23,6 +23,7 @@ import '../../core/widgets/status_badge.dart';
 import '../dispatches/dispatches.dart';
 import '../orders/orders.dart';
 import '../tracking/tracking.dart';
+import 'trip_tracker.dart';
 import '../dispatches/delivery_confirmation.dart';
 import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/app_loader.dart';
@@ -223,9 +224,13 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     _fitBounds();
   }
 
+  // Sending runs in TripTracker (keeps going off this screen); the timer here
+  // only moves this screen's truck marker.
   void _startGpsPosting() {
+    TripTracker.instance
+        .start(widget.dispatchId, ref.read(trackingRepositoryProvider));
     _gpsTimer?.cancel();
-    _gpsTimer = Timer.periodic(const Duration(seconds: 30), (_) => _postGps());
+    _gpsTimer = Timer.periodic(TripTracker.interval, (_) => _postGps());
   }
 
   Future<void> _postGps() async {
@@ -235,21 +240,10 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       final pos =
           await Geolocator.getCurrentPosition(locationSettings: _gpsSettings);
       if (mounted) setState(() => _devicePos = pos);
-      final repo = ref.read(trackingRepositoryProvider);
-      await Future.wait([
-        repo.postLocation(
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-          dispatchId: widget.dispatchId,
-        ),
-        repo
-            .postLiveLocation(
-              latitude: pos.latitude,
-              longitude: pos.longitude,
-              dispatchId: widget.dispatchId,
-            )
-            .catchError((_) {}),
-      ]);
+      // Started before the location prompt was answered? This restarts it (no-op if running).
+      await TripTracker.instance
+          .start(widget.dispatchId, ref.read(trackingRepositoryProvider));
+      await TripTracker.instance.add(pos); // sent now unless one went out <24 s ago
     } catch (_) {
     } finally {
       _postingGps = false;
@@ -409,7 +403,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   }
 
   Future<void> _startJourney() async {
-    if (widget.dispatch.status != 'DISPATCHED') {
+    if (!{'ACCEPTED', 'DISPATCHED'}.contains(widget.dispatch.status)) {
       _snack('Cannot start — loading is not yet complete.', isError: true);
       return;
     }
@@ -436,6 +430,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
     final done = await showDeliverSheet(context, ref, widget.dispatch);
     if (done == null || !mounted) return;
     _gpsTimer?.cancel();
+    await TripTracker.instance.stop();
     ref.invalidate(dispatchDetailProvider(widget.dispatchId));
     ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
     ref.invalidate(orderListProvider);

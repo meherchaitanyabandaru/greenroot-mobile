@@ -78,12 +78,16 @@ class TrackingRepository {
     int? driverId,
     int? dispatchId,
     String? notes,
+    // When the fix was taken (a point held while offline keeps its time).
+    DateTime? recordedAt,
   }) async {
     return _client.post(
       ApiConstants.postTracking,
       data: {
         'latitude': latitude,
         'longitude': longitude,
+        if (recordedAt != null)
+          'recorded_at': recordedAt.toUtc().toIso8601String(),
         if (vehicleId != null) 'vehicle_id': vehicleId,
         if (driverId != null) 'driver_id': driverId,
         if (dispatchId != null) 'dispatch_id': dispatchId,

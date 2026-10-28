@@ -45,7 +45,6 @@ class _LoadingDoneSheet extends ConsumerStatefulWidget {
 class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
   final List<PreparedPhoto> _photos = [];
   int _uploaded = 0; // photos already attached; a retry doesn't send them again
-  bool _declared = false;
   bool _busy = false;
   String? _error;
 
@@ -172,14 +171,10 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
                 side: BorderSide(color: AppColors.amber100),
               ),
               clipBehavior: Clip.antiAlias,
-              child: CheckboxListTile(
-                value: _declared,
-                onChanged:
-                    _busy ? null : (v) => setState(() => _declared = v == true),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                title: Text(
+              // Tapping "I confirm" below is the declaration (one tap, not tick + button).
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(
                   loadingDeclaration,
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textPrimary, height: 1.45),
@@ -196,7 +191,7 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
             ],
             const SizedBox(height: AppSpacing.xl),
             FilledButton.icon(
-              onPressed: _declared && !_busy ? _submit : null,
+              onPressed: _busy ? null : _submit,
               icon: _busy
                   ? const SizedBox(
                       width: 18,
@@ -210,7 +205,7 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
               label: Text(
                 _busy && _uploaded < _photos.length
                     ? 'Uploading photo ${_uploaded + 1} of ${_photos.length}…'
-                    : 'Complete Loading',
+                    : 'I confirm · Complete Loading',
               ),
             ),
           ],

@@ -82,7 +82,7 @@ const _cards = <TourRole, List<_Card>>{
     (
       icon: Icons.route_rounded,
       title: 'Drive',
-      body: 'When the nursery marks it dispatched, tap Start Journey. Use Add '
+      body: 'When you leave the nursery, tap Start Journey. Use Add '
           'Event for delays or checkpoints on the way.',
     ),
     (

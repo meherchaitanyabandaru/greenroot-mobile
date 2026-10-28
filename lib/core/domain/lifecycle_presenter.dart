@@ -54,6 +54,12 @@ class LifecyclePresenter {
         dispatchStatus != 'CANCELLED') {
       return _buyerDelivery(dispatchStatus);
     }
+    if (role != LifecycleRole.buyer &&
+        orderStatus != 'COMPLETED' &&
+        dispatchStatus != null &&
+        !{'CANCELLED', 'DELIVERED'}.contains(dispatchStatus)) {
+      return forDispatchStatus(dispatchStatus);
+    }
     if (role == LifecycleRole.operator &&
         orderStatus != 'COMPLETED' &&
         dispatchStatus == 'DELIVERED') {
@@ -76,35 +82,29 @@ class LifecyclePresenter {
 
   static LifecycleDisplay forDispatchStatus(String status) {
     switch (status.toUpperCase()) {
+      // Same words as the API (lifecycle/display.go).
       case 'PENDING':
         return const LifecycleDisplay(
-          label: 'Pending',
-          title: 'Dispatch Created',
-          subtitle: 'Awaiting driver.',
+          label: 'Waiting for Driver',
+          title: 'Waiting for Driver',
+          subtitle: 'Share the trip QR with your driver.',
           color: AppColors.amber600,
           variant: BadgeVariant.warning,
         );
       case 'ACCEPTED':
         return const LifecycleDisplay(
-          label: 'Accepted',
-          title: 'Driver Accepted',
-          subtitle: 'Driver has accepted the trip.',
+          label: 'Driver Assigned',
+          title: 'Driver Assigned',
+          subtitle: 'The driver starts the trip when they leave.',
           color: AppColors.blue600,
           variant: BadgeVariant.info,
         );
       case 'DISPATCHED':
-        return const LifecycleDisplay(
-          label: 'Dispatched',
-          title: 'Out for Delivery',
-          subtitle: 'Order has left the nursery.',
-          color: AppColors.blue600,
-          variant: BadgeVariant.info,
-        );
       case 'IN_TRANSIT':
         return const LifecycleDisplay(
-          label: 'In Transit',
-          title: 'In Transit',
-          subtitle: 'Delivery is on the way.',
+          label: 'On the Way',
+          title: 'On the Way',
+          subtitle: 'The plants are on the way.',
           color: AppColors.amber700,
           variant: BadgeVariant.warning,
         );
@@ -154,9 +154,9 @@ class LifecyclePresenter {
     switch (status) {
       case 'PENDING':
         return const LifecycleDisplay(
-          label: 'Delivery Pending',
-          title: 'Delivery Being Arranged',
-          subtitle: 'The nursery is arranging your delivery.',
+          label: 'Arranging Delivery',
+          title: 'Arranging Delivery',
+          subtitle: 'The nursery is finding a driver.',
           color: AppColors.textSecondary,
           variant: BadgeVariant.neutral,
         );
@@ -164,23 +164,16 @@ class LifecyclePresenter {
         return const LifecycleDisplay(
           label: 'Driver Assigned',
           title: 'Driver Assigned',
-          subtitle: 'A driver has accepted your delivery.',
+          subtitle: 'A driver will bring your plants.',
           color: AppColors.blue600,
           variant: BadgeVariant.info,
         );
       case 'DISPATCHED':
-        return const LifecycleDisplay(
-          label: 'Out for Delivery',
-          title: 'Out for Delivery',
-          subtitle: 'Your order has left the nursery.',
-          color: AppColors.blue600,
-          variant: BadgeVariant.info,
-        );
       case 'IN_TRANSIT':
         return const LifecycleDisplay(
           label: 'On the Way',
           title: 'On the Way',
-          subtitle: 'Your delivery is on the way.',
+          subtitle: 'Your plants are on the way.',
           color: AppColors.amber700,
           variant: BadgeVariant.warning,
         );
