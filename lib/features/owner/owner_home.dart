@@ -131,7 +131,10 @@ class OwnerHome extends ConsumerWidget {
         const NurserySetupPrompt(),
         const SizedBox(height: AppSpacing.lg),
         _OwnerQuickActions(
-          onNewOrder: () => context.push('/orders/create'),
+          onNewOrder: () async {
+            await context.push('/orders/create');
+            ref.invalidate(ownerHomeProvider); // shows "new order to confirm"
+          },
           onNewQuotation: () => context.push('/quotations/create'),
           onNewMarketAd: () => showCreatePlantAdSheet(context),
           // Without id/name query params this defaults to nurseryId 0 (see

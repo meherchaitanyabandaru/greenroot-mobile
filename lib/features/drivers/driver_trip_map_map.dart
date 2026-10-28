@@ -65,7 +65,9 @@ class _MapSection extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 292,
+      // A third of the screen (max 292): on small phones a fixed 292 left the
+      // journey and trip details a few pixels between the map and the buttons.
+      height: (MediaQuery.sizeOf(context).height * 0.34).clamp(170.0, 292.0),
       child: Stack(
         children: [
           FlutterMap(

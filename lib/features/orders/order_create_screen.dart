@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -109,7 +110,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
         totalPrice: r.lineTotal,
       ),).toList();
 
-      await ref.read(orderRepositoryProvider).createOrder(
+      final order = await ref.read(orderRepositoryProvider).createOrder(
         buyerMobile: _mobileCtrl.text.trim(),
         buyerName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
         sellerNurseryId: nurseryId,
@@ -126,7 +127,12 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
             backgroundColor: AppColors.primaryMain,
           ),
         );
+        // Open the new order next (confirming it is the next step), and keep
+        // the lists current; callers still get `true` for their own refresh.
+        final router = GoRouter.of(context);
+        ref.invalidate(orderListProvider);
         Navigator.of(context).pop(true);
+        router.push('/orders/${order.id}');
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -138,7 +144,10 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return UnsavedChangesGuard(
-      hasChanges: _selectedCustomer != null || _items.any((r) => r.plant != null),
+      // A typed mobile, name or note counts too: Back used to drop them silently.
+      hasChanges: _selectedCustomer != null ||
+          _items.any((r) => r.plant != null) ||
+          [_mobileCtrl, _nameCtrl, _notesCtrl].any((c) => c.text.trim().isNotEmpty),
       what: 'order',
       child: Scaffold(
       backgroundColor: AppColors.background,
@@ -294,6 +303,7 @@ class _OrderCreateScreenState extends ConsumerState<OrderCreateScreen> {
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
+              onChanged: (_) => setState(() {}), // keeps the Back guard current
               decoration: _inputDecoration('Optional notes'),
             ),
             const SizedBox(height: AppSpacing.x3l),

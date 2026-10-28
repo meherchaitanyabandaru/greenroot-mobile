@@ -643,7 +643,9 @@ class _DeliverySnapshotCardState extends ConsumerState<_DeliverySnapshotCard> {
               const SizedBox(width: AppSpacing.md),
               const Expanded(
                   child: Text('Delivery Snapshot', style: AppTypography.h4),),
-              if (widget.canManage)
+              // Delivered or cancelled: the address is history (the API refuses).
+              if (widget.canManage &&
+                  !const {'COMPLETED', 'CANCELLED'}.contains(widget.order.status))
                 TextButton.icon(
                   onPressed: _busy ? null : _edit,
                   icon: _busy
