@@ -29,10 +29,10 @@ class PushConfig {
   });
 
   factory PushConfig.fromEnvironment() => const PushConfig(
-        projectId: String.fromEnvironment('FCM_PROJECT_ID'),
-        senderId: String.fromEnvironment('FCM_SENDER_ID'),
-        apiKey: String.fromEnvironment('FCM_API_KEY'),
-        androidAppId: String.fromEnvironment('FCM_APP_ID_ANDROID'),
+        projectId: String.fromEnvironment('FCM_PROJECT_ID', defaultValue: 'them87-greenroot'),
+        senderId: String.fromEnvironment('FCM_SENDER_ID', defaultValue: '1001020207670'),
+        apiKey: String.fromEnvironment('FCM_API_KEY', defaultValue: 'AIzaSyAkWGcLDSuE1D3qwWfYOROAGM0AeBsk1-U'),
+        androidAppId: String.fromEnvironment('FCM_APP_ID_ANDROID', defaultValue: '1:1001020207670:android:6bc79096a7e4fee90dde97'),
         iosAppId: String.fromEnvironment('FCM_APP_ID_IOS'),
       );
 
@@ -80,26 +80,37 @@ class FirebasePushPlatform implements PushPlatform {
   @override
   Future<bool> start() async {
     final platform = defaultTargetPlatform;
-    if (kIsWeb || !config.enabledFor(platform)) return false;
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: FirebaseOptions(
-          apiKey: config.apiKey,
-          appId: config.appIdFor(platform),
-          messagingSenderId: config.senderId,
-          projectId: config.projectId,
-        ),
+    if (kIsWeb) return false;
+    final isAndroid = platform == TargetPlatform.android;
+    if (!config.enabledFor(platform) && !isAndroid) return false;
+    try {
+      if (Firebase.apps.isEmpty) {
+        if (config.enabledFor(platform)) {
+          await Firebase.initializeApp(
+            options: FirebaseOptions(
+              apiKey: config.apiKey,
+              appId: config.appIdFor(platform),
+              messagingSenderId: config.senderId,
+              projectId: config.projectId,
+            ),
+          );
+        } else {
+          await Firebase.initializeApp();
+        }
+      }
+      final settings = await FirebaseMessaging.instance.requestPermission();
+      // iOS: show the banner with its sound even while the app is open.
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
       );
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (e) {
+      AppLogger.w('push: Firebase start failed: $e');
+      return false;
     }
-    final settings = await FirebaseMessaging.instance.requestPermission();
-    // iOS: show the banner with its sound even while the app is open.
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
   // Registration tokens, as the API's FCM HTTP v1 sender targets them
@@ -186,12 +197,20 @@ class PushService {
   Future<void> register() async {
     try {
       _available ??= await _platform.start();
-      if (_available != true) return;
+      if (_available != true) {
+        AppLogger.i('push: platform not available');
+        return;
+      }
       final token = await _platform.token();
+      final preview = token != null && token.length > 10
+          ? '${token.substring(0, 10)}...'
+          : '$token';
+      AppLogger.i('push: token=$preview');
       if (token == null || token.isEmpty) return;
       if (token != _token || _deviceId == null) {
         _deviceId = await _registry.register(token);
         _token = token;
+        AppLogger.i('push: registered device id=$_deviceId');
       }
       _foreground ??= _platform.onForegroundMessage
           .listen((m) => onForeground?.call(m));
@@ -199,6 +218,7 @@ class PushService {
         try {
           _deviceId = await _registry.register(t);
           _token = t;
+          AppLogger.i('push: token refreshed, device id=$_deviceId');
         } catch (e) {
           AppLogger.w('push: token refresh registration failed: $e');
         }
