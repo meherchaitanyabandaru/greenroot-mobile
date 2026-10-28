@@ -36,6 +36,20 @@ class TripTracker {
     if (_ended.contains(dispatchId)) return;
     if (_dispatchId == dispatchId && _sub != null) return;
     await stop();
+    // First trip: ask now. A stream opened before the prompt was answered
+    // failed, and nothing was sent until the map's next tick (30 s).
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        return; // the map's 30 s tick calls start() again
+      }
+    } catch (_) {
+      return; // e.g. tests without the platform plugin
+    }
     _dispatchId = dispatchId;
     _repo = repo;
     final settings = defaultTargetPlatform == TargetPlatform.android
