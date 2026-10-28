@@ -3,6 +3,7 @@ import '../domain/workflow.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../../features/dispatches/dispatches.dart';
 import '../../features/orders/orders.dart';
 import '../../features/quotations/quotations.dart';
 
@@ -19,17 +20,20 @@ class OrderTimeline extends StatelessWidget {
   final OrderTimelineRole role;
   /// Opens the loading photos and truck, from the "loading done" step.
   final VoidCallback? onLoadingProof;
+  /// The order's active trip: its steps and times follow loading.
+  final Dispatch? trip;
 
   const OrderTimeline({
     super.key,
     required this.order,
     this.role = OrderTimelineRole.seller,
     this.onLoadingProof,
+    this.trip,
   });
 
   @override
   Widget build(BuildContext context) {
-    final steps = OrderWorkflow.stepsFor(order, role);
+    final steps = OrderWorkflow.stepsFor(order, role, trip: trip);
     return WorkflowTimeline(steps: steps, onLoadingProof: onLoadingProof);
   }
 }

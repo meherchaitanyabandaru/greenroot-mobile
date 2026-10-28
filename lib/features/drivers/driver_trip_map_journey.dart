@@ -1,22 +1,12 @@
 part of 'driver_trip_map_screen.dart';
 
 class _OrderJourneyCard extends StatelessWidget {
-  final String status;
-  final String? orderStatus;
-  final String createdAt;
-  final String? updatedAt;
-  final String? loadingStartedAt;
-  final String? loadingCompletedAt;
+  final Dispatch trip;
   final bool expanded;
   final VoidCallback onToggle;
 
   const _OrderJourneyCard({
-    required this.status,
-    this.orderStatus,
-    required this.createdAt,
-    this.updatedAt,
-    this.loadingStartedAt,
-    this.loadingCompletedAt,
+    required this.trip,
     required this.expanded,
     required this.onToggle,
   });
@@ -82,14 +72,7 @@ class _OrderJourneyCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
-              child: _JourneyTimeline(
-                status: status,
-                orderStatus: orderStatus,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                loadingStartedAt: loadingStartedAt,
-                loadingCompletedAt: loadingCompletedAt,
-              ),
+              child: _JourneyTimeline(trip: trip),
             ),
             // Hide button
             InkWell(
@@ -142,104 +125,48 @@ class _Step {
 }
 
 class _JourneyTimeline extends StatelessWidget {
-  final String status;
-  final String? orderStatus;
-  final String createdAt;
-  final String? updatedAt;
-  final String? loadingStartedAt;
-  final String? loadingCompletedAt;
+  final Dispatch trip;
 
-  const _JourneyTimeline({
-    required this.status,
-    this.orderStatus,
-    required this.createdAt,
-    this.updatedAt,
-    this.loadingStartedAt,
-    this.loadingCompletedAt,
-  });
+  const _JourneyTimeline({required this.trip});
 
-  String _fmt(String? iso) {
-    if (iso == null) return '--';
-    try {
-      return DateFormat('d MMM, h:mm a').format(DateTime.parse(iso).toLocal());
-    } catch (_) {
-      return '--';
-    }
-  }
-
+  // The four things that happen, in order, each with when it was recorded.
   List<_Step> _buildSteps() {
-    final updated = _fmt(updatedAt ?? createdAt);
-    final loadingStarted = _fmt(loadingStartedAt);
-    final loadingCompleted = _fmt(loadingCompletedAt);
-    final order = orderStatus?.toUpperCase();
-    final dispatch = status.toUpperCase();
-
-    var completedUpTo = switch (dispatch) {
-      'PENDING' => 0,
-      'ACCEPTED' => 1,
-      'DISPATCHED' => 6,
-      'IN_TRANSIT' => 7,
-      'DELIVERED' => 11,
+    final s = trip.status.toUpperCase();
+    final completedUpTo = switch (s) {
+      'PENDING' => 2,
+      'ACCEPTED' || 'DISPATCHED' || 'IN_TRANSIT' => 3,
+      'DELIVERED' => 5,
+      _ => 2,
+    };
+    final activeStep = switch (s) {
+      'PENDING' => 3,
+      'ACCEPTED' || 'DISPATCHED' || 'IN_TRANSIT' => 4,
       _ => 0,
     };
-    var activeStep = switch (dispatch) {
-      'PENDING' => 1,
-      'ACCEPTED' => 2,
-      'DISPATCHED' => 7,
-      'IN_TRANSIT' => 8,
-      'DELIVERED' => 0,
-      _ => 1,
-    };
-
-    if (dispatch == 'ACCEPTED') {
-      switch (order) {
-        case 'LOADING':
-          completedUpTo = 3;
-          activeStep = 4;
-        case 'LOADED':
-        case 'PARTIALLY_FULFILLED':
-        case 'COMPLETED':
-          completedUpTo = 5;
-          activeStep = 6;
-      }
-    }
-
-    // Only recorded times: the trip's last update belongs to the latest step,
-    // not to every earlier one (that printed times out of order).
-    String? timeFor(int step) {
-      if (step == 3 && loadingStartedAt != null) return loadingStarted;
-      if (step == 5 && loadingCompletedAt != null) return loadingCompleted;
-      if (step == completedUpTo) return updated;
-      return null;
-    }
-
+    final onWay = {'DISPATCHED', 'IN_TRANSIT', 'DELIVERED'}.contains(s);
     final definitions = [
-      (1, 'Trip Accepted', 'You accepted this trip'),
-      (2, 'Waiting for Loading', 'Waiting for nursery to start loading'),
-      (3, 'Loading Started', 'Loading has been started at nursery'),
-      (4, 'Loading In Progress', 'Plants are being loaded'),
-      (5, 'Loading Completed', 'Loading has been completed'),
-      (6, 'Dispatch Started', 'Dispatch has been started'),
-      (7, 'In Transit', 'You are on the way to delivery'),
-      (8, 'Reached Delivery Location', 'You have reached the delivery point'),
-      (9, 'Upload Delivery Proof', 'Upload photos / proof of delivery'),
-      (10, 'Confirm Delivery', 'Confirm delivery after handover'),
-      (11, 'Trip Completed', 'The trip closes once delivery is confirmed'),
+      (1, 'Loading Started', 'The nursery started loading', trip.loadingStartedAt),
+      (2, 'Loading Completed', 'Plants loaded at the nursery', trip.loadingCompletedAt),
+      (3, 'Trip Accepted', 'You accepted this trip', trip.driverAcceptedAt),
+      (4, 'On the Way', onWay ? 'You are on the way to the customer' : 'Tap Start Journey when you leave',
+          onWay ? trip.tripStartedAt ?? trip.dispatchDate : null),
+      (5, 'Delivered', 'The customer confirmed the delivery', trip.deliveryDate),
     ];
 
     return definitions.map((d) {
-      final (num, title, sub) = d;
+      final (num, title, sub, at) = d;
       final state = num <= completedUpTo
           ? _StepState.completed
           : num == activeStep
               ? _StepState.active
               : _StepState.pending;
+      final time = stepTime(at);
       return _Step(
         number: num,
         title: title,
         subtitle: sub,
         state: state,
-        time: state != _StepState.pending ? timeFor(num) : null,
+        time: time.isEmpty ? null : time,
       );
     }).toList();
   }
@@ -358,7 +285,8 @@ class _StepRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 5),
                     child: Text(
-                      step.time ?? '',
+                      (step.time ?? '').replaceFirst(' · ', '\n'),
+                      textAlign: TextAlign.right,
                       style: AppTypography.caption.copyWith(
                         color: step.state != _StepState.pending
                             ? AppColors.textSecondary

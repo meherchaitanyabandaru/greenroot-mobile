@@ -114,6 +114,9 @@ class Dispatch {
   final int? driverUserId;
   final String? dispatchDate;
   final String? deliveryDate;
+  // When the driver accepted / started the trip (timeline times).
+  final String? driverAcceptedAt;
+  final String? tripStartedAt;
   final String? destinationAddress;
   final double? deliveryLatitude;
   final double? deliveryLongitude;
@@ -157,6 +160,8 @@ class Dispatch {
     this.driverUserId,
     this.dispatchDate,
     this.deliveryDate,
+    this.driverAcceptedAt,
+    this.tripStartedAt,
     this.destinationAddress,
     this.deliveryLatitude,
     this.deliveryLongitude,
@@ -203,6 +208,8 @@ class Dispatch {
             : null,
         dispatchDate: j['dispatch_date'] as String?,
         deliveryDate: j['delivery_date'] as String?,
+        driverAcceptedAt: j['driver_accepted_at'] as String?,
+        tripStartedAt: j['trip_started_at'] as String?,
         destinationAddress: j['destination_address'] as String?,
         deliveryLatitude: (j['delivery_latitude'] as num?)?.toDouble(),
         deliveryLongitude: (j['delivery_longitude'] as num?)?.toDouble(),

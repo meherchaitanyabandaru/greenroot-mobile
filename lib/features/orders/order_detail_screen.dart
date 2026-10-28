@@ -168,8 +168,23 @@ class _OrderDetailBody extends StatelessWidget {
 
         if (isBuyer) ...[
           // ── BUYER VIEW ───────────────────────────────────────────────────
-          // No operational timeline — buyers don't care about loading steps.
-          // Just: delivery tracking (if a dispatch exists) → info → items.
+          // A short timeline (placed → accepted → prepared → on the way →
+          // delivered, each with its time), then delivery tracking → info → items.
+          _SectionCard(
+            title: 'Order Timeline',
+            child: Consumer(
+              builder: (context, ref, _) => OrderTimeline(
+                order: order,
+                role: OrderTimelineRole.buyer,
+                trip: LifecyclePresenter.activeDispatchForOrder(
+                  ref.watch(_orderDispatchesProvider(orderId)).valueOrNull ??
+                      const [],
+                  orderId,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           if (const {'LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED'}
               .contains(order.status)) ...[
             LoadingProofTile(order: order),
@@ -182,11 +197,18 @@ class _OrderDetailBody extends StatelessWidget {
           // Operational timeline (loading steps matter here).
           _SectionCard(
             title: 'Order Timeline',
-            child: OrderTimeline(
-              order: order,
-              role: OrderTimelineRole.seller,
-              onLoadingProof: () =>
-                  openLoadingProof(context, order.id, order.orderCode),
+            child: Consumer(
+              builder: (context, ref, _) => OrderTimeline(
+                order: order,
+                role: OrderTimelineRole.seller,
+                trip: LifecyclePresenter.activeDispatchForOrder(
+                  ref.watch(_orderDispatchesProvider(orderId)).valueOrNull ??
+                      const [],
+                  orderId,
+                ),
+                onLoadingProof: () =>
+                    openLoadingProof(context, order.id, order.orderCode),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.x2l),

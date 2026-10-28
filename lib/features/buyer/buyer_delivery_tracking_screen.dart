@@ -14,6 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utilities/step_time.dart';
 import '../../core/widgets/map_widgets.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
@@ -962,7 +963,7 @@ class _BuyerJourneyCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md, vertical: AppSpacing.sm,),
-              child: _BuyerTimeline(status: dispatch.status),
+              child: _BuyerTimeline(trip: dispatch),
             ),
             InkWell(
               onTap: onToggle,
@@ -1010,33 +1011,41 @@ class _BuyerStep {
 }
 
 class _BuyerTimeline extends StatelessWidget {
-  final String status;
-  const _BuyerTimeline({required this.status});
+  final Dispatch trip;
+  const _BuyerTimeline({required this.trip});
+  String get status => trip.status;
 
   List<_BuyerStep> _buildSteps() {
+    // In the order things happen: a trip exists only once the plants are loaded.
     final completedUpTo = switch (status) {
-      'PENDING' || 'PENDING_ACCEPTANCE' => 0,
-      'ACCEPTED' => 1,
-      'DISPATCHED' => 2,
-      'IN_TRANSIT' => 3,
+      'PENDING' || 'PENDING_ACCEPTANCE' => 2,
+      'ACCEPTED' || 'DISPATCHED' || 'IN_TRANSIT' => 3,
       'DELIVERED' => 5,
-      _ => 0,
+      _ => 2,
     };
     final activeStep = switch (status) {
-      'PENDING' || 'PENDING_ACCEPTANCE' => 1,
-      'ACCEPTED' => 2,
-      'DISPATCHED' => 3,
-      'IN_TRANSIT' => 4,
-      'DELIVERED' || 'CANCELLED' => 0,
-      _ => 1,
+      'PENDING' || 'PENDING_ACCEPTANCE' => 3,
+      'ACCEPTED' || 'DISPATCHED' || 'IN_TRANSIT' => 4,
+      _ => 0,
     };
+    String at(String? iso, String fallback, [String? detail]) {
+      final parts = [stepTime(iso), if (detail != null) detail]
+          .where((p) => p.isNotEmpty);
+      return parts.isEmpty ? fallback : parts.join(' · ');
+    }
 
     final defs = [
-      (1, 'Dispatch Created', 'Your order is being prepared for shipment'),
-      (2, 'Driver Assigned', 'A driver has been assigned to your delivery'),
-      (3, 'Plants Loaded', 'Your plants are loaded and ready to ship'),
-      (4, 'On the Way', 'Driver is en route to your delivery address'),
-      (5, 'Delivered', 'Your order has been successfully delivered'),
+      (1, 'Loading Started', at(trip.loadingStartedAt, 'The nursery started loading')),
+      (2, 'Plants Loaded', at(trip.loadingCompletedAt, 'Your plants are loaded')),
+      (3, 'Driver Assigned', completedUpTo >= 3
+          ? at(trip.driverAcceptedAt, 'A driver will bring your plants', trip.driverName)
+          : 'The nursery is finding a driver'),
+      (4, 'On the Way', completedUpTo >= 4 || activeStep == 4 && status != 'ACCEPTED'
+          ? at(trip.tripStartedAt ?? trip.dispatchDate, 'Your plants are on the way')
+          : 'The driver starts when they leave the nursery'),
+      (5, 'Delivered', status == 'DELIVERED'
+          ? at(trip.deliveryDate, 'Your plants were delivered')
+          : 'Check the plants, then give the driver your code'),
     ];
 
     return defs.map((d) {

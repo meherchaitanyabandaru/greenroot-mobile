@@ -22,6 +22,7 @@ import 'package:intl/intl.dart';
 import '../../features/orders/orders.dart';
 import '../../features/dispatches/dispatches.dart';
 import '../../features/quotations/quotations.dart';
+import '../utilities/step_time.dart';
 
 // ── Step rendering state ───────────────────────────────────────────────────────
 
@@ -52,10 +53,15 @@ enum OrderTimelineRole { buyer, seller }
 
 class OrderWorkflow {
   // Returns role-appropriate step list for the order timeline.
-  static List<WorkflowStep> stepsFor(Order order, OrderTimelineRole role) {
+  // [trip]: the order's active trip, for the delivery steps and their times.
+  static List<WorkflowStep> stepsFor(
+    Order order,
+    OrderTimelineRole role, {
+    Dispatch? trip,
+  }) {
     return role == OrderTimelineRole.buyer
-        ? _buyerSteps(order)
-        : _sellerSteps(order);
+        ? _buyerSteps(order, trip)
+        : _sellerSteps(order, trip);
   }
 
   // Returns which statuses allow cancel for each role.
@@ -66,7 +72,7 @@ class OrderWorkflow {
 
   // ── Buyer: 5 simple customer-facing steps ──────────────────────────────────
   // Hides all internal loading/operational states from the buyer.
-  static List<WorkflowStep> _buyerSteps(Order order) {
+  static List<WorkflowStep> _buyerSteps(Order order, Dispatch? trip) {
     final s = order.status;
     final cancelled = s == 'CANCELLED';
 
@@ -92,7 +98,9 @@ class OrderWorkflow {
       WorkflowStep(
         title: 'Accepted by Nursery',
         subtitle: accepted
-            ? 'Your order was confirmed'
+            ? (_fmt(order.confirmedAt).isNotEmpty
+                ? _fmt(order.confirmedAt)
+                : 'Your order was confirmed')
             : 'Awaiting nursery confirmation',
         state: s0(accepted, !accepted && !cancelled),
         icon: Icons.verified_user_outlined,
@@ -100,8 +108,12 @@ class OrderWorkflow {
       WorkflowStep(
         title: 'Being Prepared',
         subtitle: s == 'LOADING'
-            ? 'Items are being loaded'
-            : (preparing && s != 'LOADING' ? 'Items loaded and ready' : null),
+            ? [_fmt(order.loadingStartedAt), 'Plants are being loaded']
+                .where((p) => p.isNotEmpty).join(' · ')
+            : (preparing
+                ? [_fmt(order.loadingCompletedAt), 'Plants loaded']
+                    .where((p) => p.isNotEmpty).join(' · ')
+                : null),
         state: cancelled
             ? WorkflowStepState.pending
             : (preparing
@@ -111,9 +123,14 @@ class OrderWorkflow {
       ),
       WorkflowStep(
         title: 'On the Way',
-        subtitle: readyOrBeyond && !delivered
-            ? 'Your order is dispatched'
-            : null,
+        subtitle: trip?.tripStartedAt != null || trip?.dispatchDate != null
+            ? [stepTime(trip!.tripStartedAt ?? trip.dispatchDate), trip.driverName]
+                .whereType<String>().where((p) => p.isNotEmpty).join(' · ')
+            : (readyOrBeyond && !delivered
+                ? (trip?.driverAcceptedAt != null
+                    ? 'Driver assigned, leaving soon'
+                    : 'Waiting for the driver')
+                : null),
         state: cancelled
             ? WorkflowStepState.pending
             : (delivered
@@ -123,7 +140,11 @@ class OrderWorkflow {
       ),
       WorkflowStep(
         title: 'Delivered',
-        subtitle: delivered ? 'Order complete — thank you!' : null,
+        subtitle: delivered
+            ? (stepTime(trip?.deliveryDate).isNotEmpty
+                ? stepTime(trip?.deliveryDate)
+                : 'Order complete — thank you!')
+            : null,
         state: delivered ? WorkflowStepState.completed : WorkflowStepState.pending,
         icon: Icons.check_circle_rounded,
       ),
@@ -146,7 +167,7 @@ class OrderWorkflow {
   // ── Seller/Manager: 5 operational steps ────────────────────────────────────
   // Shows internal state labels that are meaningful for nursery operations.
   // Includes manager attribution and timestamps from API.
-  static List<WorkflowStep> _sellerSteps(Order order) {
+  static List<WorkflowStep> _sellerSteps(Order order, Dispatch? trip) {
     final s = order.status;
     final cancelled = s == 'CANCELLED';
 
@@ -158,13 +179,9 @@ class OrderWorkflow {
     final completed = !cancelled && s == 'COMPLETED';
     final partial = s == 'PARTIALLY_FULFILLED';
 
-    final byLine = _byLine(
-      order.assignedManagerName,
-      order.assignedManagerUserId,
-      'Manager',
-      // Unassigned: who confirmed isn't recorded (often a manager), so don't name a role.
-      'the nursery',
-    );
+    // Who confirmed or started loading is not recorded: naming the manager
+    // assigned *now* credited steps they never did (owner confirmed, then assigned).
+    const byLine = 'By the nursery';
 
     final steps = <WorkflowStep>[
       WorkflowStep(
@@ -202,11 +219,10 @@ class OrderWorkflow {
       WorkflowStep(
         title: partial ? 'Partially Loaded' : 'Loading Complete',
         subtitle: loadingDone
-            ? (partial
-                ? 'Some items had reduced quantities'
-                : (order.loadingCompletedAt != null
-                    ? _fmt(order.loadingCompletedAt)
-                    : null))
+            ? [
+                _fmt(order.loadingCompletedAt),
+                if (partial) 'Some items had reduced quantities',
+              ].where((p) => p.isNotEmpty).join(' · ')
             : (s == 'LOADING' ? 'Loading in progress…' : null),
         state: cancelled
             ? WorkflowStepState.pending
@@ -216,14 +232,17 @@ class OrderWorkflow {
         icon: Icons.done_all_rounded,
         hasLoadingProof: loadingDone,
       ),
-      WorkflowStep(
-        title: 'Delivered',
-        subtitle: loadingDone && !completed
-            ? 'Create dispatch from order actions'
-            : (completed ? 'Order fulfilled' : null),
-        state: completed ? WorkflowStepState.completed : WorkflowStepState.pending,
-        icon: Icons.check_circle_rounded,
-      ),
+      if (trip == null || trip.status == 'CANCELLED')
+        WorkflowStep(
+          title: 'Delivered',
+          subtitle: loadingDone && !completed
+              ? 'Create a trip from order actions'
+              : (completed ? 'Order fulfilled' : null),
+          state: completed ? WorkflowStepState.completed : WorkflowStepState.pending,
+          icon: Icons.check_circle_rounded,
+        )
+      else
+        ..._tripSteps(trip),
     ];
 
     if (cancelled) {
@@ -246,18 +265,54 @@ class OrderWorkflow {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
-    return DateFormat('dd MMM, h:mm a').format(dt.toLocal());
+    return DateFormat('EEE, d MMM · h:mm a').format(dt.toLocal());
   }
 
-  static String _byLine(
-    String? name,
-    int? userId,
-    String designation,
-    String fallback,
-  ) {
-    if (name != null && name.isNotEmpty) return 'By $name ($designation)';
-    if (userId != null) return 'By $designation';
-    return 'By $fallback';
+  // Driver Assigned → On the Way → Delivered, each with when it happened.
+  static List<WorkflowStep> _tripSteps(Dispatch t) {
+    final s = t.status;
+    final assigned = {'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED'}.contains(s);
+    final onWay = {'DISPATCHED', 'IN_TRANSIT', 'DELIVERED'}.contains(s);
+    final delivered = s == 'DELIVERED';
+    String join(String time, String? detail) =>
+        [time, if (detail != null && detail.isNotEmpty) detail]
+            .where((p) => p.isNotEmpty)
+            .join(' · ');
+    WorkflowStepState state(bool done, bool current) => done
+        ? WorkflowStepState.completed
+        : (current ? WorkflowStepState.current : WorkflowStepState.pending);
+    final vehicle = t.vehicleNumber ?? t.outsideVehicleNumber;
+    return [
+      WorkflowStep(
+        title: 'Trip Created',
+        subtitle: join(stepTime(t.createdAt),
+            t.isOutsideTransport ? 'Outside lorry' : 'Trip QR ready for the driver',),
+        state: WorkflowStepState.completed,
+        icon: Icons.qr_code_2_rounded,
+      ),
+      WorkflowStep(
+        title: 'Driver Assigned',
+        subtitle: assigned
+            ? join(stepTime(t.driverAcceptedAt), t.driverName ?? t.outsideDriverName)
+            : 'Waiting for a driver to scan the trip QR',
+        state: state(assigned, !assigned),
+        icon: Icons.person_outline_rounded,
+      ),
+      WorkflowStep(
+        title: 'On the Way',
+        subtitle: onWay
+            ? join(stepTime(t.tripStartedAt ?? t.dispatchDate), vehicle)
+            : null,
+        state: state(delivered, onWay && !delivered),
+        icon: Icons.local_shipping_rounded,
+      ),
+      WorkflowStep(
+        title: 'Delivered',
+        subtitle: delivered ? stepTime(t.deliveryDate) : null,
+        state: state(delivered, false),
+        icon: Icons.check_circle_rounded,
+      ),
+    ];
   }
 }
 
@@ -545,11 +600,11 @@ class QuotationWorkflow {
     if (iso == null) return null;
     final dt = DateTime.tryParse(iso);
     if (dt == null) return null;
-    return DateFormat('dd MMM, h:mm a').format(dt.toLocal());
+    return DateFormat('EEE, d MMM · h:mm a').format(dt.toLocal());
   }
 
   static String? _fmtDt(DateTime? dt) {
     if (dt == null) return null;
-    return DateFormat('dd MMM, h:mm a').format(dt.toLocal());
+    return DateFormat('EEE, d MMM · h:mm a').format(dt.toLocal());
   }
 }

@@ -9,7 +9,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/errors/app_error.dart';
@@ -27,6 +26,7 @@ import 'trip_tracker.dart';
 import '../dispatches/delivery_confirmation.dart';
 import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/app_loader.dart';
+import '../../core/utilities/step_time.dart';
 
 part 'driver_trip_map_actions.dart';
 part 'driver_trip_map_journey.dart';
@@ -543,12 +543,7 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
                 children: [
                   // Order Journey timeline
                   _OrderJourneyCard(
-                    status: d.status,
-                    orderStatus: d.orderStatus,
-                    createdAt: d.createdAt,
-                    updatedAt: d.updatedAt,
-                    loadingStartedAt: d.loadingStartedAt,
-                    loadingCompletedAt: d.loadingCompletedAt,
+                    trip: d,
                     expanded: _journeyExpanded,
                     onToggle: () =>
                         setState(() => _journeyExpanded = !_journeyExpanded),
