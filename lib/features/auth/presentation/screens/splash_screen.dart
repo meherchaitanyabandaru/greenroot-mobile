@@ -133,23 +133,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               children: [
                 // Logo mark
                 Container(
-                  width: 88,
-                  height: 88,
+                  width: 96,
+                  height: 96,
                   decoration: BoxDecoration(
-                    color: AppColors.accentMain,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'GR',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.forest950,
-                        fontFamily: 'Inter',
-                        letterSpacing: -1,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 20),
