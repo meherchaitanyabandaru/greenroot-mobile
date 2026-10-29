@@ -54,11 +54,17 @@ class PushConfig {
 }
 
 /// The device side of push (Firebase), behind an interface for tests.
-/// A push that arrived while the app was open.
+/// A push notification received by the app.
 class PushMessage {
   final String? title;
   final String? body;
-  const PushMessage({this.title, this.body});
+  final Map<String, dynamic> data;
+
+  const PushMessage({
+    this.title,
+    this.body,
+    this.data = const {},
+  });
 }
 
 abstract class PushPlatform {
@@ -71,11 +77,25 @@ abstract class PushPlatform {
   /// Pushes that arrive while the app is in the foreground (the system shows
   /// nothing for these on Android).
   Stream<PushMessage> get onForegroundMessage;
+
+  /// Pushes tapped in the system tray while the app was in the background.
+  Stream<PushMessage> get onMessageOpenedApp;
+
+  /// The push tapped to launch the app from a terminated (killed) state.
+  Future<PushMessage?> getInitialMessage();
 }
 
 class FirebasePushPlatform implements PushPlatform {
   FirebasePushPlatform(this.config);
   final PushConfig config;
+
+  static PushMessage _fromRemoteMessage(RemoteMessage m) => PushMessage(
+        title: m.notification?.title ?? m.data['title']?.toString(),
+        body: m.notification?.body ??
+            m.data['body']?.toString() ??
+            m.data['message']?.toString(),
+        data: m.data,
+      );
 
   @override
   Future<bool> start() async {
@@ -132,10 +152,17 @@ class FirebasePushPlatform implements PushPlatform {
 
   @override
   Stream<PushMessage> get onForegroundMessage =>
-      FirebaseMessaging.onMessage.map((m) => PushMessage(
-            title: m.notification?.title ?? m.data['title'],
-            body: m.notification?.body ?? m.data['body'] ?? m.data['message'],
-          ),);
+      FirebaseMessaging.onMessage.map(_fromRemoteMessage);
+
+  @override
+  Stream<PushMessage> get onMessageOpenedApp =>
+      FirebaseMessaging.onMessageOpenedApp.map(_fromRemoteMessage);
+
+  @override
+  Future<PushMessage?> getInitialMessage() async {
+    final m = await FirebaseMessaging.instance.getInitialMessage();
+    return m != null ? _fromRemoteMessage(m) : null;
+  }
 }
 
 /// The API side: POST/DELETE /notifications/devices.
@@ -187,12 +214,39 @@ class PushService {
   StreamSubscription<String>? _refresh;
 
   StreamSubscription<PushMessage>? _foreground;
+  StreamSubscription<PushMessage>? _openedApp;
 
   /// Called for each push that arrives while the app is open; the app shows
   /// it as an in-app banner (with a haptic) and refreshes its lists.
   void Function(PushMessage message)? onForeground;
 
+  /// Called when a push notification is tapped in system tray (background or cold start).
+  void Function(PushMessage message)? onNotificationTap;
+
+  PushMessage? _initialMessage;
+  PushMessage? get initialMessage => _initialMessage;
+  PushMessage? takeInitialMessage() {
+    final m = _initialMessage;
+    _initialMessage = null;
+    return m;
+  }
+
   int? get deviceId => _deviceId;
+
+  /// Checks if the app was launched by tapping a push notification from terminated state.
+  Future<void> checkInitialMessage() async {
+    try {
+      _available ??= await _platform.start();
+      if (_available != true) return;
+      final initial = await _platform.getInitialMessage();
+      if (initial != null) {
+        _initialMessage = initial;
+        onNotificationTap?.call(initial);
+      }
+    } catch (e) {
+      AppLogger.w('push: checkInitialMessage failed: $e');
+    }
+  }
 
   Future<void> register() async {
     try {
@@ -214,6 +268,9 @@ class PushService {
       }
       _foreground ??= _platform.onForegroundMessage
           .listen((m) => onForeground?.call(m));
+      _openedApp ??= _platform.onMessageOpenedApp
+          .listen((m) => onNotificationTap?.call(m));
+      await checkInitialMessage();
       _refresh ??= _platform.onTokenRefresh.listen((t) async {
         try {
           _deviceId = await _registry.register(t);
@@ -236,6 +293,9 @@ class PushService {
     _refresh = null;
     await _foreground?.cancel();
     _foreground = null;
+    await _openedApp?.cancel();
+    _openedApp = null;
+    _initialMessage = null;
     if (_available != true) return;
     try {
       if (id != null) await _registry.unregister(id);

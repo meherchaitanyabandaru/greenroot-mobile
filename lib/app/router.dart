@@ -68,6 +68,7 @@ import '../features/buyer/buyer_delivery_tracking_screen.dart';
 import '../features/buyer/buyer_nursery_connections_screen.dart';
 import '../features/ratings/rating_screen.dart';
 import '../features/reports/reports_screen.dart';
+import '../features/market/local_market_screen.dart';
 import 'main_shell.dart';
 
 UserCapabilities _capabilities(BuildContext context) {
@@ -359,6 +360,33 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationListScreen(),),
+
+    // ── Local Market & Chats ──────────────────────────────────────────────────
+    GoRoute(
+      path: '/market',
+      redirect: _driverGuard,
+      builder: (_, __) => const LocalMarketScreen(),
+    ),
+    GoRoute(
+      path: '/market/chats',
+      redirect: _driverGuard,
+      builder: (_, __) => const EnquiriesScreen(),
+    ),
+    GoRoute(
+      path: '/market/chats/:id',
+      redirect: _driverGuard,
+      builder: (_, state) => EnquiryDetailScreen(
+        enquiryId: int.parse(state.pathParameters['id']!),
+        title: state.uri.queryParameters['title'] ?? 'Market Chat',
+      ),
+    ),
+    GoRoute(
+      path: '/market/ads/:id',
+      redirect: _driverGuard,
+      builder: (_, state) => MarketAdDetailByIdScreen(
+        adId: int.parse(state.pathParameters['id']!),
+      ),
+    ),
 
     // ── Universal search ─────────────────────────────────────────────────────
     GoRoute(

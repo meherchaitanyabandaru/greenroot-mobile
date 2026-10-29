@@ -64,8 +64,8 @@ class _SavedAdsScreen extends ConsumerWidget {
 // 8. ENQUIRIES SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _EnquiriesScreen extends ConsumerWidget {
-  const _EnquiriesScreen();
+class EnquiriesScreen extends ConsumerWidget {
+  const EnquiriesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,6 +99,8 @@ class _EnquiriesScreen extends ConsumerWidget {
     );
   }
 }
+
+typedef _EnquiriesScreen = EnquiriesScreen;
 
 class _EnquiryList extends ConsumerWidget {
   final ProviderBase<AsyncValue<List<MarketEnquiry>>> provider;
@@ -289,17 +291,23 @@ class _AdChatsScreen extends StatelessWidget {
 /// One chat between two nurseries about one ad, opened by its enquiry id.
 /// Both sides talk, bargain with offers (accept / counter / decline), and the
 /// chat turns read-only once it ends or the ad stops being live.
-class _EnquiryDetailScreen extends ConsumerStatefulWidget {
+class EnquiryDetailScreen extends ConsumerStatefulWidget {
   final int enquiryId;
   final String title;
-  const _EnquiryDetailScreen({required this.enquiryId, required this.title});
+  const EnquiryDetailScreen({
+    super.key,
+    required this.enquiryId,
+    this.title = 'Market Chat',
+  });
 
   @override
-  ConsumerState<_EnquiryDetailScreen> createState() =>
+  ConsumerState<EnquiryDetailScreen> createState() =>
       _EnquiryDetailScreenState();
 }
 
-class _EnquiryDetailScreenState extends ConsumerState<_EnquiryDetailScreen> {
+typedef _EnquiryDetailScreen = EnquiryDetailScreen;
+
+class _EnquiryDetailScreenState extends ConsumerState<EnquiryDetailScreen> {
   final _replyCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _busy = false;

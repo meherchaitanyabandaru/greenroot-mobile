@@ -630,3 +630,29 @@ class _QuickActionTile extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // 2. BROWSE SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
+
+class MarketAdDetailByIdScreen extends ConsumerWidget {
+  final int adId;
+  const MarketAdDetailByIdScreen({super.key, required this.adId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adAsync = ref.watch(adDetailProvider(adId));
+    return adAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: _mkBg,
+        body: Center(child: AppLoader()),
+      ),
+      error: (e, _) => Scaffold(
+        backgroundColor: _mkBg,
+        appBar: AppBar(
+          title: const Text('Market Ad'),
+          backgroundColor: _mkCard,
+          foregroundColor: _mkTextPrimary,
+        ),
+        body: Center(child: Text(e.toString())),
+      ),
+      data: (ad) => _AdDetailScreen(ad: ad),
+    );
+  }
+}

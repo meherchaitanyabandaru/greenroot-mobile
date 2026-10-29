@@ -7,6 +7,7 @@ import '../core/mango/mango_guides.dart';
 import '../core/mango/mango_layer.dart';
 import '../core/update/update_gate.dart';
 import 'router.dart';
+import 'pending_deep_link.dart';
 import '../core/mango/mango_popups.dart';
 import '../core/feedback/app_haptics.dart';
 import '../core/push/push_service.dart';
@@ -29,6 +30,27 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     PushService.instance.onForeground = _showForegroundPush;
+    PushService.instance.onNotificationTap = _handlePushTap;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushService.instance.checkInitialMessage();
+    });
+  }
+
+  void _handlePushTap(PushMessage m) {
+    final session = ref.read(sessionProvider);
+    final route = routeForPushMessage(m, session.capabilities);
+    if (route == null) {
+      if (session.isAuthenticated) {
+        appRouter.push('/notifications');
+      }
+      return;
+    }
+
+    if (session.isAuthenticated) {
+      appRouter.push(route);
+    } else {
+      PendingDeepLink.remember(Uri.parse(route));
+    }
   }
 
   /// A push while the app is open: Android shows nothing on its own, so show
@@ -41,13 +63,23 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
     if (text.isEmpty) return;
     AppHaptics.success();
     ref.read(notificationListProvider.notifier).load();
+
+    final session = ref.read(sessionProvider);
+    final route = routeForPushMessage(m, session.capabilities);
+
     appMessengerKey.currentState?.showSnackBar(SnackBar(
       content: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
       behavior: SnackBarBehavior.floating,
       duration: const Duration(seconds: 4),
       action: SnackBarAction(
         label: 'View',
-        onPressed: () => appRouter.push('/notifications'),
+        onPressed: () {
+          if (route != null) {
+            appRouter.push(route);
+          } else {
+            appRouter.push('/notifications');
+          }
+        },
       ),
     ),);
   }

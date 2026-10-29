@@ -6,6 +6,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
+import '../../core/push/push_service.dart';
 import '../auth/presentation/providers/session_provider.dart';
 
 // ── Model ─────────────────────────────────────────────────────────────────────
@@ -22,7 +23,7 @@ class AppNotification {
   final String createdAt;
 
   /// The record this notification is about ("quotation", "order",
-  /// "dispatch"), from the API's data; null when it is not about one.
+  /// "dispatch", "enquiry"), from the API's data; null when it is not about one.
   final String? entity;
   final int? entityId;
 
@@ -48,9 +49,24 @@ class AppNotification {
       final decoded = raw is String ? jsonDecode(raw) : raw;
       if (decoded is Map) data = decoded.cast<String, dynamic>();
     } catch (_) {}
+    final rawId = data['id'] ??
+        data['entity_id'] ??
+        data['enquiry_id'] ??
+        data['order_id'] ??
+        data['dispatch_id'] ??
+        data['quotation_id'] ??
+        data['trip_id'];
+    final entityId = rawId is num
+        ? rawId.toInt()
+        : (rawId is String ? int.tryParse(rawId) : null);
+    final entity = data['entity'] as String? ??
+        (data['enquiry_id'] != null ? 'enquiry' : null) ??
+        (data['order_id'] != null ? 'order' : null) ??
+        (data['dispatch_id'] != null ? 'dispatch' : null) ??
+        (data['quotation_id'] != null ? 'quotation' : null);
     return AppNotification(
-        entity: data['entity'] as String?,
-        entityId: (data['id'] as num?)?.toInt(),
+        entity: entity,
+        entityId: entityId,
         id: (j['id'] as num).toInt(),
         notificationCode: j['notification_code'] as String,
         type: j['notification_type'] as String,
@@ -81,22 +97,61 @@ class AppNotification {
       );
 }
 
+/// Resolves the in-app route for any entity link (from in-app notifications or push payloads).
+String? routeForEntity({
+  required String? entity,
+  dynamic entityId,
+  required UserCapabilities caps,
+}) {
+  final id = entityId?.toString();
+  return switch (entity) {
+    'enquiry' => id != null && id.isNotEmpty ? '/market/chats/$id' : '/market/chats',
+    'quotation' => id != null && id.isNotEmpty ? '/quotations/$id' : '/quotations',
+    'order' => id != null && id.isNotEmpty ? '/orders/$id' : '/orders',
+    'dispatch' || 'trip' => id != null && id.isNotEmpty
+        ? (caps.isDriverOnly
+            ? '/driver/trip/$id'
+            : caps.canSell
+                ? '/dispatches/$id'
+                : '/dispatches/$id/buyer-track')
+        : (caps.isDriverOnly ? '/driver/trips' : '/dispatches'),
+    'subscription' => '/subscription',
+    'ad' || 'market' => id != null && id.isNotEmpty ? '/market/ads/$id' : '/market',
+    'nursery' => id != null && id.isNotEmpty ? '/nurseries/$id' : '/nurseries',
+    _ => null,
+  };
+}
+
 /// Where tapping a notification goes, for this person: the driver's trip map,
 /// the seller's dispatch page or the customer's delivery tracking.
 String? notificationRoute(AppNotification n, UserCapabilities caps) {
-  final id = n.entityId;
-  if (id == null) return null;
-  return switch (n.entity) {
-    'quotation' => '/quotations/$id',
-    'order' => '/orders/$id',
-    'dispatch' => caps.isDriverOnly
-        ? '/driver/trip/$id'
-        : caps.canSell
-            ? '/dispatches/$id'
-            : '/dispatches/$id/buyer-track',
-    'subscription' => '/subscription', // e.g. "your free trial is ending"
-    _ => null,
-  };
+  return routeForEntity(
+    entity: n.entity,
+    entityId: n.entityId,
+    caps: caps,
+  );
+}
+
+/// Where tapping an FCM push notification goes based on its data payload.
+String? routeForPushMessage(PushMessage m, UserCapabilities caps) {
+  final data = m.data;
+  final entity = data['entity']?.toString() ??
+      (data['enquiry_id'] != null ? 'enquiry' : null) ??
+      (data['order_id'] != null ? 'order' : null) ??
+      (data['dispatch_id'] != null ? 'dispatch' : null) ??
+      (data['quotation_id'] != null ? 'quotation' : null);
+  final id = data['id'] ??
+      data['entity_id'] ??
+      data['enquiry_id'] ??
+      data['order_id'] ??
+      data['dispatch_id'] ??
+      data['quotation_id'] ??
+      data['trip_id'];
+  return routeForEntity(
+    entity: entity,
+    entityId: id,
+    caps: caps,
+  );
 }
 
 // ── Repository ────────────────────────────────────────────────────────────────
