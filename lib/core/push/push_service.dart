@@ -133,8 +133,8 @@ class FirebasePushPlatform implements PushPlatform {
   @override
   Stream<PushMessage> get onForegroundMessage =>
       FirebaseMessaging.onMessage.map((m) => PushMessage(
-            title: m.notification?.title,
-            body: m.notification?.body,
+            title: m.notification?.title ?? m.data['title'],
+            body: m.notification?.body ?? m.data['body'] ?? m.data['message'],
           ),);
 }
 
