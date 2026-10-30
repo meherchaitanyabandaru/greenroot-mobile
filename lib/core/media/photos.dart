@@ -2,7 +2,11 @@
 // - opening the camera/gallery never crashes; the user is told why it failed;
 // - only photos are accepted (checked from the file itself, so a video or
 //   document renamed .jpg is refused);
-// - big photos are shrunk before upload, small ones go as they are.
+// - each photo follows its category's image policy (image_policy.dart):
+//   turned upright, too-small photos refused with a retake hint, resized to
+//   the policy's longest side and compressed once at its quality. A photo
+//   that already meets the policy (upright, no EXIF, small enough) goes as it
+//   is, so nothing is compressed twice. The API checks every upload again.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,15 +14,10 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
 import '../theme/app_colors.dart';
-
-/// Upload limit for photos (the API refuses more).
-const maxPhotoUploadBytes = 10 * 1024 * 1024;
+import 'image_policy.dart';
 
 /// Anything this big is not a phone photo; refused before reading it.
 const _maxPickedBytes = 40 * 1024 * 1024;
-
-/// Photos up to this size are uploaded untouched (already compact).
-const _keepAsIsBytes = 1024 * 1024;
 
 class PhotoRejected implements Exception {
   final String message;
@@ -62,22 +61,21 @@ void _say(BuildContext context, String message) {
 }
 
 /// Opens the camera or gallery. Never throws: on failure it tells the user why
-/// and returns null. [maxSide]/[quality] ask the phone to shrink the photo
-/// natively — only for screens that always want a small image (selfie, ads).
+/// and returns null. With [policy] the phone scales the photo to its longest
+/// side natively (cheap, and it turns HEIC into JPEG) without lowering the
+/// quality: preparePhoto compresses once.
 Future<XFile?> pickPhoto(
   BuildContext context,
   ImageSource source, {
   CameraDevice camera = CameraDevice.rear,
-  double? maxSide,
-  int? quality,
+  ImagePolicy? policy,
 }) async {
   try {
     return await ImagePicker().pickImage(
       source: source,
       preferredCameraDevice: camera,
-      maxWidth: maxSide,
-      maxHeight: maxSide,
-      imageQuality: quality,
+      maxWidth: policy?.maxSide.toDouble(),
+      maxHeight: policy?.maxSide.toDouble(),
     );
   } on PlatformException catch (e) {
     if (e.code != 'already_active') {
@@ -94,15 +92,13 @@ Future<XFile?> pickPhoto(
 Future<List<XFile>> pickPhotos(
   BuildContext context, {
   required int limit,
-  double? maxSide,
-  int? quality,
+  ImagePolicy? policy,
 }) async {
   try {
     final files = await ImagePicker().pickMultiImage(
       limit: limit < 2 ? null : limit,
-      maxWidth: maxSide,
-      maxHeight: maxSide,
-      imageQuality: quality,
+      maxWidth: policy?.maxSide.toDouble(),
+      maxHeight: policy?.maxSide.toDouble(),
     );
     return files.take(limit).toList();
   } catch (e) {
@@ -146,72 +142,135 @@ bool _looksLikeVideo(Uint8List b) =>
     String.fromCharCodes(b.sublist(4, 8)) == 'ftyp' &&
     photoType(b) == null;
 
-/// Checks [file] is a photo and makes it upload-ready. Photos up to 1 MB go
-/// unchanged; bigger ones are turned upright, scaled so the longest side is at
-/// most [maxSide] px and saved as JPEG 85 (PNG with transparency stays PNG).
-/// On a phone screen the result looks the same. Throws [PhotoRejected].
-Future<PreparedPhoto> preparePhoto(XFile file, {int maxSide = 2048}) async {
+/// Checks [file] is a photo and makes it meet [policy] (see the top of this
+/// file). [watermark] draws "GreenRoot" in the corner (market ads). Throws
+/// [PhotoRejected] with a message saying what to do (retake, other photo).
+Future<PreparedPhoto> preparePhoto(XFile file, ImagePolicy policy,
+    {bool watermark = false,}) async {
   if (await file.length() > _maxPickedBytes) {
     throw const PhotoRejected('This file is too large. Please choose a photo.');
   }
   final original = await file.readAsBytes();
-  final type = photoType(original);
-  if (type == null) {
+  if (photoType(original) == null) {
     throw PhotoRejected(
       _looksLikeVideo(original)
           ? "Videos can't be uploaded. Please choose a photo."
           : 'Only photos can be uploaded (JPG, PNG, WebP or HEIC).',
     );
   }
-  if (original.length <= _keepAsIsBytes) {
-    return PreparedPhoto(original, type.mime, type.ext);
+  // Decoding a camera photo takes a moment: keep it off the UI thread.
+  final r = await compute(_prepare, (
+    bytes: original,
+    maxSide: policy.maxSide,
+    minSide: policy.minSide,
+    quality: policy.quality,
+    maxBytes: policy.maxBytes,
+    allowsPng: policy.allowsPng,
+    compress: policy.compressionEnabled,
+    watermark: watermark,
+  ),);
+  switch (r.problem) {
+    case _Problem.none:
+      return PreparedPhoto(r.bytes!, r.mime!, r.ext!);
+    case _Problem.unreadable:
+      throw const PhotoRejected(
+          "This photo can't be read. Take it again with the camera, or choose a JPG or PNG photo.",);
+    case _Problem.tooSmall:
+      throw PhotoRejected(
+          'This photo is too small to read (at least ${policy.minSide} pixels on its short side). '
+          'Take it again closer, in good light.',);
+    case _Problem.tooLarge:
+      throw PhotoRejected(
+          'This photo is still too large after compressing (max ${policy.maxBytes ~/ 1024} KB). '
+          'Take it again or choose another one.',);
   }
-
-  final shrunk = await compute(_shrink, (original, maxSide));
-  if (shrunk != null && shrunk.bytes.length < original.length) {
-    return PreparedPhoto(shrunk.bytes, shrunk.mime, shrunk.ext);
-  }
-  // Undecodable here (e.g. HEIC) or no smaller: send as is if allowed.
-  if (original.length > maxPhotoUploadBytes) {
-    throw const PhotoRejected(
-      'This photo is too large (max 10 MB). Please choose a smaller one.',
-    );
-  }
-  return PreparedPhoto(original, type.mime, type.ext);
 }
 
-typedef _Shrunk = ({Uint8List bytes, String mime, String ext});
+enum _Problem { none, unreadable, tooSmall, tooLarge }
 
-_Shrunk? _shrink((Uint8List, int) args) {
-  final (bytes, maxSide) = args;
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null) return null;
-  var image =
-      img.bakeOrientation(decoded); // camera photos are often stored sideways
+typedef _Job = ({
+  Uint8List bytes,
+  int maxSide,
+  int minSide,
+  int quality,
+  int maxBytes,
+  bool allowsPng,
+  bool compress,
+  bool watermark,
+});
+
+typedef _Result = ({_Problem problem, Uint8List? bytes, String? mime, String? ext});
+
+const _jpegFloor = 50; // lowest quality tried to fit max bytes (the API's floor)
+
+_Result _prepare(_Job j) {
+  final decoded = img.decodeImage(j.bytes);
+  if (decoded == null) {
+    // e.g. HEIC the phone did not convert: the API could not read it either.
+    return (problem: _Problem.unreadable, bytes: null, mime: null, ext: null);
+  }
+  final sideways = (decoded.exif.imageIfd.orientation ?? 1) != 1;
+  var image = sideways ? img.bakeOrientation(decoded) : decoded;
   final longest = image.width > image.height ? image.width : image.height;
-  if (longest > maxSide) {
+  final shortest = image.width < image.height ? image.width : image.height;
+  if (shortest < j.minSide) {
+    return (problem: _Problem.tooSmall, bytes: null, mime: null, ext: null);
+  }
+  final type = photoType(j.bytes)!;
+  final isPng = type.mime == 'image/png';
+  final formatOk = type.mime == 'image/jpeg' || (isPng && j.allowsPng);
+
+  // Already meets the policy: send it as it is (no second compression).
+  // A photo with EXIF is re-encoded so its GPS and camera data are dropped.
+  if (!sideways &&
+      longest <= j.maxSide &&
+      formatOk &&
+      j.bytes.length <= j.maxBytes &&
+      !j.watermark &&
+      decoded.exif.isEmpty) {
+    return (problem: _Problem.none, bytes: j.bytes, mime: type.mime, ext: type.ext);
+  }
+
+  if (longest > j.maxSide) {
     image = image.width >= image.height
-        ? img.copyResize(
-            image,
-            width: maxSide,
-            interpolation: img.Interpolation.average,
-          )
-        : img.copyResize(
-            image,
-            height: maxSide,
-            interpolation: img.Interpolation.average,
-          );
+        ? img.copyResize(image, width: j.maxSide, interpolation: img.Interpolation.average)
+        : img.copyResize(image, height: j.maxSide, interpolation: img.Interpolation.average);
   }
-  if (image.hasAlpha && photoType(bytes)?.mime == 'image/png') {
-    return (
-      bytes: Uint8List.fromList(img.encodePng(image, level: 6)),
-      mime: 'image/png',
-      ext: '.png'
-    );
+  image.exif = img.ExifData(); // no location or camera data in uploads
+  if (j.watermark) _drawWatermark(image);
+
+  // Transparency (logos) stays PNG where the policy allows PNG.
+  if (isPng && j.allowsPng && image.hasAlpha) {
+    final png = Uint8List.fromList(img.encodePng(image, level: 6));
+    return png.length <= j.maxBytes
+        ? (problem: _Problem.none, bytes: png, mime: 'image/png', ext: '.png')
+        : (problem: _Problem.tooLarge, bytes: null, mime: null, ext: null);
   }
-  return (
-    bytes: Uint8List.fromList(img.encodeJpg(image, quality: 85)),
-    mime: 'image/jpeg',
-    ext: '.jpg'
-  );
+  // One JPEG encode at the policy's quality; lower only if it must fit (and
+  // only when compression is on: off keeps near-original quality).
+  var q = j.compress ? j.quality : 95;
+  while (true) {
+    final jpg = Uint8List.fromList(img.encodeJpg(image, quality: q));
+    if (jpg.length <= j.maxBytes) {
+      return (problem: _Problem.none, bytes: jpg, mime: 'image/jpeg', ext: '.jpg');
+    }
+    if (!j.compress || q - 10 < _jpegFloor) {
+      return (problem: _Problem.tooLarge, bytes: null, mime: null, ext: null);
+    }
+    q -= 10;
+  }
+}
+
+/// "GreenRoot" at the bottom-right with a soft shadow (market ad photos).
+void _drawWatermark(img.Image src) {
+  const watermark = 'GreenRoot';
+  final font = img.arial24;
+  final textW = watermark.codeUnits
+      .fold<int>(0, (w, c) => w + (font.characters[c]?.xAdvance ?? 0));
+  final x = src.width - textW - 14;
+  final y = src.height - font.lineHeight - 14;
+  img.drawString(src, watermark,
+      font: font, x: x + 1, y: y + 1, color: img.ColorRgba8(0, 0, 0, 110),);
+  img.drawString(src, watermark,
+      font: font, x: x, y: y, color: img.ColorRgba8(255, 255, 255, 200),);
 }

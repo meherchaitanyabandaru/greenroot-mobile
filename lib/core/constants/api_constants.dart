@@ -95,8 +95,6 @@ abstract class ApiConstants {
       '$v1/dispatches/$id/tracking/latest';
 
   // Vehicles
-  static const String vehicles = '$v1/vehicles';
-  static String vehicleById(int id) => '$v1/vehicles/$id';
   static String vehicleTracking(int id) => '$v1/vehicles/$id/tracking';
   static String vehicleTrackingLatest(int id) =>
       '$v1/vehicles/$id/tracking/latest';
@@ -104,6 +102,8 @@ abstract class ApiConstants {
   // Drivers
   static const String drivers = '$v1/drivers';
   static const String driversMe = '$v1/drivers/me';
+  static const String driverVehicles = '$v1/drivers/me/vehicles';
+  static String driverVehicle(int linkId) => '$v1/drivers/me/vehicles/$linkId';
   static String driverById(int id) => '$v1/drivers/$id';
   static String driverLocation(int id) => '$v1/drivers/$id/location';
   static String driverTracking(int id) => '$v1/drivers/$id/tracking';
@@ -133,6 +133,11 @@ abstract class ApiConstants {
   static String quotationById(int id) => '$v1/quotations/$id';
   static String quotationCustomer(int id) => '$v1/quotations/$id/customer';
   static String quotationSend(int id) => '$v1/quotations/$id/send';
+  static const String quotationRequests = '$v1/quotations/requests';
+  static String quotationPrice(int id) => '$v1/quotations/$id/price';
+  static String quotationDecline(int id) => '$v1/quotations/$id/decline';
+  static String quotationCancelRequest(int id) =>
+      '$v1/quotations/$id/cancel-request';
   static String quotationApprove(int id) => '$v1/quotations/$id/approve';
   static String quotationRecall(int id) => '$v1/quotations/$id/recall';
   static String quotationConvert(int id) =>
@@ -186,6 +191,9 @@ abstract class ApiConstants {
 
   // Storage
   static const String storagePresign = '$v1/storage/presign';
+  static const String storageImages = '$v1/storage/images';
+  static const String consentTemplates = '$v1/consents/templates';
+  static const String imagePolicies = '$v1/image-policies';
 
   // Local Market
   static const String marketAds = '$v1/market/ads';

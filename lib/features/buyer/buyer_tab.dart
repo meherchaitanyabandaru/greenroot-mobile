@@ -166,8 +166,20 @@ class _BuyerTabState extends ConsumerState<BuyerTab>
           _DeliveriesTab(),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => requestQuotation(context, ref),
+        tooltip: 'Request a quotation',
+        icon: const Icon(Icons.request_quote_outlined),
+        label: const Text('Ask prices'), // short: fits 360dp at large text
+      ),
     );
   }
+}
+
+/// Opens the request form; the list shows the new request on return.
+Future<void> requestQuotation(BuildContext context, WidgetRef ref) async {
+  await context.push('/quotations/request');
+  ref.read(_buyerQuotationProvider.notifier).load();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -196,7 +208,9 @@ class _OffersTab extends ConsumerWidget {
       return EmptyState(
         icon: Icons.request_quote_outlined,
         title: 'No quotations yet',
-        subtitle: 'When a nursery sends you a quotation, it will appear here.',
+        subtitle: 'Ask a nursery for prices on the plants you need, or wait for a nursery to send you a quotation.',
+        actionLabel: 'Ask prices',
+        onAction: () => requestQuotation(context, ref),
         onRefresh: () => ref.read(_buyerQuotationProvider.notifier).load(),
       );
     }
@@ -241,16 +255,15 @@ class _QuotationCardState extends ConsumerState<_QuotationCard> {
       widget.quotation.status == 'CUSTOMER_SENT' && !widget.quotation.isExpired;
 
   Future<void> _accept() async {
-    if (!await confirmAcceptQuotation(context, widget.quotation) || !mounted) {
-      return;
-    }
+    final consent = await confirmAcceptQuotation(context, ref, widget.quotation);
+    if (consent == null || !mounted) return;
     final hasDeliveryAddress = await pickDeliveryAddress(context, ref, widget.quotation);
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _acting = true);
     try {
       final updated = await ref
           .read(quotationRepositoryProvider)
-          .acceptQuotation(widget.quotation.id);
+          .acceptQuotation(widget.quotation.id, consent: consent);
       ref.read(_buyerQuotationProvider.notifier).updateItem(updated);
       if (mounted) {
         AppHaptics.success();

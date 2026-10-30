@@ -82,6 +82,21 @@ ChipData quotationChipData(String status) => switch (status.toUpperCase()) {
           text: AppColors.textSecondary,
           label: 'Expired'
         ),
+      'CUSTOMER_REQUESTED' => (
+          bg: AppColors.amber100,
+          text: AppColors.amber600,
+          label: 'Requested'
+        ),
+      'REQUEST_DECLINED' => (
+          bg: const Color(0xFFFCE4EC),
+          text: const Color(0xFFB71C1C),
+          label: 'Declined'
+        ),
+      'REQUEST_CANCELLED' => (
+          bg: AppColors.border,
+          text: AppColors.textSecondary,
+          label: 'Cancelled'
+        ),
       _ => (
           bg: AppColors.border,
           text: AppColors.textSecondary,

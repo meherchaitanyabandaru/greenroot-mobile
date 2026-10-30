@@ -45,6 +45,7 @@ class _QuotationListScreenState extends ConsumerState<QuotationListScreen> {
 
   static const _statusOptions = [
     (label: 'All', value: null),
+    (label: 'Requests', value: 'CUSTOMER_REQUESTED'),
     (label: 'Internal', value: 'INTERNAL_DRAFT'),
     (label: 'Draft', value: 'CUSTOMER_DRAFT'),
     (label: 'Sent', value: 'CUSTOMER_SENT'),
@@ -816,6 +817,21 @@ class _StatusChip extends StatelessWidget {
         bg = AppColors.red100;
         fg = AppColors.red600;
         label = 'Expired';
+        break;
+      case 'CUSTOMER_REQUESTED':
+        bg = AppColors.amber100;
+        fg = AppColors.amber600;
+        label = 'Request';
+        break;
+      case 'REQUEST_DECLINED':
+        bg = AppColors.red100;
+        fg = AppColors.red600;
+        label = 'Declined';
+        break;
+      case 'REQUEST_CANCELLED':
+        bg = AppColors.border;
+        fg = AppColors.textSecondary;
+        label = 'Cancelled';
         break;
       case 'DELETED':
         bg = AppColors.red100;

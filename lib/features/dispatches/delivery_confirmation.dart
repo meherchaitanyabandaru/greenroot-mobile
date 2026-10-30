@@ -1,6 +1,7 @@
 // Delivery is confirmed by the customer: the driver or nursery enters the
 // customer's 4-digit code, the customer taps "I received the plants", or the
 // nursery marks it delivered with a reason the customer can dispute for 48 h.
+import '../../core/consent/consent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -204,11 +205,17 @@ class _CustomerDeliveryCardState extends ConsumerState<CustomerDeliveryCard> {
   bool _busy = false;
 
   Future<void> _send({String? issue}) async {
+    // Confirming is acknowledged in words; reporting a problem is not.
+    Map<String, dynamic>? consent;
+    if (issue == null) {
+      consent = await askConsent(context, ref, ConsentStep.buyerDelivery);
+      if (consent == null || !mounted) return;
+    }
     setState(() => _busy = true);
     try {
       final d = await ref
           .read(dispatchRepositoryProvider)
-          .confirmReceipt(widget.dispatch.id, issue: issue);
+          .confirmReceipt(widget.dispatch.id, issue: issue, consent: consent);
       widget.onChanged(d);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

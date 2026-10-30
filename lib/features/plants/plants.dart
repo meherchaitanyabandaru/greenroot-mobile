@@ -129,8 +129,12 @@ class PlantMatch {
   final String? scientificName;
   final String? family;
   final String? acceptedName;
+  // Why it matched: NAME, ALIAS (matchedName is the other name, e.g. a
+  // local name), FUZZY / BOTANICAL_FUZZY (a near spelling), BOTANICAL.
+  final String matchType;
+  final String? matchedName;
 
-  const PlantMatch.catalog(Plant this.plant)
+  const PlantMatch.catalog(Plant this.plant, {this.matchType = 'NAME', this.matchedName})
       : wfoId = null,
         scientificName = null,
         family = null,
@@ -141,29 +145,46 @@ class PlantMatch {
     required String this.scientificName,
     this.family,
     this.acceptedName,
-  }) : plant = null;
+    this.matchType = 'BOTANICAL',
+  })  : plant = null,
+        matchedName = null;
 
   factory PlantMatch.fromJson(Map<String, dynamic> j) {
     final plant = j['plant'] as Map<String, dynamic>?;
-    if (plant != null) return PlantMatch.catalog(Plant.fromJson(plant));
+    final type = j['match_type'] as String? ?? (plant != null ? 'NAME' : 'BOTANICAL');
+    if (plant != null) {
+      return PlantMatch.catalog(Plant.fromJson(plant),
+          matchType: type, matchedName: j['matched_name'] as String?,);
+    }
     final n = j['name'] as Map<String, dynamic>;
     return PlantMatch.name(
       wfoId: n['wfo_id'] as String,
       scientificName: n['scientific_name'] as String,
       family: n['family'] as String?,
       acceptedName: n['accepted_name'] as String?,
+      matchType: type,
     );
   }
+
+  /// A near spelling: offered, never chosen for the user.
+  bool get isNearSpelling => matchType == 'FUZZY' || matchType == 'BOTANICAL_FUZZY';
 
   String get title => plant?.displayName ?? scientificName!;
 
   String? get subtitle {
     final p = plant;
+    final parts = <String>[
+      if (isNearSpelling) 'Did you mean this?',
+      if (matchType == 'ALIAS' && matchedName != null) 'Also called $matchedName',
+    ];
     if (p != null) {
-      return p.commonName?.isNotEmpty == true ? p.scientificName : null;
+      if (p.commonName?.isNotEmpty == true) parts.add(p.scientificName);
+    } else if (acceptedName != null) {
+      parts.add('Now called $acceptedName');
+    } else if (family != null) {
+      parts.add(family!);
     }
-    if (acceptedName != null) return 'Now called $acceptedName';
-    return family;
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 }
 

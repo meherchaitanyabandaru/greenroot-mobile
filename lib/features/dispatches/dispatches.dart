@@ -4,6 +4,7 @@ import '../../core/domain/lifecycle_models.dart';
 import '../../core/errors/app_error.dart';
 import '../../core/models/pagination.dart';
 import '../../core/network/api_client.dart';
+import '../vehicles/vehicles.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,8 @@ class Dispatch {
   final double? deliveryLatitude;
   final double? deliveryLongitude;
   final bool requiresDriverAck;
+  // The driver confirms the load before starting (false on older trips).
+  final bool requiresConsent;
   final String? notes;
   final String createdAt;
   final String? updatedAt;
@@ -137,6 +140,8 @@ class Dispatch {
   final String? outsideDriverMobile;
   // Lorry driver requirements and invitation validity.
   final String? requiredVehicleType;
+  // On a driver's QR preview: their lorries and which can take this trip.
+  final List<Lorry> driverVehicles;
   final String? inviteExpiresAt;
   // CUSTOMER_CODE, CUSTOMER_APP or UNCONFIRMED (nursery override).
   final String? deliveryConfirmation;
@@ -172,6 +177,7 @@ class Dispatch {
     this.deliveryLatitude,
     this.deliveryLongitude,
     this.requiresDriverAck = false,
+    this.requiresConsent = false,
     this.notes,
     required this.createdAt,
     this.updatedAt,
@@ -183,6 +189,7 @@ class Dispatch {
     this.outsideDriverName,
     this.outsideDriverMobile,
     this.requiredVehicleType,
+    this.driverVehicles = const [],
     this.inviteExpiresAt,
     this.deliveryConfirmation,
     this.deliveryOverrideReason,
@@ -222,6 +229,7 @@ class Dispatch {
         deliveryLatitude: (j['delivery_latitude'] as num?)?.toDouble(),
         deliveryLongitude: (j['delivery_longitude'] as num?)?.toDouble(),
         requiresDriverAck: j['requires_driver_ack'] == true,
+        requiresConsent: j['requires_consent'] == true,
         notes: j['notes'] as String?,
         createdAt: j['created_at'] as String,
         updatedAt: j['updated_at'] as String?,
@@ -241,6 +249,9 @@ class Dispatch {
         outsideDriverName: j['outside_driver_name'] as String?,
         outsideDriverMobile: j['outside_driver_mobile'] as String?,
         requiredVehicleType: j['required_vehicle_type'] as String?,
+        driverVehicles: (j['driver_vehicles'] as List<dynamic>? ?? const [])
+            .map((e) => Lorry.fromJson(e as Map<String, dynamic>))
+            .toList(),
         inviteExpiresAt: j['invite_expires_at'] as String?,
         deliveryConfirmation: j['delivery_confirmation'] as String?,
         deliveryOverrideReason: j['delivery_override_reason'] as String?,
@@ -325,10 +336,12 @@ class DispatchRepository {
     );
   }
 
-  Future<Dispatch> updateStatus(int id, String status) async {
+  /// [consent]: the driver's confirmation when starting a trip that asks
+  /// for it (Dispatch.requiresConsent; see askConsent).
+  Future<Dispatch> updateStatus(int id, String status, {Map<String, dynamic>? consent}) async {
     return _client.put(
       ApiConstants.dispatchStatus(id),
-      data: {'dispatch_status': status},
+      data: {'dispatch_status': status, if (consent != null) 'consent': consent},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);
@@ -351,10 +364,11 @@ class DispatchRepository {
   }
 
   /// Customer: "I received the plants" and/or a problem ([issue]).
-  Future<Dispatch> confirmReceipt(int id, {String? issue}) {
+  /// Confirming (no [issue]) needs the buyer's [consent].
+  Future<Dispatch> confirmReceipt(int id, {String? issue, Map<String, dynamic>? consent}) {
     return _client.post(
       ApiConstants.dispatchReceipt(id),
-      data: {if (issue != null) 'issue': issue},
+      data: {if (issue != null) 'issue': issue, if (consent != null) 'consent': consent},
       fromJson: (data) => Dispatch.fromJson(
           (data as Map<String, dynamic>)['dispatch'] as Map<String, dynamic>,),
     );
@@ -381,10 +395,16 @@ class DispatchRepository {
   }
 
   /// [tripCode] is the trip's QR code (`TRIP-<uuid>`); the API refuses anything else.
-  Future<Dispatch> acceptDispatch(int id, String tripCode) async {
+  /// Takes the trip with one of the driver's lorries; [vehicleId] may be left
+  /// out when only one can take it (the API then picks that one).
+  Future<Dispatch> acceptDispatch(int id, String tripCode,
+      {int? vehicleId,}) async {
     return _client.post(
       ApiConstants.acceptDispatch(id),
-      data: {'trip_code': tripCode},
+      data: {
+        'trip_code': tripCode,
+        if (vehicleId != null) 'vehicle_id': vehicleId,
+      },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Dispatch.fromJson(d['dispatch'] as Map<String, dynamic>);

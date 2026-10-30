@@ -1,3 +1,4 @@
+import 'trip_start_consent.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -89,11 +90,13 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
       );
       return;
     }
+    final consent = await startTripConsent(context, ref, widget.dispatch);
+    if (consent == null || !mounted) return;
     setState(() => _busy = true);
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .updateStatus(widget.dispatchId, 'IN_TRANSIT');
+          .updateStatus(widget.dispatchId, 'IN_TRANSIT', consent: consentOrNull(consent));
       await TripTracker.instance
           .start(widget.dispatchId, ref.read(trackingRepositoryProvider));
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
@@ -141,38 +144,13 @@ class _TripDetailBodyState extends ConsumerState<_TripDetailBody> {
     ref.invalidate(activeDriverTripProvider);
   }
 
+  // Accepting means choosing the lorry: the trip preview does both.
   Future<void> _acceptTrip() async {
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(dispatchRepositoryProvider)
-          .acceptDispatch(widget.dispatchId, widget.dispatch.tripCode ?? '');
-      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
-      ref.invalidate(activeDriverTripProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Trip accepted!'),
-            backgroundColor: AppColors.primaryMain,
-          ),
-        );
-      }
-    } on AppError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e is ServerError && e.statusCode == 409
-                  ? 'You already have an active trip.'
-                  : e.message,
-            ),
-            backgroundColor: AppColors.red600,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final code = widget.dispatch.tripCode;
+    if (code == null || code.isEmpty) return;
+    await context.push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
+    ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+    ref.invalidate(activeDriverTripProvider);
   }
 
   @override

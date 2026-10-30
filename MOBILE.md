@@ -192,6 +192,31 @@ lib/
 
 ---
 
+## Confirmations (2026-10-30)
+
+`lib/core/consent/consent.dart`: `askConsent(context, ref, step)` loads the wording (`GET /consents/templates`) and shows each statement as a checkbox; Confirm works only when all are ticked; Back cancels the action. Used by: seller "loading complete" (before uploads; photo links sent as evidence), driver trip start (`features/drivers/trip_start_consent.dart`, only when the trip `requires_consent` and the user is its driver; all four start buttons), buyer accept (`confirmAcceptQuotation` now returns the confirmation), buyer "I received the plants" (not when reporting a problem). Tests: `test/core/consent_test.dart`, `test/orders/loading_done_sheet_test.dart`.
+
+## Quotation requests and plant names (2026-10-30)
+
+- Buying → Quotations: **Ask prices** (`/quotations/request`, `quotation_request_screen.dart`): pick a nursery (the order screen's `NurseryPickerTile`), add plants from search or **Other / not listed** (the customer's own name, optional botanical name), quantity, variety, size, grade, notes, a message; sent once with an Idempotency-Key.
+- Plant search rows say why they matched: "Also called <local name>", "Did you mean this?" for near spellings; nothing is picked automatically.
+- Quotation detail: `QuotationRequestPanel` (`quotation_request_panel.dart`) shows the request, deadline, decline reason; nursery side prices lines (`PriceRequestSheet`: quantity it can supply, price each) and declines; customer cancels. Custom lines show "Not in the plant list" and GreenRoot's later match. Request statuses have badges and a "Requests" filter.
+- Tests: `test/quotations/requests_test.dart`.
+
+## Photos and image policies (2026-10-30)
+
+`lib/core/media/image_policy.dart` reads `GET /image-policies` once per run (defaults if it cannot; reloaded after the API refuses an upload). `preparePhoto(file, policy, {watermark})` in `photos.dart` is the only way photos are prepared: always decoded (no more "≤ 1 MB goes untouched", which kept sideways photos sideways), turned upright, too-small photos refused with a retake hint, resized to the policy's longest side, EXIF/GPS removed, one JPEG encode at the policy quality (stepping down only to fit the size limit; PNG kept for transparent logos); a photo already meeting the policy goes byte-for-byte. Pickers ask the phone to scale to the policy size without lowering quality (which also turns HEIC into JPEG). Uploads use `StorageService.uploadImage(category, …)` → `POST /storage/images`; nothing presigns photos any more. Market ad photos: watermark in the same single encode (the old 1600 px q85 → 1200 px q80 double compression is gone). Tests: `test/core/photos_test.dart`, `test/market/market_state_sync_test.dart`.
+
+## Lorries (2026-10-30)
+
+A lorry and its owner are records of their own: the owner needs no GreenRoot account, a lorry has many drivers, and a driver may drive lorries of different owners (GreenRoot approves each link).
+
+- Driver registration asks for the licence expiry date (no past dates) and who owns the lorry: "I own it" or someone else by name (mobile optional).
+- Profile → **My Lorries** (`/driver/lorries`, `features/vehicles/my_lorries_screen.dart`): each lorry with whether it can take trips and why not (pending approval, suspended, maintenance, licence expired, on a trip); add a lorry; remove one (the API refuses during a trip with it).
+- Trip QR preview offers only the lorries that can take that trip; with several the driver must choose, with one it is chosen for them, with none each lorry says why and Accept is off. Accept sends `vehicle_id`. Trip detail / map screens accept through the same preview.
+- The preview's Trip ID row no longer overflows on 360dp phones (long status badge shortens).
+- Tests: `test/driver/lorries_test.dart`. The old admin-style vehicle list/form screens (never routed) were removed.
+
 ## Tests and the API contract (2026-10-24)
 
 The app parses API JSON by hand, so a renamed API field shows up as a blank on screen, not as an error. Two kinds of test guard against that, and both run in CI with `flutter test`:

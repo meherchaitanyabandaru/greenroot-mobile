@@ -290,11 +290,13 @@ class _ReadyToDepartCardState extends ConsumerState<_ReadyToDepartCard> {
   bool _starting = false;
 
   Future<void> _startJourney() async {
+    final consent = await startTripConsent(context, ref, widget.trip);
+    if (consent == null || !mounted) return;
     setState(() => _starting = true);
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .updateStatus(widget.trip.id, 'IN_TRANSIT');
+          .updateStatus(widget.trip.id, 'IN_TRANSIT', consent: consentOrNull(consent));
       ref.invalidate(_driverDashboardProvider);
       // The trip map sends the GPS points: open it, or the buyer sees no truck.
       if (mounted) context.push('/driver/trip/${widget.trip.id}');

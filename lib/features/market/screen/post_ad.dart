@@ -270,8 +270,11 @@ class _PostAdScreenState extends ConsumerState<_PostAdScreen> {
 
   Future<List<String>> _uploadNew() async {
     final results = <String>[];
+    final policy =
+        await ref.read(imagePolicyProvider(ImageCategory.marketAd).future);
+    final storage = ref.read(storageServiceProvider);
     for (final f in _pickedFiles) {
-      final url = await uploadAdPhoto(f, ref.read(marketRepositoryProvider));
+      final url = await uploadAdPhoto(f, policy, storage);
       results.add(url);
     }
     return results;
@@ -740,8 +743,8 @@ class _SizeChips extends ConsumerWidget {
 const _maxAdPhotos = 3;
 
 /// Asks camera or gallery, then picks up to [count] photos (the camera takes
-/// one). Shrinks at pick time: less memory and a faster preview; uploads are
-/// resized again to 1200px.
+/// one). The phone scales them to the ad size at pick time (less memory, a
+/// faster preview) without lowering quality: the upload compresses once.
 Future<List<XFile>> _pickAdPhotos(BuildContext context, int count) async {
   if (count <= 0) return const [];
   final source = await showModalBottomSheet<ImageSource>(
@@ -769,13 +772,14 @@ Future<List<XFile>> _pickAdPhotos(BuildContext context, int count) async {
   );
   if (source == null) return const [];
   if (!context.mounted) return const [];
-  // The phone shrinks to 1600px at pick time (less memory, faster preview);
-  // uploads are resized again to 1200px with the watermark.
+  // shortcut: the default ad size at pick time; a larger admin max_side
+  // only applies after an app restart reads the policy into this picker.
+  const policy = ImagePolicy.defaults;
   if (source == ImageSource.camera || count == 1) {
-    final f = await pickPhoto(context, source, maxSide: 1600, quality: 85);
+    final f = await pickPhoto(context, source, policy: policy[ImageCategory.marketAd]);
     return f == null ? const [] : [f];
   }
-  return pickPhotos(context, limit: count, maxSide: 1600, quality: 85);
+  return pickPhotos(context, limit: count, policy: policy[ImageCategory.marketAd]);
 }
 
 class _PhotosStep extends StatelessWidget {

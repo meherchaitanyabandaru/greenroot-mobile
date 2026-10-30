@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/errors/app_error.dart';
+import '../../core/media/image_policy.dart';
 import '../../core/media/photos.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -24,21 +25,21 @@ Future<bool> takeProfileSelfie(BuildContext context, WidgetRef ref) async {
   void fail(String message) => messenger.showSnackBar(
         SnackBar(content: Text(message), backgroundColor: AppColors.red600),
       );
-  // A face photo shows small: the phone shrinks it to 800 px itself.
+  final policy = await ref.read(imagePolicyProvider(ImageCategory.selfie).future);
+  if (!context.mounted) return false;
   final shot = await pickPhoto(
     context,
     ImageSource.camera,
     camera: CameraDevice.front,
-    maxSide: 800,
-    quality: 85,
+    policy: policy,
   );
   if (shot == null) return false;
   try {
-    final bytes = await shot.readAsBytes();
+    final photo = await preparePhoto(shot, policy);
     final updated = await ref.read(storageServiceProvider).uploadAvatar(
-          bytes,
-          'selfie-${DateTime.now().millisecondsSinceEpoch}.jpg',
-          'image/jpeg',
+          photo.bytes,
+          'selfie-${DateTime.now().millisecondsSinceEpoch}${photo.extension}',
+          photo.mimeType,
         );
     ref.read(sessionProvider.notifier).updateUser(updated);
     return true;

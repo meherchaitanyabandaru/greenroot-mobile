@@ -10,6 +10,8 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/status_badge.dart';
 import '../auth/presentation/providers/session_provider.dart';
 import '../dispatches/dispatches.dart';
+import '../vehicles/my_lorries_screen.dart';
+import '../vehicles/vehicles.dart';
 import '../../core/widgets/app_loader.dart';
 
 /// Shown when a driver enters a trip code — previews the trip and lets them accept.
@@ -23,6 +25,7 @@ class TripPreviewScreen extends ConsumerStatefulWidget {
 
 class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
   Dispatch? _dispatch;
+  int? _vehicleId; // the lorry the driver takes; preset when only one can
   bool _loading = true;
   bool _accepting = false;
   String? _error;
@@ -64,7 +67,13 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
     try {
       final d =
           await ref.read(dispatchRepositoryProvider).findByCode(widget.code);
-      if (mounted) setState(() => _dispatch = d);
+      final eligible = d.driverVehicles.where((v) => v.isEligible).toList();
+      if (mounted) {
+        setState(() {
+          _dispatch = d;
+          _vehicleId = eligible.length == 1 ? eligible.first.vehicleId : null;
+        });
+      }
     } on NotFoundError {
       if (mounted) {
         setState(() {
@@ -123,7 +132,7 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
 
       final accepted = await ref
           .read(dispatchRepositoryProvider)
-          .acceptDispatch(_dispatch!.id, widget.code);
+          .acceptDispatch(_dispatch!.id, widget.code, vehicleId: _vehicleId);
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
@@ -181,6 +190,8 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
                   ? _TripDetails(
                       dispatch: _dispatch!,
                       currentUserId: ref.watch(sessionProvider).user?.id,
+                      vehicleId: _vehicleId,
+                      onSelectVehicle: (id) => setState(() => _vehicleId = id),
                       onAccept: _accept,
                       accepting: _accepting,
                       onReject: _showRejectGapInfo,
@@ -247,6 +258,8 @@ class _ErrorView extends StatelessWidget {
 class _TripDetails extends StatelessWidget {
   final Dispatch dispatch;
   final int? currentUserId;
+  final int? vehicleId;
+  final ValueChanged<int> onSelectVehicle;
   final VoidCallback onAccept;
   final bool accepting;
   final VoidCallback? onReject;
@@ -254,6 +267,8 @@ class _TripDetails extends StatelessWidget {
   const _TripDetails({
     required this.dispatch,
     required this.currentUserId,
+    required this.vehicleId,
+    required this.onSelectVehicle,
     required this.onAccept,
     required this.accepting,
     this.onReject,
@@ -271,13 +286,16 @@ class _TripDetails extends StatelessWidget {
         dispatch.driverUserId != null && dispatch.driverUserId != currentUserId;
     final alreadyAccepted =
         dispatch.status != 'PENDING' || myTrip || takenByOther;
+    // Only lorries that can take this trip are offered.
+    final eligible = dispatch.driverVehicles.where((v) => v.isEligible).toList();
+    final canAccept = eligible.isNotEmpty && vehicleId != null;
 
     // Accept is pinned under the list: on small phones it was below the fold.
     final acceptButton = SizedBox(
       width: double.infinity,
       height: AppSpacing.buttonHeight,
       child: ElevatedButton.icon(
-        onPressed: accepting ? null : onAccept,
+        onPressed: accepting || !canAccept ? null : onAccept,
         icon: accepting
             ? const SizedBox(
                 width: 18,
@@ -285,7 +303,11 @@ class _TripDetails extends StatelessWidget {
                 child: CircularProgressIndicator(
                     strokeWidth: 2, color: Colors.white,),)
             : const Icon(Icons.check_circle_outline_rounded),
-        label: Text(accepting ? 'Accepting...' : 'Accept Trip'),
+        label: Text(accepting
+            ? 'Accepting...'
+            : eligible.length > 1 && vehicleId == null
+                ? 'Choose your lorry'
+                : 'Accept Trip',),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryMain,
           foregroundColor: Colors.white,
@@ -326,11 +348,17 @@ class _TripDetails extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: Colors.white.withValues(alpha: 0.8)),
                   ),
-                  const Spacer(),
-                  StatusBadge(
-                    label: display.label,
-                    variant: display.variant,
-                    dot: true,
+                  const SizedBox(width: AppSpacing.sm),
+                  // A long status shortens instead of overflowing 360dp phones.
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: StatusBadge(
+                        label: display.label,
+                        variant: display.variant,
+                        dot: true,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -464,6 +492,15 @@ class _TripDetails extends StatelessWidget {
 
         const SizedBox(height: AppSpacing.x3l),
 
+        if (!alreadyAccepted) ...[
+          _LorryChoice(
+            lorries: dispatch.driverVehicles,
+            selectedId: vehicleId,
+            onSelect: onSelectVehicle,
+          ),
+          const SizedBox(height: AppSpacing.x2l),
+        ],
+
         // Accept / Reject buttons
         if (!alreadyAccepted) ...[
           // Reject — backend gap: no reject endpoint exists.
@@ -588,6 +625,66 @@ class _TripDetails extends StatelessWidget {
               child: acceptButton,
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Which lorry takes the trip: the driver's lorries that can, to choose
+/// from; when none can, each lorry with why not and a way to add one.
+class _LorryChoice extends StatelessWidget {
+  final List<Lorry> lorries;
+  final int? selectedId;
+  final ValueChanged<int> onSelect;
+  const _LorryChoice({
+    required this.lorries,
+    required this.selectedId,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final eligible = lorries.where((v) => v.isEligible).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(eligible.length > 1 ? 'Which lorry are you taking?' : 'Your lorry',
+            style: AppTypography.h4,),
+        const SizedBox(height: AppSpacing.sm),
+        if (eligible.isNotEmpty)
+          for (final v in eligible) ...[
+            LorryTile(
+              lorry: v,
+              selected: v.vehicleId == selectedId,
+              onSelect: () => onSelect(v.vehicleId),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ]
+        else ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.amber100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              lorries.isEmpty
+                  ? 'You have no lorry on GreenRoot yet. Add the lorry you drive; GreenRoot approves it before you can take trips.'
+                  : 'None of your lorries can take this trip:',
+              style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final v in lorries) ...[
+            LorryTile(lorry: v),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          OutlinedButton.icon(
+            onPressed: () => context.push('/driver/lorries'),
+            icon: const Icon(Icons.local_shipping_outlined),
+            label: const Text('My lorries'),
+          ),
+        ],
       ],
     );
   }

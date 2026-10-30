@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/media/image_policy.dart';
 import '../../../../core/media/photos.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/storage_service.dart';
@@ -13,6 +14,8 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../vehicles/my_lorries_screen.dart';
+import '../../../vehicles/vehicles.dart';
 import '../providers/session_provider.dart';
 
 class _DriverRegState {
@@ -42,29 +45,31 @@ class _DriverRegNotifier extends StateNotifier<_DriverRegState> {
 
   Future<void> apply({
     required String licenceNumber,
+    required DateTime licenceExpiry,
     required String vehicleNumber,
     String vehicleType = 'TRUCK',
+    required LorryOwner owner,
     XFile? licencePhoto,
+    required ImagePolicy licencePolicy,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       String? photoUrl;
       if (licencePhoto != null) {
         // Private bucket: only admins (and the driver) open it, by a short link.
-        final photo = await preparePhoto(licencePhoto);
-        photoUrl = await _storage.uploadPresigned(
-          'attachments',
-          photo.bytes,
-          licencePhoto.name,
-          photo.mimeType,
-        );
+        final photo = await preparePhoto(licencePhoto, licencePolicy);
+        photoUrl = await _storage.uploadImage(
+            ImageCategory.driverLicence, photo, licencePhoto.name,);
       }
       await _client.post(
         '/api/v1/drivers/apply',
         data: {
           'licence_number': licenceNumber,
+          'licence_expiry_date':
+              licenceExpiry.toIso8601String().substring(0, 10),
           'vehicle_number': vehicleNumber,
           'vehicle_type': vehicleType,
+          ...owner.toJson(),
           if (photoUrl != null) 'licence_photo_url': photoUrl,
         },
       );
@@ -100,7 +105,11 @@ class _DriverRegistrationScreenState
     extends ConsumerState<DriverRegistrationScreen> {
   final _licenceCtrl = TextEditingController();
   final _vehicleCtrl = TextEditingController();
+  final _ownerNameCtrl = TextEditingController();
+  final _ownerMobileCtrl = TextEditingController();
   String _vehicleType = 'TRUCK';
+  bool _isOwner = true;
+  DateTime? _licenceExpiry;
   XFile? _licencePhoto; // optional
   bool _tried = false; // show "required" only after a submit attempt
 
@@ -108,22 +117,46 @@ class _DriverRegistrationScreenState
   void dispose() {
     _licenceCtrl.dispose();
     _vehicleCtrl.dispose();
+    _ownerNameCtrl.dispose();
+    _ownerMobileCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickExpiry() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      helpText: 'Licence valid until',
+      initialDate: _licenceExpiry ?? today.add(const Duration(days: 365)),
+      firstDate: today, // an expired licence cannot register
+      lastDate: today.add(const Duration(days: 365 * 40)),
+    );
+    if (picked != null) setState(() => _licenceExpiry = picked);
   }
 
   Future<void> _submit() async {
     // Licence and plate numbers are written in capitals.
     final licence = _licenceCtrl.text.trim().toUpperCase();
     final vehicle = _vehicleCtrl.text.trim().toUpperCase();
-    if (licence.isEmpty || vehicle.isEmpty) {
+    if (licence.isEmpty ||
+        vehicle.isEmpty ||
+        _licenceExpiry == null ||
+        !LorryOwnerFields.valid(
+            _isOwner, _ownerNameCtrl.text, _ownerMobileCtrl.text,)) {
       setState(() => _tried = true); // used to return silently
       return;
     }
     await ref.read(_driverRegProvider.notifier).apply(
           licenceNumber: licence,
+          licenceExpiry: _licenceExpiry!,
           vehicleNumber: vehicle,
           vehicleType: _vehicleType,
+          owner: _isOwner
+              ? const LorryOwner.me()
+              : LorryOwner.other(_ownerNameCtrl.text, _ownerMobileCtrl.text),
           licencePhoto: _licencePhoto,
+          licencePolicy: await ref
+              .read(imagePolicyProvider(ImageCategory.driverLicence).future),
         );
     if (ref.read(_driverRegProvider).submitted) {
       await ref.read(sessionProvider.notifier).bootstrap();
@@ -235,6 +268,31 @@ class _DriverRegistrationScreenState
             onChanged: (_) => _tried ? setState(() {}) : null,
           ),
           const SizedBox(height: AppSpacing.md),
+          Semantics(
+            button: true,
+            label: 'Licence valid until',
+            child: InkWell(
+              onTap: _pickExpiry,
+              borderRadius: BorderRadius.circular(12),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Licence valid until',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: const Icon(Icons.event_outlined),
+                  errorText: _tried && _licenceExpiry == null
+                      ? 'Choose the expiry date on your licence'
+                      : null,
+                ),
+                child: Text(
+                  _licenceExpiry == null
+                      ? 'Choose date'
+                      : MaterialLocalizations.of(context)
+                          .formatMediumDate(_licenceExpiry!),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           _LicencePhotoPicker(
             photo: _licencePhoto,
             onChanged: (f) => setState(() => _licencePhoto = f),
@@ -242,7 +300,7 @@ class _DriverRegistrationScreenState
           const SizedBox(height: AppSpacing.md),
           AppTextField(
             controller: _vehicleCtrl,
-            label: 'Vehicle Number',
+            label: 'Lorry Number',
             hint: 'e.g. KA-01-AB-1234',
             keyboardType: TextInputType.text,
             textCapitalization: TextCapitalization.characters,
@@ -258,7 +316,7 @@ class _DriverRegistrationScreenState
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
-            children: ['TRUCK', 'VAN', 'PICKUP', 'AUTO'].map((type) {
+            children: lorryTypes.map((type) {
               final selected = _vehicleType == type;
               return ChoiceChip(
                 // TRUCK → Truck: the value sent stays the API's code.
@@ -272,6 +330,15 @@ class _DriverRegistrationScreenState
                 ),
               );
             }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          LorryOwnerFields(
+            isMe: _isOwner,
+            onIsMeChanged: (v) => setState(() => _isOwner = v),
+            nameCtrl: _ownerNameCtrl,
+            mobileCtrl: _ownerMobileCtrl,
+            showErrors: _tried,
+            onEdited: () => _tried ? setState(() {}) : null,
           ),
           const SizedBox(height: AppSpacing.x2l),
 

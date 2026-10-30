@@ -3,13 +3,16 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/api_constants.dart';
 import '../network/api_client.dart';
-import '../network/network_exceptions.dart';
+import '../errors/app_error.dart';
+import '../media/image_policy.dart';
+import '../media/photos.dart';
 import '../../features/auth/data/models/user_models.dart';
 
 class StorageService {
   final ApiClient _api;
+  final void Function()? _onRefused;
 
-  StorageService(this._api);
+  StorageService(this._api, [this._onRefused]);
 
   /// POST /api/v1/users/me/avatar — multipart upload.
   /// Uploads the image bytes to the API, which puts them in MinIO and
@@ -41,59 +44,39 @@ class StorageService {
     return UserProfile.fromJson(data);
   }
 
-  /// Uploads a nursery logo to MinIO via presigned URL.
-  /// Returns the permanent file_url to persist on the nursery.
-  Future<String> uploadNurseryLogo(
-    Uint8List bytes,
+  /// POST /api/v1/storage/images: the API checks [photo] against
+  /// [category]'s image policy and stores it; returns the file_url to save on
+  /// the record. A refusal is a [ValidationError] with what to do, and makes
+  /// the app reload the policies (an admin may have changed them).
+  Future<String> uploadImage(
+    ImageCategory category,
+    PreparedPhoto photo,
     String fileName,
-    String contentType,
-  ) =>
-      uploadPresigned('nursery-logos', bytes, fileName, contentType);
-
-  /// Uploads bytes to [bucket] in MinIO via presigned URL; returns file_url.
-  Future<String> uploadPresigned(
-    String bucket,
-    Uint8List bytes,
-    String fileName,
-    String contentType,
   ) async {
-    // 1. Get presigned upload URL from API
-    final presignData = await _api.post<Map<String, dynamic>>(
-      ApiConstants.storagePresign,
-      data: {
-        'bucket': bucket,
-        'file_name': fileName,
-        'content_type': contentType,
-        'size': bytes.length, // signed: the upload must be exactly this size
-      },
-    );
-    final uploadUrl = presignData['upload_url'] as String;
-    final fileUrl = presignData['file_url'] as String;
-
-    // 2. PUT bytes directly to MinIO (no auth header needed on presigned URL)
-    // Connect timeout: an unreachable storage host must fail, not spin forever.
-    final rawDio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
+    final formData = FormData.fromMap({
+      'category': category.code, // before the file: its policy limits the read
+      'file': MultipartFile.fromBytes(
+        photo.bytes,
+        filename: fileName,
+        contentType: DioMediaType.parse(photo.mimeType),
+      ),
+    });
     try {
-      await rawDio.put(
-        uploadUrl,
-        data: Stream.fromIterable([bytes]),
-        options: Options(
-          headers: {
-            'Content-Type': contentType,
-            'Content-Length': bytes.length,
-          },
-          sendTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 30),
-        ),
+      final data = await _api.post<Map<String, dynamic>>(
+        ApiConstants.storageImages,
+        data: formData,
       );
-    } on DioException catch (e) {
-      throw NetworkExceptions.fromDioException(e);
+      return data['file_url'] as String;
+    } on ValidationError {
+      _onRefused?.call();
+      rethrow;
     }
-
-    return fileUrl;
   }
 }
 
 final storageServiceProvider = Provider<StorageService>(
-  (ref) => StorageService(ref.watch(apiClientProvider)),
+  (ref) => StorageService(
+    ref.watch(apiClientProvider),
+    () => ref.invalidate(imagePoliciesProvider),
+  ),
 );
