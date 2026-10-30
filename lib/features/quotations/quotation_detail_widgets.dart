@@ -227,6 +227,21 @@ class _StatusBadge extends StatelessWidget {
         fg = AppColors.red600;
         label = 'Expired';
         break;
+      case 'CUSTOMER_REQUESTED':
+        bg = AppColors.amber100;
+        fg = AppColors.amber600;
+        label = 'Customer Request';
+        break;
+      case 'REQUEST_DECLINED':
+        bg = AppColors.red100;
+        fg = AppColors.red600;
+        label = 'Declined';
+        break;
+      case 'REQUEST_CANCELLED':
+        bg = AppColors.border;
+        fg = AppColors.textSecondary;
+        label = 'Cancelled';
+        break;
       // Legacy
       case 'DRAFT':
         bg = AppColors.amber100;

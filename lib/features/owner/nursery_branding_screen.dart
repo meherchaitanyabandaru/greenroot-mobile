@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/media/image_policy.dart';
 import '../../core/media/photos.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -143,20 +144,23 @@ class _BrandingBodyState extends ConsumerState<_BrandingBody>
   }
 
   Future<void> _pickImage() async {
-    final file = await pickPhoto(context, ImageSource.gallery);
+    final policy = await ref
+        .read(imagePolicyProvider(ImageCategory.nurseryBranding).future);
+    if (!mounted) return;
+    final file = await pickPhoto(context, ImageSource.gallery, policy: policy);
     if (file == null || !mounted) return;
 
     setState(() => _bs = _bs.with_(saving: true, clearError: true));
 
     try {
-      // A logo shows small: 800 px is plenty; PNG transparency is kept.
-      final photo = await preparePhoto(file, maxSide: 800);
+      // The NURSERY_BRANDING policy keeps PNG transparency.
+      final photo = await preparePhoto(file, policy);
       final fileName =
           'nursery-${widget.nursery.id}-${DateTime.now().millisecondsSinceEpoch}${photo.extension}';
 
       final url = await ref
           .read(storageServiceProvider)
-          .uploadNurseryLogo(photo.bytes, fileName, photo.mimeType);
+          .uploadImage(ImageCategory.nurseryBranding, photo, fileName);
 
       if (!mounted) return;
       setState(() => _bs = _bs.with_(

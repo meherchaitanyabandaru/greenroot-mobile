@@ -1,3 +1,4 @@
+import '../drivers/trip_start_consent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -131,11 +132,17 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   }
 
   Future<void> _updateStatus(String newStatus) async {
+    var consent = const <String, dynamic>{};
+    if (newStatus == 'DISPATCHED' || newStatus == 'IN_TRANSIT') {
+      final c = await startTripConsent(context, ref, widget.dispatch);
+      if (c == null || !mounted) return;
+      consent = c;
+    }
     setState(() => _busy = true);
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .updateStatus(widget.dispatchId, newStatus);
+          .updateStatus(widget.dispatchId, newStatus, consent: consentOrNull(consent));
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));
       ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
       ref.invalidate(orderListProvider);

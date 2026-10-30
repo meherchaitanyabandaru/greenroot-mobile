@@ -1,3 +1,4 @@
+import 'trip_start_consent.dart';
 import 'dart:async';
 import 'dart:math' show min, max;
 import 'dart:ui' as ui;
@@ -385,21 +386,13 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
 
   // ── Actions ──────────────────────────────────────────────────────────────────
 
+  // Accepting means choosing the lorry: the trip preview does both.
   Future<void> _acceptTrip() async {
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(dispatchRepositoryProvider)
-          .acceptDispatch(widget.dispatchId, widget.dispatch.tripCode ?? '');
-      ref.invalidate(dispatchDetailProvider(widget.dispatchId));
-      ref.invalidate(orderDetailProvider(widget.dispatch.orderId));
-      ref.invalidate(activeDriverTripProvider);
-      _snack('Trip accepted! Waiting for nursery to load plants.');
-    } on AppError catch (e) {
-      _snack(e.message, isError: true);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final code = widget.dispatch.tripCode;
+    if (code == null || code.isEmpty) return;
+    await context.push('/driver/scan/preview?code=${Uri.encodeQueryComponent(code)}');
+    ref.invalidate(dispatchDetailProvider(widget.dispatchId));
+    ref.invalidate(activeDriverTripProvider);
   }
 
   Future<void> _startJourney() async {
@@ -407,11 +400,13 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
       _snack('Cannot start — loading is not yet complete.', isError: true);
       return;
     }
+    final consent = await startTripConsent(context, ref, widget.dispatch);
+    if (consent == null || !mounted) return;
     setState(() => _busy = true);
     try {
       await ref
           .read(dispatchRepositoryProvider)
-          .updateStatus(widget.dispatchId, 'IN_TRANSIT');
+          .updateStatus(widget.dispatchId, 'IN_TRANSIT', consent: consentOrNull(consent));
       _startGpsPosting();
       await _postGps();
       ref.invalidate(dispatchDetailProvider(widget.dispatchId));

@@ -1,3 +1,4 @@
+import 'trip_start_consent.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';

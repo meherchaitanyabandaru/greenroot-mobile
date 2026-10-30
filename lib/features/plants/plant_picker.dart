@@ -40,12 +40,16 @@ class PlantPickerSheet extends ConsumerStatefulWidget {
   final String title;
   final Set<int> existingPlantIds;
   final void Function(Plant plant) onSelected;
+  // When set, "Other / not listed" is offered with what was typed: the
+  // catalog never stops someone asking for a plant (quotation requests).
+  final void Function(String typed)? onOther;
 
   const PlantPickerSheet({
     super.key,
     required this.title,
     this.existingPlantIds = const {},
     required this.onSelected,
+    this.onOther,
   });
 
   @override
@@ -187,7 +191,7 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
                             .copyWith(color: AppColors.textMuted),
                       ),
                     )
-                  : _results.isEmpty
+                  : _results.isEmpty && widget.onOther == null
                       ? PlantNotFound(query: _searchCtrl.text)
                       : ListView.separated(
                           controller: controller,
@@ -199,7 +203,12 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
                               const Divider(height: 1, indent: 16),
                           itemBuilder: (_, i) {
                             if (i == _results.length) {
-                              return SuggestPlantTile(query: _searchCtrl.text);
+                              return widget.onOther != null
+                                  ? OtherPlantTile(
+                                      typed: _searchCtrl.text,
+                                      onTap: () => widget.onOther!(_searchCtrl.text.trim()),
+                                    )
+                                  : SuggestPlantTile(query: _searchCtrl.text);
                             }
                             final match = _results[i];
                             // Another size of a listed plant is fine; same plant + size is refused by the API.
@@ -263,6 +272,29 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "Other / not listed": ask for the plant by the name you know it by.
+class OtherPlantTile extends StatelessWidget {
+  final String typed;
+  final VoidCallback onTap;
+  const OtherPlantTile({super.key, required this.typed, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.edit_note_rounded, color: AppColors.primaryMain),
+      title: const Text('Other / not listed'),
+      subtitle: Text(
+        typed.isEmpty
+            ? 'Enter the plant as you know it'
+            : 'Ask for "$typed" by your own name for it',
+        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: onTap,
     );
   }
 }

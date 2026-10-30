@@ -36,6 +36,8 @@ import '../features/drivers/driver_trips_screen.dart';
 import '../features/drivers/driver_trip_map_screen.dart';
 import '../features/drivers/trip_event_screen.dart';
 import '../features/drivers/trip_preview_screen.dart';
+import '../features/vehicles/my_lorries_screen.dart';
+import '../features/quotations/quotation_request_screen.dart';
 import '../features/top_items/top_items_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
@@ -408,6 +410,10 @@ final appRouter = GoRouter(
       builder: (_, __) => const DriverTripsScreen(),
     ),
     GoRoute(
+      path: '/driver/lorries',
+      builder: (_, __) => const MyLorriesScreen(),
+    ),
+    GoRoute(
       path: '/driver/trip/:id',
       builder: (_, state) => DriverTripMapScreen(
           dispatchId: int.parse(state.pathParameters['id']!),),
@@ -535,7 +541,12 @@ final appRouter = GoRouter(
         return QuotationCreateScreen(initialType: type);
       },
     ),
-    // Static segment — must be listed BEFORE /quotations/:id to win routing
+    // Static segments — must be listed BEFORE /quotations/:id to win routing
+    GoRoute(
+      path: '/quotations/request',
+      redirect: _driverGuard,
+      builder: (_, __) => const QuotationRequestScreen(),
+    ),
     GoRoute(
       path: '/quotations/by-token/:token',
       builder: (_, state) =>

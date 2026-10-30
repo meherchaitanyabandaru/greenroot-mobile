@@ -2,17 +2,25 @@
 //   - createAd notifier returns adId on success
 //   - save/unsave updates adSavedProvider
 //   - failed createAd sets error state
-//   - photo upload presign goes through authenticated client
+//   - ad photos go through the API image upload (checked by the server)
 //
 // NOTE: Tests that involve _PostAdNotifier.create() are isolated from
 // browseAdsProvider's auto-loading constructor by using a separate container
 // that overrides browseAdsProvider to avoid test contamination from the
 // BrowseAdsNotifier's constructor _load() call racing with other tests.
 
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart' show FormData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:greenroot_mobile/core/errors/app_error.dart';
+import 'package:greenroot_mobile/core/media/image_policy.dart';
+import 'package:greenroot_mobile/core/media/photos.dart';
+import 'package:greenroot_mobile/core/services/storage_service.dart';
 import 'package:greenroot_mobile/features/market/local_market_providers.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 
 import '../helpers/fake_api_client.dart';
 import '../helpers/test_data.dart';
@@ -169,33 +177,38 @@ void main() {
     });
   });
 
-  // ── presignUpload path (photo upload) ─────────────────────────────────────
+  // ── Ad photo upload ────────────────────────────────────────────────────────
 
-  group('Photo upload uses authenticated presign first', () {
-    test('presign endpoint called via authenticated client', () async {
-      fake.enqueue(response: presignResponse());
-      final container = makeTestContainer(fake.apiClient);
-      final repo = container.read(marketRepositoryProvider);
-
-      final result = await repo.presignUpload(
-        bucket: 'market-ads',
-        fileName: 'photo.jpg',
-        contentType: 'image/jpeg',
-        size: 1024,
+  group('Ad photos go through the API image upload', () {
+    test('watermarked, compressed once, sent as MARKET_AD before the file', () async {
+      final photo = img.Image(width: 1200, height: 900);
+      final jpg = Uint8List.fromList(img.encodeJpg(photo, quality: 95));
+      fake.route('/storage/images', {'file_url': 'https://cdn.example/market-ads/a.jpg'});
+      final url = await uploadAdPhoto(
+        XFile.fromData(jpg, name: 'mango.jpg'),
+        ImagePolicy.defaults[ImageCategory.marketAd]!,
+        StorageService(fake.apiClient),
       );
-
-      expect(fake.calls, hasLength(1));
-      expect(fake.calls.first.method, 'POST');
-      expect(fake.calls.first.data['size'], 1024); // signed into the upload URL
-      expect(result['upload_url'], isNotNull);
-      expect(result['file_url'], isNotNull);
+      expect(url, 'https://cdn.example/market-ads/a.jpg');
+      final call = fake.calls.single;
+      expect(call.path, endsWith('/storage/images'));
+      final form = call.data as FormData;
+      expect([form.fields.first.key, form.fields.first.value], ['category', 'MARKET_AD']);
+      final sent = form.files.single.value;
+      expect(sent.contentType?.mimeType, 'image/jpeg');
+      expect(sent.length, isNot(jpg.length), reason: 'the watermark means a new encode');
     });
 
-    test('_rawDio path is outside authenticated client — documented exclusion', () {
-      // The uploadAdPhoto function uses _rawDio (bare Dio, no auth headers)
-      // for the S3 PUT. This is intentional per architecture rules.
-      // Presign (authenticated) is covered above. S3 PUT is integration-only.
-      expect(true, isTrue, reason: 'Documentation test — always passes');
+    test('a refused upload reloads the image policies', () async {
+      var reloaded = 0;
+      fake.enqueue(type: FakeResponseType.validationError);
+      final storage = StorageService(fake.apiClient, () => reloaded++);
+      final jpg = Uint8List.fromList(img.encodeJpg(img.Image(width: 800, height: 600)));
+      await expectLater(
+        storage.uploadImage(ImageCategory.marketAd, PreparedPhoto(jpg, 'image/jpeg', '.jpg'), 'a.jpg'),
+        throwsA(isA<ValidationError>()),
+      );
+      expect(reloaded, 1);
     });
   });
 

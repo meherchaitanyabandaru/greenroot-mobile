@@ -156,13 +156,19 @@ class ProfileScreen extends ConsumerWidget {
                         : 'Your purchases by date, download CSV',
                 onTap: () => context.push('/reports'),
               ),
-              if (caps.isDriverOnly)
+              if (caps.isDriverOnly) ...[
                 _SettingsTile(
                   icon: Icons.route_outlined,
                   label: 'My Trips',
                   onTap: () => context.push('/driver/trips'),
-                )
-              else if (!caps.canSell)
+                ),
+                _SettingsTile(
+                  icon: Icons.local_shipping_outlined,
+                  label: 'My Lorries',
+                  subtitle: 'The lorries you drive and which can take trips',
+                  onTap: () => context.push('/driver/lorries'),
+                ),
+              ] else if (!caps.canSell)
                 _SettingsTile(
                   icon: Icons.payments_outlined,
                   label: 'Payment History',

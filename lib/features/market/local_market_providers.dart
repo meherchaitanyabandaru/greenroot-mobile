@@ -1,16 +1,14 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import '../../core/domain/lifecycle_models.dart';
 import '../../core/network/api_client.dart';
-import '../../core/network/network_exceptions.dart';
 import '../../core/constants/api_constants.dart';
 import 'market_area.dart';
+import '../../core/media/image_policy.dart';
 import '../../core/media/photos.dart';
+import '../../core/services/storage_service.dart';
 
 // ── Models ────────────────────────────────────────────────────
 
@@ -691,21 +689,6 @@ class MarketRepository {
         data: data,
       );
 
-  Future<Map<String, dynamic>> presignUpload({
-    required String bucket,
-    required String fileName,
-    required String contentType,
-    required int size,
-  }) =>
-      _client.post<Map<String, dynamic>>(
-        ApiConstants.storagePresign,
-        data: {
-          'bucket': bucket,
-          'file_name': fileName,
-          'content_type': contentType,
-          'size': size, // signed: the upload must be exactly this size
-        },
-      );
 }
 
 final marketRepositoryProvider = Provider<MarketRepository>(
@@ -714,86 +697,14 @@ final marketRepositoryProvider = Provider<MarketRepository>(
 
 // ── Photo Upload ──────────────────────────────────────────────
 
-// Raw Dio instance intentionally without auth headers — used only for S3
-// presigned PUT requests which must not include the Authorization header.
-// Direct uploads to storage: without a connect timeout an unreachable storage
-// host leaves the post spinning forever.
-final _rawDio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
-
-/// Resizes to max 1200px, draws "GreenRoot" watermark, encodes as JPEG q80.
-/// Falls back to raw bytes if decoding fails (e.g. unsupported HEIC on web).
-Future<Uint8List> _processAdPhoto(Uint8List rawBytes) async {
-  final raw = img.decodeImage(rawBytes);
-  if (raw == null) return rawBytes;
-  final decoded = img.bakeOrientation(raw); // camera photos are often stored sideways
-
-  // Resize — max 1200px on longest side
-  const maxDim = 1200;
-  final src = (decoded.width > maxDim || decoded.height > maxDim)
-      ? (decoded.width >= decoded.height
-          ? img.copyResize(decoded,
-              width: maxDim, interpolation: img.Interpolation.linear,)
-          : img.copyResize(decoded,
-              height: maxDim, interpolation: img.Interpolation.linear,))
-      : decoded;
-
-  // Watermark: "GreenRoot" at bottom-right with drop-shadow
-  const watermark = 'GreenRoot';
-  final font = img.arial24;
-  final textW = _bitmapTextWidth(font, watermark);
-  final x = src.width - textW - 14;
-  final y = src.height - font.lineHeight - 14;
-
-  // Shadow (dark, offset 1px)
-  img.drawString(src, watermark,
-      font: font, x: x + 1, y: y + 1, color: img.ColorRgba8(0, 0, 0, 110),);
-  // Main text (white, semi-transparent)
-  img.drawString(src, watermark,
-      font: font, x: x, y: y, color: img.ColorRgba8(255, 255, 255, 200),);
-
-  return Uint8List.fromList(img.encodeJpg(src, quality: 80));
-}
-
-int _bitmapTextWidth(img.BitmapFont font, String text) => text.codeUnits
-    .fold<int>(0, (w, c) => w + (font.characters[c]?.xAdvance ?? 0));
-
-Future<String> uploadAdPhoto(XFile file, MarketRepository repo) async {
-  final rawBytes = await file.readAsBytes();
-  if (photoType(rawBytes) == null) {
-    throw const PhotoRejected('Only photos can be used in an ad (JPG, PNG, WebP or HEIC).');
-  }
-  // Decoding a camera photo takes a moment: keep it off the UI thread.
-  final processed = await compute(_processAdPhoto, rawBytes);
-  const contentType = 'image/jpeg';
-
-  final presign = await repo.presignUpload(
-    bucket: 'market-ads',
-    fileName: '${file.name.split('.').first}.jpg',
-    contentType: contentType,
-    size: processed.length,
-  );
-
-  final uploadUrl = presign['upload_url'] as String;
-  final fileUrl = presign['file_url'] as String;
-
-  try {
-    await _rawDio.put<void>(
-      uploadUrl,
-      data: processed,
-      options: Options(
-        headers: {
-          'Content-Type': contentType,
-          'Content-Length': processed.length,
-        },
-        sendTimeout: const Duration(seconds: 60),
-      ),
-    );
-  } on DioException catch (e) {
-    // Readable message (no connection / timed out) instead of a raw Dio dump.
-    throw NetworkExceptions.fromDioException(e);
-  }
-
-  return fileUrl;
+/// Prepares an ad photo with the MARKET_AD policy (upright, resized,
+/// "GreenRoot" watermark, compressed once) and uploads it through the API,
+/// which checks it again. Returns the file_url to put on the ad.
+Future<String> uploadAdPhoto(
+    XFile file, ImagePolicy policy, StorageService storage,) async {
+  final photo = await preparePhoto(file, policy, watermark: true);
+  return storage.uploadImage(ImageCategory.marketAd, photo,
+      '${file.name.split('.').first}${photo.extension}',);
 }
 
 // ── Latest Ads (home screen) ──────────────────────────────────

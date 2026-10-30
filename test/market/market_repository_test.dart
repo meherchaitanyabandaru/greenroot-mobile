@@ -105,33 +105,4 @@ void main() {
       expect(() => repo.toggleSaveAd(kTestAdId), throwsA(isA<NetworkError>()));
     });
   });
-
-  group('MarketRepository.presignUpload', () {
-    test('returns upload_url and file_url', () async {
-      fake.enqueue(response: presignResponse());
-      final container = makeTestContainer(fake.apiClient);
-      final repo = container.read(marketRepositoryProvider);
-
-      final result = await repo.presignUpload(
-        bucket: 'market-ads',
-        fileName: 'photo.jpg',
-        contentType: 'image/jpeg',
-        size: 1024,
-      );
-
-      expect(result['upload_url'], startsWith('https://'));
-      expect(result['file_url'], startsWith('https://'));
-    });
-
-    test('presign server error throws ServerError', () async {
-      fake.enqueue(type: FakeResponseType.serverError);
-      final container = makeTestContainer(fake.apiClient);
-      final repo = container.read(marketRepositoryProvider);
-
-      expect(
-        () => repo.presignUpload(bucket: 'market-ads', fileName: 'photo.jpg', contentType: 'image/jpeg', size: 1024),
-        throwsA(isA<ServerError>()),
-      );
-    });
-  });
 }

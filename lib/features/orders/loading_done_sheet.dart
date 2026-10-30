@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/consent/consent.dart';
+import '../../core/media/image_policy.dart';
 import '../../core/media/photos.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/storage_service.dart';
@@ -49,17 +51,26 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
   String? _error;
 
   Future<void> _add(ImageSource source) async {
-    final file = await pickPhoto(context, source);
+    final policy =
+        await ref.read(imagePolicyProvider(ImageCategory.loadingProof).future);
+    if (!mounted) return;
+    final file = await pickPhoto(context, source, policy: policy);
     if (file == null || !mounted) return;
     try {
-      final photo = await preparePhoto(file);
+      final photo = await preparePhoto(file, policy);
       if (mounted) setState(() => _photos.add(photo));
     } on PhotoRejected catch (e) {
       if (mounted) setState(() => _error = e.message);
     }
   }
 
+  final List<String> _photoUrls = []; // uploaded photos, the seller's evidence
+
   Future<void> _submit() async {
+    // The seller confirms varieties, quantities, condition and loading
+    // details first; the photos uploaded next are the evidence.
+    final consent = await askConsent(context, ref, ConsentStep.sellerLoading);
+    if (consent == null || !mounted) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -70,12 +81,8 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
         final p = _photos[_uploaded];
         final name =
             'loading-${widget.order.orderCode}-${_uploaded + 1}${p.extension}';
-        final url = await storage.uploadPresigned(
-          'delivery-photos',
-          p.bytes,
-          name,
-          p.mimeType,
-        );
+        final url = await storage.uploadImage(ImageCategory.loadingProof, p, name);
+        _photoUrls.add(url);
         await ApiClient.instance.post<Map<String, dynamic>>(
           ApiConstants.attachments,
           data: {
@@ -88,9 +95,9 @@ class _LoadingDoneSheetState extends ConsumerState<_LoadingDoneSheet> {
           },
         );
       }
-      final updated = await ref
-          .read(orderRepositoryProvider)
-          .completeLoading(widget.order.id, declaredNoProhibitedItems: true);
+      final updated = await ref.read(orderRepositoryProvider).completeLoading(widget.order.id,
+          declaredNoProhibitedItems: true,
+          consent: {...consent, if (_photoUrls.isNotEmpty) 'evidence': _photoUrls},);
       if (mounted) Navigator.of(context).pop(updated);
     } on AppError catch (e) {
       if (mounted) setState(() => _error = e.message);

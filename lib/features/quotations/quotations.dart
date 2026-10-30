@@ -9,13 +9,22 @@ import '../../core/network/api_client.dart';
 
 class QuotationItem {
   final int id;
-  final int plantId;
+  final int plantId; // 0 for a plant not in the catalog (isCustom)
   final String scientificName;
   final String? commonName;
   final String? description;
   final double quantity;
   final double unitPrice;
   final double totalPrice;
+  // A plant the customer could not find: the name exactly as they entered it.
+  final bool isCustom;
+  final String? customPlantName;
+  // GreenRoot's later match for that name (information only; the line is unchanged).
+  final String? linkedPlantName;
+  final String? variety;
+  final String? sizeDescription;
+  final String? grade;
+  final bool isPriced; // false on a request line the nursery has not priced yet
 
   const QuotationItem({
     required this.id,
@@ -26,21 +35,45 @@ class QuotationItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.isCustom = false,
+    this.customPlantName,
+    this.linkedPlantName,
+    this.variety,
+    this.sizeDescription,
+    this.grade,
+    this.isPriced = true,
   });
 
   factory QuotationItem.fromJson(Map<String, dynamic> j) => QuotationItem(
         id: (j['id'] as num).toInt(),
-        plantId: (j['plant_id'] as num).toInt(),
-        scientificName: j['scientific_name'] as String,
+        plantId: (j['plant_id'] as num?)?.toInt() ?? 0,
+        scientificName: j['scientific_name'] as String? ?? '',
         commonName: j['common_name'] as String?,
         description: j['description'] as String?,
         quantity: (j['quantity'] as num).toDouble(),
-        unitPrice: (j['unit_price'] as num).toDouble(),
-        totalPrice: (j['total_price'] as num).toDouble(),
+        unitPrice: (j['unit_price'] as num?)?.toDouble() ?? 0,
+        totalPrice: (j['total_price'] as num?)?.toDouble() ?? 0,
+        isCustom: j['is_custom'] == true,
+        customPlantName: j['custom_plant_name'] as String?,
+        linkedPlantName: j['linked_plant_name'] as String?,
+        variety: j['variety'] as String?,
+        sizeDescription: j['size_description'] as String?,
+        grade: j['grade'] as String?,
+        isPriced: j['is_priced'] as bool? ?? true,
       );
 
-  String get displayName =>
-      commonName?.isNotEmpty == true ? commonName! : scientificName;
+  String get displayName => customPlantName ??
+      (commonName?.isNotEmpty == true ? commonName! : scientificName);
+
+  /// Variety · size · grade, as the customer asked.
+  String? get specs {
+    final parts = [
+      if (variety != null) variety!,
+      if (sizeDescription != null) sizeDescription!,
+      if (grade != null) 'Grade $grade',
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
 }
 
 class Quotation {
@@ -76,6 +109,11 @@ class Quotation {
   final List<QuotationItem> items;
   final BackendLifecycle? lifecycle;
   final QuotationCapabilities? capabilities;
+  // A customer's request (CUSTOMER_REQUESTED until the nursery sends prices).
+  final bool isRequest;
+  final String? requestNote;
+  final DateTime? requestExpiresAt;
+  final String? declineReason;
 
   const Quotation({
     required this.id,
@@ -109,6 +147,10 @@ class Quotation {
     required this.items,
     this.lifecycle,
     this.capabilities,
+    this.isRequest = false,
+    this.requestNote,
+    this.requestExpiresAt,
+    this.declineReason,
   });
 
   bool get isInternal => quotationType == 'INTERNAL';
@@ -179,6 +221,12 @@ class Quotation {
                 j['capabilities'] as Map<String, dynamic>,
               )
             : null,
+        isRequest: j['is_request'] == true,
+        requestNote: j['request_note'] as String?,
+        requestExpiresAt: j['request_expires_at'] != null
+            ? DateTime.tryParse(j['request_expires_at'] as String)?.toLocal()
+            : null,
+        declineReason: j['decline_reason'] as String?,
       );
 }
 
@@ -194,6 +242,9 @@ class QuotationCapabilities {
   final bool canAssignManager;
   final bool canGenerateDocument;
   final bool canManageVerifyToken;
+  final bool canPrice;
+  final bool canDecline;
+  final bool canCancelRequest;
 
   const QuotationCapabilities({
     this.canEdit = false,
@@ -207,6 +258,9 @@ class QuotationCapabilities {
     this.canAssignManager = false,
     this.canGenerateDocument = false,
     this.canManageVerifyToken = false,
+    this.canPrice = false,
+    this.canDecline = false,
+    this.canCancelRequest = false,
   });
 
   factory QuotationCapabilities.fromJson(Map<String, dynamic> j) =>
@@ -222,6 +276,9 @@ class QuotationCapabilities {
         canAssignManager: j['can_assign_manager'] as bool? ?? false,
         canGenerateDocument: j['can_generate_document'] as bool? ?? false,
         canManageVerifyToken: j['can_manage_verify_token'] as bool? ?? false,
+        canPrice: j['can_price'] as bool? ?? false,
+        canDecline: j['can_decline'] as bool? ?? false,
+        canCancelRequest: j['can_cancel_request'] as bool? ?? false,
       );
 }
 
@@ -248,6 +305,74 @@ class QuotationItemRequest {
         'quantity': quantity,
         'unit_price': unitPrice,
         'total_price': totalPrice,
+      };
+}
+
+/// One line of a customer's request: a catalog plant or the customer's own
+/// name for a plant not in the catalog (never both).
+class RequestLine {
+  final int? plantId;
+  final String? plantName; // catalog name, for display
+  final String? customPlantName;
+  final String? scientificName;
+  final String? variety;
+  final String? sizeDescription;
+  final String? grade;
+  final String? notes;
+  final double quantity;
+
+  const RequestLine({
+    this.plantId,
+    this.plantName,
+    this.customPlantName,
+    this.scientificName,
+    this.variety,
+    this.sizeDescription,
+    this.grade,
+    this.notes,
+    required this.quantity,
+  });
+
+  bool get isCustom => plantId == null;
+  String get displayName => customPlantName ?? plantName ?? '';
+
+  RequestLine copyWith({double? quantity}) => RequestLine(
+        plantId: plantId,
+        plantName: plantName,
+        customPlantName: customPlantName,
+        scientificName: scientificName,
+        variety: variety,
+        sizeDescription: sizeDescription,
+        grade: grade,
+        notes: notes,
+        quantity: quantity ?? this.quantity,
+      );
+
+  Map<String, dynamic> toJson() {
+    String? t(String? v) => v == null || v.trim().isEmpty ? null : v.trim();
+    return {
+      if (plantId != null) 'plant_id': plantId,
+      if (t(customPlantName) != null) 'custom_plant_name': t(customPlantName),
+      if (t(scientificName) != null) 'scientific_name': t(scientificName),
+      if (t(variety) != null) 'variety': t(variety),
+      if (t(sizeDescription) != null) 'size_description': t(sizeDescription),
+      if (t(grade) != null) 'grade': t(grade),
+      if (t(notes) != null) 'description': t(notes),
+      'quantity': quantity,
+    };
+  }
+}
+
+/// A price the nursery gives one line of a request.
+class LinePrice {
+  final int itemId;
+  final double unitPrice;
+  final double? quantity; // what the nursery can supply, if different
+  const LinePrice(this.itemId, this.unitPrice, {this.quantity});
+  Map<String, dynamic> toJson() => {
+        'item_id': itemId,
+        'unit_price': unitPrice,
+        if (quantity != null) 'quantity': quantity,
       };
 }
 
@@ -400,6 +525,51 @@ class QuotationRepository {
     await _client.delete(ApiConstants.quotationById(id));
   }
 
+  /// A customer asks [nurseryId] for prices. [idempotencyKey]: one per form,
+  /// so a retry after a lost answer replays it (see newIdempotencyKey).
+  Future<Quotation> createRequest({
+    required int nurseryId,
+    required List<RequestLine> lines,
+    String? note,
+    required String idempotencyKey,
+  }) =>
+      _client.post(
+        ApiConstants.quotationRequests,
+        data: {
+          'nursery_id': nurseryId,
+          if (note?.trim().isNotEmpty == true) 'note': note!.trim(),
+          'items': lines.map((l) => l.toJson()).toList(),
+        },
+        headers: {'Idempotency-Key': idempotencyKey},
+        fromJson: (data) => Quotation.fromJson(
+            (data as Map<String, dynamic>)['quotation'] as Map<String, dynamic>,),
+      );
+
+  Future<Quotation> priceRequest(int id, List<LinePrice> prices,
+          {DateTime? validUntil,}) =>
+      _client.post(
+        ApiConstants.quotationPrice(id),
+        data: {
+          'items': prices.map((p) => p.toJson()).toList(),
+          if (validUntil != null) 'valid_until': validUntil.toUtc().toIso8601String(),
+        },
+        fromJson: (data) => Quotation.fromJson(
+            (data as Map<String, dynamic>)['quotation'] as Map<String, dynamic>,),
+      );
+
+  Future<Quotation> declineRequest(int id, String reason) => _client.post(
+        ApiConstants.quotationDecline(id),
+        data: {'reason': reason},
+        fromJson: (data) => Quotation.fromJson(
+            (data as Map<String, dynamic>)['quotation'] as Map<String, dynamic>,),
+      );
+
+  Future<Quotation> cancelRequest(int id) => _client.post(
+        ApiConstants.quotationCancelRequest(id),
+        fromJson: (data) => Quotation.fromJson(
+            (data as Map<String, dynamic>)['quotation'] as Map<String, dynamic>,),
+      );
+
   Future<Quotation> approveQuotation(int id) async {
     return sendToCustomer(id);
   }
@@ -453,9 +623,11 @@ class QuotationRepository {
     );
   }
 
-  Future<Quotation> acceptQuotation(int id) async {
+  /// [consent]: the buyer's acknowledgement (see confirmAcceptQuotation).
+  Future<Quotation> acceptQuotation(int id, {Map<String, dynamic>? consent}) async {
     return _client.post(
       '${ApiConstants.quotationById(id)}/buyer-accept',
+      data: {if (consent != null) 'consent': consent},
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Quotation.fromJson(d['quotation'] as Map<String, dynamic>);

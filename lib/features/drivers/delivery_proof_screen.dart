@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/media/image_policy.dart';
 import '../../core/media/photos.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -37,10 +38,13 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
       );
       return;
     }
-    final file = await pickPhoto(context, source);
+    final policy =
+        await ref.read(imagePolicyProvider(ImageCategory.deliveryProof).future);
+    if (!mounted) return;
+    final file = await pickPhoto(context, source, policy: policy);
     if (file == null || !mounted) return;
     try {
-      final prepared = await preparePhoto(file);
+      final prepared = await preparePhoto(file, policy);
       if (!mounted) return;
       setState(() {
         _photos.add(file);
@@ -86,8 +90,8 @@ class _DeliveryProofScreenState extends ConsumerState<DeliveryProofScreen> {
         final photo = _photos[i];
         final bytes = _prepared[i].bytes;
         final contentType = _prepared[i].mimeType;
-        final fileUrl = await storage.uploadPresigned(
-            'delivery-photos', bytes, photo.name, contentType,);
+        final fileUrl = await storage.uploadImage(
+            ImageCategory.deliveryProof, _prepared[i], photo.name,);
         await client.post<Map<String, dynamic>>(
           ApiConstants.attachments,
           data: {

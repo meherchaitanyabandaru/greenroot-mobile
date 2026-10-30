@@ -413,10 +413,14 @@ class OrderRepository {
   Future<Order> completeLoading(
     int id, {
     required bool declaredNoProhibitedItems,
+    Map<String, dynamic>? consent, // the seller's confirmation (askConsent)
   }) async {
     return _client.post(
       ApiConstants.orderCompleteLoading(id),
-      data: {'declared_no_prohibited_items': declaredNoProhibitedItems},
+      data: {
+        'declared_no_prohibited_items': declaredNoProhibitedItems,
+        if (consent != null) 'consent': consent,
+      },
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return Order.fromJson(d['order'] as Map<String, dynamic>);

@@ -23,6 +23,7 @@ import '../../core/widgets/order_timeline.dart' show QuotationTimeline;
 import '../auth/presentation/providers/session_provider.dart';
 import '../orders/orders.dart';
 import 'accept_confirm.dart';
+import 'quotation_request_panel.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
 import '../../core/feedback/app_haptics.dart';
@@ -52,12 +53,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
   bool _assigning = false;
 
   Future<void> _buyerAccept(Quotation q) async {
-    if (!await confirmAcceptQuotation(context, q) || !mounted) return;
+    final consent = await confirmAcceptQuotation(context, ref, q);
+    if (consent == null || !mounted) return;
     final hasDeliveryAddress = await pickDeliveryAddress(context, ref, q);
     if (!hasDeliveryAddress || !mounted) return;
     setState(() => _buyerActing = true);
     try {
-      await ref.read(quotationRepositoryProvider).acceptQuotation(q.id);
+      await ref.read(quotationRepositoryProvider).acceptQuotation(q.id, consent: consent);
       if (mounted) {
         AppHaptics.success();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -1073,11 +1075,23 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item.scientificName,
+                                Text(item.isCustom ? item.displayName : item.scientificName,
                                     style: AppTypography.bodySmall
                                         .copyWith(fontWeight: FontWeight.w600),),
-                                if (item.commonName != null)
+                                if (!item.isCustom && item.commonName != null)
                                   Text(item.commonName!,
+                                      style: AppTypography.caption.copyWith(
+                                          color: AppColors.textMuted,),),
+                                // The customer's own name for a plant not in the list.
+                                if (item.isCustom)
+                                  Text(
+                                      item.linkedPlantName != null
+                                          ? 'Not in the plant list · GreenRoot: ${item.linkedPlantName}'
+                                          : 'Not in the plant list',
+                                      style: AppTypography.caption.copyWith(
+                                          color: AppColors.amber600,),),
+                                if (item.specs != null)
+                                  Text(item.specs!,
                                       style: AppTypography.caption.copyWith(
                                           color: AppColors.textMuted,),),
                                 if (item.description != null)
@@ -1094,13 +1108,13 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
                                 textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 68,
-                            child: Text(inr(item.unitPrice),
+                            child: Text(item.isPriced ? inr(item.unitPrice) : '—',
                                 style: AppTypography.bodySmall,
                                 textAlign: TextAlign.right,),),
                         SizedBox(
                             width: 70,
                             child: Text(
-                                inr(item.totalPrice),
+                                item.isPriced ? inr(item.totalPrice) : '—',
                                 style: AppTypography.bodySmall.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primaryMain,),
@@ -1155,6 +1169,14 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
+
+          // A customer's request: message, deadline, price / decline / cancel.
+          if (q.isRequest &&
+              const {'CUSTOMER_REQUESTED', 'REQUEST_DECLINED', 'REQUEST_CANCELLED'}.contains(q.status))
+            QuotationRequestPanel(
+              quotation: q,
+              onChanged: () => ref.invalidate(quotationDetailProvider(widget.quotationId)),
+            ),
 
           // Rejection reason
           if (q.status == 'CUSTOMER_REJECTED' && q.rejectionReason != null) ...[

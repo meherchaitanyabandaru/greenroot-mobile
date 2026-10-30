@@ -211,7 +211,7 @@ class _BuyerOrderCreateScreenState
           children: [
             // ── Nursery picker ────────────────────────────────────────────
             const _SectionLabel('Select Nursery'),
-            _NurseryPickerTile(
+            NurseryPickerTile(
               selected: _selectedNursery,
               onSelected: (n) => setState(() {
                 _selectedNursery = n;
@@ -628,17 +628,17 @@ class _SelectedAddressCard extends StatelessWidget {
   }
 }
 
-class _NurseryPickerTile extends ConsumerStatefulWidget {
+class NurseryPickerTile extends ConsumerStatefulWidget {
   final Nursery? selected;
   final ValueChanged<Nursery> onSelected;
 
-  const _NurseryPickerTile({required this.selected, required this.onSelected});
+  const NurseryPickerTile({super.key, required this.selected, required this.onSelected});
 
   @override
-  ConsumerState<_NurseryPickerTile> createState() => _NurseryPickerTileState();
+  ConsumerState<NurseryPickerTile> createState() => NurseryPickerTileState();
 }
 
-class _NurseryPickerTileState extends ConsumerState<_NurseryPickerTile> {
+class NurseryPickerTileState extends ConsumerState<NurseryPickerTile> {
   Future<void> _pick() async {
     final result = await showModalBottomSheet<Nursery>(
       context: context,
