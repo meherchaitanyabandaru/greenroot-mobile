@@ -90,23 +90,25 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
         AppSpacing.screenPadding,
         AppSpacing.x2l + bottomPadding,
       ),
-      child: _created != null
-          ? _SuccessView(
-              invite: _created!,
-              onCopy: _copyUUID,
-              onDone: () => Navigator.pop(context),
-            )
-          : _FormView(
-              formKey: _formKey,
-              nameCtrl: _nameCtrl,
-              phoneCtrl: _phoneCtrl,
-              title: _title,
-              roleLabel: _roleLabel,
-              isLoading: _isLoading,
-              error: _error,
-              onSubmit: _submit,
-              onCancel: () => Navigator.pop(context),
-            ),
+      child: SingleChildScrollView(
+        child: _created != null
+            ? _SuccessView(
+                invite: _created!,
+                onCopy: _copyUUID,
+                onDone: () => Navigator.pop(context),
+              )
+            : _FormView(
+                formKey: _formKey,
+                nameCtrl: _nameCtrl,
+                phoneCtrl: _phoneCtrl,
+                title: _title,
+                roleLabel: _roleLabel,
+                isLoading: _isLoading,
+                error: _error,
+                onSubmit: _submit,
+                onCancel: () => Navigator.pop(context),
+              ),
+      ),
     );
   }
 }

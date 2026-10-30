@@ -459,9 +459,12 @@ class DriverTripMapBodyState extends ConsumerState<DriverTripMapBody> {
   void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;
     isError ? AppHaptics.error() : AppHaptics.success();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
       content: Text(msg),
       backgroundColor: isError ? AppColors.red600 : AppColors.primaryMain,
+      duration: const Duration(seconds: 2),
     ),);
   }
 

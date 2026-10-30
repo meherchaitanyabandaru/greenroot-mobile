@@ -126,10 +126,13 @@ class _TripPreviewScreenState extends ConsumerState<TripPreviewScreen> {
           .acceptDispatch(_dispatch!.id, widget.code);
       ref.invalidate(activeDriverTripProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Trip accepted. Follow the steps on the trip screen.'),
             backgroundColor: AppColors.primaryMain,
+            duration: Duration(seconds: 2),
           ),
         );
         _openTrip(context, accepted.id);
