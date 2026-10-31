@@ -109,7 +109,9 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
     final session = ref.read(sessionProvider);
     if (!session.isAuthenticated || ref.read(permissionServiceProvider).isAdmin) return false;
     const hidden = {'/create-profile', '/account-ready', '/select-activity', '/workspace-select', '/mango'};
-    return !hidden.contains(appRouter.routerDelegate.currentConfiguration.uri.path);
+    // The screen on top (a pushed /mango is not in the base uri).
+    final config = appRouter.routerDelegate.currentConfiguration;
+    return config.isNotEmpty && !hidden.contains(config.last.matchedLocation);
   }
 
   @override
