@@ -518,7 +518,10 @@ void main() {
       player.finish();
       await pumpFor(tester, 300);
       expect(find.text('You have asked all 5 questions today'), findsOneWidget);
-      expect(find.textContaining('Mango is back at 12:00 AM'), findsOneWidget);
+      // India midnight in the phone's own zone (CI runs in UTC: 6:30 PM).
+      final at = DateTime.parse('2026-11-01T00:00:00+05:30').toLocal();
+      final h = at.hour == 0 ? 12 : (at.hour > 12 ? at.hour - 12 : at.hour);
+      expect(find.textContaining('Mango is back at $h:${at.minute.toString().padLeft(2, '0')} ${at.hour < 12 ? 'AM' : 'PM'}'), findsOneWidget);
       expect(find.text('0/5'), findsOneWidget);
       expect(tester.getSemantics(find.bySemanticsLabel('Start speaking')), isSemantics(isButton: true, isEnabled: false));
     });
