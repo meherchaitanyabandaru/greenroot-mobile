@@ -735,7 +735,7 @@ class _NurseryPickerSheetState extends ConsumerState<_NurseryPickerSheet> {
       final (nurseries, _) = await ref
           .read(nurseryRepositoryProvider)
           .listNurseries(
-              search: query.isEmpty ? null : query, status: 'active',);
+              search: query.isEmpty ? null : query, status: 'APPROVED',);
       if (mounted) setState(() => _results = nurseries);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
