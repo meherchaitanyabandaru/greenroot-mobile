@@ -893,7 +893,7 @@ class _LocationResultRow extends StatelessWidget {
                           .copyWith(color: AppColors.textSecondary),),
                 ] else ...[
                   const SizedBox(height: 2),
-                  Text('Pincode not available — you\'ll enter it next',
+                  Text('PIN code not on the map here — you will type it on the next step',
                       style: AppTypography.bodySmall.copyWith(
                           color: AppColors.amber700,),),
                 ],

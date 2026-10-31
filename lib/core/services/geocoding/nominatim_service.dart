@@ -91,7 +91,26 @@ class NominatimGeocodingService implements GeocodingService {
     );
 
     if (response.data == null) return null;
-    final result = _parse(response.data!);
+    var result = _parse(response.data!);
+    // OSM often keeps the pincode on the building or street, not the
+    // neighbourhood (Hyderabad: none at zoom 14, 500081 at zoom 18; checked
+    // 2026-10-31). Ask once more at street level, a second later (1 req/s).
+    if (result.postalCode == null) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (cancelToken?.isCancelled == true) return result;
+      try {
+        final street = await _dio.get<Map<String, dynamic>>(
+          '/reverse',
+          queryParameters: {'lat': lat, 'lon': lon, 'format': 'json', 'addressdetails': 1, 'zoom': 18},
+          cancelToken: cancelToken,
+        );
+        final pin = street.data == null ? null : _parse(street.data!).postalCode;
+        if (pin != null) result = result.withPostalCode(pin);
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) rethrow;
+        // Keep the first answer; the user types the PIN.
+      }
+    }
     _cache[key] = [result];
     return result;
   }

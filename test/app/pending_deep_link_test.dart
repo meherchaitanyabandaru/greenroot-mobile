@@ -8,8 +8,8 @@ void main() {
     expect(PendingDeepLink.take(), isNull);
   });
 
-  test('splash, sign-in and home are not remembered', () {
-    for (final path in ['/', '/login', '/otp', '/home']) {
+  test('splash, sign-in, home and the suspended page are not remembered', () {
+    for (final path in ['/', '/login', '/otp', '/home', '/account-suspended']) {
       PendingDeepLink.remember(Uri.parse(path));
       expect(PendingDeepLink.take(), isNull, reason: path);
     }

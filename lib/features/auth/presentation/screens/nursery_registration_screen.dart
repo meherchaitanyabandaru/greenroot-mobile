@@ -478,12 +478,17 @@ class _NurseryRegistrationScreenState
               const SizedBox(height: AppSpacing.lg),
 
               AppTextField(
-                label: 'Postal Code',
-                hint: '560001',
+                label: 'PIN code',
+                hint: '6 digits, e.g. 533126',
                 controller: _postalCodeCtrl,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                // The map does not know every PIN (OSM); then the owner types it.
+                helperText: _pickedLocation != null && _pickedLocation!.postalCode?.isNotEmpty != true
+                    ? 'The map did not find your PIN code. Please type it.'
+                    : null,
+                validator: validNurseryPin,
               ),
 
               if (state.error != null) ...[
@@ -695,4 +700,12 @@ class _LocationPickerTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A nursery's PIN code: required, 6 digits, not starting with 0.
+String? validNurseryPin(String? v) {
+  final pin = (v ?? '').trim();
+  if (pin.isEmpty) return 'PIN code is required';
+  if (!RegExp(r'^[1-9][0-9]{5}$').hasMatch(pin)) return 'Enter the 6-digit PIN code';
+  return null;
 }

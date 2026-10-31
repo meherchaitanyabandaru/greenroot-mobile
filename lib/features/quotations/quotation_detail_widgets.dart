@@ -102,9 +102,12 @@ class _ManagerPickerSheetState extends State<_ManagerPickerSheet> {
                       ],),)
                     : _managers == null || _managers!.isEmpty
                         ? Center(
-                            child: Text('No managers in this nursery',
-                                style: AppTypography.body
-                                    .copyWith(color: AppColors.textMuted),),)
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Text('No managers in this nursery',
+                                  style: AppTypography.body
+                                      .copyWith(color: AppColors.textMuted),),
+                              const AddMembersButton.managers(),
+                            ],),)
                         : ListView.separated(
                             controller: ctrl,
                             padding: const EdgeInsets.symmetric(

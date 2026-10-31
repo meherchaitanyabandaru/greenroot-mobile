@@ -48,11 +48,12 @@ class _AssignManagerSheet extends StatelessWidget {
                       size: 40, color: AppColors.primaryMain,),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'No managers found for this nursery.\nInvite a manager from Connections.',
+                    'No managers found for this nursery.',
                     style: AppTypography.body
                         .copyWith(color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
+                  const AddMembersButton.managers(),
                 ],
               ),
             )

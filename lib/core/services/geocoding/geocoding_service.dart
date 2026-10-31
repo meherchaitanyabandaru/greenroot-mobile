@@ -49,6 +49,18 @@ class AddressSuggestion {
     this.longitude,
   });
 
+  AddressSuggestion withPostalCode(String pin) => AddressSuggestion(
+        displayName: displayName,
+        addressLine1: addressLine1,
+        addressLine2: addressLine2,
+        city: city,
+        state: state,
+        postalCode: pin,
+        country: country,
+        latitude: latitude,
+        longitude: longitude,
+      );
+
   @override
   String toString() => displayName;
 }

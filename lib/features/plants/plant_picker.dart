@@ -61,6 +61,7 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
   List<PlantMatch> _results = [];
   bool _loading = false;
   bool _searched = false;
+  bool _failed = false; // the search did not get through (after one retry)
   Timer? _debounce;
   int _seq = 0; // only the latest search may show its results
 
@@ -78,8 +79,11 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
     _debounce = Timer(const Duration(milliseconds: 300), () => _search(query));
   }
 
+  String _lastQuery = '';
+
   Future<void> _search(String query) async {
     _debounce?.cancel();
+    _lastQuery = query;
     final seq = ++_seq;
     if (query.trim().isEmpty) {
       setState(() {
@@ -98,9 +102,15 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
         _results = plants;
         _searched = true;
         _loading = false;
+        _failed = false;
       });
     } catch (_) {
-      if (mounted && seq == _seq) setState(() => _loading = false);
+      if (mounted && seq == _seq) {
+        setState(() {
+          _loading = false;
+          _failed = true; // say so, instead of an empty list
+        });
+      }
     }
   }
 
@@ -183,7 +193,18 @@ class PlantPickerSheetState extends ConsumerState<PlantPickerSheet> {
             const SizedBox(height: 8),
             const Divider(height: 1),
             Expanded(
-              child: !_searched
+              child: _failed
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text("Couldn't search. Check your connection.",
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),),
+                          TextButton(onPressed: () => _search(_lastQuery), child: const Text('Try again')),
+                        ],
+                      ),
+                    )
+                  : !_searched
                   ? Center(
                       child: Text(
                         'Type at least 2 characters to search',

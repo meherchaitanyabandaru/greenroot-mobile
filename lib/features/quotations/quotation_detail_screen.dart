@@ -28,6 +28,7 @@ import 'quotations.dart';
 import '../../core/utilities/money.dart';
 import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/app_loader.dart';
+import '../owner/add_members_button.dart';
 
 part 'quotation_detail_widgets.dart';
 
@@ -575,6 +576,11 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
             !isBuyerView &&
             (q.assignedManagerUserId == null ||
                 q.assignedManagerUserId == myUserId));
+    // An internal draft can become a customer quotation later (owner only).
+    final canMakeCustomer = !isBuyerView &&
+        q.status == 'INTERNAL_DRAFT' &&
+        canEditContent &&
+        (backendCaps?.canUpdateCustomer ?? caps.ownedNurseryId == q.nurseryId);
     final buyerCanAct = (backendCaps?.canAccept ?? false) ||
         (backendCaps?.canReject ?? false) ||
         (backendCaps == null && isBuyerView && q.status == 'CUSTOMER_SENT');
@@ -625,12 +631,26 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
               onSelected: (v) async {
                 if (v == 'pdf') await _downloadPdf(q);
                 if (v == 'delete') await _confirmDelete(q);
+                if (v == 'to_customer' && mounted) {
+                  final done = await context.push<bool>(
+                      '/quotations/${q.id}/edit?to=customer', extra: q,);
+                  if (done == true && mounted) {
+                    ref.invalidate(quotationDetailProvider(widget.quotationId));
+                  }
+                }
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(
                     value: 'pdf',
                     child: _MenuOption(
                         icon: Icons.download_rounded, label: 'Download PDF',),),
+                if (canMakeCustomer)
+                  const PopupMenuItem(
+                    value: 'to_customer',
+                    child: _MenuOption(
+                        icon: Icons.person_add_alt_1_outlined,
+                        label: 'Make customer quotation',),
+                  ),
                 if (canDelete) ...[
                   const PopupMenuDivider(),
                   const PopupMenuItem(

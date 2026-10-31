@@ -247,9 +247,13 @@ class PlantRepository {
 
   /// Catalog plants first, then botanical names (3+ characters) for pickers.
   Future<List<PlantMatch>> lookupPlants(String query, {int limit = 10}) async {
+    // Typed while the user waits: a dropped request is tried again at once
+    // (a one-off "request timed out" was seen on Wi-Fi; the server answers in ~1 s).
     return _client.get(
       ApiConstants.plantLookup,
       queryParameters: {'q': query, 'limit': limit},
+      retryOnce: true,
+      timeout: const Duration(seconds: 10),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return (d['results'] as List<dynamic>)
@@ -302,6 +306,8 @@ class PlantRepository {
   Future<List<PlantSize>> getSizes() async {
     return _client.get(
       ApiConstants.plantSizes,
+      retryOnce: true,
+      timeout: const Duration(seconds: 10),
       fromJson: (data) {
         final d = data as Map<String, dynamic>;
         return (d['sizes'] as List<dynamic>)
