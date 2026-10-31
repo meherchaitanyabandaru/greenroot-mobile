@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/providers/session_provider.dart';
-import '../core/mango/mango_controller.dart';
-import '../core/mango/mango_guides.dart';
 import '../core/mango/mango_layer.dart';
 import '../core/update/update_gate.dart';
 import 'router.dart';
@@ -105,27 +103,13 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
     }
   }
 
-  /// Who Ask Mango is helping on this screen, or null to hide it.
-  MangoAudience? _mangoAudience() {
+  /// The 🥭 button opens Mango AI: for signed-in owners, managers, customers
+  /// and drivers (the API checks the same), not admins, not while signing up.
+  bool _showMango() {
     final session = ref.read(sessionProvider);
-    final path = appRouter.routerDelegate.currentConfiguration.uri.path;
-    if (!session.isAuthenticated) return path == '/login' ? MangoAudience.guest : null;
-    // Signing up: a few simple choices, nothing to guide yet, and the button
-    // sat on the role cards.
-    const signingUp = {
-      '/create-profile',
-      '/account-ready',
-      '/select-activity',
-      '/workspace-select',
-    };
-    if (signingUp.contains(path)) {
-      return null;
-    }
-    final caps = session.capabilities;
-    if (caps.isNurseryOwner) return MangoAudience.owner;
-    if (caps.isManager) return MangoAudience.manager;
-    if (caps.hasDriverProfile) return MangoAudience.driver;
-    return MangoAudience.customer;
+    if (!session.isAuthenticated || ref.read(permissionServiceProvider).isAdmin) return false;
+    const hidden = {'/create-profile', '/account-ready', '/select-activity', '/workspace-select', '/mango'};
+    return !hidden.contains(appRouter.routerDelegate.currentConfiguration.uri.path);
   }
 
   @override
@@ -151,12 +135,11 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
           data: media.copyWith(textScaler: TextScaler.linear(cappedScale)),
           // Below the API's minimum version only the update screen shows.
           child: UpdateGate(
-            // Ask Mango sits above every screen; it adds nothing to them.
+            // The 🥭 button sits above every screen; it adds nothing to them.
             child: MangoLayer(
-              controller: mango,
               refresh: Listenable.merge(
                   [appRouter.routerDelegate, mangoPopups.open],),
-              audience: _mangoAudience,
+              visible: _showMango,
               onAsk: () => appRouter.push('/mango'),
               child: child ?? const SizedBox.shrink(),
             ),

@@ -543,7 +543,7 @@ final appRouter = GoRouter(
       },
     ),
     // Static segments — must be listed BEFORE /quotations/:id to win routing
-    GoRoute(path: '/mango', redirect: _driverGuard, builder: (_, __) => const MangoChatScreen()),
+    GoRoute(path: '/mango', builder: (_, __) => const MangoChatScreen()),
     GoRoute(
       path: '/quotations/request',
       redirect: _driverGuard,
