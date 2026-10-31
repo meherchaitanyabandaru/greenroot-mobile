@@ -563,8 +563,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/quotations/:id/edit',
       redirect: _canSellGuard,
-      builder: (_, state) =>
-          QuotationCreateScreen(quotation: state.extra as Quotation?),
+      builder: (_, state) => QuotationCreateScreen(
+        quotation: state.extra as Quotation?,
+        toCustomer: state.uri.queryParameters['to'] == 'customer',
+      ),
     ),
 
     // ── Connections ───────────────────────────────────────────────────────────

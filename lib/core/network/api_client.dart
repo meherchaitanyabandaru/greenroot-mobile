@@ -53,13 +53,25 @@ class ApiClient {
   }
 
   // ── Typed request wrappers ───────────────────────────────────────────────
+  /// [retryOnce]: for reads that are safe to repeat (searches, lists): a
+  /// dropped connection or a timeout is tried once more before it is
+  /// shown; with [timeout] the wait per try is shorter than the default.
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     T Function(dynamic)? fromJson,
+    bool retryOnce = false,
+    Duration? timeout,
   }) async {
     try {
-      final response = await dio.get(path, queryParameters: queryParameters);
+      Response<dynamic> response;
+      final options = timeout == null ? null : Options(receiveTimeout: timeout);
+      try {
+        response = await dio.get(path, queryParameters: queryParameters, options: options);
+      } on DioException catch (e) {
+        if (!retryOnce || !_transient(e)) rethrow;
+        response = await dio.get(path, queryParameters: queryParameters, options: options);
+      }
       return fromJson != null ? fromJson(response.data) : response.data as T;
     } on DioException catch (e) {
       throw NetworkExceptions.fromDioException(e);
@@ -165,6 +177,15 @@ class ApiClient {
   }
 
 }
+
+bool _transient(DioException e) => switch (e.type) {
+      DioExceptionType.connectionError ||
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.sendTimeout =>
+        true,
+      _ => false,
+    };
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient.instance);
 

@@ -40,6 +40,8 @@ import '../../core/feedback/app_haptics.dart';
 import '../../core/widgets/live_activity_strip.dart';
 import '../../core/widgets/app_loader.dart';
 
+import '../owner/add_members_button.dart';
+
 part 'order_detail_sheets.dart';
 part 'order_detail_items.dart';
 part 'order_detail_delivery.dart';

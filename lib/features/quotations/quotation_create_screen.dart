@@ -19,6 +19,7 @@ import '../../core/widgets/unsaved_changes_guard.dart';
 import 'quotations.dart';
 import '../../core/utilities/money.dart';
 import '../../core/widgets/app_loader.dart';
+import '../owner/add_members_button.dart';
 
 // ── Quotation type enum ────────────────────────────────────────────────────────
 
@@ -164,7 +165,10 @@ class QuotationCreateScreen extends ConsumerStatefulWidget {
   /// Pre-selected type (used when navigating from selling screen FAB).
   final String? initialType;
 
-  const QuotationCreateScreen({super.key, this.quotation, this.initialType});
+  /// Edit an internal draft into a customer quotation (owner only).
+  final bool toCustomer;
+
+  const QuotationCreateScreen({super.key, this.quotation, this.initialType, this.toCustomer = false});
 
   @override
   ConsumerState<QuotationCreateScreen> createState() =>
@@ -191,6 +195,8 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
   String? _quotationType; // 'INTERNAL' or 'CUSTOMER'
 
   bool get _isEdit => widget.quotation != null;
+  bool get _toCustomer =>
+      widget.toCustomer && widget.quotation?.status == 'INTERNAL_DRAFT';
   bool get _isInternal => _quotationType == 'INTERNAL';
   bool get _canEditContent =>
       !_isEdit ||
@@ -202,7 +208,7 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
     super.initState();
     if (_isEdit) {
       final q = widget.quotation!;
-      _quotationType = q.quotationType;
+      _quotationType = _toCustomer ? 'CUSTOMER' : q.quotationType;
       _nameCtrl.text = q.recipientName ?? '';
       _mobileCtrl.text = q.recipientMobile ?? '';
       if (q.customerUserId != null) {
@@ -377,6 +383,20 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
 
       Quotation? created;
       if (_isEdit) {
+        if (_toCustomer) {
+          final name = _nameCtrl.text.trim(), mobile = _mobileCtrl.text.trim();
+          if (_selectedCustomer == null && name.isEmpty && mobile.isEmpty) {
+            setState(() => _error = 'Choose a customer, or enter their name or mobile');
+            return;
+          }
+          // First: this turns the internal draft into a customer draft.
+          await repo.updateQuotationCustomer(
+            id: widget.quotation!.id,
+            customerUserId: _selectedCustomer?.userId,
+            recipientName: name.isEmpty ? null : name,
+            recipientMobile: mobile.isEmpty ? null : mobile,
+          );
+        }
         await repo.updateQuotation(
           id: widget.quotation!.id,
           customerUserId:
@@ -412,7 +432,11 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
         final router = GoRouter.of(context);
         final newId = created?.id;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_isEdit ? 'Quotation updated' : 'Quotation created'),
+          content: Text(_toCustomer
+              ? 'Now a customer quotation — send it when ready'
+              : _isEdit
+                  ? 'Quotation updated'
+                  : 'Quotation created',),
           backgroundColor: AppColors.primaryMain,
           action: newId == null
               ? null
@@ -451,13 +475,17 @@ class _QuotationCreateScreenState extends ConsumerState<QuotationCreateScreen> {
     }
 
     final typeLabel = _isInternal ? 'Internal Quotation' : 'Quotation';
-    final title = _isEdit ? 'Edit Quotation' : typeLabel;
+    final title = _toCustomer
+        ? 'Make Customer Quotation'
+        : _isEdit
+            ? 'Edit Quotation'
+            : typeLabel;
     final session = ref.watch(sessionProvider);
     final isOwner = session.capabilities.isNurseryOwner;
     final nurseryId = session.nurseryId;
     final showOwnerCustomerPicker =
         !_isInternal && isOwner && nurseryId != null;
-    final showManualCustomerFields = !_isInternal && !_isEdit;
+    final showManualCustomerFields = !_isInternal && (!_isEdit || _toCustomer);
     final customerNameText = _nameCtrl.text.trim();
     final customerTitle = _selectedCustomer?.displayName ??
         (customerNameText.isNotEmpty
@@ -1369,9 +1397,12 @@ class _ManagerPickerSheetCreateState extends State<_ManagerPickerSheetCreate> {
                       ],),)
                     : _managers == null || _managers!.isEmpty
                         ? Center(
-                            child: Text('No managers in this nursery',
-                                style: AppTypography.body
-                                    .copyWith(color: AppColors.textMuted),),)
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Text('No managers in this nursery',
+                                  style: AppTypography.body
+                                      .copyWith(color: AppColors.textMuted),),
+                              const AddMembersButton.managers(),
+                            ],),)
                         : ListView.separated(
                             controller: ctrl,
                             padding: const EdgeInsets.symmetric(

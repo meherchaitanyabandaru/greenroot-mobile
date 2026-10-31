@@ -120,6 +120,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/action_tile_grid.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../../core/widgets/shimmer.dart';
 import '../dispatches/dispatches.dart';
@@ -332,13 +333,7 @@ class _ManagerQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppSpacing.md,
-      mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: 2.6,
+    return ActionTileGrid(
       children: [
         _ManagerActionCell(
           icon: Icons.add_shopping_cart_rounded,
@@ -395,7 +390,7 @@ class _ManagerActionCell extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

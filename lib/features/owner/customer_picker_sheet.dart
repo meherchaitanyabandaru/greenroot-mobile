@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import 'owner_members_screen.dart' show NurseryCustomer;
 import '../../core/widgets/app_loader.dart';
+import 'add_members_button.dart';
 
 /// Name, email or any part of the mobile number ("98111", "kiran").
 bool customerMatches(NurseryCustomer c, String query) {
@@ -166,10 +167,16 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                           )
                         : _customers == null || _customers!.isEmpty
                             ? Center(
-                                child: Text(
-                                  'No connected customers',
-                                  style: AppTypography.body
-                                      .copyWith(color: AppColors.textMuted),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'No connected customers',
+                                      style: AppTypography.body
+                                          .copyWith(color: AppColors.textMuted),
+                                    ),
+                                    const AddMembersButton.customers(),
+                                  ],
                                 ),
                               )
                             : _shown.isEmpty

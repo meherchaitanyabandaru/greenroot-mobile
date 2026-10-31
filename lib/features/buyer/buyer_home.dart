@@ -80,6 +80,7 @@ import '../../core/domain/lifecycle_presenter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/action_tile_grid.dart';
 import '../../core/widgets/universal_qr_screen.dart';
 import '../dispatches/dispatches.dart';
 import 'buyer_tab.dart';
@@ -538,13 +539,8 @@ class _BuyerActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2.6,
+    return ActionTileGrid(
+      spacing: 12,
       children: [
         _ActionCell(
           icon: Icons.eco_outlined,
@@ -607,7 +603,7 @@ class _ActionCell extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
