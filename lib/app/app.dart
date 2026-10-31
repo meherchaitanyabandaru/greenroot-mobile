@@ -157,6 +157,7 @@ class _GreenRootAppState extends ConsumerState<GreenRootApp>
               refresh: Listenable.merge(
                   [appRouter.routerDelegate, mangoPopups.open],),
               audience: _mangoAudience,
+              onAsk: () => appRouter.push('/mango'),
               child: child ?? const SizedBox.shrink(),
             ),
           ),

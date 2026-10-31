@@ -66,6 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mango listens only after you tap the microphone, until you tap stop, to understand your question.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>GreenRoot uses the camera to scan trip QR codes and to take your profile, licence and delivery photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -226,4 +226,13 @@ abstract class ApiConstants {
   static const String smsPreferencesMe = '$v1/sms/preferences/me';
   static String ratingsOrder(int orderId) => '$v1/ratings/order/$orderId';
   static String ratingsTrip(int dispatchId) => '$v1/ratings/trip/$dispatchId';
+
+  // Mango AI (the server alone talks to the AI provider)
+  static const String assistantStatus = '$v1/assistant/status';
+  static const String assistantTranscribe = '$v1/assistant/transcribe';
+  static const String assistantChat = '$v1/assistant/chat';
+  static const String assistantSpeech = '$v1/assistant/speech';
+  static const String assistantData = '$v1/assistant/data';
+  static String assistantConfirm(int id) => '$v1/assistant/actions/$id/confirm';
+  static String assistantCancel(int id) => '$v1/assistant/actions/$id/cancel';
 }

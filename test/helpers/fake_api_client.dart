@@ -40,7 +40,9 @@ enum FakeResponseType {
 class _QueuedResponse {
   final dynamic responseData;
   final FakeResponseType type;
-  const _QueuedResponse({required this.type, this.responseData});
+  /// Error body instead of the default, e.g. {'error': {'code': 'ai_disabled', 'message': '…'}}.
+  final dynamic errorData;
+  const _QueuedResponse({required this.type, this.responseData, this.errorData});
 }
 
 /// Captured call record — usable in test assertions.
@@ -93,8 +95,8 @@ class FakeApiClient {
   }
 
   /// Queue a successful response with [response] as the decoded data.
-  void enqueue({dynamic response, FakeResponseType type = FakeResponseType.success}) {
-    _interceptor.queue.add(_QueuedResponse(type: type, responseData: response));
+  void enqueue({dynamic response, FakeResponseType type = FakeResponseType.success, dynamic errorData}) {
+    _interceptor.queue.add(_QueuedResponse(type: type, responseData: response, errorData: errorData));
   }
 
   /// Answer every request whose path ends with [pathSuffix] with [response]
@@ -170,7 +172,7 @@ class _FakeInterceptor extends Interceptor {
           response: Response(
             requestOptions: options,
             statusCode: statusCode,
-            data: {'error': {'message': 'Simulated ${queued.type.name}'}},
+            data: queued.errorData ?? {'error': {'message': 'Simulated ${queued.type.name}'}},
           ),
           message: 'Simulated ${queued.type.name}',
         ),

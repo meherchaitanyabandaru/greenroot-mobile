@@ -38,6 +38,7 @@ import '../features/drivers/trip_event_screen.dart';
 import '../features/drivers/trip_preview_screen.dart';
 import '../features/vehicles/my_lorries_screen.dart';
 import '../features/quotations/quotation_request_screen.dart';
+import '../features/assistant/mango_chat_screen.dart';
 import '../features/top_items/top_items_screen.dart';
 import '../features/invites/invite_accept_screen.dart';
 import '../features/notifications/notification_list_screen.dart';
@@ -542,6 +543,7 @@ final appRouter = GoRouter(
       },
     ),
     // Static segments — must be listed BEFORE /quotations/:id to win routing
+    GoRoute(path: '/mango', redirect: _driverGuard, builder: (_, __) => const MangoChatScreen()),
     GoRoute(
       path: '/quotations/request',
       redirect: _driverGuard,

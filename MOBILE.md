@@ -233,6 +233,18 @@ Coverage: 17% of lines (`flutter test --coverage`). It's concentrated on login, 
 
 ---
 
+## Mango AI: voice and text assistant (2026-10-30)
+
+The 🥭 picker's first tile is **Ask Mango (voice or text)** (owners, managers and customers; hidden for drivers, and `/mango` is driver-guarded), which opens `/mango` (`lib/features/assistant/`). **2026-10-31 redesign:** full-screen voice assistant with an animated mango orb (`mango_orb.dart`, a state per idle, listening, thinking, speaking, error, limit and mic-denied), the "3/5 questions left today" pill (the server counts, India time), and greeting/goodbye clips from `assets/audio/mango/` (no AI call; mute and Telugu/English in the menu). A spoken question auto-sends after 2 s (tapping the words holds it) and is answered aloud. See `greenroot-infra/docs/mango-ai.md`. A notice explains the AI processing before first use (`mango_ai_notice_v1` in shared_preferences). Without it the screen closes and makes no AI call.
+
+- Tap the big microphone to record (AAC 16 kHz mono, `record` package) and tap again to stop. It stops by itself at the server's limit (30 s). Silent recordings are not sent.
+- What Mango heard goes into the text box to check and fix, then Send. Typing works the same way. The language choice is Mixed (auto), తెలుగు or English.
+- Replies have a read-aloud button (`audioplayers`; tap again to stop). A proposal shows Confirm / Cancel, and nothing changes before Confirm.
+- Errors use the server's words. Network failures offer Try again, and nothing is retried automatically (each retry costs). If AI is off, a banner says so.
+- Nothing is kept: the conversation is in memory only. Recordings and spoken answers are deleted after use. The menu has "About Mango AI and privacy" and "Delete my Mango data".
+- Android `RECORD_AUDIO` and iOS `NSMicrophoneUsageDescription` were added. The app talks only to the GreenRoot API, never to the AI provider (a test scans `lib/` for provider keys or addresses).
+- Tests: `test/assistant/mango_test.dart` (fake recorder, player and API) and the picker test in `test/core/mango_test.dart`. Server side: `greenroot-infra/docs/mango-ai.md`.
+
 ## User Help: Ask Mango 🥭 (2026-10-22)
 
 Offline, predefined walkthroughs (no AI, no API calls). A 🥭 tab on the left edge opens a picker; guides for the current screen are listed first ("For this screen"). Each step dims the screen, cuts a spotlight around the real control, shows a pointing hand and a short instruction with Back / Skip / Next. Tapping the spotlighted control works normally and moves to the next step; on completion the user can Replay. Android Back while Mango is open only closes Mango.

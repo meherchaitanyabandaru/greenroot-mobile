@@ -15,6 +15,8 @@ import 'mango_popups.dart';
 /// Sits above the whole app (MaterialApp.router `builder`): the Ask Mango
 /// button, the guide picker and the spotlight walkthrough. Screens are not
 /// modified; targets are found by the labels they already show.
+const _aiAudiences = {MangoAudience.owner, MangoAudience.manager, MangoAudience.customer};
+
 class MangoLayer extends StatefulWidget {
   final Widget child;
   final MangoController controller;
@@ -25,12 +27,16 @@ class MangoLayer extends StatefulWidget {
   /// Rebuild when this changes (route/session changes).
   final Listenable? refresh;
 
+  /// Opens the Mango AI assistant (signed-in users only).
+  final VoidCallback? onAsk;
+
   const MangoLayer({
     super.key,
     required this.child,
     required this.controller,
     required this.audience,
     this.refresh,
+    this.onAsk,
   });
 
   @override
@@ -168,7 +174,17 @@ class _MangoLayerState extends State<MangoLayer>
         children: [
           widget.child,
           if (_c.picking && audience != null)
-            _Picker(controller: _c, ranked: _ranked)
+            _Picker(
+              controller: _c,
+              ranked: _ranked,
+              // Mango AI is for owners, managers and customers (the API checks too).
+              onAsk: !_aiAudiences.contains(audience) || widget.onAsk == null
+                  ? null
+                  : () {
+                      _c.exit();
+                      widget.onAsk!();
+                    },
+            )
           else if (_c.guide != null)
             ..._walkthrough(context)
           else if (audience != null && !_buttonInTheWay(context))
@@ -481,7 +497,8 @@ class _StepCard extends StatelessWidget {
 class _Picker extends StatelessWidget {
   final MangoController controller;
   final List<({MangoGuide guide, bool here})> ranked;
-  const _Picker({required this.controller, required this.ranked});
+  final VoidCallback? onAsk;
+  const _Picker({required this.controller, required this.ranked, this.onAsk});
 
   @override
   Widget build(BuildContext context) {
@@ -535,6 +552,25 @@ class _Picker extends StatelessWidget {
                           child: ListView(
                             shrinkWrap: true,
                             children: [
+                              if (onAsk != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Material(
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: ListTile(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),),
+                                      leading: const Icon(Icons.mic_rounded,
+                                          size: 32, color: AppColors.primaryMain,),
+                                      title: const Text('Ask Mango (voice or text)',
+                                          style: AppTypography.h4,),
+                                      subtitle: const Text(
+                                          'Orders, quotations, deliveries: Telugu or English',),
+                                      onTap: onAsk,
+                                    ),
+                                  ),
+                                ),
                               for (final e in ranked)
                                 ListTile(
                                   contentPadding:
