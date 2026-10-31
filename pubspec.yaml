@@ -8,6 +8,7 @@ environment:
   flutter: ">=3.22.0"
 
 dependencies:
+  audioplayers: ^6.8.1
   cached_network_image: ^3.3.1
   cross_file: ^0.3.4+2
   crypto: ^3.0.7
@@ -36,6 +37,7 @@ dependencies:
   pdf: ^3.11.1
   qr_flutter: ^4.1.0
   razorpay_flutter: ^1.4.7
+  record: ^7.1.2
   riverpod_annotation: ^2.3.4
   rxdart: ^0.27.7
   share_plus: ^10.0.0
@@ -65,3 +67,4 @@ flutter:
     - assets/legal/
     - assets/icons/
     - assets/animations/
+    - assets/audio/mango/

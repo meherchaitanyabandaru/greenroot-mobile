@@ -235,4 +235,28 @@ void main() {
       expect(tester.getTopRight(find.text('🥭')).dx, greaterThan(width - 48));
     });
   });
+
+  testWidgets('the picker offers Ask Mango AI to owners, managers and customers only, and it closes the picker', (tester) async {
+    for (final who in [MangoAudience.owner, MangoAudience.manager, MangoAudience.customer, MangoAudience.driver, MangoAudience.guest]) {
+      var asked = 0;
+      final c = MangoController();
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => MangoLayer(controller: c, audience: () => who, onAsk: () => asked++, child: child!),
+        home: const Scaffold(body: SizedBox()),
+      ),);
+      await tester.tap(find.text('🥭'));
+      await tester.pumpAndSettle();
+      final tile = find.text('Ask Mango (voice or text)');
+      if (who == MangoAudience.guest || who == MangoAudience.driver) {
+        expect(tile, findsNothing, reason: 'Mango AI is for owners, managers and customers');
+        continue;
+      }
+      expect(tile, findsOneWidget, reason: '$who');
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      expect(asked, 1);
+      expect(c.picking, isFalse);
+    }
+  });
 }
