@@ -168,7 +168,7 @@ class _AskMangoButtonState extends State<_AskMangoButton> {
                       child: Text('🥭', style: TextStyle(fontSize: 22)),
                     ),
                     Icon(
-                      Icons.touch_app_rounded,
+                      Icons.mic_rounded,
                       size: 14,
                       color: Color(0xFFB45309),
                     ),

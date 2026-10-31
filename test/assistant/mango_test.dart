@@ -351,8 +351,9 @@ void main() {
       expect(c.greetingText, 'శుభోదయం! నేను మ్యాంగో. మీకు ఏం సహాయం కావాలి?');
       await c.greet('en', muted: false, now: DateTime(2026, 10, 31, 19));
       expect(player.assets.last, 'audio/mango/greet_evening_en.mp3');
-      final bye = c.sayBye('te', muted: false);
-      await settle();
+      final bye = c.sayBye('te', muted: false); // the greeting is still playing: it stops first
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(player.stops, 1);
       expect(player.assets.last, 'audio/mango/bye_te.mp3');
       player.finish();
       await bye; // closes once the goodbye has been said

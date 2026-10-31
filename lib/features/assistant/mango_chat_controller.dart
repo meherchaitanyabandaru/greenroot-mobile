@@ -149,7 +149,12 @@ class MangoChatController extends ChangeNotifier {
   Future<void> sayBye(String lang, {required bool muted}) async {
     _autoSend?.cancel();
     if (phase == MangoPhase.recording) await cancelRecording();
-    await stopSpeaking();
+    if (speakingIndex != null || greeting) {
+      await stopVoice();
+      // The stopped answer can still report "finished" a moment later (seen
+      // on Android), which would end the goodbye at once.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
     final clip = byeClip(lang);
     _set(() {
       greetingText = mangoLines[clip];

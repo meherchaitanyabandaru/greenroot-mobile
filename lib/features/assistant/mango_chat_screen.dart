@@ -64,6 +64,8 @@ class MangoChatScreen extends ConsumerStatefulWidget {
 
 class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
   late final MangoChatController c;
+  final _scroll = ScrollController();
+  int _seen = 0; // messages shown so far: a new answer scrolls into view
   bool _ready = false;
   bool _typing = false;
   bool _closing = false;
@@ -107,13 +109,23 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
   }
 
   void _changed() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    if (c.messages.length != _seen || c.phase == MangoPhase.review) {
+      _seen = c.messages.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scroll.hasClients) {
+          _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     c.removeListener(_changed);
     c.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -198,8 +210,11 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
 
   Widget _body(BoxConstraints box) {
     final compact = box.maxHeight < 560;
-    final orb = (box.maxHeight * (compact ? 0.28 : 0.3)).clamp(110.0, 240.0);
+    // With an answer or a transcript on screen the orb steps back for it.
+    final focus = c.phase == MangoPhase.review || (c.lastAnswer != null && c.phase == MangoPhase.idle);
+    final orb = (box.maxHeight * (focus ? 0.17 : (compact ? 0.28 : 0.3))).clamp(80.0, 240.0);
     return SingleChildScrollView(
+      controller: _scroll,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
@@ -374,7 +389,7 @@ class _Status extends StatelessWidget {
       OrbState.thinking when c.speechLoading => ('Getting ready to speak…', ''),
       OrbState.thinking => ('Mango is thinking…', ''),
       OrbState.speaking => ('Mango is speaking', 'Tap ■ to stop'),
-      OrbState.limit => ('You have asked all ${c.quota?.limit ?? ''} questions today', _resets()),
+      OrbState.limit => (c.quota?.limit == 1 ? "You have asked today's question" : 'You have asked all ${c.quota?.limit ?? ''} questions today', _resets()),
       OrbState.micDenied => ('Mango needs the microphone', 'Allow it in Settings → Apps → GreenRoot → Permissions, or tap Type.'),
       OrbState.error => ('Something went wrong', c.error ?? ''),
       OrbState.idle when c.phase == MangoPhase.review => ('Is this right?', 'Tap the words to fix them'),
