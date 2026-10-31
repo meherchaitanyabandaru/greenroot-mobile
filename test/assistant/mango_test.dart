@@ -14,6 +14,7 @@ import 'package:greenroot_mobile/features/assistant/mango_api.dart';
 import 'package:greenroot_mobile/features/assistant/mango_audio.dart';
 import 'package:greenroot_mobile/features/assistant/mango_chat_controller.dart';
 import 'package:greenroot_mobile/features/assistant/mango_chat_screen.dart';
+import 'package:greenroot_mobile/features/assistant/mango_voice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api_client.dart';
@@ -36,8 +37,11 @@ class FakeRecorder implements MangoRecorder {
   Future<String?> stop() async => path;
   @override
   Future<void> cancel() async => cancelled = true;
+  /// When set, loudness arrives over time (hands-free tests).
+  StreamController<double>? live;
+
   @override
-  Stream<double> levels() => Stream.fromIterable(loudness);
+  Stream<double> levels() => live?.stream ?? Stream.fromIterable(loudness);
   @override
   Future<void> dispose() async {}
 }
@@ -123,7 +127,7 @@ void main() {
   });
 
   test('voice: the transcript shows for checking, the recording is deleted, editing holds it for Send', () async {
-    final c = controller()..setLanguage('te');
+    final c = controller()..setLanguage('hi');
     fake.enqueue(response: {'text': 'ఈరోజు పెండింగ్ ఆర్డర్లు ఎన్ని?'});
     await c.startRecording();
     await settle();
@@ -136,7 +140,8 @@ void main() {
     expect(File(path).existsSync(), isFalse, reason: 'audio must not stay on the phone');
     expect(fake.calls.single.path, endsWith('/assistant/transcribe'));
     final form = fake.calls.single.data as FormData;
-    expect(form.fields.map((f) => '${f.key}=${f.value}'), contains('language=te'));
+    // Speech-to-text detects the language itself (forcing it broke English and mixed speech).
+    expect(form.fields.map((f) => '${f.key}=${f.value}'), contains('language=auto'));
     expect(form.files.single.value.contentType.toString(), 'audio/mp4');
     expect(c.messages, isEmpty);
     expect(c.autoSendPending, isTrue);
@@ -149,6 +154,8 @@ void main() {
     fake.enqueue(response: [73, 68, 51]);
     await c.send();
     expect(fake.calls[1].data['message'], 'ఈరోజు పెండింగ్ ఆర్డర్లు ఎన్ని ఉన్నాయి?');
+    expect(fake.calls[1].data['language'], 'hi', reason: 'the chosen language goes with the question');
+    expect(fake.calls[2].data['language'], 'hi', reason: 'and with read-aloud');
     expect(fake.calls[2].path, endsWith('/assistant/speech'), reason: 'a spoken question gets a spoken answer');
   });
 
@@ -251,7 +258,7 @@ void main() {
     fake.enqueue(response: [73, 68, 51, 1, 2, 3]);
     await c.speak(1);
     expect(fake.calls.last.path, endsWith('/assistant/speech'));
-    expect(fake.calls.last.data, {'text': 'మీకు 2 ఆర్డర్లు ఉన్నాయి.'});
+    expect(fake.calls.last.data, {'text': 'మీకు 2 ఆర్డర్లు ఉన్నాయి.', 'language': 'te'});
     final mp3 = player.played.single;
     expect(File(mp3).existsSync(), isTrue);
     expect(c.speakingIndex, 1);
@@ -364,6 +371,19 @@ void main() {
       }
     });
 
+    test('every language has its greeting and goodbye clips in the app', () {
+      for (final l in mangoLanguages) {
+        for (final part in ['morning', 'day', 'evening']) {
+          final clip = 'greet_${part}_${l.code}';
+          expect(mangoLines[clip], isNotNull, reason: clip);
+          expect(File('assets/${clipAsset(clip)}').existsSync(), isTrue, reason: clip);
+        }
+        expect(File('assets/${clipAsset(byeClip(l.code))}').existsSync(), isTrue, reason: l.code);
+        expect(mangoLines[byeClip(l.code)], isNotNull);
+      }
+      expect(mangoLanguages.map((l) => l.code), ['te', 'hi', 'kn', 'mr', 'ta', 'ur', 'en']);
+    });
+
     test('muted: the words show, nothing plays', () async {
       final c = controller();
       await c.greet('te', muted: true, now: DateTime(2026, 10, 31, 14));
@@ -420,6 +440,90 @@ void main() {
     });
   });
 
+  group('hands-free', () {
+    MangoChatController handsFree() => controller()
+      ..handsFree = true
+      ..pauseToStop = const Duration(milliseconds: 60)
+      ..waitForSpeech = const Duration(milliseconds: 150);
+
+    test('Mango listens after its greeting', () async {
+      final c = handsFree();
+      await c.greet('te', muted: false);
+      player.finish();
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(c.phase, MangoPhase.recording);
+    });
+
+    test('a pause after speaking ends the question; it is sent without a tap', () async {
+      final c = handsFree();
+      recorder.live = StreamController<double>();
+      await c.startRecording();
+      fake.enqueue(response: {'text': 'pending orders?'});
+      recorder.live!.add(-20); // speaking
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      recorder.live!.add(-60); // pause
+      await settle();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(fake.calls.single.path, endsWith('/assistant/transcribe'));
+      expect(c.phase, MangoPhase.review);
+      fake.enqueue(response: {'reply': 'You have 2.'});
+      fake.enqueue(response: [73, 68, 51]);
+      await Future<void>.delayed(const Duration(milliseconds: 2300));
+      expect(fake.calls.map((x) => x.path.split('/').last), ['transcribe', 'chat', 'speech']);
+    });
+
+    test('nobody speaks: Mango stops quietly and sends nothing', () async {
+      final c = handsFree();
+      recorder.live = StreamController<double>();
+      await c.startRecording();
+      final path = recorder.path!;
+      recorder.live!.add(-70);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      recorder.live!.add(-70);
+      await settle();
+      expect(c.phase, MangoPhase.idle);
+      expect(c.error, isNull, reason: 'not an error: nobody asked anything');
+      expect(fake.calls, isEmpty);
+      expect(File(path).existsSync(), isFalse);
+    });
+
+    test('after a spoken answer Mango listens again; not after Stop, not after goodbye', () async {
+      final c = handsFree();
+      fake.enqueue(response: {'reply': 'r'});
+      c.input.text = 'q';
+      await c.send();
+      fake.enqueue(response: [73, 68, 51]);
+      await c.speak(1);
+      player.finish(); // the answer played to the end
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(c.phase, MangoPhase.recording);
+      await c.cancelRecording();
+
+      fake.enqueue(response: [73, 68, 51]);
+      await c.speak(1);
+      await c.stopVoice(); // the user stopped it
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(c.phase, MangoPhase.idle);
+
+      final bye = c.sayBye('te', muted: false);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      player.finish();
+      await bye;
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(c.phase, MangoPhase.idle, reason: 'closing: no listening');
+    });
+
+    test('no listening when the day\'s questions are used', () async {
+      final c = handsFree();
+      fake.enqueue(response: {'enabled': true, 'max_audio_seconds': 30, 'questions': {'questions_used': 5, 'questions_limit': 5}});
+      await c.load();
+      await c.greet('te', muted: true);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(c.phase, MangoPhase.idle);
+      expect(recorder.path, isNull);
+    });
+  });
+
   group('screen', () {
     // The orb animates forever; pump through instead of settling.
     Future<void> pumpFor(WidgetTester tester, [int ms = 1000]) async {
@@ -446,15 +550,26 @@ void main() {
           ),),),),),
         );
 
-    Future<void> open(WidgetTester tester, {Map<String, Object> prefs = const {'mango_ai_notice_v1': true}}) async {
+    // Hands-free off: these tests drive each step themselves.
+    Future<void> open(WidgetTester tester, {Map<String, Object> prefs = const {'mango_ai_notice_v1': true, 'mango_hands_free': false}}) async {
       SharedPreferences.setMockInitialValues(prefs);
       await tester.pumpWidget(host());
       await tester.tap(find.text('open'));
       await pumpFor(tester);
     }
 
+    testWidgets('hands-free: after the greeting Mango listens by itself', (tester) async {
+      fake.route('/assistant/status', status());
+      await open(tester, prefs: {'mango_ai_notice_v1': true});
+      player.finish();
+      await pumpFor(tester, 600);
+      expect(find.text('Listening…'), findsOneWidget);
+      expect(find.text("Just speak. I'll stop when you pause."), findsOneWidget);
+      expect(recorder.path, isNotNull);
+    });
+
     testWidgets('first use shows the AI notice; Not now leaves without any AI call', (tester) async {
-      await open(tester, prefs: {});
+      await open(tester, prefs: {'mango_hands_free': false});
       expect(find.text('Before you use Mango AI'), findsOneWidget);
       expect(find.textContaining('OpenAI'), findsOneWidget);
       await tester.tap(find.text('Not now'));
@@ -510,6 +625,30 @@ void main() {
       expect(find.text('You have 2 pending orders today.'), findsOneWidget);
       expect(find.text('2/5'), findsOneWidget);
       expect(find.bySemanticsLabel('Mango is speaking'), findsWidgets);
+    });
+
+    testWidgets('choosing Hindi: saved, Mango greets in Hindi, Hindi sample question', (tester) async {
+      fake.route('/assistant/status', status());
+      await open(tester);
+      player.finish();
+      await pumpFor(tester, 200);
+      expect(find.text('తెలుగు ▾'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel(RegExp("Mango's language: Telugu")));
+      await pumpFor(tester, 500);
+      for (final n in ['తెలుగు', 'हिन्दी', 'ಕನ್ನಡ', 'मराठी', 'தமிழ்', 'اردو', 'English']) {
+        await tester.scrollUntilVisible(find.text(n).last, 80, scrollable: find.byType(Scrollable).last);
+        expect(find.text(n), findsWidgets, reason: n);
+      }
+      await tester.scrollUntilVisible(find.text('हिन्दी').last, -80, scrollable: find.byType(Scrollable).last);
+      await tester.tap(find.text('हिन्दी').last);
+      await pumpFor(tester, 500);
+      expect((await SharedPreferences.getInstance()).getString('mango_voice_lang'), 'hi');
+      expect(player.assets.last, matches(RegExp(r'audio/mango/greet_(morning|day|evening)_hi\.mp3')));
+      expect(find.text('हिन्दी ▾'), findsOneWidget);
+      player.finish();
+      await pumpFor(tester, 300);
+      expect(find.text('आज कितने ऑर्डर पेंडिंग हैं?'), findsOneWidget);
+      expect(find.textContaining('मैं मैंगो हूँ'), findsOneWidget, reason: 'the Hindi greeting line');
     });
 
     testWidgets('daily limit reached: friendly state, reset time, mic off', (tester) async {
@@ -586,7 +725,7 @@ void main() {
           tester.view.physicalSize = const Size(360 * 2, 640 * 2);
           tester.view.devicePixelRatio = 2;
           addTearDown(tester.view.reset);
-          SharedPreferences.setMockInitialValues({'mango_ai_notice_v1': true});
+          SharedPreferences.setMockInitialValues({'mango_ai_notice_v1': true, 'mango_hands_free': false});
           await tester.pumpWidget(MediaQuery(data: const MediaQueryData(textScaler: TextScaler.linear(1.3)), child: host()));
           await tester.tap(find.text('open'));
           await pumpFor(tester);
@@ -601,7 +740,7 @@ void main() {
 
     testWidgets('reduce motion: the orb stands still and nothing breaks', (tester) async {
       fake.route('/assistant/status', status());
-      SharedPreferences.setMockInitialValues({'mango_ai_notice_v1': true});
+      SharedPreferences.setMockInitialValues({'mango_ai_notice_v1': true, 'mango_hands_free': false});
       await tester.pumpWidget(MediaQuery(data: const MediaQueryData(disableAnimations: true), child: host()));
       await tester.tap(find.text('open'));
       await pumpFor(tester);

@@ -116,7 +116,7 @@ class MangoApi {
         );
       });
 
-  /// [language]: te, en or auto (mixed Telugu and English).
+  /// [language]: auto (speech-to-text detects it; mixed speech works best) or te, hi, kn, mr, ta, ur, en.
   Future<String> transcribe(File audio, String language) => _guard(() async {
         final form = FormData.fromMap({
           'language': language,
@@ -126,15 +126,17 @@ class MangoApi {
         return (r.data['text'] as String? ?? '').trim();
       });
 
-  Future<MangoReply> chat(String message, List<MangoTurn> history) => _guard(() async {
+  /// [language]: the user's choice; the API still answers English in English.
+  Future<MangoReply> chat(String message, List<MangoTurn> history, {String? language}) => _guard(() async {
         final r = await client.dio.post(ApiConstants.assistantChat,
-            data: {'message': message, 'history': [for (final t in history) t.toJson()]}, options: _slow,);
+            data: {'message': message, 'history': [for (final t in history) t.toJson()], if (language != null) 'language': language},
+            options: _slow,);
         return MangoReply.fromJson(r.data as Map<String, dynamic>);
       });
 
-  Future<Uint8List> speak(String text) => _guard(() async {
+  Future<Uint8List> speak(String text, {String? language}) => _guard(() async {
         final r = await client.dio.post<List<int>>(ApiConstants.assistantSpeech,
-            data: {'text': text}, options: _slow.copyWith(responseType: ResponseType.bytes),);
+            data: {'text': text, if (language != null) 'language': language}, options: _slow.copyWith(responseType: ResponseType.bytes),);
         return Uint8List.fromList(r.data ?? const []);
       });
 
