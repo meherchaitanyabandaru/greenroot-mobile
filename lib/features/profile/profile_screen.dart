@@ -1,4 +1,5 @@
 import '../../core/errors/app_error.dart';
+import '../../core/services/recent_items.dart';
 import '../../core/widgets/welcome_tour.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -482,6 +483,7 @@ class ProfileScreen extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     try {
       await ApiClient.instance.delete(ApiConstants.deleteAccount);
+      await ref.read(recentItemsProvider.notifier).forget();
       await ref.read(sessionProvider.notifier).logout();
       if (context.mounted) {
         context.go('/login');

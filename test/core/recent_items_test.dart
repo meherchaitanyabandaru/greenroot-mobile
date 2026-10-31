@@ -41,4 +41,20 @@ void main() {
     await n.record(_order(5));
     expect(n.state, isEmpty);
   });
+
+  test("deleting the account forgets that user's list; other accounts keep theirs", () async {
+    SharedPreferences.setMockInitialValues({});
+    final a = RecentItemsNotifier(1);
+    await Future<void>.delayed(Duration.zero);
+    await a.record(_order(10));
+    final b = RecentItemsNotifier(2);
+    await Future<void>.delayed(Duration.zero);
+    await b.record(_order(20));
+
+    await a.forget();
+
+    expect(a.state, isEmpty);
+    expect(await _loaded(1), isEmpty, reason: 'gone from the phone, not just the screen');
+    expect((await _loaded(2)).map((e) => e.id), [20]);
+  });
 }

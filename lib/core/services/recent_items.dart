@@ -90,6 +90,15 @@ class RecentItemsNotifier extends StateNotifier<List<RecentItem>> {
       trimmed.map((e) => jsonEncode(e.toJson())).toList(),
     );
   }
+
+  /// Removes this user's list from the phone (account deletion: it can hold
+  /// customer names). Signing out keeps it for the next sign-in.
+  Future<void> forget() async {
+    state = const [];
+    if (_userId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
+  }
 }
 
 /// Rebuilt whenever the signed-in user changes, so it always shows that
