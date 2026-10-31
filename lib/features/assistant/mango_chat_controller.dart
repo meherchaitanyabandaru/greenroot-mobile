@@ -47,13 +47,23 @@ class MangoChatController extends ChangeNotifier {
   /// A spoken question is sent after this unless the user taps to edit it.
   static const autoSendAfter = Duration(seconds: 2);
 
+  /// Louder than this counts as the user speaking (hands-free).
+  static const speechDb = -40.0;
+
+  /// Hands-free: Mango listens after it speaks and stops when the user
+  /// pauses, so a whole conversation needs no taps. Silence is never sent.
+  bool handsFree = false;
+  Duration pauseToStop = const Duration(milliseconds: 1500);
+  Duration waitForSpeech = const Duration(seconds: 8);
+
   /// The conversation, for context (only the last exchange is shown).
   final messages = <MangoMessage>[];
 
   /// The text box: typed, or what Mango heard, for the user to correct.
   final input = TextEditingController();
   MangoPhase phase = MangoPhase.idle;
-  String language = 'auto';
+  /// The language the user chose (te, hi, kn, mr, ta, ur or en).
+  String language = 'te';
   String? error;
   bool errorRetryable = false;
   bool micDenied = false;
@@ -82,6 +92,10 @@ class MangoChatController extends ChangeNotifier {
   Timer? _timer;
   Timer? _autoSend;
   Completer<void>? _byeDone;
+  bool _closing = false;
+  DateTime _listenStarted = DateTime.now();
+  DateTime? _spokeAt;
+  DateTime? _lastLoud;
   StreamSubscription<double>? _levels;
   late final StreamSubscription<void> _playerDone;
   bool _disposed = false;
@@ -142,11 +156,16 @@ class MangoChatController extends ChangeNotifier {
       greetingText = mangoLines[clip];
       greeting = !muted;
     });
-    if (!muted) await _playClip(clip);
+    if (muted) {
+      _listenAgain();
+    } else {
+      await _playClip(clip);
+    }
   }
 
   /// Say goodbye (no AI call); completes when the clip ends, at most 4 s.
   Future<void> sayBye(String lang, {required bool muted}) async {
+    _closing = true;
     _autoSend?.cancel();
     if (phase == MangoPhase.recording) await cancelRecording();
     if (speakingIndex != null || greeting) {
@@ -174,10 +193,23 @@ class MangoChatController extends ChangeNotifier {
     }
   }
 
-  void _finished() {
+  /// [natural]: the clip or answer played to the end (not stopped).
+  void _finished({bool natural = true}) {
     if (_byeDone != null && !_byeDone!.isCompleted) _byeDone!.complete();
     if (greeting) _set(() => greeting = false);
     if (speakingIndex != null) _stopped();
+    if (natural) _listenAgain();
+  }
+
+  /// Hands-free: when Mango has finished speaking, listen for the reply.
+  void _listenAgain() {
+    if (!handsFree || _closing || _disposed) return;
+    // A moment for the speaker to release the audio before the mic opens.
+    Future<void>.delayed(const Duration(milliseconds: 300), () {
+      if (_disposed || _closing || phase != MangoPhase.idle || limitReached || micDenied || error != null) return;
+      if (greeting || speakingIndex != null) return;
+      startRecording();
+    });
   }
 
   Future<void> startRecording() async {
@@ -211,9 +243,22 @@ class MangoChatController extends ChangeNotifier {
       });
       return;
     }
+    _listenStarted = DateTime.now();
+    _spokeAt = _lastLoud = null;
     _levels = recorder.levels().listen((db) {
       if (db > _peak) _peak = db;
       _set(() => level = ((db + 50) / 50).clamp(0.0, 1.0));
+      if (!handsFree || phase != MangoPhase.recording) return;
+      final now = DateTime.now();
+      if (db > speechDb) {
+        _spokeAt ??= now;
+        _lastLoud = now;
+      }
+      if (_spokeAt != null && now.difference(_lastLoud!) >= pauseToStop) {
+        stopRecording(); // the user paused: their question is done
+      } else if (_spokeAt == null && now.difference(_listenStarted) >= waitForSpeech) {
+        cancelRecording(); // nobody spoke: stop quietly, nothing is sent
+      }
     });
     _set(() {
       micDenied = false;
@@ -245,7 +290,9 @@ class MangoChatController extends ChangeNotifier {
     }
     _set(() => phase = MangoPhase.transcribing);
     try {
-      final text = await api.transcribe(File(path), language);
+      // Speech-to-text detects the language: forcing the choice turned spoken
+      // English into Telugu letters and hurt mixed speech (seen in testing).
+      final text = await api.transcribe(File(path), 'auto');
       _set(() {
         if (text.isEmpty) {
           phase = MangoPhase.idle;
@@ -338,7 +385,7 @@ class MangoChatController extends ChangeNotifier {
 
   Future<void> _ask(String text, List<MangoTurn> history, {bool speak = false}) async {
     try {
-      final reply = await api.chat(text, history);
+      final reply = await api.chat(text, history, language: language);
       _failedMessage = null;
       _set(() {
         messages.add(MangoMessage.mango(reply.text, proposal: reply.proposal));
@@ -364,7 +411,7 @@ class MangoChatController extends ChangeNotifier {
       error = null;
     });
     try {
-      final audio = await api.speak(messages[index].text);
+      final audio = await api.speak(messages[index].text, language: language);
       if (speakingIndex != index) return; // stopped while loading
       final dir = await tempDir();
       final file = File('${dir.path}/mango_reply_${DateTime.now().microsecondsSinceEpoch}.mp3');
@@ -381,7 +428,7 @@ class MangoChatController extends ChangeNotifier {
   /// Stop whatever Mango is saying: an answer or the greeting.
   Future<void> stopVoice() async {
     await player.stop();
-    _finished();
+    _finished(natural: false);
   }
 
   Future<void> stopSpeaking() async {

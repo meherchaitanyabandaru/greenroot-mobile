@@ -12,10 +12,12 @@ import 'mango_api.dart';
 import 'mango_audio.dart';
 import 'mango_chat_controller.dart';
 import 'mango_orb.dart';
+import 'mango_voice.dart';
 
 const _noticeKey = 'mango_ai_notice_v$mangoNoticeVersion';
-const _langKey = 'mango_voice_lang'; // te | en: greeting and goodbye
+const _langKey = 'mango_voice_lang'; // the chosen language (mangoLanguages)
 const _muteKey = 'mango_voice_muted';
+const _handsFreeKey = 'mango_hands_free'; // on unless the user turns it off
 
 /// The microphone and speaker; tests override them.
 final mangoRecorderProvider = Provider<MangoRecorder Function()>((_) => DeviceMangoRecorder.new);
@@ -87,8 +89,10 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
 
   Future<void> _open() async {
     final prefs = await SharedPreferences.getInstance();
-    _lang = prefs.getString(_langKey) ?? 'te';
+    _lang = mangoLanguage(prefs.getString(_langKey) ?? 'te').code;
+    c.setLanguage(_lang);
     _muted = prefs.getBool(_muteKey) ?? false;
+    c.handsFree = prefs.getBool(_handsFreeKey) ?? true;
     if (prefs.getBool(_noticeKey) != true) {
       if (!mounted) return;
       if (!await showMangoNotice(context)) {
@@ -143,12 +147,12 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
   Future<void> _menu(String choice) async {
     final prefs = await SharedPreferences.getInstance();
     switch (choice) {
-      case 'lang':
-        _lang = _lang == 'te' ? 'en' : 'te';
-        await prefs.setString(_langKey, _lang);
       case 'mute':
         _muted = !_muted;
         await prefs.setBool(_muteKey, _muted);
+      case 'handsfree':
+        c.handsFree = !c.handsFree;
+        await prefs.setBool(_handsFreeKey, c.handsFree);
       case 'about':
         if (mounted) await showMangoNotice(context);
       case 'delete':
@@ -161,6 +165,44 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
         }
     }
     if (mounted) setState(() {});
+  }
+
+  /// Choose Mango's language; Mango greets in it at once (from its clip).
+  Future<void> _pickLanguage() async {
+    final code = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true, // as tall as the list needs, scrolling on small phones
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
+              child: Text("Mango's language", style: AppTypography.h4),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('You can always ask in English too.', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+            ),
+            for (final l in mangoLanguages)
+              ListTile(
+                title: Text(l.native, style: AppTypography.bodyLarge),
+                subtitle: l.code == 'en' ? null : Text(l.english),
+                trailing: l.code == _lang ? const Icon(Icons.check_circle_rounded, color: AppColors.primaryMain) : null,
+                selected: l.code == _lang,
+                onTap: () => Navigator.pop(ctx, l.code),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (code == null || code == _lang || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_langKey, code);
+    setState(() => _lang = code);
+    c.setLanguage(code);
+    if (c.phase == MangoPhase.idle && c.speakingIndex == null && !_closing) await c.greet(code, muted: _muted);
   }
 
   void _snack(String text) {
@@ -192,7 +234,7 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                _TopBar(onClose: _close, onMenu: _menu, lang: _lang, muted: _muted),
+                _TopBar(onClose: _close, onMenu: _menu, onLanguage: _pickLanguage, lang: _lang, muted: _muted, handsFree: c.handsFree),
                 Expanded(
                   child: !_ready
                       ? const Center(child: CircularProgressIndicator())
@@ -236,7 +278,7 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
             if (c.phase == MangoPhase.review)
               _TranscriptCard(c: c)
             else if (c.messages.isEmpty && c.phase == MangoPhase.idle && !c.limitReached && !_typing)
-              _Suggestions(onPick: _ask)
+              _Suggestions(onPick: _ask, lang: _lang)
             else if (c.lastAnswer != null && c.phase == MangoPhase.idle)
               _AnswerCard(c: c),
             if (_typing && c.phase == MangoPhase.idle && !c.limitReached) _TypeBox(c: c, onSend: () => _ask(c.input.text)),
@@ -304,9 +346,11 @@ class _MangoChatScreenState extends ConsumerState<MangoChatScreen> {
 class _TopBar extends StatelessWidget {
   final VoidCallback onClose;
   final void Function(String) onMenu;
+  final VoidCallback onLanguage;
   final String lang;
   final bool muted;
-  const _TopBar({required this.onClose, required this.onMenu, required this.lang, required this.muted});
+  final bool handsFree;
+  const _TopBar({required this.onClose, required this.onMenu, required this.onLanguage, required this.lang, required this.muted, required this.handsFree});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -315,13 +359,27 @@ class _TopBar extends StatelessWidget {
           children: [
             const Icon(Icons.eco_rounded, color: AppColors.primaryMain, size: 28),
             const SizedBox(width: 6),
-            Flexible(child: Text('GreenRoot', style: AppTypography.h3.copyWith(color: AppColors.forest800), overflow: TextOverflow.ellipsis)),
+            // The language chip needs the room on narrow phones.
+            if (MediaQuery.sizeOf(context).width >= 400)
+              Flexible(child: Text('GreenRoot', style: AppTypography.h3.copyWith(color: AppColors.forest800), overflow: TextOverflow.ellipsis)),
             const Spacer(),
+            Semantics(
+              button: true,
+              label: "Mango's language: ${mangoLanguage(lang).english}. Change",
+              excludeSemantics: true,
+              child: ActionChip(
+                avatar: const Icon(Icons.translate_rounded, size: 18, color: AppColors.forest700),
+                label: Text('${mangoLanguage(lang).native} ▾'),
+                backgroundColor: Colors.white,
+                shape: const StadiumBorder(side: BorderSide(color: AppColors.border)),
+                onPressed: onLanguage,
+              ),
+            ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, semanticLabel: 'Mango options'),
               onSelected: onMenu,
               itemBuilder: (_) => [
-                PopupMenuItem(value: 'lang', child: Text(lang == 'te' ? 'Greet me in English' : 'Greet me in తెలుగు')),
+                PopupMenuItem(value: 'handsfree', child: Text(handsFree ? 'Hands-free: on (tap to turn off)' : 'Hands-free: off (tap to turn on)')),
                 PopupMenuItem(value: 'mute', child: Text(muted ? "Turn on Mango's greeting voice" : "Mute Mango's greeting voice")),
                 const PopupMenuItem(value: 'about', child: Text('About Mango AI and privacy')),
                 const PopupMenuItem(value: 'delete', child: Text('Delete my Mango data')),
@@ -384,7 +442,7 @@ class _Status extends StatelessWidget {
   Widget build(BuildContext context) {
     final (title, sub) = switch (c.orbState) {
       _ when closing || (c.greeting && c.greetingText != null) => (c.greetingText ?? '', ''),
-      OrbState.listening => ('Listening…', '0:${c.recordSeconds.toString().padLeft(2, '0')} of 0:${c.maxSeconds} · tap ■ to stop'),
+      OrbState.listening => ('Listening…', c.handsFree ? "Just speak. I'll stop when you pause." : '0:${c.recordSeconds.toString().padLeft(2, '0')} of 0:${c.maxSeconds} · tap ■ to stop'),
       OrbState.thinking when c.phase == MangoPhase.transcribing => ('Getting your words…', ''),
       OrbState.thinking when c.speechLoading => ('Getting ready to speak…', ''),
       OrbState.thinking => ('Mango is thinking…', ''),
@@ -393,7 +451,7 @@ class _Status extends StatelessWidget {
       OrbState.micDenied => ('Mango needs the microphone', 'Allow it in Settings → Apps → GreenRoot → Permissions, or tap Type.'),
       OrbState.error => ('Something went wrong', c.error ?? ''),
       OrbState.idle when c.phase == MangoPhase.review => ('Is this right?', 'Tap the words to fix them'),
-      OrbState.idle => (c.greetingText ?? 'Tap the mic and ask', c.greetingText == null ? 'Telugu or English, up to ${c.maxSeconds} seconds' : ''),
+      OrbState.idle => (c.greetingText ?? 'Tap the mic and ask', c.greetingText == null ? '${c.language == 'en' ? 'English' : '${mangoLanguage(c.language).native} or English'}, up to ${c.maxSeconds} seconds' : ''),
     };
     return Column(
       children: [
@@ -569,9 +627,10 @@ class _TypeBox extends StatelessWidget {
 
 class _Suggestions extends StatelessWidget {
   final void Function(String) onPick;
-  const _Suggestions({required this.onPick});
+  final String lang;
+  const _Suggestions({required this.onPick, required this.lang});
 
-  static const examples = ["Today's pending orders", 'ఈరోజు పెండింగ్ ఆర్డర్లు ఎన్ని?', 'Where is my delivery?'];
+  List<String> get examples => [if (mangoSampleQuestion[lang] != null) mangoSampleQuestion[lang]!, "Today's pending orders", 'Where is my delivery?'];
 
   @override
   Widget build(BuildContext context) => Wrap(
@@ -580,11 +639,19 @@ class _Suggestions extends StatelessWidget {
         runSpacing: 8,
         children: [
           for (final e in examples)
-            ActionChip(
-              label: Text(e),
-              backgroundColor: Colors.white,
+            // Not a Chip: a chip keeps its label on one line, and long
+            // questions (Tamil, Kannada) were cut off.
+            Material(
+              color: Colors.white,
               shape: const StadiumBorder(side: BorderSide(color: AppColors.border)),
-              onPressed: () => onPick(e),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: () => onPick(e),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Text(e, textAlign: TextAlign.center, style: AppTypography.label.copyWith(color: AppColors.forest800)),
+                ),
+              ),
             ),
         ],
       );
