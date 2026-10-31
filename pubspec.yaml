@@ -31,7 +31,7 @@ dependencies:
   json_annotation: ^4.9.0
   latlong2: ^0.9.0
   logger: ^2.4.0
-  mobile_scanner: ^5.2.3
+  mobile_scanner: ^7.4.2
   package_info_plus: ^9.0.1
   path_provider: ^2.1.4
   pdf: ^3.11.1
